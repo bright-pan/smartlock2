@@ -9,16 +9,22 @@
 #include <dfs.h>
 #include <dfs_posix.h>
 
-
-#define VOICE_FILE_NAME1      "/0.WAV"
-#define VOICE_FILE_NAME2      "/1.wav"
-#define VOICE_FILE_NAME3      "/2.wav"
-#define VOICE_FILE_NAME4      "/3.wav"
-#define VOICE_FILE_NAME5      "/4.wav"
-#define VOICE_FILE_NAME6      "/5.wav"
-#define VOICE_FILE_NAME7      "/6.wav"
-
-
+const char VoiceFileMap[][16] = 
+{
+	{"/0.WAV"},
+	{"/1.WAV"},
+	{"/2.WAV"},
+	{"/3.WAV"},
+	{"/4.WAV"},
+	{"/5.WAV"},
+	{"/6.WAV"},
+	{"/7.WAV"},
+	{"/8.WAV"},
+	{"/9.WAV"},
+	{"/10.WAV"},
+	{"/11.WAV"},
+	{"/12.WAV"},
+};
 
 
 
@@ -231,48 +237,7 @@ static voice_recv_mail_process(void)
   if(RecvResult == RT_EOK)
   {
     voice_open_amp();
-    switch(type)
-    {
-      case VOICE_TYPE_TEST:
-      {
-        voice_file_process(VOICE_FILE_NAME1);
-        break;
-      }
-      case VOICE_TYPE_HI:
-      {
-        voice_file_process(VOICE_FILE_NAME2);
-        break;
-      }
-      case VOICE_TYPE_CCDIR:
-      {
-        voice_file_process(VOICE_FILE_NAME2);
-        break;
-      }
-      case VOICE_TYPE_ALARM:
-      {
-        voice_file_process(VOICE_FILE_NAME3);
-        break;
-      }
-      case VOICE_TYPE_KEY1_ERRPR:
-      {
-        voice_file_process(VOICE_FILE_NAME4);
-        break;
-      }
-      case VOICE_TYPE_MANAGE1KEY1:
-      {
-        voice_file_process(VOICE_FILE_NAME5);
-        break;
-      }
-      case VOICE_TYPE_KEY1_OK:
-      {
-        voice_file_process(VOICE_FILE_NAME6);
-        break;
-      }
-      default:
-      {
-        break;
-      }
-    }
+    voice_file_process(VoiceFileMap[type]);
     voice_close_amp();
   }
 }
