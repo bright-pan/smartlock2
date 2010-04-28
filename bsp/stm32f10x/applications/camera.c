@@ -518,7 +518,7 @@ void camera_thread_entry(void *arg)
 	rt_err_t    result;
 	CameraMail  CameraMail;
 	CameraObj_p CameraDat = RT_NULL;
-	char 				*FileName;
+	UploadFile_p FileInfo;
 
 	CameraDat = camera_obj_create();
 	camera_power_control(CameraDat,CM_POWER_CLOSE);
@@ -544,14 +544,19 @@ void camera_thread_entry(void *arg)
 			
 			//send_alarm_mail(ALARM_TYPE_CAMERA_IRDASENSOR,ALARM_PROCESS_FLAG_GPRS,0,CameraMail.time);
 			//send_gprs_mail(ALARM_TYPE_CAMERA_IRDASENSOR,CameraMail.time,RT_NULL);
-			FileName = rt_calloc(1,RT_NAME_MAX);
-			RT_ASSERT(FileName != RT_NULL);
-			rt_memcpy(FileName,CM_MAKE_PIC_NAME,rt_strlen(CM_MAKE_PIC_NAME));
-			send_gprs_mail(ALARM_TYPE_GPRS_UPLOAD_PIC,CameraMail.time,FileName);
+			FileInfo = rt_calloc(1,sizeof(*FileInfo));
+			RT_ASSERT(FileInfo != RT_NULL);
+			rt_memcpy(FileInfo->name,CM_MAKE_PIC_NAME,rt_strlen(CM_MAKE_PIC_NAME));
+			FileInfo->AlarmType = 0;//报警类型有待有修改
+			FileInfo->FileType = 1;
+			FileInfo->time = CameraMail.time;
+			send_gprs_mail(ALARM_TYPE_GPRS_UPLOAD_PIC,CameraMail.time,FileInfo);
 			rt_thread_delay(100);
 		}
 	}
 }
+
+void mq(rt_uint32_t time);
 
 static void pic_file_send_complete(void *user)
 {
@@ -568,6 +573,10 @@ static void pic_file_send_complete(void *user)
 		rt_kprintf("Picture sent succeed\n");
 	}
 	pic_file_sem_operate(RT_FALSE);
+	{
+		//mq(10);
+	}
+	
 }
 
 int camera_thread_init(void)

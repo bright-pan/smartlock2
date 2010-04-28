@@ -246,7 +246,7 @@ rt_uint8_t check_msgmail_succeed(net_msgmail_p mail[],rt_uint8_t size,rt_sem_t S
 /*
 功能:发送文件请求
 */
-static rt_int8_t send_file_request(char *FileName)
+static rt_int8_t send_file_request(UploadFile_p arg)
 {
 	rt_int8_t   Result;        //执行结果
 	rt_uint32_t FileSize;			 //文件大小
@@ -254,7 +254,9 @@ static rt_int8_t send_file_request(char *FileName)
 	rt_uint32_t CRC32Value;
 	net_msgmail_p mail = RT_NULL;
 	net_filerequest_user *RequestInfo;
+	char *FileName;
 
+	FileName = arg->name;
 	//获取资源
 	mail = (net_msgmail_p)rt_calloc(1,sizeof(net_msgmail));
 	RT_ASSERT(mail != RT_NULL);
@@ -281,9 +283,9 @@ static rt_int8_t send_file_request(char *FileName)
 	//计算包数量
 	PackNum = get_file_packets(FileSize,NET_FILE_BUF_SIZE);
 	
-	RequestInfo->file.alarm = 0;  //报警类型
-	net_uint32_copy_string(RequestInfo->file.time,1234);//时间
-	RequestInfo->file.type = 1;    //文件格式
+	RequestInfo->file.alarm = arg->AlarmType;  //报警类型
+	net_uint32_copy_string(RequestInfo->file.time,arg->time);
+	RequestInfo->file.type = arg->FileType;    //文件格式
 	net_uint32_copy_string(RequestInfo->file.size,FileSize);//文件大小
 	RequestInfo->file.packsize = 4;//包大小512k
 	net_uint32_copy_string(RequestInfo->file.packnum,PackNum);//包数量
@@ -318,7 +320,7 @@ static rt_int8_t send_file_request(char *FileName)
 参数:type 文件类型  time发送时间  file 文件名称
 */
 #define FILE_PACKNUM_MAX      (NET_RECV_MSG_MAX-2)
-static rt_int8_t send_file_process(rt_uint8_t Type,rt_uint32_t Time,char *FileName)
+static rt_int8_t send_file_process(UploadFile_p arg)
 {
 	rt_uint32_t FileSize;			 //文件大小
 	rt_uint32_t CurPackOrder;	 //包序号
@@ -328,10 +330,12 @@ static rt_int8_t send_file_process(rt_uint8_t Type,rt_uint32_t Time,char *FileNa
 	rt_uint16_t ReadSize;      //读取当前包的大小
 	rt_sem_t    SendSem = RT_NULL; //发送控制信号量
   net_msgmail_p mail[FILE_PACKNUM_MAX];     
-
+  char *FileName;
+  
+	FileName = arg->name;
 	//list_mem();
 	//发送文件请求报文
-	Result = send_file_request(FileName);
+	Result = send_file_request(arg);
 	//list_mem();
 	if(Result < 0)
 	{
@@ -431,14 +435,17 @@ static rt_int8_t send_file_process(rt_uint8_t Type,rt_uint32_t Time,char *FileNa
 void net_file_entry(void *arg)
 {
 	rt_int8_t result;
-	rt_int8_t *filename = (rt_int8_t *)arg;
+	UploadFile_p file = (UploadFile_p)arg;
 	
-	if(filename != RT_NULL)
+	if(file != RT_NULL)
 	{
 		//处理文件
-		result = send_file_process(1,1,(char *)filename);
-		
-		rt_free(arg);
+		result = send_file_process(file);
+
+		if(arg != RT_NULL)
+		{
+			rt_free(arg);
+		}
 	}
 
 	file_complete_callback((void *)&result);
@@ -661,7 +668,14 @@ rt_uint8_t net_recv_filerq_process(net_recvmsg_p mail)
 {	
 	volatile rt_uint8_t result = 1;
 	rt_uint32_t  PackNum = 0;
-	
+	rt_thread_t	 thread_id;
+	//在上传文件
+	thread_id = rt_thread_find("Upload");
+	if(thread_id != RT_NULL)
+	{
+		return 1;
+	}
+	//已经在接收文件
 	if(net_event_process(1,NET_ENVET_FILERQ) == 0)
 	{
 		rt_kprintf("Being Receive File\n");
@@ -736,6 +750,7 @@ rt_uint8_t net_file_packdata_process(net_recvmsg_p mail)
 							mail->data.filedata.data,mail->lenmap.bit.data-4);*/
 							
 		file_pack_pos_add(NetRecvFileInfo->PackMap,CurWritePos);
+		rt_kprintf("CurWritePos = %d\n",CurWritePos);
 		rt_kprintf("Recv ok Num:%d\n",file_pack_complete(NetRecvFileInfo->PackMap));
 		if(file_pack_complete(NetRecvFileInfo->PackMap) != -1)
 		{
@@ -776,25 +791,26 @@ rt_uint8_t net_file_packdata_process(net_recvmsg_p mail)
 @retval RT_EOK	 :anon_upload_enableyes
 @retval RT_ERROR :can‘nt upload file
 */
-rt_err_t net_upload_file(char *FileName)
+rt_err_t net_upload_file(UploadFile_p File)
 {
   rt_thread_t thread_id;
-  rt_uint8_t 	*name = RT_NULL;
+  UploadFile_p FileInfo;
 
-	name = rt_calloc(1,RT_NAME_MAX);
-	RT_ASSERT(name != RT_NULL);
-	rt_memcpy(name,FileName,RT_NAME_MAX);
+	FileInfo = rt_calloc(1,sizeof(*FileInfo));
+	RT_ASSERT(FileInfo != RT_NULL);
+
+	*FileInfo = *File;
 	
 	thread_id = rt_thread_find("Upload");
   if(thread_id != RT_NULL)
   {
-  	rt_free(name);
+  	rt_free(FileInfo);
 		return RT_ERROR;
   }
   
 	thread_id = rt_thread_create("Upload",
 	                            net_file_entry,
-	                            (void *)name,
+	                            (void *)FileInfo,
 	                            1024,
 	                            111, 
 	                            20);
@@ -810,7 +826,10 @@ rt_err_t net_upload_file(char *FileName)
 
 void send_file(char *FileName)
 {
-	net_upload_file(FileName);
+	UploadFile file;
+
+	rt_memcpy(file.name,FileName,12);
+	net_upload_file(&file);
 }
 FINSH_FUNCTION_EXPORT(send_file,"(FileBName) send test file");
 
