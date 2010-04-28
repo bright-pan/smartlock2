@@ -1346,7 +1346,7 @@ static rt_err_t net_send_wnd_process(net_msgmail_p msg)
 		RT_DEBUG_LOG(SHOW_WND_INFO,("This ACK Message\n"));
 		net_msg_user_delete(msg);
 		
-		return RT_TRUE;
+		return RT_EOK;
 	}
   pos = get_wnd_mail_pos(msg->type);
   if(pos != -1)//have this type mail
@@ -1968,7 +1968,10 @@ void netmsg_thread_entry(void *arg)
 			if(net_event_process(1,NET_ENVET_ONLINE) == 0)
 			{
 				RT_DEBUG_LOG(SHOW_SEND_MSG_INFO,("send heart\n"));
-				//message_ASYN(NET_MSGTYPE_HEART);
+				if(Net_Mail_Heart != RT_NULL)
+				{
+					Net_Mail_Heart();
+				}
 			}
     }
   }
