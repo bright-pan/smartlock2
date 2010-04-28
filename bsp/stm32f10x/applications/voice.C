@@ -145,6 +145,7 @@ static void voice_file_process(const char *file)
   WAVE_FormatTypeDef wav;
   rt_device_t dev;
   VoicePlayData WavDat = {0,};
+  rt_uint32_t filesize = 0;
 
 	RT_DEBUG_LOG(SHOW_PRINTF_INFO,("VoicePlayData      = %d\n",sizeof(VoicePlayData)));
 	RT_DEBUG_LOG(SHOW_PRINTF_INFO,("WAVE_FormatTypeDef = %d\n",sizeof(WAVE_FormatTypeDef)));
@@ -190,6 +191,7 @@ static void voice_file_process(const char *file)
     if(WavDat.ReadyBuf1 == 1)
     {
        WavDat.PlaySize1 = read(FileID,(void *)WavDat.buffer1,WavDat.BufSize*2);
+       filesize += WavDat.PlaySize1;
        if(WavDat.PlaySize1 != WavDat.BufSize*2)
        {
           rt_device_close(dev);
@@ -201,6 +203,7 @@ static void voice_file_process(const char *file)
     else if(WavDat.ReadyBuf2 == 1)
     {
       WavDat.PlaySize2 = read(FileID,(void *)WavDat.buffer2,WavDat.BufSize*2);
+      filesize += WavDat.PlaySize1;
       if(WavDat.PlaySize2 != WavDat.BufSize*2)
       {
         rt_device_close(dev);
@@ -209,6 +212,7 @@ static void voice_file_process(const char *file)
       WavDat.PlaySize2 /= 2;
       WavDat.ReadyBuf2 = 2;
     }
+    //rt_kprintf("filesize = %d\n",filesize);
   }
   
   RT_DEBUG_LOG(SHOW_PRINTF_INFO,("RIFFchunksize %c%c%c%c\n",
