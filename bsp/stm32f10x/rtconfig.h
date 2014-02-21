@@ -18,6 +18,7 @@
 /* Thread Debug */
 #define RT_DEBUG
 #define RT_THREAD_DEBUG
+#define RT_DEBUG_INIT 1
 
 #define RT_USING_OVERFLOW_CHECK
 
@@ -25,7 +26,7 @@
 #define RT_USING_HOOK
 
 /* Using Software Timer */
-/* #define RT_USING_TIMER_SOFT */
+#define RT_USING_TIMER_SOFT
 #define RT_TIMER_THREAD_PRIO		4
 #define RT_TIMER_THREAD_STACK_SIZE	512
 #define RT_TIMER_TICK_PER_SECOND	10
@@ -66,6 +67,10 @@
 #define RT_USING_DEVICE_IPC
 // <bool name="RT_USING_SERIAL" description="Using Serial" default="true" />
 #define RT_USING_SERIAL
+// <bool name="RT_USING_SERIAL" description="Using Serial" default="true" />
+#define RT_USING_SPI
+#define RT_USING_RTC
+
 
 /* SECTION: Console options */
 #define RT_USING_CONSOLE
@@ -81,7 +86,7 @@
 #define FINSH_USING_DESCRIPTION
 
 /* SECTION: device filesystem */
-/* #define RT_USING_DFS */
+#define RT_USING_DFS
 
 #define RT_USING_DFS_ELMFAT
 /* Reentrancy (thread safe) of the FatFs module.  */
@@ -92,7 +97,7 @@
 /* #define RT_DFS_ELM_CODE_PAGE			936 */
 #define RT_DFS_ELM_MAX_LFN			255
 /* Maximum sector size to be handled. */
-#define RT_DFS_ELM_MAX_SECTOR_SIZE  512
+#define RT_DFS_ELM_MAX_SECTOR_SIZE  4 * 1024
 
 /* the max number of mounted filesystem */
 #define DFS_FILESYSTEMS_MAX			2

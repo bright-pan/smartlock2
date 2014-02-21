@@ -123,7 +123,7 @@ int RTC_Configuration(void)
     return 0;
 }
 
-void rt_hw_rtc_init(void)
+int rt_hw_rtc_init(void)
 {
     rtc.type	= RT_Device_Class_RTC;
 
@@ -134,7 +134,7 @@ void rt_hw_rtc_init(void)
         if ( RTC_Configuration() != 0)
         {
             rt_kprintf("rtc configure fail...\r\n");
-            return ;
+            return 0;
         }
     }
     else
@@ -156,94 +156,6 @@ void rt_hw_rtc_init(void)
 
     rt_device_register(&rtc, "rtc", RT_DEVICE_FLAG_RDWR);
 
-    return;
+    return 0;
 }
-
-#include <time.h>
-#if defined (__IAR_SYSTEMS_ICC__) &&  (__VER__) >= 6020000   /* for IAR 6.2 later Compiler */
-#pragma module_name = "?time"
-time_t (__time32)(time_t *t)                                 /* Only supports 32-bit timestamp */
-#else
-time_t time(time_t* t)
-#endif
-{
-    rt_device_t device;
-    time_t time=0;
-
-    device = rt_device_find("rtc");
-    if (device != RT_NULL)
-    {
-        rt_device_control(device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
-        if (t != RT_NULL) *t = time;
-    }
-
-    return time;
-}
-
-#ifdef RT_USING_FINSH
-#include <finsh.h>
-
-void set_date(rt_uint32_t year, rt_uint32_t month, rt_uint32_t day)
-{
-    time_t now;
-    struct tm* ti;
-    rt_device_t device;
-
-    ti = RT_NULL;
-    /* get current time */
-    time(&now);
-
-    ti = localtime(&now);
-    if (ti != RT_NULL)
-    {
-        ti->tm_year = year - 1900;
-        ti->tm_mon 	= month - 1; /* ti->tm_mon 	= month; 0~11 */
-        ti->tm_mday = day;
-    }
-
-    now = mktime(ti);
-
-    device = rt_device_find("rtc");
-    if (device != RT_NULL)
-    {
-        rt_rtc_control(device, RT_DEVICE_CTRL_RTC_SET_TIME, &now);
-    }
-}
-FINSH_FUNCTION_EXPORT(set_date, set date. e.g: set_date(2010,2,28))
-
-void set_time(rt_uint32_t hour, rt_uint32_t minute, rt_uint32_t second)
-{
-    time_t now;
-    struct tm* ti;
-    rt_device_t device;
-
-    ti = RT_NULL;
-    /* get current time */
-    time(&now);
-
-    ti = localtime(&now);
-    if (ti != RT_NULL)
-    {
-        ti->tm_hour = hour;
-        ti->tm_min 	= minute;
-        ti->tm_sec 	= second;
-    }
-
-    now = mktime(ti);
-    device = rt_device_find("rtc");
-    if (device != RT_NULL)
-    {
-        rt_rtc_control(device, RT_DEVICE_CTRL_RTC_SET_TIME, &now);
-    }
-}
-FINSH_FUNCTION_EXPORT(set_time, set time. e.g: set_time(23,59,59))
-
-void list_date(void)
-{
-    time_t now;
-
-    time(&now);
-    rt_kprintf("%s\n", ctime(&now));
-}
-FINSH_FUNCTION_EXPORT(list_date, show date and time.)
-#endif
+INIT_DEVICE_EXPORT(rt_hw_rtc_init);
