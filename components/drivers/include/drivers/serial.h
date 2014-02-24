@@ -55,6 +55,11 @@
 #define NRZ_NORMAL                      0       /* Non Return to Zero : normal mode */
 #define NRZ_INVERTED                    1       /* Non Return to Zero : inverted mode */
 
+#define HW_CONTROL_NONE                 0
+#define HW_CONTROL_RTS                  1
+#define HW_CONTROL_CTS                  2
+#define HW_CONTROL_RTS_CTS              3
+
 #ifndef RT_SERIAL_RB_BUFSZ
 #define RT_SERIAL_RB_BUFSZ              64
 #endif
@@ -75,15 +80,16 @@
 #define RT_SERIAL_TX_DATAQUEUE_LWM      30
 
 /* Default config for serial_configure structure */
-#define RT_SERIAL_CONFIG_DEFAULT           \
-{                                          \
-    BAUD_RATE_115200, /* 115200 bits/s */  \
-    DATA_BITS_8,      /* 8 databits */     \
-    STOP_BITS_1,      /* 1 stopbit */      \
-    PARITY_NONE,      /* No parity  */     \
-    BIT_ORDER_LSB,    /* LSB first sent */ \
-    NRZ_NORMAL,       /* Normal mode */    \
-    0                                      \
+#define RT_SERIAL_CONFIG_DEFAULT            \
+{                                           \
+    BAUD_RATE_115200, /* 115200 bits/s */   \
+    DATA_BITS_8,      /* 8 databits */      \
+    STOP_BITS_1,      /* 1 stopbit */       \
+    PARITY_NONE,      /* No parity  */      \
+    BIT_ORDER_LSB,    /* LSB first sent */  \
+    NRZ_NORMAL,       /* Normal mode */     \
+    HW_CONTROL_NONE,  /* Hardware control */\
+    0                                       \
 }
 
 struct serial_ringbuffer
@@ -100,7 +106,8 @@ struct serial_configure
     rt_uint32_t parity                  :2;
     rt_uint32_t bit_order               :1;
     rt_uint32_t invert                  :1;
-    rt_uint32_t reserved                :20;
+    rt_uint32_t hw_control              :2;
+    rt_uint32_t reserved                :18;
 };
 
 struct rt_serial_device
