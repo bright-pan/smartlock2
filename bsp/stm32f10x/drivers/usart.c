@@ -67,7 +67,7 @@ static rt_err_t stm32_configure(struct rt_serial_device *serial, struct serial_c
     RT_ASSERT(cfg != RT_NULL);
 
     uart = (struct stm32_uart *)serial->parent.user_data;
-
+    USART_StructInit(&USART_InitStructure);
     USART_InitStructure.USART_BaudRate = cfg->baud_rate;
 
     if (cfg->data_bits == DATA_BITS_8)
@@ -78,8 +78,18 @@ static rt_err_t stm32_configure(struct rt_serial_device *serial, struct serial_c
     else if (cfg->stop_bits == STOP_BITS_2)
         USART_InitStructure.USART_StopBits = USART_StopBits_2;
 
-    USART_InitStructure.USART_Parity = USART_Parity_No;
-    USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+    if (cfg->parity == PARITY_NONE)
+        USART_InitStructure.USART_Parity = USART_Parity_No;
+    else if (cfg->parity == PARITY_EVEN)
+        USART_InitStructure.USART_Parity = USART_Parity_Even;
+    else if (cfg->parity == PARITY_ODD)
+        USART_InitStructure.USART_Parity = USART_Parity_Odd;
+    
+    if (cfg->hw_control == HW_CONTROL_NONE)
+        USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+    else if (cfg->hw_control == HW_CONTROL_RTS_CTS)
+        USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_RTS_CTS;
+
     USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
     USART_Init(uart->uart_device, &USART_InitStructure);
 
