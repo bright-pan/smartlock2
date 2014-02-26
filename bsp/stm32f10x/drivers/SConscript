@@ -15,6 +15,7 @@ spiflash.c
 gpio.c
 gpio_pin.c
 gpio_exti.c
+gpio_pwm.c
 """)
 
 # add Ethernet drvers.

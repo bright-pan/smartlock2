@@ -15,6 +15,7 @@
  ********************************************************************/
 
 #include "gpio_pin.h"
+#include "gpio_pwm.h"
 
 struct gpio_pin_user_data
 {
@@ -503,7 +504,7 @@ int rt_hw_led_logo_register(void)
     rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR), gpio_user_data);
     return 0;
 }
-/* camera led device */
+/* camera led device
 struct gpio_pin_user_data camera_led_user_data = 
 {
     DEVICE_NAME_CAMERA_LED,
@@ -524,7 +525,7 @@ int rt_hw_camera_led_register(void)
     gpio_device->ops = &gpio_pin_user_ops;  
     rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR), gpio_user_data);
     return 0;
-}
+} */
 /* camera power device */
 struct gpio_pin_user_data camera_power_user_data = 
 {
@@ -645,7 +646,7 @@ uint8_t gpio_pin_input(char *str)
 INIT_DEVICE_EXPORT(rt_hw_led1_register);
 INIT_DEVICE_EXPORT(rt_hw_led2_register);
 INIT_DEVICE_EXPORT(rt_hw_led_logo_register);
-INIT_DEVICE_EXPORT(rt_hw_camera_led_register);
+//INIT_DEVICE_EXPORT(rt_hw_camera_led_register);
 INIT_DEVICE_EXPORT(rt_hw_camera_power_register);
 INIT_DEVICE_EXPORT(rt_hw_motor_status1_register);
 INIT_DEVICE_EXPORT(rt_hw_motor_status2_register);

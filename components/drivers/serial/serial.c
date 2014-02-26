@@ -25,6 +25,9 @@
  * 2012-11-23     bernard      fix compiler warning.
  * 2013-02-20     bernard      use RT_SERIAL_RB_BUFSZ to define
  *                             the size of ring buffer.
+ * 2014-02-26     bright       use DeviceDriver ringbuffer.
+ *                             add hardware flow support.
+ *                             use new struct serial_ringbuffer.
  */
 
 #include <rthw.h>
