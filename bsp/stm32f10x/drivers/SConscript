@@ -16,6 +16,7 @@ gpio.c
 gpio_pin.c
 gpio_exti.c
 gpio_pwm.c
+gpio_adc.c
 """)
 
 # add Ethernet drvers.

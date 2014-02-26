@@ -12,45 +12,45 @@
  ********************************************************************/
 
 #include "gpio_adc.h"
-#include "funtable.h"
+//#include "funtable.h"
 
 struct gpio_adc_user_data
 {
-  const char name[RT_NAME_MAX];
-  /* gpio */
-  GPIO_TypeDef* gpiox;//port
-  rt_uint16_t gpio_pinx;//pin
-  GPIOMode_TypeDef gpio_mode;//mode
-  GPIOSpeed_TypeDef gpio_speed;//speed
-  rt_uint32_t gpio_clock;//clock
-  /* adc */
-  ADC_TypeDef *adcx;//tim[1-8]
-  rt_uint32_t adc_clock_div;
-  rt_uint32_t adc_rcc;
-  rt_uint8_t adc_channel;
-  rt_uint8_t adc_channel_rank;
-  rt_uint32_t adc_mode;
-  FunctionalState adc_scan_conv_mode;
-  FunctionalState adc_continuous_conv_mode;
-  rt_uint32_t adc_external_trig_conv;
-  rt_uint32_t adc_data_align;
-  rt_uint8_t adc_nbr_of_channel;
-  rt_uint8_t adc_sample_time;
-  __IO rt_uint16_t adc_converted_value;
-  /* dma */
-  DMA_Channel_TypeDef *dma_channel;
-  rt_uint32_t dma_rcc;
-  rt_uint32_t dma_peripheral_base_address;    
-  rt_uint32_t dma_memory_base_address;
-  rt_uint32_t dma_dir;
-  rt_uint32_t dma_buffer_size;
-  rt_uint32_t dma_peripheral_inc;
-  rt_uint32_t dma_memory_inc;
-  rt_uint32_t dma_peripheral_data_size;
-  rt_uint32_t dma_memory_data_size;
-  rt_uint32_t dma_mode;
-  rt_uint32_t dma_priority;
-  rt_uint32_t dma_m2m;
+    const char name[RT_NAME_MAX];
+    /* gpio */
+    GPIO_TypeDef* gpiox;//port
+    rt_uint16_t gpio_pinx;//pin
+    GPIOMode_TypeDef gpio_mode;//mode
+    GPIOSpeed_TypeDef gpio_speed;//speed
+    rt_uint32_t gpio_clock;//clock
+    /* adc */
+    ADC_TypeDef *adcx;//tim[1-8]
+    rt_uint32_t adc_clock_div;
+    rt_uint32_t adc_rcc;
+    rt_uint8_t adc_channel;
+    rt_uint8_t adc_channel_rank;
+    rt_uint32_t adc_mode;
+    FunctionalState adc_scan_conv_mode;
+    FunctionalState adc_continuous_conv_mode;
+    rt_uint32_t adc_external_trig_conv;
+    rt_uint32_t adc_data_align;
+    rt_uint8_t adc_nbr_of_channel;
+    rt_uint8_t adc_sample_time;
+    __IO rt_uint16_t adc_converted_value;
+    /* dma */
+    DMA_Channel_TypeDef *dma_channel;
+    rt_uint32_t dma_rcc;
+    volatile uint32_t* dma_peripheral_base_address;    
+    rt_uint32_t dma_memory_base_address;
+    rt_uint32_t dma_dir;
+    rt_uint32_t dma_buffer_size;
+    rt_uint32_t dma_peripheral_inc;
+    rt_uint32_t dma_memory_inc;
+    rt_uint32_t dma_peripheral_data_size;
+    rt_uint32_t dma_memory_data_size;
+    rt_uint32_t dma_mode;
+    rt_uint32_t dma_priority;
+    rt_uint32_t dma_m2m;
 };
 /*
  *  GPIO ops function interfaces
@@ -58,54 +58,54 @@ struct gpio_adc_user_data
  */
 static void __gpio_pin_configure(gpio_device *gpio)
 {
-  GPIO_InitTypeDef gpio_init_structure;
-  struct gpio_adc_user_data *user = (struct gpio_adc_user_data*)gpio->parent.user_data;
-  GPIO_StructInit(&gpio_init_structure);
-  RCC_APB2PeriphClockCmd(user->gpio_clock,ENABLE);
-  gpio_init_structure.GPIO_Mode = user->gpio_mode;
-  gpio_init_structure.GPIO_Pin = user->gpio_pinx;
-  gpio_init_structure.GPIO_Speed = user->gpio_speed;
-  GPIO_Init(user->gpiox,&gpio_init_structure);
+    GPIO_InitTypeDef gpio_init_structure;
+    struct gpio_adc_user_data *user = (struct gpio_adc_user_data*)gpio->parent.user_data;
+    GPIO_StructInit(&gpio_init_structure);
+    RCC_APB2PeriphClockCmd(user->gpio_clock,ENABLE);
+    gpio_init_structure.GPIO_Mode = user->gpio_mode;
+    gpio_init_structure.GPIO_Pin = user->gpio_pinx;
+    gpio_init_structure.GPIO_Speed = user->gpio_speed;
+    GPIO_Init(user->gpiox,&gpio_init_structure);
 }
 static void __gpio_dma_configure(gpio_device *gpio)
 {
-  DMA_InitTypeDef dma_init_structure;
-  struct gpio_adc_user_data *user = (struct gpio_adc_user_data*)gpio->parent.user_data;
-  DMA_StructInit(&dma_init_structure);
-  RCC_AHBPeriphClockCmd(user->dma_rcc, ENABLE);
-  /* DMA1 channel1 configuration ----------------------------------------------*/
-  DMA_DeInit(user->dma_channel);
-  dma_init_structure.DMA_PeripheralBaseAddr = user->dma_peripheral_base_address;
-  dma_init_structure.DMA_MemoryBaseAddr = user->dma_memory_base_address;
-  dma_init_structure.DMA_DIR = user->dma_dir;
-  dma_init_structure.DMA_BufferSize = user->dma_buffer_size;
-  dma_init_structure.DMA_PeripheralInc = user->dma_peripheral_inc;
-  dma_init_structure.DMA_MemoryInc = user->dma_memory_inc;
-  dma_init_structure.DMA_PeripheralDataSize = user->dma_peripheral_data_size;
-  dma_init_structure.DMA_MemoryDataSize = user->dma_memory_data_size;
-  dma_init_structure.DMA_Mode = user->dma_mode;
-  dma_init_structure.DMA_Priority = user->dma_priority;
-  dma_init_structure.DMA_M2M = user->dma_m2m;
-  DMA_Init(user->dma_channel, &dma_init_structure);
+    DMA_InitTypeDef dma_init_structure;
+    struct gpio_adc_user_data *user = (struct gpio_adc_user_data*)gpio->parent.user_data;
+    DMA_StructInit(&dma_init_structure);
+    RCC_AHBPeriphClockCmd(user->dma_rcc, ENABLE);
+    /* DMA1 channel1 configuration ----------------------------------------------*/
+    DMA_DeInit(user->dma_channel);
+    dma_init_structure.DMA_PeripheralBaseAddr = (uint32_t)user->dma_peripheral_base_address;
+    dma_init_structure.DMA_MemoryBaseAddr = user->dma_memory_base_address;
+    dma_init_structure.DMA_DIR = user->dma_dir;
+    dma_init_structure.DMA_BufferSize = user->dma_buffer_size;
+    dma_init_structure.DMA_PeripheralInc = user->dma_peripheral_inc;
+    dma_init_structure.DMA_MemoryInc = user->dma_memory_inc;
+    dma_init_structure.DMA_PeripheralDataSize = user->dma_peripheral_data_size;
+    dma_init_structure.DMA_MemoryDataSize = user->dma_memory_data_size;
+    dma_init_structure.DMA_Mode = user->dma_mode;
+    dma_init_structure.DMA_Priority = user->dma_priority;
+    dma_init_structure.DMA_M2M = user->dma_m2m;
+    DMA_Init(user->dma_channel, &dma_init_structure);
 }
 
 static void __gpio_adc_configure(gpio_device *gpio)
 {
-  ADC_InitTypeDef adc_init_structure;
-  struct gpio_adc_user_data *user = (struct gpio_adc_user_data*)gpio->parent.user_data;
-  ADC_StructInit(&adc_init_structure);
-  RCC_ADCCLKConfig(user->adc_clock_div);
-  RCC_APB2PeriphClockCmd(user->adc_rcc, ENABLE);
-  
-  adc_init_structure.ADC_Mode = user->adc_mode;
-  adc_init_structure.ADC_ScanConvMode = user->adc_scan_conv_mode;
-  adc_init_structure.ADC_ContinuousConvMode = user->adc_continuous_conv_mode;
-  adc_init_structure.ADC_ExternalTrigConv = user->adc_external_trig_conv;
-  adc_init_structure.ADC_DataAlign = user->adc_data_align;
-  adc_init_structure.ADC_NbrOfChannel = user->adc_nbr_of_channel;
-  ADC_Init(user->adcx, &adc_init_structure);
-  /* ADC1 regular channel14 configuration */
-  ADC_RegularChannelConfig(user->adcx, user->adc_channel, user->adc_channel_rank, user->adc_sample_time);
+    ADC_InitTypeDef adc_init_structure;
+    struct gpio_adc_user_data *user = (struct gpio_adc_user_data*)gpio->parent.user_data;
+    ADC_StructInit(&adc_init_structure);
+    RCC_ADCCLKConfig(user->adc_clock_div);
+    RCC_APB2PeriphClockCmd(user->adc_rcc, ENABLE);
+
+    adc_init_structure.ADC_Mode = user->adc_mode;
+    adc_init_structure.ADC_ScanConvMode = user->adc_scan_conv_mode;
+    adc_init_structure.ADC_ContinuousConvMode = user->adc_continuous_conv_mode;
+    adc_init_structure.ADC_ExternalTrigConv = user->adc_external_trig_conv;
+    adc_init_structure.ADC_DataAlign = user->adc_data_align;
+    adc_init_structure.ADC_NbrOfChannel = user->adc_nbr_of_channel;
+    ADC_Init(user->adcx, &adc_init_structure);
+    /* ADC1 regular channel14 configuration */
+    ADC_RegularChannelConfig(user->adcx, user->adc_channel, user->adc_channel_rank, user->adc_sample_time);
 }
 
 /*
@@ -113,13 +113,13 @@ static void __gpio_adc_configure(gpio_device *gpio)
  */
 rt_err_t gpio_adc_configure(gpio_device *gpio)
 {	
-  __gpio_pin_configure(gpio);
-  if (gpio->parent.flag & RT_DEVICE_FLAG_DMA_RX)
-  {
-    __gpio_dma_configure(gpio);
-  }
-  __gpio_adc_configure(gpio);
-  return RT_EOK;
+    __gpio_pin_configure(gpio);
+    if (gpio->parent.flag & RT_DEVICE_FLAG_DMA_RX)
+    {
+        __gpio_dma_configure(gpio);
+    }
+    __gpio_adc_configure(gpio);
+    return RT_EOK;
 }
 rt_err_t gpio_adc_control(gpio_device *gpio, rt_uint8_t cmd, void *arg)
 {
@@ -218,122 +218,75 @@ rt_uint8_t gpio_adc_intput(gpio_device *gpio)
 
 struct rt_gpio_ops gpio_adc_user_ops= 
 {
-  gpio_adc_configure,
-  gpio_adc_control,
-  gpio_adc_out,
-  gpio_adc_intput
+    gpio_adc_configure,
+    gpio_adc_control,
+    gpio_adc_out,
+    gpio_adc_intput
 };
-struct gpio_adc_user_data adc11_user_data = 
+struct gpio_adc_user_data camera_light_user_data = 
 {
-  "adc11",
-  /* gpio */
-  GPIOC,
-  GPIO_Pin_1,
-  GPIO_Mode_AIN,
-  GPIO_Speed_50MHz,
-  RCC_APB2Periph_GPIOC,
-  /* adc */
-  ADC1,
-  RCC_PCLK2_Div8,
-  RCC_APB2Periph_ADC1,
-  ADC_Channel_11,
-  1, //adc_channel_rank
-  ADC_Mode_Independent,
-  DISABLE,
-  ENABLE,
-  ADC_ExternalTrigConv_None,
-  ADC_DataAlign_Right,
-  1, //adc_nbr_of_channel
-  ADC_SampleTime_55Cycles5,
-  0, //adc_converted_value
-  /* dma */
-  DMA1_Channel1,
-  RCC_AHBPeriph_DMA1,
-  (uint32_t)&(ADC1->DR),
-  0,
-  DMA_DIR_PeripheralSRC,
-  1,//dma_buffer_size
-  DMA_PeripheralInc_Disable,
-  DMA_MemoryInc_Disable,
-  DMA_PeripheralDataSize_HalfWord,
-  DMA_MemoryDataSize_HalfWord,
-  DMA_Mode_Circular,//dma_mode
-  DMA_Priority_High,//dma_priority
-  DMA_M2M_Disable,//dma_m2m
+    DEVICE_NAME_CAMERA_LIGHT,
+    /* gpio */
+    GPIOC,
+    GPIO_Pin_4,
+    GPIO_Mode_AIN,
+    GPIO_Speed_50MHz,
+    RCC_APB2Periph_GPIOC,
+    /* adc */
+    ADC1,
+    RCC_PCLK2_Div8,
+    RCC_APB2Periph_ADC1,
+    ADC_Channel_14,
+    1, //adc_channel_rank
+    ADC_Mode_Independent,
+    DISABLE,
+    ENABLE,
+    ADC_ExternalTrigConv_None,
+    ADC_DataAlign_Right,
+    1, //adc_nbr_of_channel
+    ADC_SampleTime_55Cycles5,
+    0, //adc_converted_value
+    /* dma */
+    DMA1_Channel1,
+    RCC_AHBPeriph_DMA1,
+    &(ADC1->DR),
+    0,
+    DMA_DIR_PeripheralSRC,
+    1,//dma_buffer_size
+    DMA_PeripheralInc_Disable,
+    DMA_MemoryInc_Disable,
+    DMA_PeripheralDataSize_HalfWord,
+    DMA_MemoryDataSize_HalfWord,
+    DMA_Mode_Circular,//dma_mode
+    DMA_Priority_High,//dma_priority
+    DMA_M2M_Disable,//dma_m2m
 };
 
-gpio_device adc11_device;
+gpio_device camera_light_device;
 
-void rt_hw_adc11_register(void)
+int rt_hw_camera_light_register(void)
 {
-  gpio_device *adc_device = &adc11_device;
-  struct gpio_adc_user_data *adc_user_data = &adc11_user_data;
-  adc_user_data->dma_memory_base_address = (uint32_t)&(adc_user_data->adc_converted_value);
-  adc_device->ops = &gpio_adc_user_ops;
-  rt_hw_gpio_register(adc_device,adc_user_data->name, (RT_DEVICE_FLAG_RDONLY | RT_DEVICE_FLAG_DMA_RX), adc_user_data);
+    gpio_device *adc_device = &camera_light_device;
+    struct gpio_adc_user_data *adc_user_data = &camera_light_user_data;
+    adc_user_data->dma_memory_base_address = (uint32_t)&(adc_user_data->adc_converted_value);
+    adc_device->ops = &gpio_adc_user_ops;
+    rt_hw_gpio_register(adc_device,adc_user_data->name, (RT_DEVICE_FLAG_RDONLY | RT_DEVICE_FLAG_DMA_RX), adc_user_data);
+    return 0;
 }
 
-struct gpio_adc_user_data battery_adc_user_data = 
-{
-  DEVICE_NAME_BATTERY_ADC,
-  /* gpio */
-  GPIOC,
-  GPIO_Pin_0,
-  GPIO_Mode_AIN,
-  GPIO_Speed_50MHz,
-  RCC_APB2Periph_GPIOC,
-  /* adc */
-  ADC1,
-  RCC_PCLK2_Div8,
-  RCC_APB2Periph_ADC1,
-  ADC_Channel_10,
-  1, //adc_channel_rank
-  ADC_Mode_Independent,
-  DISABLE,
-  ENABLE,
-  ADC_ExternalTrigConv_None,
-  ADC_DataAlign_Right,
-  1, //adc_nbr_of_channel
-  ADC_SampleTime_55Cycles5,
-  0, //adc_converted_value
-  /* dma */
-  DMA1_Channel1,
-  RCC_AHBPeriph_DMA1,
-  (uint32_t)&(ADC1->DR),
-  0,
-  DMA_DIR_PeripheralSRC,
-  1,//dma_buffer_size
-  DMA_PeripheralInc_Disable,
-  DMA_MemoryInc_Disable,
-  DMA_PeripheralDataSize_HalfWord,
-  DMA_MemoryDataSize_HalfWord,
-  DMA_Mode_Circular,//dma_mode
-  DMA_Priority_High,//dma_priority
-  DMA_M2M_Disable,//dma_m2m
-};
+INIT_DEVICE_EXPORT(rt_hw_camera_light_register);
 
-gpio_device battery_adc_device;
-
-void rt_hw_battery_adc_register(void)
-{
-  gpio_device *adc_device = &battery_adc_device;
-  struct gpio_adc_user_data *adc_user_data = &battery_adc_user_data;
-  adc_user_data->dma_memory_base_address = (uint32_t)&(adc_user_data->adc_converted_value);
-  adc_device->ops = &gpio_adc_user_ops;
-  rt_hw_gpio_register(adc_device,adc_user_data->name, (RT_DEVICE_FLAG_RDONLY | RT_DEVICE_FLAG_DMA_RX), adc_user_data);
-}
-
-uint16_t bat_get_value(void)
+uint16_t adc_get_value(const char* name)
 {
   rt_uint16_t adc_value;
   rt_device_t device = RT_NULL;
-  device = rt_device_find(DEVICE_NAME_BATTERY_ADC);
+  device = rt_device_find(name);
 
   if (device != RT_NULL)
   {
     rt_device_control(device, RT_DEVICE_CTRL_GET_CONVERT_VALUE, (void *)&adc_value);
 #ifdef RT_USING_FINSH
-    RT_DEBUG_LOG(PRINTF_BATTERY_DATA_INFO,("bat_value = 0x%x\n",adc_value));
+    RT_DEBUG_LOG(1,("bat_value = 0x%x\n",adc_value));
 #endif
   }
   else
@@ -345,12 +298,16 @@ uint16_t bat_get_value(void)
   return adc_value;
 }
 
-void bat_enable(void)
+void adc_enable(const char* name)
 {
   rt_device_t device = RT_NULL;
-  device = rt_device_find(DEVICE_NAME_BATTERY_ADC);
+  device = rt_device_find(name);
   if (device != RT_NULL)
   {
+    if (device->open_flag == RT_DEVICE_OFLAG_CLOSE)
+    {
+        rt_device_open(device, RT_DEVICE_OFLAG_RDWR);
+    }
     rt_device_control(device, RT_DEVICE_CTRL_ENABLE_CONVERT, (void *)0);
 #ifdef RT_USING_FINSH
     rt_kprintf("bat is starting convert!\n");
@@ -364,10 +321,10 @@ void bat_enable(void)
   }
 }
 
-void bat_disable(void)
+void adc_disable(const char* name)
 {
   rt_device_t device = RT_NULL;
-  device = rt_device_find(DEVICE_NAME_BATTERY_ADC);
+  device = rt_device_find(name);
   if (device != RT_NULL)
   {
     rt_device_control(device, RT_DEVICE_CTRL_DISABLE_CONVERT, (void *)0);
@@ -385,69 +342,7 @@ void bat_disable(void)
 
 #ifdef RT_USING_FINSH
 #include <finsh.h>
-void adc11_get_value(void)
-{
-  rt_uint16_t adc_value;
-  rt_device_t device = RT_NULL;
-  device = rt_device_find("adc11");
-
-  if (device != RT_NULL)
-  {
-    rt_device_control(device, RT_DEVICE_CTRL_GET_CONVERT_VALUE, (void *)&adc_value);
-#ifdef RT_USING_FINSH
-    rt_kprintf("adc11_value = 0x%x\n",adc_value);
-#endif
-  }
-  else
-  {
-#ifdef RT_USING_FINSH
-    rt_kprintf("the device is not found!\n");
-#endif
-  }
-}
-FINSH_FUNCTION_EXPORT(adc11_get_value, get adc11 converted value)
-
-void adc11_enable(void)
-{
-  rt_device_t device = RT_NULL;
-  device = rt_device_find("adc11");
-  if (device != RT_NULL)
-  {
-    rt_device_control(device, RT_DEVICE_CTRL_ENABLE_CONVERT, (void *)0);
-#ifdef RT_USING_FINSH
-    rt_kprintf("adc11 is starting convert!\n");
-#endif  
-  }
-  else
-  {
-#ifdef RT_USING_FINSH
-    rt_kprintf("the device is not found!\n");
-#endif
-  }
-}
-FINSH_FUNCTION_EXPORT(adc11_enable, enable adc11 convert)
-
-void adc11_disable(void)
-{
-  rt_device_t device = RT_NULL;
-  device = rt_device_find("adc11");
-  if (device != RT_NULL)
-  {
-    rt_device_control(device, RT_DEVICE_CTRL_DISABLE_CONVERT, (void *)0);
-#ifdef RT_USING_FINSH
-    rt_kprintf("adc11 is stoped convert!\n");
-#endif  
-  }
-  else
-  {
-#ifdef RT_USING_FINSH
-    rt_kprintf("the device is not found!\n");
-#endif
-  }
-}
-FINSH_FUNCTION_EXPORT(adc11_disable, disable adc11 convert)
-
-FINSH_FUNCTION_EXPORT(bat_get_value, get bat converted value)
-FINSH_FUNCTION_EXPORT(bat_enable, enable bat convert)
-FINSH_FUNCTION_EXPORT(bat_disable, disable bat convert)
+FINSH_FUNCTION_EXPORT(adc_get_value, adc_get_value[name]get bat converted value)
+FINSH_FUNCTION_EXPORT(adc_enable, adc_enable[name]enable bat convert)
+FINSH_FUNCTION_EXPORT(adc_disable, adc_disable[name]disable bat convert)
 #endif
