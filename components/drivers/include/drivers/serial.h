@@ -29,6 +29,7 @@
 #define __SERIAL_H__
 
 #include <rtthread.h>
+#include <rtdevice.h>
 
 #define BAUD_RATE_4800                  4800
 #define BAUD_RATE_9600                  9600
@@ -94,8 +95,9 @@
 
 struct serial_ringbuffer
 {
-    rt_uint8_t  buffer[RT_SERIAL_RB_BUFSZ];
-    rt_uint16_t put_index, get_index;
+    struct rt_ringbuffer    rb;
+    rt_uint8_t              *pool;
+    rt_uint16_t             size;
 };
 
 struct serial_configure

@@ -240,6 +240,8 @@ __STATIC_INLINE void serial_device_isr(struct rt_serial_device *serial)
 #if defined(RT_USING_UART1)
 /* UART1 device driver structure */
 struct serial_ringbuffer uart1_int_rx;
+#define UART1_POOL_SIZE 64
+rt_uint8_t uart1_pool[UART1_POOL_SIZE];
 struct stm32_uart uart1 =
 {
     USART1,
@@ -274,6 +276,8 @@ void USART1_IRQHandler(void)
 #if defined(RT_USING_UART2)
 /* UART2 device driver structure */
 struct serial_ringbuffer uart2_int_rx;
+#define UART2_POOL_SIZE 64
+rt_uint8_t uart2_pool[UART2_POOL_SIZE];
 struct stm32_uart uart2 =
 {
     USART2,
@@ -309,6 +313,8 @@ void USART2_IRQHandler(void)
 #if defined(RT_USING_UART3)
 /* UART3 device driver structure */
 struct serial_ringbuffer uart3_int_rx;
+#define UART3_POOL_SIZE 64
+rt_uint8_t uart3_pool[UART3_POOL_SIZE];
 struct stm32_uart uart3 =
 {
     USART3,
@@ -343,6 +349,8 @@ void USART3_IRQHandler(void)
 #if defined(RT_USING_UART4)
 /* UART4 device driver structure */
 struct serial_ringbuffer uart4_int_rx;
+#define UART4_POOL_SIZE 64
+rt_uint8_t uart4_pool[UART4_POOL_SIZE];
 struct stm32_uart uart4 =
 {
     UART4,
@@ -377,6 +385,8 @@ void UART4_IRQHandler(void)
 #if defined(RT_USING_UART5)
 /* UART5 device driver structure */
 struct serial_ringbuffer uart5_int_rx;
+#define UART5_POOL_SIZE 64
+rt_uint8_t uart5_pool[UART5_POOL_SIZE];
 struct stm32_uart uart5 =
 {
     UART5,
@@ -538,6 +548,9 @@ void rt_hw_usart_init(void)
     uart = &uart1;
     serial = &serial1;
     
+    uart1_int_rx.pool = uart1_pool;
+    uart1_int_rx.size = UART1_POOL_SIZE;
+    
     config.baud_rate = BAUD_RATE_115200;
 
     serial->ops    = &stm32_uart_ops;
@@ -558,6 +571,9 @@ void rt_hw_usart_init(void)
     uart = &uart2;
     serial = &serial2;
     
+    uart2_int_rx.pool = uart2_pool;
+    uart2_int_rx.size = UART2_POOL_SIZE;
+
     config.baud_rate = BAUD_RATE_115200;
 
     serial->ops    = &stm32_uart_ops;
@@ -578,6 +594,9 @@ void rt_hw_usart_init(void)
     uart = &uart3;
     serial = &serial3;
     
+    uart3_int_rx.pool = uart3_pool;
+    uart3_int_rx.size = UART3_POOL_SIZE;
+
     config.baud_rate = BAUD_RATE_115200;
 
     serial->ops    = &stm32_uart_ops;
@@ -598,6 +617,9 @@ void rt_hw_usart_init(void)
     uart = &uart4;
     serial = &serial4;
     
+    uart4_int_rx.pool = uart4_pool;
+    uart4_int_rx.size = UART4_POOL_SIZE;
+
     config.baud_rate = BAUD_RATE_115200;
 
     serial->ops    = &stm32_uart_ops;
@@ -618,6 +640,9 @@ void rt_hw_usart_init(void)
     uart = &uart5;
     serial = &serial5;
     
+    uart5_int_rx.pool = uart5_pool;
+    uart5_int_rx.size = UART5_POOL_SIZE;
+
     config.baud_rate = BAUD_RATE_115200;
 
     serial->ops    = &stm32_uart_ops;
