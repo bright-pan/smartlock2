@@ -32,7 +32,11 @@
 
 //#define DEVICE_NAME_MOTOR_STATUS "mt_stat"
 
-#define DEVICE_NAME_KEY_DETECT "k_det"
+#define DEVICE_NAME_SWITCH1 "sw1"
+#define DEVICE_NAME_SWITCH2 "sw2"
+#define DEVICE_NAME_SWITCH3 "sw3"
+
+#define DEVICE_NAME_KEY "key"
 
 //#define DEVICE_NAME_BATTERY_SWITCH "bat_sw" /* BATTERY DEVICE NAME */
 
@@ -41,8 +45,20 @@
 #define RT_DEVICE_CTRL_MASK_EXTI 0x15    /* mask exti */
 #define RT_DEVICE_CTRL_UNMASK_EXTI  0x16    /* unmask exti */
 
+#define SWITCH1_EXTI_TRIGGER_MODE EXTI_Trigger_Rising
+#define SWITCH1_STATUS 1
+#define SWITCH1_INT_INTERVAL 100
+
+#define SWITCH2_EXTI_TRIGGER_MODE EXTI_Trigger_Rising
+#define SWITCH2_STATUS 1
+#define SWITCH2_INT_INTERVAL 100
+
+#define SWITCH3_EXTI_TRIGGER_MODE EXTI_Trigger_Rising
+#define SWITCH3_STATUS 1
+#define SWITCH3_INT_INTERVAL 100
+
 #define KEY_EXTI_TRIGGER_MODE EXTI_Trigger_Rising
-#define KEY_DETECT_STATUS 1
+#define KEY_STATUS 1
 #define KEY_INT_INTERVAL 100
 
 //#define GSM_RING_EXTI_TRIGGER_MODE EXTI_Trigger_Rising

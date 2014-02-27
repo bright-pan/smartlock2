@@ -178,11 +178,11 @@ struct rt_gpio_ops gpio_exti_user_ops=
  *
  *******************************************************/
 
-/* key detect device pd10 */
-gpio_device key_detect_device;
-rt_timer_t key_detect_exti_timer = RT_NULL;
+/* switch1 device */
+gpio_device switch1_device;
+rt_timer_t switch1_exti_timer = RT_NULL;
 
-void key_detect_exti_timeout(void *parameters)
+void switch1_exti_timeout(void *parameters)
 {
 
   //time_t time;
@@ -190,43 +190,43 @@ void key_detect_exti_timeout(void *parameters)
   rt_device_t device = RT_NULL;
   uint8_t data;
 
-  device = rt_device_find(DEVICE_NAME_KEY_DETECT);
+  device = rt_device_find(DEVICE_NAME_SWITCH1);
   if (device != RT_NULL)
   {
     rt_device_read(device,0,&data,0);
-    if (data == KEY_DETECT_STATUS) // rfid key is plugin
+    if (data == SWITCH1_STATUS) // rfid key is plugin
     {
             rt_kprintf("it is key detect!\n");
       // produce mail
       //rt_device_control(rtc_device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
 
       // send mail
-      //send_alarm_mail(ALARM_TYPE_RFID_KEY_DETECT, ALARM_PROCESS_FLAG_LOCAL, RFID_KEY_DETECT_STATUS, time);
+      //send_alarm_mail(ALARM_TYPE_RFID_switch1, ALARM_PROCESS_FLAG_LOCAL, RFID_switch1_STATUS, time);
     }
     rt_device_control(device, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0);
   }
 
-  rt_timer_stop(key_detect_exti_timer);
+  rt_timer_stop(switch1_exti_timer);
 }
 
 
-rt_err_t key_detect_rx_ind(rt_device_t dev, rt_size_t size)
+rt_err_t switch1_rx_ind(rt_device_t dev, rt_size_t size)
 {
   //gpio_device *gpio = RT_NULL;
   //gpio = (gpio_device *)dev;
   rt_device_t device = RT_NULL;
 
-  device = rt_device_find(DEVICE_NAME_KEY_DETECT);
+  device = rt_device_find(DEVICE_NAME_SWITCH1);
   RT_ASSERT(device != RT_NULL);
   rt_device_control(device, RT_DEVICE_CTRL_MASK_EXTI, (void *)0);
-  rt_timer_start(key_detect_exti_timer);
+  rt_timer_start(switch1_exti_timer);
 	
   return RT_EOK;
 }
 
-struct gpio_exti_user_data key_detect_user_data = 
+struct gpio_exti_user_data switch1_user_data = 
 {
-  DEVICE_NAME_KEY_DETECT,
+  DEVICE_NAME_SWITCH1,
   GPIOE,
   GPIO_Pin_7,
   GPIO_Mode_IN_FLOATING,
@@ -236,31 +236,279 @@ struct gpio_exti_user_data key_detect_user_data =
   GPIO_PinSource7,
   EXTI_Line7,
   EXTI_Mode_Interrupt,
-  KEY_EXTI_TRIGGER_MODE,
+  SWITCH1_EXTI_TRIGGER_MODE,
   EXTI9_5_IRQn,
   1,
   5,
-  key_detect_rx_ind,
+  switch1_rx_ind,
 };
 
-int rt_hw_key_detect_register(void)
+int rt_hw_switch1_register(void)
 {
-    gpio_device *gpio_device = &key_detect_device;
-    struct gpio_exti_user_data *gpio_user_data = &key_detect_user_data;
+    gpio_device *gpio_device = &switch1_device;
+    struct gpio_exti_user_data *gpio_user_data = &switch1_user_data;
 
     gpio_device->ops = &gpio_exti_user_ops;
 
     rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX), gpio_user_data);
-    key_detect_exti_timer = rt_timer_create("k_exti",
-                                           key_detect_exti_timeout,
+    switch1_exti_timer = rt_timer_create("t_sw1",
+                                           switch1_exti_timeout,
                                            RT_NULL,
-                                           KEY_INT_INTERVAL,
+                                           SWITCH1_INT_INTERVAL,
                                            RT_TIMER_FLAG_ONE_SHOT);
     rt_device_set_rx_indicate((rt_device_t)gpio_device, gpio_user_data->gpio_exti_rx_indicate);
 
     return 0;
 }
 
+/* switch2 device */
+gpio_device switch2_device;
+rt_timer_t switch2_exti_timer = RT_NULL;
+
+void switch2_exti_timeout(void *parameters)
+{
+
+  //time_t time;
+
+  rt_device_t device = RT_NULL;
+  uint8_t data;
+
+  device = rt_device_find(DEVICE_NAME_SWITCH2);
+  if (device != RT_NULL)
+  {
+    rt_device_read(device,0,&data,0);
+    if (data == SWITCH2_STATUS) // rfid key is plugin
+    {
+            rt_kprintf("it is key detect!\n");
+      // produce mail
+      //rt_device_control(rtc_device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
+
+      // send mail
+      //send_alarm_mail(ALARM_TYPE_RFID_switch2, ALARM_PROCESS_FLAG_LOCAL, RFID_switch2_STATUS, time);
+    }
+    rt_device_control(device, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0);
+  }
+
+  rt_timer_stop(switch2_exti_timer);
+}
+
+
+rt_err_t switch2_rx_ind(rt_device_t dev, rt_size_t size)
+{
+  //gpio_device *gpio = RT_NULL;
+  //gpio = (gpio_device *)dev;
+  rt_device_t device = RT_NULL;
+
+  device = rt_device_find(DEVICE_NAME_SWITCH2);
+  RT_ASSERT(device != RT_NULL);
+  rt_device_control(device, RT_DEVICE_CTRL_MASK_EXTI, (void *)0);
+  rt_timer_start(switch2_exti_timer);
+	
+  return RT_EOK;
+}
+
+struct gpio_exti_user_data switch2_user_data = 
+{
+    DEVICE_NAME_SWITCH2,
+    GPIOE,
+    GPIO_Pin_8,
+    GPIO_Mode_IN_FLOATING,
+    GPIO_Speed_50MHz,
+    RCC_APB2Periph_GPIOE |RCC_APB2Periph_AFIO,
+    GPIO_PortSourceGPIOE,
+    GPIO_PinSource8,
+    EXTI_Line8,
+    EXTI_Mode_Interrupt,
+    SWITCH2_EXTI_TRIGGER_MODE,
+    EXTI9_5_IRQn,
+    1,
+    5,
+    switch2_rx_ind,
+};
+
+int rt_hw_switch2_register(void)
+{
+    gpio_device *gpio_device = &switch2_device;
+    struct gpio_exti_user_data *gpio_user_data = &switch2_user_data;
+
+    gpio_device->ops = &gpio_exti_user_ops;
+
+    rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX), gpio_user_data);
+    switch2_exti_timer = rt_timer_create("t_sw2",
+                                           switch2_exti_timeout,
+                                           RT_NULL,
+                                           SWITCH2_INT_INTERVAL,
+                                           RT_TIMER_FLAG_ONE_SHOT);
+    rt_device_set_rx_indicate((rt_device_t)gpio_device, gpio_user_data->gpio_exti_rx_indicate);
+
+    return 0;
+}
+
+/* switch3 device */
+gpio_device switch3_device;
+rt_timer_t switch3_exti_timer = RT_NULL;
+
+void switch3_exti_timeout(void *parameters)
+{
+
+  //time_t time;
+
+  rt_device_t device = RT_NULL;
+  uint8_t data;
+
+  device = rt_device_find(DEVICE_NAME_SWITCH3);
+  if (device != RT_NULL)
+  {
+    rt_device_read(device,0,&data,0);
+    if (data == SWITCH3_STATUS) // rfid key is plugin
+    {
+            rt_kprintf("it is key detect!\n");
+      // produce mail
+      //rt_device_control(rtc_device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
+
+      // send mail
+      //send_alarm_mail(ALARM_TYPE_RFID_switch2, ALARM_PROCESS_FLAG_LOCAL, RFID_switch2_STATUS, time);
+    }
+    rt_device_control(device, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0);
+  }
+
+  rt_timer_stop(switch3_exti_timer);
+}
+
+
+rt_err_t switch3_rx_ind(rt_device_t dev, rt_size_t size)
+{
+  //gpio_device *gpio = RT_NULL;
+  //gpio = (gpio_device *)dev;
+  rt_device_t device = RT_NULL;
+
+  device = rt_device_find(DEVICE_NAME_SWITCH3);
+  RT_ASSERT(device != RT_NULL);
+  rt_device_control(device, RT_DEVICE_CTRL_MASK_EXTI, (void *)0);
+  rt_timer_start(switch3_exti_timer);
+	
+  return RT_EOK;
+}
+
+struct gpio_exti_user_data switch3_user_data = 
+{
+  DEVICE_NAME_SWITCH2,
+  GPIOE,
+  GPIO_Pin_9,
+  GPIO_Mode_IN_FLOATING,
+  GPIO_Speed_50MHz,
+  RCC_APB2Periph_GPIOE |RCC_APB2Periph_AFIO,
+  GPIO_PortSourceGPIOE,
+  GPIO_PinSource9,
+  EXTI_Line9,
+  EXTI_Mode_Interrupt,
+  SWITCH3_EXTI_TRIGGER_MODE,
+  EXTI9_5_IRQn,
+  1,
+  5,
+  switch3_rx_ind,
+};
+
+int rt_hw_switch3_register(void)
+{
+    gpio_device *gpio_device = &switch3_device;
+    struct gpio_exti_user_data *gpio_user_data = &switch3_user_data;
+
+    gpio_device->ops = &gpio_exti_user_ops;
+
+    rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX), gpio_user_data);
+    switch3_exti_timer = rt_timer_create("t_sw3",
+                                           switch3_exti_timeout,
+                                           RT_NULL,
+                                           SWITCH3_INT_INTERVAL,
+                                           RT_TIMER_FLAG_ONE_SHOT);
+    rt_device_set_rx_indicate((rt_device_t)gpio_device, gpio_user_data->gpio_exti_rx_indicate);
+
+    return 0;
+}
+
+/* key device */
+gpio_device key_device;
+rt_timer_t key_exti_timer = RT_NULL;
+
+void key_exti_timeout(void *parameters)
+{
+
+  //time_t time;
+
+  rt_device_t device = RT_NULL;
+  uint8_t data;
+
+  device = rt_device_find(DEVICE_NAME_KEY);
+  if (device != RT_NULL)
+  {
+    rt_device_read(device,0,&data,0);
+    if (data == KEY_STATUS) // rfid key is plugin
+    {
+            rt_kprintf("it is key detect!\n");
+      // produce mail
+      //rt_device_control(rtc_device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
+
+      // send mail
+      //send_alarm_mail(ALARM_TYPE_RFID_key, ALARM_PROCESS_FLAG_LOCAL, RFID_key_STATUS, time);
+    }
+    rt_device_control(device, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0);
+  }
+
+  rt_timer_stop(key_exti_timer);
+}
+
+
+rt_err_t key_rx_ind(rt_device_t dev, rt_size_t size)
+{
+  //gpio_device *gpio = RT_NULL;
+  //gpio = (gpio_device *)dev;
+  rt_device_t device = RT_NULL;
+
+  device = rt_device_find(DEVICE_NAME_KEY);
+  RT_ASSERT(device != RT_NULL);
+  rt_device_control(device, RT_DEVICE_CTRL_MASK_EXTI, (void *)0);
+  rt_timer_start(key_exti_timer);
+	
+  return RT_EOK;
+}
+
+struct gpio_exti_user_data key_user_data = 
+{
+  DEVICE_NAME_KEY,
+  GPIOE,
+  GPIO_Pin_15,
+  GPIO_Mode_IN_FLOATING,
+  GPIO_Speed_50MHz,
+  RCC_APB2Periph_GPIOE |RCC_APB2Periph_AFIO,
+  GPIO_PortSourceGPIOE,
+  GPIO_PinSource15,
+  EXTI_Line15,
+  EXTI_Mode_Interrupt,
+  KEY_EXTI_TRIGGER_MODE,
+  EXTI15_10_IRQn,
+  1,
+  5,
+  key_rx_ind,
+};
+
+int rt_hw_key_register(void)
+{
+    gpio_device *gpio_device = &key_device;
+    struct gpio_exti_user_data *gpio_user_data = &key_user_data;
+
+    gpio_device->ops = &gpio_exti_user_ops;
+
+    rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX), gpio_user_data);
+    key_exti_timer = rt_timer_create("t_key",
+                                        key_exti_timeout,
+                                        RT_NULL,
+                                        KEY_INT_INTERVAL,
+                                        RT_TIMER_FLAG_ONE_SHOT);
+    rt_device_set_rx_indicate((rt_device_t)gpio_device, gpio_user_data->gpio_exti_rx_indicate);
+
+    return 0;
+}
 /* motor_status device pd8 */
 /*rt_err_t motor_status_rx_ind(rt_device_t dev, rt_size_t size)
 {
@@ -1072,14 +1320,33 @@ void EXTI9_5_IRQHandler(void)
   /* lock_shell exti isr */
   if(EXTI_GetITStatus(EXTI_Line7) == SET)
   {
-    rt_hw_gpio_isr(&key_detect_device);
+    rt_hw_gpio_isr(&switch1_device);
     EXTI_ClearITPendingBit(EXTI_Line7);
+  }
+  if(EXTI_GetITStatus(EXTI_Line8) == SET)
+  {
+    rt_hw_gpio_isr(&switch2_device);
+    EXTI_ClearITPendingBit(EXTI_Line8);
+  }
+  if(EXTI_GetITStatus(EXTI_Line9) == SET)
+  {
+    rt_hw_gpio_isr(&switch3_device);
+    EXTI_ClearITPendingBit(EXTI_Line9);
+  }
+  if(EXTI_GetITStatus(EXTI_Line15) == SET)
+  {
+    rt_hw_gpio_isr(&key_device);
+    EXTI_ClearITPendingBit(EXTI_Line15);
   }
   /* leave interrupt */
   rt_interrupt_leave();
 }
 
-INIT_DEVICE_EXPORT(rt_hw_key_detect_register);
+INIT_DEVICE_EXPORT(rt_hw_switch1_register);
+INIT_DEVICE_EXPORT(rt_hw_switch2_register);
+INIT_DEVICE_EXPORT(rt_hw_switch3_register);
+
+INIT_DEVICE_EXPORT(rt_hw_key_register);
 
 #ifdef RT_USING_FINSH
 #include <finsh.h>
