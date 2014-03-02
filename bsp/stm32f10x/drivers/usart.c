@@ -153,10 +153,10 @@ static rt_err_t stm32_configure(struct rt_serial_device *serial, struct serial_c
 static rt_err_t stm32_control(struct rt_serial_device *serial, int cmd, void *arg)
 {
     struct stm32_uart* uart;
+    GPIO_InitTypeDef GPIO_InitStructure;
 
     RT_ASSERT(serial != RT_NULL);
     uart = (struct stm32_uart *)serial->parent.user_data;
-
     switch (cmd)
     {
     case RT_DEVICE_CTRL_CLR_INT:
@@ -166,6 +166,20 @@ static rt_err_t stm32_control(struct rt_serial_device *serial, int cmd, void *ar
     case RT_DEVICE_CTRL_SET_INT:
         /* enable rx irq */
         UART_ENABLE_IRQ(uart->irq);
+        break;
+    case RT_DEVICE_CTRL_SET_TX_GPIO:
+        GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+        /* Configure USART tx PIN */
+        GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+        GPIO_InitStructure.GPIO_Pin = uart->uart_tx_pin;
+        GPIO_Init(uart->uart_tx_gpio, &GPIO_InitStructure);
+        break;
+    case RT_DEVICE_CTRL_CLR_TX_GPIO:
+        GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+        /* Configure USART tx PIN */
+        GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+        GPIO_InitStructure.GPIO_Pin = uart->uart_tx_pin;
+        GPIO_Init(uart->uart_tx_gpio, &GPIO_InitStructure);
         break;
     }
 
@@ -620,7 +634,7 @@ void rt_hw_usart_init(void)
     uart4_int_rx.pool = uart4_pool;
     uart4_int_rx.size = UART4_POOL_SIZE;
 
-    config.baud_rate = BAUD_RATE_115200;
+    config.baud_rate = 115200;
 
     serial->ops    = &stm32_uart_ops;
     serial->int_rx = &uart4_int_rx;
@@ -683,10 +697,15 @@ void uart_rw(const char *name, rt_int8_t cmd, const char *str)
             rt_device_read(uart,0,(void *)temp,20);
             rt_kprintf("%s", temp);
         }
-        else
+        else if (cmd == 1)
         {
             rt_kprintf("%s, %d", str, strlen(str));
             rt_device_write(uart,0,str,strlen(str));
+        }
+        else
+        {
+            rt_kprintf("control cmd is %x\n", str[0]);
+            rt_device_control(uart, str[0], (void *)0);
         }
         //rt_device_close(uart);
     }

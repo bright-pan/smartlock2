@@ -39,7 +39,7 @@ struct gpio_pwm_user_data
   rt_uint16_t tim_oc_polarity;
   rt_uint16_t tim_oc_channel;
   rt_uint16_t tim_int_flag;
-  __IO rt_uint16_t tim_pulse_counts;
+  __IO rt_uint32_t tim_pulse_counts;
   rt_uint8_t nvic_channel_1;
   rt_uint8_t nvic_channel_2;  
   rt_uint8_t nvic_preemption_priority;
@@ -187,7 +187,7 @@ rt_err_t gpio_pwm_control(gpio_device *gpio, rt_uint8_t cmd, void *arg)
       }
     case RT_DEVICE_CTRL_SET_PULSE_COUNTS:
       {
-        user->tim_pulse_counts = *(rt_uint16_t *)arg;
+        user->tim_pulse_counts = *(rt_uint32_t *)arg;
         break;
       }
     case RT_DEVICE_CTRL_CONFIG_DEVICE:
@@ -611,7 +611,7 @@ struct gpio_pwm_user_data camera_led_user_data =
     /* timer oc */
     TIM_OCMode_PWM2,
     TIM_OutputState_Enable,
-    900,// pulse value 50%
+    0,// pulse value 50%
     TIM_OCPolarity_High,
     TIM_Channel_2,
     TIM_IT_CC2 | TIM_IT_Update,
@@ -1166,7 +1166,7 @@ INIT_DEVICE_EXPORT(rt_hw_infra_pulse_register);
 
 #ifdef RT_USING_FINSH
 #include <finsh.h>
-void pwm_set_counts(char *str, rt_uint16_t counts)
+void pwm_set_counts(char *str, rt_uint32_t counts)
 {
   rt_device_t device = RT_NULL;
   device = rt_device_find(str);
