@@ -496,7 +496,7 @@ int rt_hw_motor3_register(void)
 /* Motor 4 device */
 struct gpio_pwm_user_data motor4_user_data = 
 {
-    DEVICE_NAME_MOTOR1,
+    DEVICE_NAME_MOTOR4,
     GPIOC,
     GPIO_Pin_9,
     GPIO_Mode_AF_PP,
@@ -611,7 +611,7 @@ struct gpio_pwm_user_data camera_led_user_data =
     /* timer oc */
     TIM_OCMode_PWM2,
     TIM_OutputState_Enable,
-    0,// pulse value 50%
+    900,// pulse value 50%
     TIM_OCPolarity_High,
     TIM_Channel_2,
     TIM_IT_CC2 | TIM_IT_Update,
