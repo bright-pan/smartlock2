@@ -16,6 +16,8 @@
 
 rt_mq_t comm_mq = RT_NULL;
 
+rt_mutex_t comm_mutex = RT_NULL;
+
 void
 comm_thread_entry(void *parameters)
 {
@@ -42,7 +44,7 @@ comm_thread_entry(void *parameters)
 		if (result == RT_EOK)
 		{
 			// process mail
-			rt_kprintf("process mail:\n");
+			rt_kprintf("process comm mail:\n");
 			rt_kprintf("comm_type: %d, length: %d\n", comm_mail_buf.comm_type, comm_mail_buf.len);
 			print_hex(comm_mail_buf.buf, comm_mail_buf.len);
 			// send length data
@@ -54,7 +56,8 @@ comm_thread_entry(void *parameters)
 			rt_device_write(device_comm, 0, comm_mail_buf.buf, comm_mail_buf.len);
 			// send "\r\n"
 			rt_device_write(device_comm, 0, "\r\n", 2);
-			rt_sem_release(comm_mail_buf.result_sem);
+			// free mail buf memory
+			rt_free(comm_mail_buf.buf);
 		}
 		else // time out
 		{
@@ -63,37 +66,45 @@ comm_thread_entry(void *parameters)
 	}
 }
 
-void
+rt_err_t
 send_comm_mail(COMM_TYPE_TYPEDEF comm_type, uint8_t *buf, uint16_t len)
 {
-	rt_err_t result;
+	rt_err_t result = -RT_EFULL;
+	uint8_t *buf_bk = RT_NULL;
 	COMM_MAIL_TYPEDEF comm_mail_buf;
 
 	if (comm_mq != RT_NULL)
 	{
-		rt_memset(&comm_mail_buf, 0, sizeof(comm_mail_buf));
-
-		comm_mail_buf.result_sem = rt_sem_create("s_comm", 0, RT_IPC_FLAG_FIFO);
-		comm_mail_buf.comm_type = comm_type;
-		comm_mail_buf.buf = buf;
-		comm_mail_buf.len = len;
-
-		result = rt_mq_send(comm_mq, &comm_mail_buf, sizeof(comm_mail_buf));
-		if (result == -RT_EFULL)
+		if ((buf_bk = (uint8_t *)rt_malloc(len)) != RT_NULL)
 		{
-			rt_kprintf("comm_mq is full!!!\n");
-		}
-		else
-		{
-			rt_sem_take(comm_mail_buf.result_sem, RT_WAITING_FOREVER);
-		}
 
-		rt_sem_delete(comm_mail_buf.result_sem);
+			rt_memcpy(buf_bk, buf, len);
+
+			rt_memset(&comm_mail_buf, 0, sizeof(comm_mail_buf));
+			comm_mail_buf.result_sem = rt_sem_create("s_comm", 0, RT_IPC_FLAG_FIFO);
+			comm_mail_buf.comm_type = comm_type;
+			comm_mail_buf.buf = buf_bk;
+			comm_mail_buf.len = len;
+
+			result = rt_mq_send(comm_mq, &comm_mail_buf, sizeof(comm_mail_buf));
+			if (result == -RT_EFULL)
+			{
+				rt_kprintf("comm_mq is full!!!\n");
+			}
+			/*
+			else
+			{
+				rt_sem_take(comm_mail_buf.result_sem, RT_WAITING_FOREVER);
+			}
+			rt_sem_delete(comm_mail_buf.result_sem);
+			*/
+		}
 	}
 	else
 	{
 		rt_kprintf("comm_mq is RT_NULL!!!!\n");
 	}
+	return result;
 }
 
 #ifdef RT_USING_FINSH

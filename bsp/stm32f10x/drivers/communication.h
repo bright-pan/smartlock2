@@ -40,11 +40,12 @@ typedef struct {
 }COMM_MAIL_TYPEDEF;
 
 extern rt_mq_t comm_mq;
+extern rt_mutex_t comm_mutex;
 
 void
 comm_thread_entry(void *parameters);
 
-void
+rt_err_t
 send_comm_mail(COMM_TYPE_TYPEDEF comm_type, uint8_t *buf, uint16_t len);
 
 #endif /* _COMMUNICATION_H_ */
