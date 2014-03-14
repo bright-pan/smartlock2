@@ -90,16 +90,16 @@ struct stm32_uart
 {
     USART_TypeDef* uart_device;
     IRQn_Type irq;
-    
-    uint16_t uart_tx_pin;    
+
+    uint16_t uart_tx_pin;
     GPIO_TypeDef *uart_tx_gpio;
 
     uint16_t uart_rx_pin;
     GPIO_TypeDef *uart_rx_gpio;
-    
+
     uint16_t uart_cts_pin;
     GPIO_TypeDef *uart_cts_gpio;
-    
+
     uint16_t uart_rts_pin;
     GPIO_TypeDef *uart_rts_gpio;
 
@@ -133,7 +133,7 @@ static rt_err_t stm32_configure(struct rt_serial_device *serial, struct serial_c
         USART_InitStructure.USART_Parity = USART_Parity_Even;
     else if (cfg->parity == PARITY_ODD)
         USART_InitStructure.USART_Parity = USART_Parity_Odd;
-    
+
     if (cfg->hw_control == HW_CONTROL_NONE)
         USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
     else if (cfg->hw_control == HW_CONTROL_RTS_CTS)
@@ -159,28 +159,28 @@ static rt_err_t stm32_control(struct rt_serial_device *serial, int cmd, void *ar
     uart = (struct stm32_uart *)serial->parent.user_data;
     switch (cmd)
     {
-    case RT_DEVICE_CTRL_CLR_INT:
-        /* disable rx irq */
-        UART_DISABLE_IRQ(uart->irq);
-        break;
-    case RT_DEVICE_CTRL_SET_INT:
-        /* enable rx irq */
-        UART_ENABLE_IRQ(uart->irq);
-        break;
-    case RT_DEVICE_CTRL_SET_TX_GPIO:
-        GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-        /* Configure USART tx PIN */
-        GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
-        GPIO_InitStructure.GPIO_Pin = uart->uart_tx_pin;
-        GPIO_Init(uart->uart_tx_gpio, &GPIO_InitStructure);
-        break;
-    case RT_DEVICE_CTRL_CLR_TX_GPIO:
-        GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-        /* Configure USART tx PIN */
-        GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-        GPIO_InitStructure.GPIO_Pin = uart->uart_tx_pin;
-        GPIO_Init(uart->uart_tx_gpio, &GPIO_InitStructure);
-        break;
+		case RT_DEVICE_CTRL_CLR_INT:
+			/* disable rx irq */
+			UART_DISABLE_IRQ(uart->irq);
+			break;
+		case RT_DEVICE_CTRL_SET_INT:
+			/* enable rx irq */
+			UART_ENABLE_IRQ(uart->irq);
+			break;
+		case RT_DEVICE_CTRL_SET_TX_GPIO:
+			GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+			/* Configure USART tx PIN */
+			GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+			GPIO_InitStructure.GPIO_Pin = uart->uart_tx_pin;
+			GPIO_Init(uart->uart_tx_gpio, &GPIO_InitStructure);
+			break;
+		case RT_DEVICE_CTRL_CLR_TX_GPIO:
+			GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+			/* Configure USART tx PIN */
+			GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+			GPIO_InitStructure.GPIO_Pin = uart->uart_tx_pin;
+			GPIO_Init(uart->uart_tx_gpio, &GPIO_InitStructure);
+			break;
     }
 
     return RT_EOK;
@@ -281,7 +281,7 @@ void USART1_IRQHandler(void)
     rt_interrupt_enter();
 
     serial_device_isr(&serial1);
-    
+
     /* leave interrupt */
     rt_interrupt_leave();
 }
@@ -318,7 +318,7 @@ void USART2_IRQHandler(void)
     rt_interrupt_enter();
 
     serial_device_isr(&serial2);
-    
+
     /* leave interrupt */
     rt_interrupt_leave();
 }
@@ -432,245 +432,248 @@ void UART5_IRQHandler(void)
 }
 #endif /* RT_USING_UART5 */
 
-#define GPIO_RCC_ENABLE(x)                                          \
-do{                                                                 \
-    if (IS_GPIO_ALL_PERIPH(x))                                      \
-    {                                                               \
-        if ((x) == GPIOA)                                           \
-        {                                                           \
-            RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);    \
-        }                                                           \
-        if ((x) == GPIOB)                                           \
-        {                                                           \
-            RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);    \
-        }                                                           \
-        if ((x) == GPIOC)                                           \
-        {                                                           \
-            RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);    \
-        }                                                           \
-        if ((x) == GPIOD)                                           \
-        {                                                           \
-            RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOD, ENABLE);    \
-        }                                                           \
-        if ((x) == GPIOE)                                           \
-        {                                                           \
-            RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOE, ENABLE);    \
-        }                                                           \
-        if ((x) == GPIOF)                                           \
-        {                                                           \
-            RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOF, ENABLE);   \
-        }                                                           \
-        if ((x) == GPIOG)                                           \
-        {                                                           \
-            RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOG, ENABLE);   \
-        }                                                           \
-    }                                                               \
-}while(0)
+#define GPIO_RCC_ENABLE(x)												\
+	do{                                                                 \
+		if (IS_GPIO_ALL_PERIPH(x))                                      \
+		{                                                               \
+			if ((x) == GPIOA)                                           \
+			{                                                           \
+				RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);	\
+			}                                                           \
+			if ((x) == GPIOB)                                           \
+			{                                                           \
+				RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);	\
+			}                                                           \
+			if ((x) == GPIOC)                                           \
+			{                                                           \
+				RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);	\
+			}                                                           \
+			if ((x) == GPIOD)                                           \
+			{                                                           \
+				RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOD, ENABLE);	\
+			}                                                           \
+			if ((x) == GPIOE)                                           \
+			{                                                           \
+				RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOE, ENABLE);	\
+			}                                                           \
+			if ((x) == GPIOF)                                           \
+			{                                                           \
+				RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOF, ENABLE);   \
+			}                                                           \
+			if ((x) == GPIOG)                                           \
+			{                                                           \
+				RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOG, ENABLE);   \
+			}                                                           \
+		}                                                               \
+	}while(0)
 
-#define UART_RCC_ENABLE(x)                                          \
-do{                                                                 \
-    if (IS_USART_ALL_PERIPH(x))                                      \
-    {                                                               \
-        if ((x) == USART1)                                           \
-        {                                                           \
-            RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);    \
-        }                                                           \
-        if ((x) == USART2)                                           \
-        {                                                           \
-            RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);    \
-        }                                                           \
-        if ((x) == USART3)                                           \
-        {                                                           \
-            RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, ENABLE);    \
-        }                                                           \
-        if ((x) == UART4)                                           \
-        {                                                           \
-            RCC_APB1PeriphClockCmd(RCC_APB1Periph_UART4, ENABLE);    \
-        }                                                           \
-        if ((x) == UART5)                                           \
-        {                                                           \
-            RCC_APB1PeriphClockCmd(RCC_APB1Periph_UART5, ENABLE);    \
-        }                                                           \
-    }                                                               \
-}while(0)
+#define UART_RCC_ENABLE(x)												\
+		do{																\
+			if (IS_USART_ALL_PERIPH(x))									\
+			{															\
+				if ((x) == USART1)										\
+				{														\
+					RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE); \
+				}														\
+				if ((x) == USART2)										\
+				{														\
+					RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE); \
+				}														\
+				if ((x) == USART3)										\
+				{														\
+					RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, ENABLE); \
+				}														\
+				if ((x) == UART4)										\
+				{														\
+					RCC_APB1PeriphClockCmd(RCC_APB1Periph_UART4, ENABLE); \
+				}														\
+				if ((x) == UART5)										\
+				{														\
+					RCC_APB1PeriphClockCmd(RCC_APB1Periph_UART5, ENABLE); \
+				}														\
+			}															\
+		}while(0)
 
 static void RCC_Configuration(struct stm32_uart* uart)
 {
-    /* Enable UART GPIO clocks */
-    GPIO_RCC_ENABLE(uart->uart_tx_gpio);
-    GPIO_RCC_ENABLE(uart->uart_rx_gpio);
-    GPIO_RCC_ENABLE(uart->uart_cts_gpio);
-    GPIO_RCC_ENABLE(uart->uart_rts_gpio);
-    /* Enable UART GPIO AF clocks */
-    if (IS_GPIO_REMAP(uart->uart_remap))
-    {
-        RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
-        GPIO_PinRemapConfig(uart->uart_remap, ENABLE);
-    }
-    /* Enable UART clock */
-    UART_RCC_ENABLE(uart->uart_device);
+	/* Enable UART GPIO clocks */
+	GPIO_RCC_ENABLE(uart->uart_tx_gpio);
+	GPIO_RCC_ENABLE(uart->uart_rx_gpio);
+	GPIO_RCC_ENABLE(uart->uart_cts_gpio);
+	GPIO_RCC_ENABLE(uart->uart_rts_gpio);
+	/* Enable UART GPIO AF clocks */
+	if (IS_GPIO_REMAP(uart->uart_remap))
+	{
+		RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
+		GPIO_PinRemapConfig(uart->uart_remap, ENABLE);
+	}
+	/* Enable UART clock */
+	UART_RCC_ENABLE(uart->uart_device);
 }
 
-static void GPIO_Configuration(struct stm32_uart* uart)
+static void
+GPIO_Configuration(struct stm32_uart* uart)
 {
-    GPIO_InitTypeDef GPIO_InitStructure;
+	GPIO_InitTypeDef GPIO_InitStructure;
 
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    /* Configure USART Rx/tx PIN */
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-    GPIO_InitStructure.GPIO_Pin = uart->uart_rx_pin;
-    GPIO_Init(uart->uart_rx_gpio, &GPIO_InitStructure);
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	/* Configure USART Rx/tx PIN */
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+	GPIO_InitStructure.GPIO_Pin = uart->uart_rx_pin;
+	GPIO_Init(uart->uart_rx_gpio, &GPIO_InitStructure);
 
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
-    GPIO_InitStructure.GPIO_Pin = uart->uart_tx_pin;
-    GPIO_Init(uart->uart_tx_gpio, &GPIO_InitStructure);
-    /* Configure USART RTS/CTS PIN */
-    if (IS_GPIO_ALL_PERIPH(uart->uart_cts_gpio) && 
-        IS_GPIO_ALL_PERIPH(uart->uart_rts_gpio) && 
-        IS_GPIO_PIN(uart->uart_cts_pin) && 
-        IS_GPIO_PIN(uart->uart_rts_pin))
-    {
-        GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-        GPIO_InitStructure.GPIO_Pin = uart->uart_cts_pin;
-        GPIO_Init(uart->uart_cts_gpio, &GPIO_InitStructure);
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+	GPIO_InitStructure.GPIO_Pin = uart->uart_tx_pin;
+	GPIO_Init(uart->uart_tx_gpio, &GPIO_InitStructure);
+	/* Configure USART RTS/CTS PIN */
+	if (IS_GPIO_ALL_PERIPH(uart->uart_cts_gpio) &&
+		IS_GPIO_ALL_PERIPH(uart->uart_rts_gpio) &&
+		IS_GPIO_PIN(uart->uart_cts_pin) &&
+		IS_GPIO_PIN(uart->uart_rts_pin))
+	{
+		GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+		GPIO_InitStructure.GPIO_Pin = uart->uart_cts_pin;
+		GPIO_Init(uart->uart_cts_gpio, &GPIO_InitStructure);
 
-        GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
-        GPIO_InitStructure.GPIO_Pin = uart->uart_rts_pin;
-        GPIO_Init(uart->uart_rts_gpio, &GPIO_InitStructure);
-    }
+		GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+		GPIO_InitStructure.GPIO_Pin = uart->uart_rts_pin;
+		GPIO_Init(uart->uart_rts_gpio, &GPIO_InitStructure);
+	}
 }
 
-static void NVIC_Configuration(struct stm32_uart* uart)
+static void
+NVIC_Configuration(struct stm32_uart* uart)
 {
-    NVIC_InitTypeDef NVIC_InitStructure;
+	NVIC_InitTypeDef NVIC_InitStructure;
 
-    /* Enable the USART Interrupt */
-    NVIC_InitStructure.NVIC_IRQChannel = uart->irq;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-    NVIC_Init(&NVIC_InitStructure);
+	/* Enable the USART Interrupt */
+	NVIC_InitStructure.NVIC_IRQChannel = uart->irq;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
 }
 
-void rt_hw_usart_init(void)
+void
+rt_hw_usart_init(void)
 {
-    struct stm32_uart* uart;
-    struct rt_serial_device *serial;
-    struct serial_configure config = RT_SERIAL_CONFIG_DEFAULT;
+	struct stm32_uart* uart;
+	struct rt_serial_device *serial;
+	struct serial_configure config = RT_SERIAL_CONFIG_DEFAULT;
 
 #ifdef RT_USING_UART1
-    uart = &uart1;
-    serial = &serial1;
-    
-    uart1_int_rx.pool = uart1_pool;
-    uart1_int_rx.size = UART1_POOL_SIZE;
-    
-    config.baud_rate = BAUD_RATE_115200;
+	uart = &uart1;
+	serial = &serial1;
 
-    serial->ops    = &stm32_uart_ops;
-    serial->int_rx = &uart1_int_rx;
-    serial->config = config;
-    
-    RCC_Configuration(uart);
-    GPIO_Configuration(uart);
-    NVIC_Configuration(uart);
+	uart1_int_rx.pool = uart1_pool;
+	uart1_int_rx.size = UART1_POOL_SIZE;
 
-    /* register UART1 device */
-    rt_hw_serial_register(serial, "uart1",
+	config.baud_rate = BAUD_RATE_115200;
+
+	serial->ops    = &stm32_uart_ops;
+	serial->int_rx = &uart1_int_rx;
+	serial->config = config;
+
+	RCC_Configuration(uart);
+	GPIO_Configuration(uart);
+	NVIC_Configuration(uart);
+
+	/* register UART1 device */
+	rt_hw_serial_register(serial, "uart1",
                           RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX | RT_DEVICE_FLAG_STREAM,
-                          uart);
+						  uart);
 #endif /* RT_USING_UART1 */
 
 #ifdef RT_USING_UART2
-    uart = &uart2;
-    serial = &serial2;
-    
-    uart2_int_rx.pool = uart2_pool;
-    uart2_int_rx.size = UART2_POOL_SIZE;
+	uart = &uart2;
+	serial = &serial2;
 
-    config.baud_rate = BAUD_RATE_115200;
+	uart2_int_rx.pool = uart2_pool;
+	uart2_int_rx.size = UART2_POOL_SIZE;
 
-    serial->ops    = &stm32_uart_ops;
-    serial->int_rx = &uart2_int_rx;
-    serial->config = config;
-    
-    RCC_Configuration(uart);
-    GPIO_Configuration(uart);
-    NVIC_Configuration(uart);
+	config.baud_rate = BAUD_RATE_115200;
 
-    /* register UART2 device */
-    rt_hw_serial_register(serial, "uart2",
+	serial->ops    = &stm32_uart_ops;
+	serial->int_rx = &uart2_int_rx;
+	serial->config = config;
+
+	RCC_Configuration(uart);
+	GPIO_Configuration(uart);
+	NVIC_Configuration(uart);
+
+	/* register UART2 device */
+	rt_hw_serial_register(serial, "uart2",
                           RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,
-                          uart);
+						  uart);
 #endif /* RT_USING_UART2 */
 
 #ifdef RT_USING_UART3
-    uart = &uart3;
-    serial = &serial3;
-    
-    uart3_int_rx.pool = uart3_pool;
-    uart3_int_rx.size = UART3_POOL_SIZE;
+	uart = &uart3;
+	serial = &serial3;
 
-    config.baud_rate = BAUD_RATE_115200;
+	uart3_int_rx.pool = uart3_pool;
+	uart3_int_rx.size = UART3_POOL_SIZE;
 
-    serial->ops    = &stm32_uart_ops;
-    serial->int_rx = &uart3_int_rx;
-    serial->config = config;
-    
-    RCC_Configuration(uart);
-    GPIO_Configuration(uart);
-    NVIC_Configuration(uart);
+	config.baud_rate = BAUD_RATE_115200;
 
-    /* register UART3 device */
-    rt_hw_serial_register(serial, "uart3",
+	serial->ops    = &stm32_uart_ops;
+	serial->int_rx = &uart3_int_rx;
+	serial->config = config;
+
+	RCC_Configuration(uart);
+	GPIO_Configuration(uart);
+	NVIC_Configuration(uart);
+
+	/* register UART3 device */
+	rt_hw_serial_register(serial, "uart3",
                           RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,
-                          uart);
+						  uart);
 #endif /* RT_USING_UART3 */
 
 #ifdef RT_USING_UART4
-    uart = &uart4;
-    serial = &serial4;
-    
-    uart4_int_rx.pool = uart4_pool;
-    uart4_int_rx.size = UART4_POOL_SIZE;
+	uart = &uart4;
+	serial = &serial4;
 
-    config.baud_rate = 115200;
+	uart4_int_rx.pool = uart4_pool;
+	uart4_int_rx.size = UART4_POOL_SIZE;
 
-    serial->ops    = &stm32_uart_ops;
-    serial->int_rx = &uart4_int_rx;
-    serial->config = config;
-    
-    RCC_Configuration(uart);
-    GPIO_Configuration(uart);
-    NVIC_Configuration(uart);
+	config.baud_rate = 115200;
 
-    /* register UART4 device */
-    rt_hw_serial_register(serial, "uart4",
+	serial->ops    = &stm32_uart_ops;
+	serial->int_rx = &uart4_int_rx;
+	serial->config = config;
+
+	RCC_Configuration(uart);
+	GPIO_Configuration(uart);
+	NVIC_Configuration(uart);
+
+	/* register UART4 device */
+	rt_hw_serial_register(serial, "uart4",
                           RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,
-                          uart);
+						  uart);
 #endif /* RT_USING_UART4 */
 
 #ifdef RT_USING_UART5
-    uart = &uart5;
-    serial = &serial5;
-    
-    uart5_int_rx.pool = uart5_pool;
-    uart5_int_rx.size = UART5_POOL_SIZE;
+	uart = &uart5;
+	serial = &serial5;
 
-    config.baud_rate = BAUD_RATE_115200;
+	uart5_int_rx.pool = uart5_pool;
+	uart5_int_rx.size = UART5_POOL_SIZE;
 
-    serial->ops    = &stm32_uart_ops;
-    serial->int_rx = &uart5_int_rx;
-    serial->config = config;
-    
-    RCC_Configuration(uart);
-    GPIO_Configuration(uart);
-    NVIC_Configuration(uart);
+	config.baud_rate = BAUD_RATE_115200;
 
-    /* register UART5 device */
-    rt_hw_serial_register(serial, "uart5",
+	serial->ops    = &stm32_uart_ops;
+	serial->int_rx = &uart5_int_rx;
+	serial->config = config;
+
+	RCC_Configuration(uart);
+	GPIO_Configuration(uart);
+	NVIC_Configuration(uart);
+
+	/* register UART5 device */
+	rt_hw_serial_register(serial, "uart5",
                           RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,
-                          uart);
+						  uart);
 #endif /* RT_USING_UART5 */
 }
 
@@ -680,9 +683,11 @@ void rt_hw_usart_init(void)
 #include <finsh.h>
 
 #if (defined(RT_USING_UART1) || defined(RT_USING_UART2) || defined(RT_USING_UART3) || defined(RT_USING_UART4) || defined(RT_USING_UART5))
-void uart_rw(const char *name, rt_int8_t cmd, const char *str)
+void
+uart_rw(const char *name, rt_int8_t cmd, const char *str)
 {
     rt_device_t uart;
+    rt_size_t size;
     uart = rt_device_find(name);
     if (uart != RT_NULL)
     {
@@ -692,19 +697,33 @@ void uart_rw(const char *name, rt_int8_t cmd, const char *str)
         }
         if (cmd == 0)
         {
-            rt_int8_t temp[20];
+
+            rt_uint8_t temp[20];
+            rt_uint8_t i=0;
             memset(temp, '\0', 20);
-            rt_device_read(uart,0,(void *)temp,20);
-            rt_kprintf("%s", temp);
+            size = rt_device_read(uart,0,(void *)temp,20);
+            rt_kprintf("STRING %d:\n",size);
+            for (i = 0; i < size; i++)
+                rt_kprintf("%c", temp[i]);
+            rt_kprintf("\nHEX %d:\n",size);
+            for (i = 0; i < size; i++)
+                rt_kprintf("%02X ", temp[i]);
+            rt_kprintf("\n");
         }
         else if (cmd == 1)
         {
             rt_kprintf("%s, %d", str, strlen(str));
             rt_device_write(uart,0,str,strlen(str));
         }
+        else if (cmd == 2)
+        {
+            char *temp = "\x55\xAA\x00\x00\x03\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x01";
+            rt_device_write(uart,0,temp,26);
+        }
         else
         {
             rt_kprintf("control cmd is %x\n", str[0]);
+
             rt_device_control(uart, str[0], (void *)0);
         }
         //rt_device_close(uart);

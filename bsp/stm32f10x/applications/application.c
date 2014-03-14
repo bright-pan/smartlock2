@@ -40,36 +40,6 @@
 #include <rtgui/calibration.h>
 #endif
 
-#include "led.h"
-
-ALIGN(RT_ALIGN_SIZE)
-static rt_uint8_t led_stack[ 512 ];
-static struct rt_thread led_thread;
-static void led_thread_entry(void* parameter)
-{
-    unsigned int count=0;
-
-    //rt_hw_led_init();
-
-    while (1)
-    {
-        /* led1 on */
-#ifndef RT_USING_FINSH
-        rt_kprintf("led on, count : %d\r\n",count);
-#endif
-        count++;
-        //rt_hw_led_on(0);
-        rt_thread_delay( RT_TICK_PER_SECOND/2 ); /* sleep 0.5 second and switch to other thread */
-
-        /* led1 off */
-#ifndef RT_USING_FINSH
-        rt_kprintf("led off\r\n");
-#endif
-        //rt_hw_led_off(0);
-        rt_thread_delay( RT_TICK_PER_SECOND/2 );
-    }
-}
-
 #ifdef RT_USING_RTGUI
 rt_bool_t cali_setup(void)
 {
@@ -146,22 +116,10 @@ void rt_init_thread_entry(void* parameter)
 int rt_application_init(void)
 {
     rt_thread_t init_thread;
-
-    rt_err_t result;
-
-    /* init led thread */
-    result = rt_thread_init(&led_thread,
-                            "led",
-                            led_thread_entry,
-                            RT_NULL,
-                            (rt_uint8_t*)&led_stack[0],
-                            sizeof(led_stack),
-                            20,
-                            5);
-    if (result == RT_EOK)
-    {
-        rt_thread_startup(&led_thread);
-    }
+	rt_thread_t alarm_thread;
+	rt_thread_t local_thread;
+	rt_thread_t comm_thread;
+	rt_thread_t sms_thread;
 
 #if (RT_THREAD_PRIORITY_MAX == 32)
     init_thread = rt_thread_create("init",
@@ -173,10 +131,60 @@ int rt_application_init(void)
                                    2048, 80, 20);
 #endif
 
-    if (init_thread != RT_NULL)
+	if (init_thread != RT_NULL)
         rt_thread_startup(init_thread);
 
-    return 0;
+	// initial alarm msg queue
+	alarm_mq = rt_mq_create("alarm", sizeof(ALARM_MAIL_TYPEDEF),
+							ALARM_MAIL_MAX_MSGS,
+							RT_IPC_FLAG_FIFO);
+
+    // init alarm thread
+    alarm_thread = rt_thread_create("alarm",
+									alarm_thread_entry, RT_NULL,
+									512, 100, 5);
+    if (alarm_thread != RT_NULL)
+    {
+        rt_thread_startup(alarm_thread);
+    }
+
+	// initial local msg queue
+	local_mq = rt_mq_create("local", sizeof(LOCAL_MAIL_TYPEDEF),
+							LOCAL_MAIL_MAX_MSGS, RT_IPC_FLAG_FIFO);
+
+    // init local thread
+    local_thread = rt_thread_create("local",
+									local_thread_entry, RT_NULL,
+									512, 102, 5);
+    if (local_thread != RT_NULL)
+    {
+        rt_thread_startup(local_thread);
+    }
+
+	// initial comm msg queue
+	comm_mq = rt_mq_create("comm", sizeof(COMM_MAIL_TYPEDEF),
+						   COMM_MAIL_MAX_MSGS, RT_IPC_FLAG_FIFO);
+	// initial comm thread
+	comm_thread = rt_thread_create("comm",
+							   comm_thread_entry, RT_NULL,
+							   512, 101, 5);
+	if (comm_thread != RT_NULL)
+	{
+		rt_thread_startup(comm_thread);
+	}
+	// initial sms msg queue
+	sms_mq = rt_mq_create("sms", sizeof(SMS_MAIL_TYPEDEF),
+						  SMS_MAIL_MAX_MSGS, RT_IPC_FLAG_FIFO);
+	// initial sms thread
+	sms_thread = rt_thread_create("sms",
+								  sms_thread_entry, RT_NULL,
+								  512, 102, 5);
+	if (sms_thread != RT_NULL)
+	{
+		rt_thread_startup(sms_thread);
+	}
+
+	return 0;
 }
 
 /*@}*/

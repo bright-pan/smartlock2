@@ -17,6 +17,11 @@ gpio_pin.c
 gpio_exti.c
 gpio_pwm.c
 gpio_adc.c
+alarm.c
+local.c
+sms.c
+communication.c
+untils.c
 """)
 
 # add Ethernet drvers.
@@ -39,7 +44,7 @@ if GetDepend('RT_USING_RTGUI'):
     elif rtconfig.RT_USING_LCD_TYPE == 'SSD1289':
         src += ['ssd1289.c']
 
-    
+
 CPPPATH = [cwd]
 
 group = DefineGroup('Drivers', src, depend = [''], CPPPATH = CPPPATH)

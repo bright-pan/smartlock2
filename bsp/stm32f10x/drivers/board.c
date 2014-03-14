@@ -31,12 +31,12 @@
 /*@{*/
 
 /*******************************************************************************
-* Function Name  : NVIC_Configuration
-* Description    : Configures Vector Table base location.
-* Input          : None
-* Output         : None
-* Return         : None
-*******************************************************************************/
+ * Function Name  : NVIC_Configuration
+ * Description    : Configures Vector Table base location.
+ * Input          : None
+ * Output         : None
+ * Return         : None
+ *******************************************************************************/
 void NVIC_Configuration(void)
 {
 #ifdef  VECT_TAB_RAM
@@ -65,18 +65,18 @@ void EXT_SRAM_Configuration(void)
         GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 
         /*
-        FSMC_D0 ~ FSMC_D3
-        PD14 FSMC_D0   PD15 FSMC_D1   PD0  FSMC_D2   PD1  FSMC_D3
+		  FSMC_D0 ~ FSMC_D3
+		  PD14 FSMC_D0   PD15 FSMC_D1   PD0  FSMC_D2   PD1  FSMC_D3
         */
         GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_14 | GPIO_Pin_15;
         GPIO_Init(GPIOD,&GPIO_InitStructure);
 
         /*
-        FSMC_D4 ~ FSMC_D12
-        PE7 ~ PE15  FSMC_D4 ~ FSMC_D12
+		  FSMC_D4 ~ FSMC_D12
+		  PE7 ~ PE15  FSMC_D4 ~ FSMC_D12
         */
         GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7 | GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_10
-                                      | GPIO_Pin_11 | GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15;
+				| GPIO_Pin_11 | GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15;
         GPIO_Init(GPIOE,&GPIO_InitStructure);
 
         /* FSMC_D13 ~ FSMC_D15   PD8 ~ PD10 */
@@ -84,11 +84,11 @@ void EXT_SRAM_Configuration(void)
         GPIO_Init(GPIOD,&GPIO_InitStructure);
 
         /*
-        FSMC_A0 ~ FSMC_A5   FSMC_A6 ~ FSMC_A9
-        PF0     ~ PF5       PF12    ~ PF15
+		  FSMC_A0 ~ FSMC_A5   FSMC_A6 ~ FSMC_A9
+		  PF0     ~ PF5       PF12    ~ PF15
         */
         GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3
-                                      | GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15;
+				| GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15;
         GPIO_Init(GPIOF,&GPIO_InitStructure);
 
         /* FSMC_A10 ~ FSMC_A15  PG0 ~ PG5 */
@@ -170,6 +170,19 @@ void SysTick_Handler(void)
 }
 
 /**
+ * Close jtag remap behind reset.
+ */
+int rt_hw_jtag_close(void)
+{
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
+    GPIO_PinRemapConfig(GPIO_Remap_SWJ_JTAGDisable, ENABLE);
+
+    return 0;
+}
+
+INIT_BOARD_EXPORT(rt_hw_jtag_close);
+
+/**
  * This function will initial STM32 board.
  */
 void rt_hw_board_init(void)
@@ -191,5 +204,30 @@ void rt_hw_board_init(void)
     rt_components_board_init();
 #endif
 }
+
+void device_enable(const char *name)
+{
+    rt_device_t device = RT_NULL;
+    device = rt_device_find(name);
+    if (device != RT_NULL)
+    {
+        if (device->open_flag == RT_DEVICE_OFLAG_CLOSE)
+        {
+            rt_device_open(device, RT_DEVICE_OFLAG_RDWR);
+        }
+    }
+    else
+    {
+#ifdef RT_USING_FINSH
+        rt_kprintf("the exti device %s is not found!\n", name);
+#endif
+    }
+}
+
+#ifdef RT_USING_FINSH
+#include <finsh.h>
+
+FINSH_FUNCTION_EXPORT(device_enable, device_enable[name]);
+#endif
 
 /*@}*/
