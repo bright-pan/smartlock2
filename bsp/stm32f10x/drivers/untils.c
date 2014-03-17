@@ -89,7 +89,7 @@ DEVICE_PARAMETERS_TYPEDEF device_parameters = {
 		},
 		{
 			1,
-			"8613544033975"
+			"8618675557185"
 		},
 	},
 	//key
