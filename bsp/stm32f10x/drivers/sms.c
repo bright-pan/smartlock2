@@ -542,7 +542,7 @@ sms_pdu_ucs_send(char *dest_address, char *smsc_address, uint16_t *content, uint
 
 	hex_to_string(send_pdu_string, (uint8_t *)&send_pdu_frame, sms_pdu_length);
 
-	send_comm_mail(COMM_TYPE_SMS, send_pdu_string, send_pdu_frame.TPDU.TP_UDL + sizeof(send_pdu_frame.TPDU) - sizeof(send_pdu_frame.TPDU.TP_UD));
+	send_ctx_mail(COMM_TYPE_SMS, send_pdu_string, send_pdu_frame.TPDU.TP_UDL + sizeof(send_pdu_frame.TPDU) - sizeof(send_pdu_frame.TPDU.TP_UD));
 	/*
 	gsm_mail_buf.send_mode = GSM_MODE_CMD;
 	gsm_mail_buf.result = &send_result;

@@ -18,6 +18,7 @@
 #include <rtthread.h>
 #include <stm32f10x.h>
 #include "untils.h"
+#include "board.h"
 
 #define DEVICE_NAME_COMM "uart3"
 #define COMM_MAIL_MAX_MSGS 10
@@ -39,13 +40,15 @@ typedef struct {
 
 }COMM_MAIL_TYPEDEF;
 
-extern rt_mq_t comm_mq;
+extern rt_mq_t comm_tx_mq;
 extern rt_mutex_t comm_mutex;
 
 void
-comm_thread_entry(void *parameters);
+comm_tx_thread_entry(void *parameters);
+void
+comm_rx_thread_entry(void *parameters);
 
 rt_err_t
-send_comm_mail(COMM_TYPE_TYPEDEF comm_type, uint8_t *buf, uint16_t len);
+send_ctx_mail(COMM_TYPE_TYPEDEF comm_type, uint8_t *buf, uint16_t len);
 
 #endif /* _COMMUNICATION_H_ */

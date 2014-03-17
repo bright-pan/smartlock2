@@ -205,7 +205,8 @@ void rt_hw_board_init(void)
 #endif
 }
 
-void device_enable(const char *name)
+rt_device_t
+device_enable(const char *name)
 {
     rt_device_t device = RT_NULL;
     device = rt_device_find(name);
@@ -222,6 +223,7 @@ void device_enable(const char *name)
         rt_kprintf("the exti device %s is not found!\n", name);
 #endif
     }
+	return device;
 }
 
 #ifdef RT_USING_FINSH

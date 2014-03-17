@@ -48,7 +48,8 @@
 #define RT_USING_UART4
 //#define RT_USING_UART5
 
-void device_enable(const char *name);
+rt_device_t
+device_enable(const char *name);
 
 #endif /* __BOARD_H__ */
 
