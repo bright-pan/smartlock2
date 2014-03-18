@@ -19,8 +19,6 @@
 rt_mq_t comm_tx_mq = RT_NULL;
 rt_mutex_t comm_tx_mutex = RT_NULL;
 
-char smsc[20] = {0,};
-char phone_call[20] = {0,};
 
 typedef enum {
 
@@ -57,73 +55,6 @@ check_frame(uint8_t *str)
 
 	return flag;
 }
-__STATIC_INLINE CW_STATUS
-process_response(uint8_t cmd, uint8_t *rep_frame, uint16_t length)
-{
-	CW_STATUS result = CW_STATUS_ERROR;
-
-	switch (cmd)// process response
-	{
-		case COMM_TYPE_SMS:
-		case COMM_TYPE_GPRS:
-		case COMM_TYPE_GSM_CTRL_OPEN:
-		case COMM_TYPE_GSM_CTRL_CLOSE:
-		case COMM_TYPE_GSM_CTRL_RESET:
-		case COMM_TYPE_GSM_CTRL_SWITCH_TO_CMD:
-		case COMM_TYPE_GSM_CTRL_SWITCH_TO_GPRS:
-		case COMM_TYPE_GSM_CTRL_DIALING:
-		case COMM_TYPE_GSM_CTRL_PHONE_CALL_ANSWER:
-		case COMM_TYPE_GSM_CTRL_PHONE_CALL_HANG_UP:
-		case COMM_TYPE_VOICE_AMP:
-			{
-				result = *rep_frame;
-				break;
-			}
-		default :
-			{
-#ifdef RT_USING_FINSH
-				rt_kprintf("this comm cmd is invalid!\n");
-#endif // RT_USING_FINSH
-				break;
-			}
-	}
-
-	return result;
-}
-
-__STATIC_INLINE CW_STATUS
-process_request(uint8_t cmd, uint8_t order, uint8_t *rep_frame, uint16_t length)
-{
-	CW_STATUS result = CW_STATUS_ERROR;
-	uint8_t rep_cmd = cmd | 0x80;
-
-	switch (cmd)// process request
-	{
-		case COMM_TYPE_GSM_SMSC:
-			{
-				rt_memcpy(smsc, rep_frame, length);
-				result = CW_STATUS_OK;
-				send_ctx_mail(rep_cmd, order, 0, &result, 1);
-				break;
-			}
-		case COMM_TYPE_GSM_PHONE_CALL:
-			{
-				rt_memcpy(phone_call, rep_frame, length);
-				result = CW_STATUS_OK;
-				send_ctx_mail(rep_cmd, order, 0, &result, 1);
-				break;
-			}
-		default :
-			{
-#ifdef RT_USING_FINSH
-				rt_kprintf("this comm cmd is invalid!\n");
-#endif // RT_USING_FINSH
-				break;
-			}
-	}
-
-	return result;
-}
 
 int8_t
 process_frame(uint8_t *frame, uint16_t frame_size)
@@ -132,7 +63,7 @@ process_frame(uint8_t *frame, uint16_t frame_size)
 	uint16_t length;
 	int8_t result;
 	COMM_WINDOW_NODE *tmp;
-	COMM_WINDOW_LIST *cw_list_bk = &comm_window_list;
+	COMM_WINDOW_LIST *cw_list_bk = &cw_list;
 	struct list_head *pos, *q;
 	RT_ASSERT(frame!=RT_NULL);
 	RT_ASSERT(frame_size<=BUF_SIZE);
@@ -142,47 +73,40 @@ process_frame(uint8_t *frame, uint16_t frame_size)
 	order = *(frame + 3);
 	length = frame_size - 6;
 
-	frame += 4;
-
-
-	if (cmd & 0x80)
+	rt_mutex_take(cw_list_bk->mutex, RT_WAITING_FOREVER);
+	list_for_each_safe(pos, q, &cw_list_bk->list)
 	{
-#ifdef RT_USING_FINSH
-	rt_kprintf("recv response frame \ncmd: 0x%02X, order: 0x%02X, length: %d\n", cmd, order, length);
-	print_hex(frame, length);
-#endif // RT_USING_FINSH
-		cmd &= 0x7f;
-		rt_mutex_take(cw_list_bk->mutex, RT_WAITING_FOREVER);
-		list_for_each_safe(pos, q, &cw_list_bk->list)
+		tmp= list_entry(pos, COMM_WINDOW_NODE, list);
+		if (tmp->flag) // request
 		{
-			tmp= list_entry(pos, COMM_WINDOW_NODE, list);
-			if (tmp->flag == CW_FLAG_REQUEST) // request
+			if (((tmp->mail).comm_type | 0x80) == cmd &&
+				tmp->order == order)
 			{
-				if ((tmp->mail).comm_type == cmd &&
-					tmp->order == order)
-				{
-#ifdef RT_USING_FINSH
-					rt_kprintf("recv response and delete cw node\n");
-#endif // RT_USING_FINSH
-					*((tmp->mail).result) = process_response(cmd, frame, length);
-					rt_sem_release((tmp->mail).result_sem);
-					rt_free((tmp->mail).buf);
-					list_del(pos);
-					cw_list_bk->size--;
-					rt_free(tmp);
-				}
+				rt_kprintf("recv response and delete cw node\n");
+				rt_kprintf("comm_type: %d, order: %02X, length: %d\n", (tmp->mail).comm_type, tmp->order, (tmp->mail).len);
+				print_hex((tmp->mail).buf, (tmp->mail).len);
+				*((tmp->mail).result) = CW_STATUS_OK;
+				rt_sem_release((tmp->mail).result_sem);
+				list_del(pos);
+				rt_free(tmp);
 			}
 		}
-		rt_mutex_release(cw_list_bk->mutex);
 	}
-	else
+	rt_mutex_release(cw_list_bk->mutex);
+
+	switch (cmd)
 	{
-#ifdef RT_USING_FINSH
-		rt_kprintf("recv request frame \ncmd: 0x%02X, order: 0x%02X, length: %d\n", cmd, order, length);
-		print_hex(frame, length);
-#endif // RT_USING_FINSH
-		process_request(cmd, order, frame, length);
+		case COMM_TYPE_SMS:
+			{
+				break;
+			}
+		default :
+			{
+				rt_kprintf("this comm cmd is invalid!\n");
+				break;
+			}
 	}
+
 	return result;
 }
 
@@ -216,6 +140,8 @@ comm_rx_thread_entry(void *parameters)
 						goto continue_check;
 					if (length + 4 == recv_counts)
 					{
+						rt_kprintf("\ncomm recv frame length: %d\n", recv_counts);
+						print_hex(process_buf, recv_counts);
 						process_frame(process_buf, recv_counts);
 						break;
 					}
@@ -250,7 +176,7 @@ comm_tx_thread_entry(void *parameters)
 	COMM_WINDOW_NODE *cw_node;
 	uint8_t order = 0;
 
-	RT_ASSERT(cw_list_init(&comm_window_list) == CW_STATUS_OK);
+	RT_ASSERT(cw_list_init(&cw_list) == CW_STATUS_OK);
 
 	while (1)
 	{
@@ -266,31 +192,16 @@ comm_tx_thread_entry(void *parameters)
 			RT_ASSERT(comm_mail_buf.result != RT_NULL);
 			RT_ASSERT(comm_mail_buf.buf != RT_NULL);
 
-			cw_status = cw_list_new(&cw_node, &comm_window_list);
+			cw_status = cw_list_new(&cw_node, &cw_list);
 			if (cw_status == CW_STATUS_OK)
 			{
 				cw_node->mail = comm_mail_buf;
-				if (comm_mail_buf.order)
-				{
-					cw_node->order = comm_mail_buf.order;
-				}
-				else
-				{
-		    if (order++)
-			cw_node->order = order++;
-		    else
-			cw_node->order = 1;
-				}
-				if (comm_mail_buf.delay)
-				{
-					cw_node->delay = comm_mail_buf.delay;
-				}
-				cw_node->flag = (comm_mail_buf.comm_type & 0x80) ? CW_FLAG_RESPONSE : CW_FLAG_REQUEST;
-#ifdef RT_USING_FINSH
+				cw_node->order = order++;
+				cw_node->flag = (comm_mail_buf.comm_type & 0x80) ? 0 : 1;
+
 				rt_kprintf("process comm tx mail:\n");
-				rt_kprintf("cmd: %02x, length: %d\n", comm_mail_buf.comm_type, comm_mail_buf.len);
+				rt_kprintf("comm_type: %d, length: %d\n", comm_mail_buf.comm_type, comm_mail_buf.len);
 				print_hex(comm_mail_buf.buf, comm_mail_buf.len);
-#endif // RT_USING_FINSH
 			}
 			else
 			{
@@ -324,7 +235,7 @@ send_frame(rt_device_t device, COMM_MAIL_TYPEDEF *mail, uint8_t order)
 }
 
 rt_err_t
-send_ctx_mail(COMM_TYPE_TYPEDEF comm_type, uint8_t order, uint16_t delay, uint8_t *buf, uint16_t len)
+send_ctx_mail(COMM_TYPE_TYPEDEF comm_type, uint8_t *buf, uint16_t len)
 {
 	rt_err_t result = -RT_EFULL;
 	uint8_t *buf_bk = RT_NULL;
@@ -341,13 +252,9 @@ send_ctx_mail(COMM_TYPE_TYPEDEF comm_type, uint8_t order, uint16_t delay, uint8_
 			comm_mail_buf.result_sem = rt_sem_create("s_comm", 0, RT_IPC_FLAG_FIFO);
 			comm_mail_buf.result = &cw_status;
 			comm_mail_buf.comm_type = comm_type;
-			comm_mail_buf.order = order;
 			comm_mail_buf.buf = buf_bk;
 			comm_mail_buf.len = len;
-			if (delay)
-			{
-				comm_mail_buf.delay = delay;
-			}
+
 			result = rt_mq_send(comm_tx_mq, &comm_mail_buf, sizeof(comm_mail_buf));
 			if (result == -RT_EFULL)
 			{
@@ -368,18 +275,9 @@ send_ctx_mail(COMM_TYPE_TYPEDEF comm_type, uint8_t order, uint16_t delay, uint8_
 	return result;
 }
 
-void send_dialing(void)
-{
-	uint8_t *buf = rt_malloc(512);
-	*buf = 0;
-	rt_memcpy(buf+1, &(device_parameters.tcp_domain[0]), sizeof(device_parameters.tcp_domain[0]));
-	send_ctx_mail(COMM_TYPE_GSM_CTRL_DIALING, 0, 0, buf, sizeof(device_parameters.tcp_domain[0])+1);
-	rt_free(buf);
-}
-
 #ifdef RT_USING_FINSH
 #include <finsh.h>
 
 FINSH_FUNCTION_EXPORT(send_ctx_mail, send_mail_buf[comm_type buf length]);
-FINSH_FUNCTION_EXPORT(send_dialing, send_gsm_dialing[]);
+
 #endif // RT_USING_FINSH
