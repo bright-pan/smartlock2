@@ -1,5 +1,5 @@
 /*********************************************************************
- * Filename:			communication.c
+ * Filename:			comm.c
  *
  * Description:
  *
@@ -11,7 +11,7 @@
  *
  * Copyright (C) 2014 Yuettak Co.,Ltd
  ********************************************************************/
-#include "communication.h"
+#include "comm.h"
 #include "comm_window.h"
 
 #define BUF_SIZE 768
@@ -59,7 +59,7 @@ check_frame(uint8_t *str)
 int8_t
 process_frame(uint8_t *frame, uint16_t frame_size)
 {
-	uint8_t cmd;
+	uint8_t cmd, order;
 	uint16_t length;
 	int8_t result;
 	COMM_WINDOW_NODE *tmp;
@@ -70,7 +70,8 @@ process_frame(uint8_t *frame, uint16_t frame_size)
 	RT_ASSERT(cw_list_bk!=RT_NULL);
 
 	cmd = *(frame + 2);
-	length = frame_size -5;
+	order = *(frame + 3);
+	length = frame_size - 6;
 
 	rt_mutex_take(cw_list_bk->mutex, RT_WAITING_FOREVER);
 	list_for_each_safe(pos, q, &cw_list_bk->list)
@@ -78,10 +79,11 @@ process_frame(uint8_t *frame, uint16_t frame_size)
 		tmp= list_entry(pos, COMM_WINDOW_NODE, list);
 		if (tmp->flag) // request
 		{
-			if (((tmp->mail).comm_type | 0x80) == cmd)
+			if (((tmp->mail).comm_type | 0x80) == cmd &&
+				tmp->order == order)
 			{
 				rt_kprintf("recv response and delete cw node\n");
-				rt_kprintf("comm_type: %d, length: %d\n", (tmp->mail).comm_type, (tmp->mail).len);
+				rt_kprintf("comm_type: %d, order: %02X, length: %d\n", (tmp->mail).comm_type, tmp->order, (tmp->mail).len);
 				print_hex((tmp->mail).buf, (tmp->mail).len);
 				*((tmp->mail).result) = CW_STATUS_OK;
 				rt_sem_release((tmp->mail).result_sem);
@@ -216,14 +218,15 @@ comm_tx_thread_entry(void *parameters)
 }
 
 void
-send_frame(COMM_MAIL_TYPEDEF *mail, rt_device_t device)
+send_frame(rt_device_t device, COMM_MAIL_TYPEDEF *mail, uint8_t order)
 {
 	uint16_t length;
 	// send length data
-	length = mail->len + 1;
+	length = mail->len + 2;
 	rt_device_write(device, 0, (uint8_t *)&length, 2);
 	// send comm_type data
 	rt_device_write(device, 0, (uint8_t *)&mail->comm_type, 1);// comm_type
+	rt_device_write(device, 0, &order, 1);// order
 	// send buf data
 	rt_device_write(device, 0, mail->buf, mail->len);
 	// send "\r\n"

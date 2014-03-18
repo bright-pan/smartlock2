@@ -25,7 +25,7 @@
 
 #include "alarm.h"
 #include "untils.h"
-#include "communication.h"
+#include "comm.h"
 
 typedef struct {
 

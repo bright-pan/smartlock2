@@ -21,7 +21,7 @@
 #include "local.h"
 #include "sms.h"
 #include "untils.h"
-#include "communication.h"
+#include "comm.h"
 /* board configuration */
 
 /* whether use board external SRAM memory */

@@ -20,7 +20,7 @@ gpio_adc.c
 alarm.c
 local.c
 sms.c
-communication.c
+comm.c
 untils.c
 comm_window.c
 """)
