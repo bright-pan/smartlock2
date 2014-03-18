@@ -25,6 +25,16 @@
 
 typedef enum {
 
+	CW_STATUS_OK = 0,
+	CW_STATUS_FULL,
+	CW_STATUS_INIT_ERROR,
+	CW_STATUS_NEW_ERROR,
+	CW_STATUS_SEND_ERROR,
+
+}CW_STATUS;
+
+typedef enum {
+
 	COMM_TYPE_SMS = 0,
 	COMM_TYPE_GPRS = 1,
 	COMM_TYPE_MMS = 2,
@@ -34,11 +44,14 @@ typedef enum {
 typedef struct {
 
 	rt_sem_t result_sem;
+	CW_STATUS *result;
 	uint8_t comm_type;
 	uint16_t len;
 	uint8_t *buf;
 
 }COMM_MAIL_TYPEDEF;
+
+
 
 extern rt_mq_t comm_tx_mq;
 extern rt_mutex_t comm_mutex;
@@ -50,5 +63,8 @@ comm_rx_thread_entry(void *parameters);
 
 rt_err_t
 send_ctx_mail(COMM_TYPE_TYPEDEF comm_type, uint8_t *buf, uint16_t len);
+
+void
+send_frame(COMM_MAIL_TYPEDEF *mail, rt_device_t device);
 
 #endif /* _COMMUNICATION_H_ */

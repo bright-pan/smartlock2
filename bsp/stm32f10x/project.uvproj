@@ -130,7 +130,7 @@
           <Target>
             <UseTarget>1</UseTarget>
             <LoadApplicationAtStartup>1</LoadApplicationAtStartup>
-            <RunToMain>1</RunToMain>
+            <RunToMain>0</RunToMain>
             <RestoreBreakpoints>1</RestoreBreakpoints>
             <RestoreWatchpoints>1</RestoreWatchpoints>
             <RestoreMemoryDisplay>1</RestoreMemoryDisplay>
@@ -486,6 +486,11 @@
               <FileName>untils.c</FileName>
               <FileType>1</FileType>
               <FilePath>drivers\untils.c</FilePath>
+            </File>
+            <File>
+              <FileName>comm_window.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>drivers\comm_window.c</FilePath>
             </File>
             <File>
               <FileName>sdcard.c</FileName>

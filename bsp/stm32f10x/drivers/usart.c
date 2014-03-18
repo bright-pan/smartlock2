@@ -327,7 +327,7 @@ void USART2_IRQHandler(void)
 #if defined(RT_USING_UART3)
 /* UART3 device driver structure */
 struct serial_ringbuffer uart3_int_rx;
-#define UART3_POOL_SIZE 64
+#define UART3_POOL_SIZE 1024
 rt_uint8_t uart3_pool[UART3_POOL_SIZE];
 struct stm32_uart uart3 =
 {
