@@ -164,23 +164,26 @@ int rt_application_init(void)
 
 	// initial comm thread
 	comm_rx_thread = rt_thread_create("comm_rx",
-							   comm_rx_thread_entry, RT_NULL,
-                                2048,102,5);
+									  comm_rx_thread_entry, RT_NULL,
+									  2048,101,5);
 	if (comm_rx_thread != RT_NULL)
 	{
 		rt_thread_startup(comm_rx_thread);
 	}
+
 	// initial comm msg queue
 	comm_tx_mq = rt_mq_create("comm_tx", sizeof(COMM_MAIL_TYPEDEF),
-						   COMM_MAIL_MAX_MSGS, RT_IPC_FLAG_FIFO);
+							  COMM_MAIL_MAX_MSGS, RT_IPC_FLAG_FIFO);
+
 	// initial comm thread
 	comm_tx_thread = rt_thread_create("comm_tx",
 							   comm_tx_thread_entry, RT_NULL,
-							   512, 101, 5);
+							   512, 102, 5);
 	if (comm_tx_thread != RT_NULL)
 	{
 		rt_thread_startup(comm_tx_thread);
 	}
+
 	// initial sms msg queue
 	sms_mq = rt_mq_create("sms", sizeof(SMS_MAIL_TYPEDEF),
 						  SMS_MAIL_MAX_MSGS, RT_IPC_FLAG_FIFO);
