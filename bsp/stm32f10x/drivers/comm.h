@@ -1,5 +1,5 @@
 /********************************************************************
- * Filename:			communication.h
+ * Filename:			comm.h
  *
  * Description:
  *
@@ -11,8 +11,8 @@
  *
  * Copyright (C) 2014 Yuettak Co.,Ltd
  ********************************************************************/
-#ifndef _COMMUNICATION_H_
-#define _COMMUNICATION_H_
+#ifndef _COMM_H_
+#define _COMM_H_
 
 #include <rthw.h>
 #include <rtthread.h>
@@ -65,6 +65,6 @@ rt_err_t
 send_ctx_mail(COMM_TYPE_TYPEDEF comm_type, uint8_t *buf, uint16_t len);
 
 void
-send_frame(COMM_MAIL_TYPEDEF *mail, rt_device_t device);
+send_frame(rt_device_t device, COMM_MAIL_TYPEDEF *mail, uint8_t order);
 
-#endif /* _COMMUNICATION_H_ */
+#endif /* _COMM_H_ */

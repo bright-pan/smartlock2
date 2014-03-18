@@ -478,9 +478,9 @@
               <FilePath>drivers\sms.c</FilePath>
             </File>
             <File>
-              <FileName>communication.c</FileName>
+              <FileName>comm.c</FileName>
               <FileType>1</FileType>
-              <FilePath>drivers\communication.c</FilePath>
+              <FilePath>drivers\comm.c</FilePath>
             </File>
             <File>
               <FileName>untils.c</FileName>
