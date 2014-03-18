@@ -21,9 +21,6 @@
 #include "board.h"
 #include "list.h"
 
-#define CW_FLAG_REQUEST 0
-#define CW_FLAG_RESPONSE 1
-
 typedef struct {
 
 	struct list_head list;
@@ -32,7 +29,7 @@ typedef struct {
 	uint8_t order;
 	uint8_t r_cnts;// resend counts
 	uint8_t cnts;// counts for timer
-	uint16_t delay;
+
 }COMM_WINDOW_NODE;
 
 typedef struct {
@@ -45,7 +42,7 @@ typedef struct {
 
 }COMM_WINDOW_LIST;
 
-extern COMM_WINDOW_LIST comm_window_list;
+extern COMM_WINDOW_LIST cw_list;
 
 CW_STATUS
 cw_list_init(COMM_WINDOW_LIST *cw_list);
