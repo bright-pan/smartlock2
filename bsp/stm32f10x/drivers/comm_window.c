@@ -33,7 +33,7 @@ cw_timer_out(void *parameters)
 	{
 		tmp= list_entry(pos, COMM_WINDOW_NODE, list);
 
-		if (tmp->flag) // request
+		if (tmp->flag == CW_FLAG_REQUEST) // request
 		{
 			if (tmp->cnts == 1)
 			{
@@ -46,9 +46,11 @@ cw_timer_out(void *parameters)
 			}
 			if (tmp->r_cnts >= CW_TIMER_MAX_RESEND_CNTS)
 			{
+#ifdef RT_USING_FINSH
 				rt_kprintf("send failure and delete cw node\n");
-				rt_kprintf("comm_type: %d, order: %02X, length: %d\n", (tmp->mail).comm_type, tmp->order, (tmp->mail).len);
+				rt_kprintf("comm_type: 0x%02X, order: 0x%02X, length: %d\n", (tmp->mail).comm_type, tmp->order, (tmp->mail).len);
 				print_hex((tmp->mail).buf, (tmp->mail).len);
+#endif // RT_USING_FINSH
 				*((tmp->mail).result) = CW_STATUS_SEND_ERROR;
 				rt_sem_release((tmp->mail).result_sem);
 				list_del(pos);
@@ -58,9 +60,11 @@ cw_timer_out(void *parameters)
 		else // response
 		{
 			send_frame(cw_list->device, &tmp->mail, tmp->order);
+#ifdef RT_USING_FINSH
 			rt_kprintf("send response and delete cw node\n");
-			rt_kprintf("comm_type: %d, order: %02X, length: %d\n", (tmp->mail).comm_type, tmp->order, (tmp->mail).len);
+			rt_kprintf("comm_type: 0x%02X, order: 0x%02X, length: %d\n", (tmp->mail).comm_type, tmp->order, (tmp->mail).len);
 			print_hex((tmp->mail).buf, (tmp->mail).len);
+#endif // RT_USING_FINSH
 			*((tmp->mail).result) = CW_STATUS_OK;
 			rt_sem_release((tmp->mail).result_sem);
 			list_del(pos);
