@@ -53,6 +53,7 @@ cw_timer_out(void *parameters)
 #endif // RT_USING_FINSH
 				*((tmp->mail).result) = CW_STATUS_SEND_ERROR;
 				rt_sem_release((tmp->mail).result_sem);
+				rt_free((tmp->mail).buf);
 				list_del(pos);
 				rt_free(tmp);
 			}
@@ -67,6 +68,7 @@ cw_timer_out(void *parameters)
 #endif // RT_USING_FINSH
 			*((tmp->mail).result) = CW_STATUS_OK;
 			rt_sem_release((tmp->mail).result_sem);
+			rt_free((tmp->mail).buf);
 			list_del(pos);
 			rt_free(tmp);
 		}
@@ -125,4 +127,3 @@ cw_list_new(COMM_WINDOW_NODE **node, COMM_WINDOW_LIST *cw_list)
 
 	return CW_STATUS_OK;
 }
-

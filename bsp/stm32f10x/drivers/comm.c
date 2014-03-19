@@ -140,6 +140,7 @@ process_frame(uint8_t *frame, uint16_t frame_size)
 #endif // RT_USING_FINSH
 					*((tmp->mail).result) = process_response(cmd, frame, length);
 					rt_sem_release((tmp->mail).result_sem);
+					rt_free((tmp->mail).buf);
 					list_del(pos);
 					rt_free(tmp);
 				}
@@ -238,7 +239,14 @@ comm_tx_thread_entry(void *parameters)
 			if (cw_status == CW_STATUS_OK)
 			{
 				cw_node->mail = comm_mail_buf;
-				cw_node->order = order++;
+				if (comm_mail_buf.order)
+				{
+					cw_node->order = comm_mail_buf.order;
+				}
+				else
+				{
+					cw_node->order = order++;
+				}
 				cw_node->flag = (comm_mail_buf.comm_type & 0x80) ? CW_FLAG_RESPONSE : CW_FLAG_REQUEST;
 #ifdef RT_USING_FINSH
 				rt_kprintf("process comm tx mail:\n");
@@ -278,7 +286,7 @@ send_frame(rt_device_t device, COMM_MAIL_TYPEDEF *mail, uint8_t order)
 }
 
 rt_err_t
-send_ctx_mail(COMM_TYPE_TYPEDEF comm_type, uint8_t *buf, uint16_t len)
+send_ctx_mail(COMM_TYPE_TYPEDEF comm_type, uint8_t *buf, uint16_t len, uint8_t order)
 {
 	rt_err_t result = -RT_EFULL;
 	uint8_t *buf_bk = RT_NULL;
@@ -295,6 +303,7 @@ send_ctx_mail(COMM_TYPE_TYPEDEF comm_type, uint8_t *buf, uint16_t len)
 			comm_mail_buf.result_sem = rt_sem_create("s_comm", 0, RT_IPC_FLAG_FIFO);
 			comm_mail_buf.result = &cw_status;
 			comm_mail_buf.comm_type = comm_type;
+			comm_mail_buf.order = order;
 			comm_mail_buf.buf = buf_bk;
 			comm_mail_buf.len = len;
 
