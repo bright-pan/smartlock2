@@ -542,7 +542,7 @@ sms_pdu_ucs_send(char *dest_address, char *smsc_address, uint16_t *content, uint
 
 	hex_to_string(send_pdu_string + 2, (uint8_t *)&send_pdu_frame, sms_pdu_length);
 	*(uint16_t *)send_pdu_string = (uint16_t)(send_pdu_frame.TPDU.TP_UDL + sizeof(send_pdu_frame.TPDU) - sizeof(send_pdu_frame.TPDU.TP_UD));
-	send_ctx_mail(COMM_TYPE_SMS, 0, 0, send_pdu_string, (sms_pdu_length << 1) + 2);
+	send_ctx_mail(COMM_TYPE_SMS, send_pdu_string, (sms_pdu_length << 1) + 2, 0);
 	/*
 	gsm_mail_buf.send_mode = GSM_MODE_CMD;
 	gsm_mail_buf.result = &send_result;
@@ -646,7 +646,7 @@ sms_thread_entry(void *parameter)
 					rt_kprintf("\nsend sms to ");
 					rt_kprintf((char *)(device_parameters.telephone_address[alarm_telephone_counts].address));
 					rt_kprintf("\n");
-					sms_pdu_ucs_send(device_parameters.telephone_address[alarm_telephone_counts].address, smsc, sms_ucs, sms_ucs_length);
+					sms_pdu_ucs_send(device_parameters.telephone_address[alarm_telephone_counts].address, "8613800755500", sms_ucs, sms_ucs_length);
 				}
 				alarm_telephone_counts++;
 			}
