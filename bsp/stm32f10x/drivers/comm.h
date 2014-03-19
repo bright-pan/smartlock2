@@ -23,6 +23,7 @@
 #define DEVICE_NAME_COMM "uart3"
 #define COMM_MAIL_MAX_MSGS 10
 
+
 typedef enum {
 
 	CW_STATUS_OK = 0,

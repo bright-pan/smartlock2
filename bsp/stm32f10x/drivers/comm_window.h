@@ -21,6 +21,9 @@
 #include "board.h"
 #include "list.h"
 
+#define CW_FLAG_REQUEST 0
+#define CW_FLAG_RESPONSE 1
+
 typedef struct {
 
 	struct list_head list;
