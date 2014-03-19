@@ -32,7 +32,7 @@ typedef struct {
 	uint8_t order;
 	uint8_t r_cnts;// resend counts
 	uint8_t cnts;// counts for timer
-
+	uint16_t delay;
 }COMM_WINDOW_NODE;
 
 typedef struct {

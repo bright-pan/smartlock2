@@ -16,8 +16,8 @@
 
 #define COMM_WINDOW_SIZE 5
 #define CW_TIMER_TIMEOUT_TICKS 10
-#define CW_TIMER_MAX_RESEND_TICKS_CNTS 5
-#define CW_TIMER_MAX_RESEND_CNTS 5
+#define CW_TIMER_SEND_DELAY 5
+#define CW_TIMER_RESEND_COUNTS 5
 
 COMM_WINDOW_LIST cw_list;
 
@@ -39,12 +39,12 @@ cw_timer_out(void *parameters)
 			{
 				send_frame(cw_list->device, &tmp->mail, tmp->order);
 			}
-			if (tmp->cnts++ > CW_TIMER_MAX_RESEND_TICKS_CNTS)
+			if (tmp->cnts++ > tmp->delay)
 			{
 				tmp->cnts = 1;
 				tmp->r_cnts++;
 			}
-			if (tmp->r_cnts >= CW_TIMER_MAX_RESEND_CNTS)
+			if (tmp->r_cnts >= CW_TIMER_RESEND_COUNTS)
 			{
 #ifdef RT_USING_FINSH
 				rt_kprintf("send failure and delete cw node\n");
@@ -55,6 +55,7 @@ cw_timer_out(void *parameters)
 				rt_sem_release((tmp->mail).result_sem);
 				rt_free((tmp->mail).buf);
 				list_del(pos);
+				cw_list->size--;
 				rt_free(tmp);
 			}
 		}
@@ -70,6 +71,7 @@ cw_timer_out(void *parameters)
 			rt_sem_release((tmp->mail).result_sem);
 			rt_free((tmp->mail).buf);
 			list_del(pos);
+			cw_list->size--;
 			rt_free(tmp);
 		}
     }
@@ -113,6 +115,7 @@ cw_list_new(COMM_WINDOW_NODE **node, COMM_WINDOW_LIST *cw_list)
 		{
 			(*node)->r_cnts = 1;
 			(*node)->cnts = 1;
+			(*node)->delay = CW_TIMER_SEND_DELAY;
 			rt_mutex_take(cw_list->mutex, RT_WAITING_FOREVER);
 			list_add(&(*node)->list, &cw_list->list);
 			rt_mutex_release(cw_list->mutex);
