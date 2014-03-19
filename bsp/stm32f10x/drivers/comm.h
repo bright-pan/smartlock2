@@ -47,6 +47,7 @@ typedef struct {
 	rt_sem_t result_sem;
 	CW_STATUS *result;
 	uint8_t comm_type;
+	uint8_t order;
 	uint16_t len;
 	uint8_t *buf;
 
@@ -63,7 +64,7 @@ void
 comm_rx_thread_entry(void *parameters);
 
 rt_err_t
-send_ctx_mail(COMM_TYPE_TYPEDEF comm_type, uint8_t *buf, uint16_t len);
+send_ctx_mail(COMM_TYPE_TYPEDEF comm_type, uint8_t *buf, uint16_t len, uint8_t order);
 
 void
 send_frame(rt_device_t device, COMM_MAIL_TYPEDEF *mail, uint8_t order);
