@@ -247,6 +247,10 @@ comm_tx_thread_entry(void *parameters)
 				{
 					cw_node->order = order++;
 				}
+				if (comm_mail_buf.delay)
+				{
+					cw_node->delay = comm_mail_buf.delay;
+				}
 				cw_node->flag = (comm_mail_buf.comm_type & 0x80) ? CW_FLAG_RESPONSE : CW_FLAG_REQUEST;
 #ifdef RT_USING_FINSH
 				rt_kprintf("process comm tx mail:\n");
@@ -286,7 +290,7 @@ send_frame(rt_device_t device, COMM_MAIL_TYPEDEF *mail, uint8_t order)
 }
 
 rt_err_t
-send_ctx_mail(COMM_TYPE_TYPEDEF comm_type, uint8_t *buf, uint16_t len, uint8_t order)
+send_ctx_mail(COMM_TYPE_TYPEDEF comm_type, uint8_t order, uint16_t delay, uint8_t *buf, uint16_t len)
 {
 	rt_err_t result = -RT_EFULL;
 	uint8_t *buf_bk = RT_NULL;
@@ -306,7 +310,10 @@ send_ctx_mail(COMM_TYPE_TYPEDEF comm_type, uint8_t *buf, uint16_t len, uint8_t o
 			comm_mail_buf.order = order;
 			comm_mail_buf.buf = buf_bk;
 			comm_mail_buf.len = len;
-
+			if (delay)
+			{
+				comm_mail_buf.delay = delay;
+			}
 			result = rt_mq_send(comm_tx_mq, &comm_mail_buf, sizeof(comm_mail_buf));
 			if (result == -RT_EFULL)
 			{
