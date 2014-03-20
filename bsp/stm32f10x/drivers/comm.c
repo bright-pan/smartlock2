@@ -57,14 +57,18 @@ check_frame(uint8_t *str)
 __STATIC_INLINE CW_STATUS
 process_response(uint8_t cmd, uint8_t *rep_frame, uint16_t length)
 {
-	CW_STATUS result;
+	CW_STATUS result = CW_STATUS_ERROR;
 
 	switch (cmd)// process response
 	{
 		case COMM_TYPE_SMS:
+		case COMM_TYPE_GSM_CTRL_OPEN:
+		case COMM_TYPE_GSM_CTRL_CLOSE:
+		case COMM_TYPE_GSM_CTRL_RESET:
+		case COMM_TYPE_GSM_CTRL_SWITCH_TO_CMD:
+		case COMM_TYPE_GSM_CTRL_SWITCH_TO_GPRS:
 			{
-				if (*rep_frame == 1)
-					result = CW_STATUS_OK;
+				result = *rep_frame;
 				break;
 			}
 		default :
@@ -82,7 +86,7 @@ process_response(uint8_t cmd, uint8_t *rep_frame, uint16_t length)
 __STATIC_INLINE CW_STATUS
 process_request(uint8_t cmd, uint8_t *rep_frame, uint16_t length)
 {
-	CW_STATUS result;
+	CW_STATUS result = CW_STATUS_ERROR;
 
 	switch (cmd)// process request
 	{
@@ -105,7 +109,7 @@ process_frame(uint8_t *frame, uint16_t frame_size)
 	uint16_t length;
 	int8_t result;
 	COMM_WINDOW_NODE *tmp;
-	COMM_WINDOW_LIST *cw_list_bk = &cw_list;
+	COMM_WINDOW_LIST *cw_list_bk = &comm_window_list;
 	struct list_head *pos, *q;
 	RT_ASSERT(frame!=RT_NULL);
 	RT_ASSERT(frame_size<=BUF_SIZE);
@@ -116,13 +120,14 @@ process_frame(uint8_t *frame, uint16_t frame_size)
 	length = frame_size - 6;
 
 	frame += 4;
-#ifdef RT_USING_FINSH
-	rt_kprintf("cmd: 0x%02X, order: 0x%02X, length: %d\n", cmd, order, length);
-	print_hex(frame, length);
-#endif // RT_USING_FINSH
+
 
 	if (cmd & 0x80)
 	{
+#ifdef RT_USING_FINSH
+	rt_kprintf("recv response frame \ncmd: 0x%02X, order: 0x%02X, length: %d\n", cmd, order, length);
+	print_hex(frame, length);
+#endif // RT_USING_FINSH
 		cmd &= 0x7f;
 		rt_mutex_take(cw_list_bk->mutex, RT_WAITING_FOREVER);
 		list_for_each_safe(pos, q, &cw_list_bk->list)
@@ -135,13 +140,12 @@ process_frame(uint8_t *frame, uint16_t frame_size)
 				{
 #ifdef RT_USING_FINSH
 					rt_kprintf("recv response and delete cw node\n");
-					rt_kprintf("comm_type: 0x%02X, order: 0x%02X, length: %d\n", (tmp->mail).comm_type, tmp->order, (tmp->mail).len);
-					print_hex((tmp->mail).buf, (tmp->mail).len);
 #endif // RT_USING_FINSH
 					*((tmp->mail).result) = process_response(cmd, frame, length);
 					rt_sem_release((tmp->mail).result_sem);
 					rt_free((tmp->mail).buf);
 					list_del(pos);
+					cw_list_bk->size--;
 					rt_free(tmp);
 				}
 			}
@@ -150,6 +154,10 @@ process_frame(uint8_t *frame, uint16_t frame_size)
 	}
 	else
 	{
+#ifdef RT_USING_FINSH
+	rt_kprintf("recv request frame \ncmd: 0x%02X, order: 0x%02X, length: %d\n", cmd, order, length);
+	print_hex(frame, length);
+#endif // RT_USING_FINSH
 		process_request(cmd, frame, length);
 	}
 	return result;
@@ -219,7 +227,7 @@ comm_tx_thread_entry(void *parameters)
 	COMM_WINDOW_NODE *cw_node;
 	uint8_t order = 0;
 
-	RT_ASSERT(cw_list_init(&cw_list) == CW_STATUS_OK);
+	RT_ASSERT(cw_list_init(&comm_window_list) == CW_STATUS_OK);
 
 	while (1)
 	{
@@ -235,7 +243,7 @@ comm_tx_thread_entry(void *parameters)
 			RT_ASSERT(comm_mail_buf.result != RT_NULL);
 			RT_ASSERT(comm_mail_buf.buf != RT_NULL);
 
-			cw_status = cw_list_new(&cw_node, &cw_list);
+			cw_status = cw_list_new(&cw_node, &comm_window_list);
 			if (cw_status == CW_STATUS_OK)
 			{
 				cw_node->mail = comm_mail_buf;
@@ -245,7 +253,10 @@ comm_tx_thread_entry(void *parameters)
 				}
 				else
 				{
-					cw_node->order = order++;
+		    if (order++)
+			cw_node->order = order++;
+		    else
+			cw_node->order = 1;
 				}
 				if (comm_mail_buf.delay)
 				{
@@ -254,7 +265,7 @@ comm_tx_thread_entry(void *parameters)
 				cw_node->flag = (comm_mail_buf.comm_type & 0x80) ? CW_FLAG_RESPONSE : CW_FLAG_REQUEST;
 #ifdef RT_USING_FINSH
 				rt_kprintf("process comm tx mail:\n");
-				rt_kprintf("comm_type: %d, length: %d\n", comm_mail_buf.comm_type, comm_mail_buf.len);
+				rt_kprintf("cmd: %02x, length: %d\n", comm_mail_buf.comm_type, comm_mail_buf.len);
 				print_hex(comm_mail_buf.buf, comm_mail_buf.len);
 #endif // RT_USING_FINSH
 			}
