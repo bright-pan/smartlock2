@@ -19,9 +19,9 @@
 #define CW_TIMER_SEND_DELAY 5
 #define CW_TIMER_RESEND_COUNTS 5
 
-COMM_WINDOW_LIST cw_list;
+COMM_WINDOW_LIST comm_window_list;
 
-void
+static void
 cw_timer_out(void *parameters)
 {
 	COMM_WINDOW_NODE *tmp;
@@ -37,6 +37,11 @@ cw_timer_out(void *parameters)
 		{
 			if (tmp->cnts == 1)
 			{
+#ifdef RT_USING_FINSH
+				rt_kprintf("send request frame\ncmd: 0x%02X, order: 0x%02X, length: %d\n",
+						   (tmp->mail).comm_type, tmp->order, (tmp->mail).len);
+				print_hex((tmp->mail).buf, (tmp->mail).len);
+#endif // RT_USING_FINSH
 				send_frame(cw_list->device, &tmp->mail, tmp->order);
 			}
 			if (tmp->cnts++ > tmp->delay)
@@ -47,8 +52,8 @@ cw_timer_out(void *parameters)
 			if (tmp->r_cnts >= CW_TIMER_RESEND_COUNTS)
 			{
 #ifdef RT_USING_FINSH
-				rt_kprintf("send failure and delete cw node\n");
-				rt_kprintf("comm_type: 0x%02X, order: 0x%02X, length: %d\n", (tmp->mail).comm_type, tmp->order, (tmp->mail).len);
+				rt_kprintf("send failure and delete cw node\ncomm_type: 0x%02X, order: 0x%02X, length: %d\n",
+						   (tmp->mail).comm_type, tmp->order, (tmp->mail).len);
 				print_hex((tmp->mail).buf, (tmp->mail).len);
 #endif // RT_USING_FINSH
 				*((tmp->mail).result) = CW_STATUS_SEND_ERROR;
@@ -61,12 +66,12 @@ cw_timer_out(void *parameters)
 		}
 		else // response
 		{
-			send_frame(cw_list->device, &tmp->mail, tmp->order);
 #ifdef RT_USING_FINSH
-			rt_kprintf("send response and delete cw node\n");
-			rt_kprintf("comm_type: 0x%02X, order: 0x%02X, length: %d\n", (tmp->mail).comm_type, tmp->order, (tmp->mail).len);
-			print_hex((tmp->mail).buf, (tmp->mail).len);
+				rt_kprintf("send response frame and delete cw node\n cmd: 0x%02X, order: 0x%02X, length: %d\n",
+						   (tmp->mail).comm_type, tmp->order, (tmp->mail).len);
+				print_hex((tmp->mail).buf, (tmp->mail).len);
 #endif // RT_USING_FINSH
+			send_frame(cw_list->device, &tmp->mail, tmp->order);
 			*((tmp->mail).result) = CW_STATUS_OK;
 			rt_sem_release((tmp->mail).result_sem);
 			rt_free((tmp->mail).buf);
@@ -116,11 +121,11 @@ cw_list_new(COMM_WINDOW_NODE **node, COMM_WINDOW_LIST *cw_list)
 			(*node)->r_cnts = 1;
 			(*node)->cnts = 1;
 			(*node)->delay = CW_TIMER_SEND_DELAY;
+
 			rt_mutex_take(cw_list->mutex, RT_WAITING_FOREVER);
 			list_add(&(*node)->list, &cw_list->list);
-			rt_mutex_release(cw_list->mutex);
-
 			cw_list->size++;
+			rt_mutex_release(cw_list->mutex);
 		}
 		else
 			return CW_STATUS_NEW_ERROR;
@@ -130,3 +135,16 @@ cw_list_new(COMM_WINDOW_NODE **node, COMM_WINDOW_LIST *cw_list)
 
 	return CW_STATUS_OK;
 }
+
+void
+cw_print(void)
+{
+	rt_kprintf("cw_list size : %d", comm_window_list.size);
+}
+
+#ifdef RT_USING_FINSH
+#include <finsh.h>
+
+FINSH_FUNCTION_EXPORT(cw_print, debug cw_list);
+
+#endif // RT_USING_FINSH

@@ -23,10 +23,10 @@
 #define DEVICE_NAME_COMM "uart3"
 #define COMM_MAIL_MAX_MSGS 10
 
-
 typedef enum {
 
 	CW_STATUS_OK = 0,
+	CW_STATUS_ERROR,
 	CW_STATUS_FULL,
 	CW_STATUS_INIT_ERROR,
 	CW_STATUS_NEW_ERROR,
@@ -37,8 +37,14 @@ typedef enum {
 typedef enum {
 
 	COMM_TYPE_SMS = 0,
-	COMM_TYPE_GPRS = 1,
-	COMM_TYPE_MMS = 2,
+	COMM_TYPE_GPRS,
+	COMM_TYPE_MMS,
+	COMM_TYPE_GSM_CTRL_CLOSE,
+	COMM_TYPE_GSM_CTRL_OPEN,
+	COMM_TYPE_GSM_CTRL_RESET,
+	COMM_TYPE_GSM_CTRL_DIALING,
+	COMM_TYPE_GSM_CTRL_SWITCH_TO_CMD,
+	COMM_TYPE_GSM_CTRL_SWITCH_TO_GPRS,
 
 }COMM_TYPE_TYPEDEF;
 
@@ -51,9 +57,8 @@ typedef struct {
 	uint16_t delay;
 	uint8_t *buf;
 	uint16_t len;
+
 }COMM_MAIL_TYPEDEF;
-
-
 
 extern rt_mq_t comm_tx_mq;
 extern rt_mutex_t comm_mutex;
