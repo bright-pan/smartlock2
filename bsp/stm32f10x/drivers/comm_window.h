@@ -45,7 +45,7 @@ typedef struct {
 
 }COMM_WINDOW_LIST;
 
-extern COMM_WINDOW_LIST cw_list;
+extern COMM_WINDOW_LIST comm_window_list;
 
 CW_STATUS
 cw_list_init(COMM_WINDOW_LIST *cw_list);
