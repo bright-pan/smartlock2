@@ -19,6 +19,9 @@
 rt_mq_t comm_tx_mq = RT_NULL;
 rt_mutex_t comm_tx_mutex = RT_NULL;
 
+char smsc[20] = {0,};
+char phone_call[20] = {0,};
+
 typedef enum {
 
 	FRAME_STATUS_INVALID = 0,
@@ -62,11 +65,13 @@ process_response(uint8_t cmd, uint8_t *rep_frame, uint16_t length)
 	switch (cmd)// process response
 	{
 		case COMM_TYPE_SMS:
+		case COMM_TYPE_GPRS:
 		case COMM_TYPE_GSM_CTRL_OPEN:
 		case COMM_TYPE_GSM_CTRL_CLOSE:
 		case COMM_TYPE_GSM_CTRL_RESET:
 		case COMM_TYPE_GSM_CTRL_SWITCH_TO_CMD:
 		case COMM_TYPE_GSM_CTRL_SWITCH_TO_GPRS:
+		case COMM_TYPE_GSM_CTRL_DIALING:
 			{
 				result = *rep_frame;
 				break;
@@ -84,12 +89,27 @@ process_response(uint8_t cmd, uint8_t *rep_frame, uint16_t length)
 }
 
 __STATIC_INLINE CW_STATUS
-process_request(uint8_t cmd, uint8_t *rep_frame, uint16_t length)
+process_request(uint8_t cmd, uint8_t order, uint8_t *rep_frame, uint16_t length)
 {
 	CW_STATUS result = CW_STATUS_ERROR;
+	uint8_t rep_cmd = cmd | 0x80;
 
 	switch (cmd)// process request
 	{
+		case COMM_TYPE_GSM_SMSC:
+			{
+				rt_memcpy(smsc, rep_frame, length);
+				result = CW_STATUS_OK;
+				send_ctx_mail(rep_cmd, order, 0, &result, 1);
+				break;
+			}
+		case COMM_TYPE_GSM_PHONE_CALL:
+			{
+				rt_memcpy(phone_call, rep_frame, length);
+				result = CW_STATUS_OK;
+				send_ctx_mail(rep_cmd, order, 0, &result, 1);
+				break;
+			}
 		default :
 			{
 #ifdef RT_USING_FINSH
@@ -155,10 +175,10 @@ process_frame(uint8_t *frame, uint16_t frame_size)
 	else
 	{
 #ifdef RT_USING_FINSH
-	rt_kprintf("recv request frame \ncmd: 0x%02X, order: 0x%02X, length: %d\n", cmd, order, length);
-	print_hex(frame, length);
+		rt_kprintf("recv request frame \ncmd: 0x%02X, order: 0x%02X, length: %d\n", cmd, order, length);
+		print_hex(frame, length);
 #endif // RT_USING_FINSH
-		process_request(cmd, frame, length);
+		process_request(cmd, order, frame, length);
 	}
 	return result;
 }
@@ -345,9 +365,18 @@ send_ctx_mail(COMM_TYPE_TYPEDEF comm_type, uint8_t order, uint16_t delay, uint8_
 	return result;
 }
 
+void send_dialing(void)
+{
+	uint8_t *buf = rt_malloc(512);
+	*buf = 0;
+	rt_memcpy(buf+1, &(device_parameters.tcp_domain[0]), sizeof(device_parameters.tcp_domain[0]));
+	send_ctx_mail(COMM_TYPE_GSM_CTRL_DIALING, 0, 0, buf, sizeof(device_parameters.tcp_domain[0])+1);
+	rt_free(buf);
+}
+
 #ifdef RT_USING_FINSH
 #include <finsh.h>
 
 FINSH_FUNCTION_EXPORT(send_ctx_mail, send_mail_buf[comm_type buf length]);
-
+FINSH_FUNCTION_EXPORT(send_dialing, send_gsm_dialing[]);
 #endif // RT_USING_FINSH
