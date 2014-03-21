@@ -646,7 +646,7 @@ sms_thread_entry(void *parameter)
 					rt_kprintf("\nsend sms to ");
 					rt_kprintf((char *)(device_parameters.telephone_address[alarm_telephone_counts].address));
 					rt_kprintf("\n");
-					sms_pdu_ucs_send(device_parameters.telephone_address[alarm_telephone_counts].address, "8613800755500", sms_ucs, sms_ucs_length);
+					sms_pdu_ucs_send(device_parameters.telephone_address[alarm_telephone_counts].address, smsc, sms_ucs, sms_ucs_length);
 				}
 				alarm_telephone_counts++;
 			}

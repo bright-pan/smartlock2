@@ -45,6 +45,8 @@ typedef enum {
 	COMM_TYPE_GSM_CTRL_DIALING,
 	COMM_TYPE_GSM_CTRL_SWITCH_TO_CMD,
 	COMM_TYPE_GSM_CTRL_SWITCH_TO_GPRS,
+	COMM_TYPE_GSM_SMSC,
+	COMM_TYPE_GSM_PHONE_CALL,
 
 }COMM_TYPE_TYPEDEF;
 
@@ -62,6 +64,9 @@ typedef struct {
 
 extern rt_mq_t comm_tx_mq;
 extern rt_mutex_t comm_mutex;
+
+extern char smsc[20];
+extern char phone_call[20];
 
 void
 comm_tx_thread_entry(void *parameters);
