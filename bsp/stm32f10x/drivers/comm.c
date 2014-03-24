@@ -72,6 +72,9 @@ process_response(uint8_t cmd, uint8_t *rep_frame, uint16_t length)
 		case COMM_TYPE_GSM_CTRL_SWITCH_TO_CMD:
 		case COMM_TYPE_GSM_CTRL_SWITCH_TO_GPRS:
 		case COMM_TYPE_GSM_CTRL_DIALING:
+		case COMM_TYPE_GSM_CTRL_PHONE_CALL_ANSWER:
+		case COMM_TYPE_GSM_CTRL_PHONE_CALL_HANG_UP:
+		case COMM_TYPE_VOICE_AMP:
 			{
 				result = *rep_frame;
 				break;
