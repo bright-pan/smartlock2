@@ -239,7 +239,7 @@ struct gpio_pwm_ic_user_data infra_pulse_pwm_ic_user_data =
 
 gpio_device infra_pulse_pwm_ic_device;
 
-void rt_hw_infra_pulse_pwm_ic_register(void)
+int rt_hw_infra_pulse_pwm_ic_register(void)
 {
   gpio_device *pwm_device = &infra_pulse_pwm_ic_device;
   struct gpio_pwm_ic_user_data *pwm_user_data = &infra_pulse_pwm_ic_user_data;
@@ -247,6 +247,8 @@ void rt_hw_infra_pulse_pwm_ic_register(void)
   pwm_device->ops = &gpio_pwm_ic_user_ops;
   pwm_user_data->tim_rcc_cmd = RCC_APB1PeriphClockCmd;
   rt_hw_gpio_register(pwm_device,pwm_user_data->name, (RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_PWM_RX | RT_DEVICE_FLAG_INT_RX), pwm_user_data);
+  
+  return 0;
 }
 
 

@@ -569,7 +569,7 @@ void camera_send_mail(ALARM_TYPEDEF alarm_type,rt_uint32_t time)
 
 void mq(rt_uint32_t time)//(rt_uint8_t time,rt_uint8_t *file_name)
 {
-  camera_send_mail(0,0);
+  camera_send_mail(ALARM_TYPE_CAMERA_IRDASENSOR,0);
 }
 
 FINSH_FUNCTION_EXPORT(mq, mq(time,name));
