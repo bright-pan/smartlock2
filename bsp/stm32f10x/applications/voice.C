@@ -4,6 +4,7 @@
 
 */
 #include "voice.h"
+#include "comm.h"
 
 #include <dfs.h>
 #include <dfs_posix.h>
@@ -50,12 +51,12 @@ typedef struct
 
 static void voice_open_amp(void)
 {
-
+	send_ctx_mail(COMM_TYPE_VOICE_AMP,0,200,"\x01",1);	
 }
 
 static void voice_close_amp(void)
 {
-
+  send_ctx_mail(COMM_TYPE_VOICE_AMP,0,200,"\x00",1);  
 }
 
 static rt_err_t wav_data_send(rt_device_t dev, void *buffer)

@@ -351,7 +351,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F10X_HD, USE_STDPERIPH_DRIVER</Define>
               <Undefine></Undefine>
-              <IncludePath>.;..\..\components\CMSIS\Include;..\..\components\dfs;..\..\components\dfs\include;..\..\components\drivers\include;..\..\components\finsh;..\..\components\init;..\..\include;..\..\libcpu\arm\common;..\..\libcpu\arm\cortex-m3;Libraries\CMSIS\CM3\DeviceSupport\ST\STM32F10x;Libraries\STM32F10x_StdPeriph_Driver\inc;applications;drivers</IncludePath>
+              <IncludePath>.;..\..\components\CMSIS\Include;..\..\components\dfs;..\..\components\dfs\include;..\..\components\drivers\include;..\..\components\finsh;..\..\components\init;..\..\include;..\..\libcpu\arm\common;..\..\libcpu\arm\cortex-m3;Libraries\CMSIS\CM3\DeviceSupport\ST\STM32F10x;Libraries\STM32F10x_StdPeriph_Driver\inc;applications;drivers;.\applications\net;..\..\components\dfs\filesystems\jffs2</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -382,7 +382,7 @@
             <ScatterFile></ScatterFile>
             <IncludeLibs></IncludeLibs>
             <IncludeLibsPath></IncludeLibsPath>
-            <Misc> --keep __fsym_* --keep __vsym_*   --keep __rt_init* </Misc>
+            <Misc>--keep __fsym_* --keep __vsym_*   --keep __rt_init*</Misc>
             <LinkerInputFile></LinkerInputFile>
             <DisabledWarnings></DisabledWarnings>
           </LDads>
@@ -417,11 +417,6 @@
               <FileType>1</FileType>
               <FilePath>.\applications\irsensor.c</FilePath>
             </File>
-            <File>
-              <FileName>voice.C</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\voice.C</FilePath>
-            </File>
           </Files>
         </Group>
         <Group>
@@ -436,11 +431,6 @@
               <FileName>stm32f10x_it.c</FileName>
               <FileType>1</FileType>
               <FilePath>drivers\stm32f10x_it.c</FilePath>
-            </File>
-            <File>
-              <FileName>led.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>drivers\led.c</FilePath>
             </File>
             <File>
               <FileName>usart.c</FileName>
@@ -493,29 +483,9 @@
               <FilePath>drivers\local.c</FilePath>
             </File>
             <File>
-              <FileName>sms.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>drivers\sms.c</FilePath>
-            </File>
-            <File>
-              <FileName>comm.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>drivers\comm.c</FilePath>
-            </File>
-            <File>
               <FileName>untils.c</FileName>
               <FileType>1</FileType>
               <FilePath>drivers\untils.c</FilePath>
-            </File>
-            <File>
-              <FileName>comm_window.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>drivers\comm_window.c</FilePath>
-            </File>
-            <File>
-              <FileName>sdcard.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>drivers\sdcard.c</FilePath>
             </File>
             <File>
               <FileName>rtc.c</FileName>
@@ -536,6 +506,21 @@
               <FileName>pt8211.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\drivers\pt8211.c</FilePath>
+            </File>
+            <File>
+              <FileName>sms.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\sms.c</FilePath>
+            </File>
+            <File>
+              <FileName>comm.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\comm.c</FilePath>
+            </File>
+            <File>
+              <FileName>comm_window.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\comm_window.c</FilePath>
             </File>
           </Files>
         </Group>
