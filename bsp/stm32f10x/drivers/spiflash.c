@@ -124,125 +124,70 @@ void rt_hw_spi_init(void)
 
 
 /******************************************** flash device drive function ******************************/
-
-static u8 spi_flash_write_read_byte(struct rt_spi_device *device,const u8 data)
-{
-	volatile u8 value;
-	struct rt_spi_message message;
-
-	message.length = 1;
-	message.recv_buf = (u8*)&value;
-	message.send_buf = &data;
-	message.cs_release = 0;
-	message.cs_take = 0;
-	message.next = RT_NULL;
-	rt_spi_transfer_message(device,&message);
-
-	return value;
-}
-
 static void spi_flash_wait_write_end(struct rt_spi_device *device)
 {
-	u8 flash_status = 0;
-	
-	rt_spi_take(device);
-
-	spi_flash_write_read_byte(device,W25X_ReadStatusReg1);
+	u8 CmdBuf = W25X_ReadStatusReg1;
+	u8 RecvData;
 	
   do
   {
-    flash_status = spi_flash_write_read_byte(device,Dummy_Byte);	 
+    RecvData = rt_spi_sendrecv8(device,CmdBuf);
   }
-  while ((flash_status& WIP_Flag) == SET); 
-
-	rt_spi_release(device);
+  while ((RecvData & WIP_Flag) == SET); 
 }
 
 static void spi_flash_write_enable(struct rt_spi_device *device )
 {
-  rt_spi_take(device);
+	u8 CmdBuf = W25X_WriteEnable;
   
-	spi_flash_write_read_byte(device,W25X_WriteEnable);
-	
-	rt_spi_release(device);
+	rt_spi_send(device,&CmdBuf,1);
 	
 	spi_flash_wait_write_end(device);
 }
 
 void spi_flash_sector_erase(struct rt_spi_device *device,u32 SectorAddr)
 {
+	u8 CmdBuf[4];
+	
   spi_flash_write_enable(device);
 
-  rt_spi_take(device);
-
-  spi_flash_write_read_byte(device,W25X_SectorErase);
-
-  spi_flash_write_read_byte(device,(SectorAddr & 0xFF0000) >> 16);
-
-  spi_flash_write_read_byte(device,(SectorAddr & 0xFF00) >> 8);
-
-  spi_flash_write_read_byte(device,SectorAddr & 0xFF);
-
-  rt_spi_release(device);
+	CmdBuf[0] = W25X_SectorErase;
+	CmdBuf[1] = (SectorAddr & 0x00FF0000) >> 16;
+	CmdBuf[2] = (SectorAddr & 0x0000FF00) >> 8;
+	CmdBuf[3] = (SectorAddr & 0x000000FF);
+	rt_spi_send(device,CmdBuf,4);
   
   spi_flash_wait_write_end(device);
 }
 
 static void spi_flash_chip_erase(struct rt_spi_device *device)
 {
+	u8 Cmd;
+
+	Cmd = W25X_ChipErase;
+	
 	spi_flash_write_enable(device);
 
-	rt_spi_take(device);
-
-	spi_flash_write_read_byte(device,W25X_ChipErase);
-
-	rt_spi_release(device);
+	rt_spi_send(device,&Cmd,1);
 
 	spi_flash_wait_write_end(device);
 }
 
 static void spi_flash_page_write(struct rt_spi_device *device,const u8* pBuffer, u32 WriteAddr, u16 NumByteToWrite)
 {
+	u8 CmdBuf[4];
+	
   spi_flash_write_enable(device);
-
-  rt_spi_take(device);
-
-  spi_flash_write_read_byte(device,W25X_PageProgram);
-
-  spi_flash_write_read_byte(device,(WriteAddr & 0x00FF0000) >> 16);
-
-  spi_flash_write_read_byte(device,(WriteAddr & 0x0000FF00) >> 8);
   
-  spi_flash_write_read_byte(device,(WriteAddr & 0x000000FF));
-
-  while (NumByteToWrite--)
-  {
-    spi_flash_write_read_byte(device,*pBuffer);
-    pBuffer++;
-  }
-  rt_spi_release(device);
+	CmdBuf[0] = W25X_PageProgram;
+	CmdBuf[1] = (WriteAddr & 0x00FF0000) >> 16;
+	CmdBuf[2] = (WriteAddr & 0x0000FF00) >> 8;
+	CmdBuf[3] = (WriteAddr & 0x000000FF);
+	rt_spi_send_then_send(device,CmdBuf,4,pBuffer,NumByteToWrite);
 
   spi_flash_wait_write_end(device);
 }
 
-static void spi_flash_High_Performance_Mode(struct rt_spi_device *device)
-{
-  spi_flash_write_enable(device);
-
-  rt_spi_take(device);
-  
-  spi_flash_write_read_byte(device,W25X_PageProgram);
-
-  spi_flash_write_read_byte(device,0xff);
-
-  spi_flash_write_read_byte(device,0xff);
-
-  spi_flash_write_read_byte(device,0xff);
-
-  rt_spi_release(device);
-
-  spi_flash_wait_write_end(device);
-}
 
 static void spi_flash_buffer_write(struct rt_spi_device *device,const u8* pBuffer, u32 WriteAddr, u16 NumByteToWrite)
 {
@@ -260,24 +205,15 @@ static void spi_flash_buffer_write(struct rt_spi_device *device,const u8* pBuffe
 
 static void spi_flash_buffer_read(struct rt_spi_device *device,u8* pBuffer, u32 ReadAddr, u16 NumByteToRead)
 {
-  rt_spi_take(device);
+	u8 CmdBuf[4];
 
-  spi_flash_write_read_byte(device,W25X_FastReadData);
-
-  spi_flash_write_read_byte(device,(ReadAddr & 0x00FF0000) >> 16);
-
-  spi_flash_write_read_byte(device,(ReadAddr& 0x0000FF00) >> 8);
-
-  spi_flash_write_read_byte(device,(ReadAddr & 0x000000FF));
-
-  *pBuffer = spi_flash_write_read_byte(device,Dummy_Byte);
-
-  while (NumByteToRead--) 
-  {
-    *pBuffer = spi_flash_write_read_byte(device,Dummy_Byte);
-    pBuffer++;
-  }
-  rt_spi_release(device);
+	CmdBuf[0] = W25X_ReadData;
+	CmdBuf[1] = (ReadAddr & 0x00FF0000) >> 16;
+	CmdBuf[2] = (ReadAddr & 0x0000FF00) >> 8;
+	CmdBuf[3] = (ReadAddr & 0x000000FF);
+ 
+	rt_spi_send_then_recv(device,CmdBuf,4,pBuffer,NumByteToRead);
+	
 }
 
 
@@ -307,7 +243,7 @@ static rt_err_t rt_flash_init(rt_device_t dev)
 		/* 	current configuration spi bus */		
 		flash->spi_device->bus->ops->configure(flash->spi_device,&flash->spi_device->config);
 	}
-	spi_flash_write_read_byte(flash->spi_device,Dummy_Byte);
+	rt_spi_sendrecv8(flash->spi_device,Dummy_Byte);
 	
 	return RT_EOK;
 }
@@ -452,7 +388,7 @@ int rt_spi_flash_init(void)
   
 	return 0;
 }
-INIT_DEVICE_EXPORT(rt_spi_flash_init);
+INIT_BOARD_EXPORT(rt_spi_flash_init);
 
 
 

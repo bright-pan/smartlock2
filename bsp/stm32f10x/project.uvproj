@@ -139,7 +139,7 @@
             <RestoreTracepoints>0</RestoreTracepoints>
           </Target>
           <RunDebugAfterBuild>0</RunDebugAfterBuild>
-          <TargetSelection>13</TargetSelection>
+          <TargetSelection>7</TargetSelection>
           <SimDlls>
             <CpuDll></CpuDll>
             <CpuDllArguments></CpuDllArguments>
@@ -153,7 +153,7 @@
             <PeripheralDll></PeripheralDll>
             <PeripheralDllArguments></PeripheralDllArguments>
             <InitializationFile></InitializationFile>
-            <Driver>STLink\ST-LINKIII-KEIL_SWO.dll</Driver>
+            <Driver>Segger\JL2CM3.dll</Driver>
           </TargetDlls>
         </DebugOption>
         <Utilities>
@@ -163,11 +163,11 @@
             <RunIndependent>0</RunIndependent>
             <UpdateFlashBeforeDebugging>1</UpdateFlashBeforeDebugging>
             <Capability>1</Capability>
-            <DriverSelection>4096</DriverSelection>
+            <DriverSelection>4099</DriverSelection>
           </Flash1>
           <bUseTDR>1</bUseTDR>
-          <Flash2>BIN\UL2CM3.DLL</Flash2>
-          <Flash3></Flash3>
+          <Flash2>Segger\JL2CM3.dll</Flash2>
+          <Flash3>"" ()</Flash3>
           <Flash4></Flash4>
         </Utilities>
         <TargetArmAds>
@@ -402,6 +402,26 @@
               <FileType>1</FileType>
               <FilePath>applications\startup.c</FilePath>
             </File>
+            <File>
+              <FileName>apppubulic.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\apppubulic.c</FilePath>
+            </File>
+            <File>
+              <FileName>camera.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\camera.c</FilePath>
+            </File>
+            <File>
+              <FileName>irsensor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\irsensor.c</FilePath>
+            </File>
+            <File>
+              <FileName>voice.C</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\voice.C</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -501,6 +521,21 @@
               <FileName>rtc.c</FileName>
               <FileType>1</FileType>
               <FilePath>drivers\rtc.c</FilePath>
+            </File>
+            <File>
+              <FileName>device_test.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\device_test.c</FilePath>
+            </File>
+            <File>
+              <FileName>gpio_pwm_ic.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\gpio_pwm_ic.c</FilePath>
+            </File>
+            <File>
+              <FileName>pt8211.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\pt8211.c</FilePath>
             </File>
           </Files>
         </Group>

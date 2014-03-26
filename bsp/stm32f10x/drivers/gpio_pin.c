@@ -534,7 +534,7 @@ struct gpio_pin_user_data camera_power_user_data =
     GPIO_Pin_12,
     GPIO_Mode_Out_PP,
     GPIO_Speed_50MHz,
-    RCC_APB2Periph_GPIOE,
+    RCC_APB2Periph_GPIOC,
     1,
 };
 gpio_device camera_power_device;
@@ -550,7 +550,7 @@ int rt_hw_camera_power_register(void)
 }
 
 /* camera usart tx pin input */
-gpio_device camera_TX_device;
+/*gpio_device camera_TX_device;
 
 struct gpio_pin_user_data camera_TX_user_data = 
 {
@@ -573,7 +573,7 @@ int rt_hw_camera_usart_tx(void)
     rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR), gpio_user_data);
     return 0;
 }
-/* camera photosensor device 
+// camera photosensor device 
 gpio_device camera_photosensor_device;
 
 struct gpio_pin_user_data camera_photosensor_user_data = 
@@ -596,8 +596,8 @@ void rt_hw_camera_photosensor_register(void)
   
   rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR), gpio_user_data);
 }
-*/
 
+*/
 
 
 void gpio_pin_output(char *str, const rt_uint8_t dat)

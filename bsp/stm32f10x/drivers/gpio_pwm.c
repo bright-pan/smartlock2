@@ -708,7 +708,7 @@ struct gpio_pwm_user_data infra_pulse_user_data =
     /* timer oc */
     TIM_OCMode_PWM2,
     TIM_OutputState_Enable,
-    900,// pulse value 50%
+    700,// pulse value 50%
     TIM_OCPolarity_High,
     TIM_Channel_4,
     TIM_IT_CC4 | TIM_IT_Update,
@@ -1192,6 +1192,10 @@ void pwm_send_pulse(char *str)
 {
   rt_device_t device = RT_NULL;
   device = rt_device_find(str);
+  if(!(device->open_flag & RT_DEVICE_OFLAG_OPEN))
+  {
+		rt_device_open(device,RT_DEVICE_OFLAG_RDWR);
+  }
   if(device != RT_NULL)
   {
     rt_device_control(device, RT_DEVICE_CTRL_SEND_PULSE, (void *)0);
