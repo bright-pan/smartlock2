@@ -4,13 +4,9 @@
 作者:wangzw@yuettak.com
 */
 #include "netphysics.h"
-
+#include "testcom.h"
 
 #define TCP_BUF_SIZE       1024 //接收缓冲区
-
-
-static char server_ip[30] = "NULL";
-static rt_uint32_t server_port = 5200;
 
 /*
 功能:在一个数据buffer中发现一个报文包
@@ -43,58 +39,54 @@ void netprotocol_thread_entry(void *arg)
   rt_size_t SavePos = 0;   //最新数据保存位置
   rt_size_t bytenum = 0;   //收到字节数总和
   rt_size_t MsgEndPos = 0; //一条报文结束的位置
-  struct hostent *host;
-  int sock, bytes_received;
-  struct sockaddr_in server_addr;
+  rt_size_t bytes_received;
+  while(1)
+  {
 
-	rt_kprintf("please set server IP and Port\n");
-  while(1)
-  {
-		if(server_ip[0] == 'N' &&
-		server_ip[1] == 'U' &&
-		server_ip[2] == 'L' &&
-		server_ip[3] == 'L')
-		{
-			rt_thread_delay(10);
-		}
-		else
-		{
-			break;
-		}
-  }
-  
-  
-  while(1)
-  {
-    //host = gethostbyname("192.168.1.6");  //域名解析
-    host = gethostbyname(server_ip);  //域名解析
-    
     recv_data = rt_calloc(1,TCP_BUF_SIZE);
     if (recv_data == RT_NULL)
     {
         rt_kprintf("No memory\n");
         return;
     }
-    
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    while(!gsm_is_link())
     {
-        rt_kprintf("Socket error\n");
-        rt_free(recv_data);
-        return;
+    	GSM_Mail_p mail;
+
+			mail = (GSM_Mail_p)rt_calloc(1,sizeof(GSM_Mail));
+			mail->ResultSem = rt_sem_create("gsmmail",0,RT_IPC_FLAG_FIFO);
+			RT_ASSERT(mail->ResultSem != RT_NULL);
+			mail->buf = RT_NULL;
+			mail->BufSize = 0;
+			mail->SendMode = 1;
+			mail->type = GSM_MAIL_LINK;
+			gsm_mail_send(mail);
+			rt_sem_take(mail->ResultSem,RT_WAITING_FOREVER);
+			rt_sem_delete(mail->ResultSem);
+			rt_free(mail);
+			rt_thread_delay(100);
+			{
+	      int  i;
+	    	
+	    	bytes_received = comm_recv_gprs_data(recv_data,TCP_BUF_SIZE);
+	    	for(i = 0;i < bytes_received;i++)
+		    {
+		      rt_kprintf("%c",recv_data[i]);
+		    }
+				rt_thread_delay(100);
+    	}
     }
-    
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(server_port);
-    server_addr.sin_addr = *((struct in_addr *)host->h_addr);
-    rt_memset(&(server_addr.sin_zero), 0, sizeof(server_addr.sin_zero));
-    
-    if (connect(sock, (struct sockaddr *)&server_addr, sizeof(struct sockaddr)) == -1)
+    /*while(1)
     {
-        rt_kprintf("Connect fail!\n");
-        closesocket(sock);
-        rt_free(recv_data);
-        continue;
-    }
+      int  i;
+    	
+    	bytes_received = comm_recv_gprs_data(recv_data,TCP_BUF_SIZE);
+    	for(i = 0;i < bytes_received;i++)
+	    {
+	      rt_kprintf("%02X",recv_data[i]);
+	    }
+			rt_thread_delay(100);
+    }*/
 		//连接成功开始登陆 
 		send_net_landed_mail();
     while(1)
@@ -107,13 +99,13 @@ void netprotocol_thread_entry(void *arg)
     	if(net_event_process(2,NET_ENVET_RELINK) == 0)
     	{
 				rt_kprintf("relink TCP/IP\n");
-				closesocket(sock);
+				gsm_set_link(0);
 				rt_free(recv_data);
 				break;
     	}
     	
     	//接收数据
-      bytes_received = recv(sock,recv_data+SavePos,TCP_BUF_SIZE - (1+SavePos), MSG_DONTWAIT);
+      bytes_received = comm_recv_gprs_data(recv_data+SavePos,TCP_BUF_SIZE - (1+SavePos));
       if(bytes_received > 0)
       {
       	SavePos += bytes_received;
@@ -160,16 +152,29 @@ void netprotocol_thread_entry(void *arg)
 
         if(message.buffer != RT_NULL)
         {
-          result = send(sock,(void *)message.buffer,message.length+4, 0);
+
+          GSM_Mail_p mail;
+
+					mail = (GSM_Mail_p)rt_calloc(1,sizeof(GSM_Mail));
+          mail->ResultSem = rt_sem_create("gsmmail",0,RT_IPC_FLAG_FIFO);
+          RT_ASSERT(mail->ResultSem != RT_NULL);
+          mail->buf = message.buffer;
+          mail->BufSize = message.length+4;
+          mail->SendMode = 1;
+          mail->type = GSM_MAIL_GPRS;
+          gsm_mail_send(mail);
+          rt_sem_take(mail->ResultSem,RT_WAITING_FOREVER);
+          rt_sem_delete(mail->ResultSem);
+          rt_free(mail);
         }
         rt_sem_release(message.sendsem);
-        if(result <= 0)
+       /* if(result <= 0)
         {
           rt_kprintf("send fail\n");
-          closesocket(sock);
+          gsm_set_link(0);
           rt_free(recv_data);
           break;
-        } 
+        } */
       }
     }
   }
@@ -201,19 +206,6 @@ INIT_APP_EXPORT(netprotocol_thread_init);
 #ifdef RT_USING_FINSH
 #include <finsh.h>
 
-void set_server(char* ip,rt_uint32_t port)
-{
-	rt_strncpy(server_ip,ip,rt_strlen(ip));
-	server_port = port;
-}
-FINSH_FUNCTION_EXPORT(set_server,"(ip,port) set server name or IP address and port");
-
-void netsever(void)
-{
-	set_server("192.168.1.107",5200);
-	
-}
-FINSH_FUNCTION_EXPORT(netsever,"test file send");
 
 #endif
 
