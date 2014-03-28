@@ -372,8 +372,8 @@ void send_dialing(void)
 {
 	uint8_t *buf = rt_malloc(512);
 	*buf = 0;
-	rt_memcpy(buf+1, &(device_parameters.tcp_domain[0]), sizeof(device_parameters.tcp_domain[0]));
-	send_ctx_mail(COMM_TYPE_GSM_CTRL_DIALING, 0, 0, buf, sizeof(device_parameters.tcp_domain[0])+1);
+	rt_memcpy(buf+1, &(device_config.param.tcp_domain[0]), sizeof(device_config.param.tcp_domain[0]));
+	send_ctx_mail(COMM_TYPE_GSM_CTRL_DIALING, 0, 0, buf, sizeof(device_config.param.tcp_domain[0])+1);
 	rt_free(buf);
 }
 

@@ -1,11 +1,11 @@
 /*********************************************************************
  * Filename:      gpio_pin.h
  *
- * Description:    
+ * Description:
  *
  * Author:        wangzw <wangzw@yuettak.com>
  * Created at:    2013-04-22
- *                
+ *
  * Modify:
  *
  * 2013-04-25 Bright Pan <loststriker@gmail.com>
@@ -23,6 +23,9 @@
 #include "gpio.h"
 
 #define GPIO_CMD_INIT_CONFIG						1
+
+#define DEVICE_NAME_FPRINT_RESET "fp_rst"
+#define DEVICE_NAME_FPRINT_WAKEUP "fp_wkup"
 
 #define DEVICE_NAME_GSM_POWER "g_power"
 #define DEVICE_NAME_GSM_STATUS "g_stat"

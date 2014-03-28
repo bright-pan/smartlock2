@@ -23,10 +23,12 @@
 
 #define TELEPHONE_NUMBERS 10
 #define TELEPHONE_ADDRESS_LENGTH 20
-
 #define KEY_NUMBERS 10
-
 #define TCP_DOMAIN_LENGTH 20
+
+#define KEY_FPRINT_CODE_SIZE 498
+#define KEY_RFID_CODE_SIZE 4
+#define KEY_KBOARD_CODE_SIZE 6
 
 typedef struct {
 
@@ -37,9 +39,9 @@ typedef struct {
 
 typedef enum {
 
-	KEY_TYPE_FINGER_PRINT = 0,
+	KEY_TYPE_FPRINT = 0,
 	KEY_TYPE_RFID = 1,
-	KEY_TYPE_NUMBER = 2,
+	KEY_TYPE_KBOARD = 2,
 
 }KEY_TYPE;
 
@@ -88,19 +90,33 @@ typedef struct {
 
 }DEVICE_PARAMETERS_TYPEDEF;
 
+#define DEVICE_CONFIG_FILE_KEY_BASE (((sizeof(DEVICE_PARAMETERS_TYPEDEF) / 1024) + 1) * 1024)
+#define DEVICE_CONFIG_FILE_KEY_SIZE (512)
+#define DEVICE_CONFIG_FILE_KEY_OFFSET(x) (DEVICE_CONFIG_FILE_KEY_BASE + (DEVICE_CONFIG_FILE_KEY_SIZE * (x)))
+
+typedef struct {
+
+	rt_mutex_t mutex;
+	DEVICE_PARAMETERS_TYPEDEF param;
+
+}DEVICE_CONFIG_TYPEDEF;
+
 typedef struct
 {
 	uint8_t device_id[6];    //device id
 	uint8_t CDKEY[8];        //serial number
 	uint8_t flag;             //save flag
+
 }PRODUCT_ID;
 
-extern DEVICE_PARAMETERS_TYPEDEF device_parameters;
-extern rt_mutex_t	system_file_mutex;
+extern DEVICE_CONFIG_TYPEDEF device_config;
 
-void system_file_operate(DEVICE_PARAMETERS_TYPEDEF *arg,rt_uint8_t flag);
-void system_config_file_init(void);
-rt_uint8_t check_addrs_book(void);
+int
+device_config_init(DEVICE_CONFIG_TYPEDEF *config);
+int
+device_config_file_operate(DEVICE_CONFIG_TYPEDEF *config, uint8_t flag);
+int
+device_config_key_operate(uint16_t key_id, uint8_t *buf, uint8_t flag);
 
 void
 print_hex(uint8_t *buf, uint16_t length);

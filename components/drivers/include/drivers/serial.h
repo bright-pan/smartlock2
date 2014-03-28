@@ -69,6 +69,7 @@
 #define RT_DEVICE_CTRL_SET_INT          0x10    /* enable receive irq */
 #define RT_DEVICE_CTRL_CLR_INT          0x11    /* disable receive irq */
 #define RT_DEVICE_CTRL_GET_INT          0x12
+#define RT_DEVICE_CTRL_CLR_RB           0x13
 
 #define RT_SERIAL_RX_INT                0x01
 #define RT_SERIAL_TX_INT                0x02

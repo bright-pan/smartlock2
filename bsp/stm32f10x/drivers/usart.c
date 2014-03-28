@@ -181,6 +181,10 @@ static rt_err_t stm32_control(struct rt_serial_device *serial, int cmd, void *ar
 			GPIO_InitStructure.GPIO_Pin = uart->uart_tx_pin;
 			GPIO_Init(uart->uart_tx_gpio, &GPIO_InitStructure);
 			break;
+        case RT_DEVICE_CTRL_CLR_RB:
+            serial->int_rx->rb.read_index = 0;
+            serial->int_rx->rb.write_index = 0;
+            break;
     }
 
     return RT_EOK;
@@ -290,7 +294,7 @@ void USART1_IRQHandler(void)
 #if defined(RT_USING_UART2)
 /* UART2 device driver structure */
 struct serial_ringbuffer uart2_int_rx;
-#define UART2_POOL_SIZE 64
+#define UART2_POOL_SIZE 1024
 rt_uint8_t uart2_pool[UART2_POOL_SIZE];
 struct stm32_uart uart2 =
 {

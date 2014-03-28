@@ -18,10 +18,189 @@
 #include "dfs_posix.h"
 //#include "eeprom.h"
 //#include "funtable.h"
+#define UNTILS_DEBUG
 
-#define SYSTEM_CONFIG_FILE_NAME					"/config"
+#define DEVICE_CONFIG_FILE_NAME	"/config"
 
-rt_mutex_t	system_file_mutex = RT_NULL;
+DEVICE_CONFIG_TYPEDEF device_config = {
+	RT_NULL,
+	{
+		//alarm telephone
+		{
+			{
+				0,
+				"8613316975697"
+			},
+			{
+				1,
+				"8618675557185"
+			},
+		},
+		//key
+		{
+			{
+				0,
+				KEY_TYPE_KBOARD,
+				OPERATION_TYPE_FOREVER,
+				0, 0,
+			},
+			{
+				0,
+				KEY_TYPE_RFID,
+				OPERATION_TYPE_FOREVER,
+				0, 0,
+			},
+			{
+				0,
+				KEY_TYPE_FPRINT,
+				OPERATION_TYPE_FOREVER,
+				0, 0,
+			},
+		},
+		{
+			"iyuet.com",
+			6800
+		},
+		//lock gate alarm time
+		30,
+		//device id
+		{0x01,0xA1,0x00,0x01,0x01,0xA9,0x01,0x01},
+		//CDKEY
+		{0x9C,0x9E,0x11,0x36,0xD3,0x64,0xAF,0xA9},
+		//key0
+		{0x31,0x32,0x33,0x34,0x35,0x36,0x37,0x38},
+		//key1
+		{0x00,0x00,0xCB,0x17,0x62,0x2F,0x7A,0xC5},
+		//
+		0,
+	},
+};
+
+int
+device_config_key_operate(uint16_t key_id, uint8_t *buf, uint8_t flag)
+{
+	int fd;
+	int result = 0;
+	uint16_t len;
+	KEY_TYPEDEF key;
+
+	if (key_id < KEY_NUMBERS)
+		key = device_config.param.key[key_id];
+	else
+#if (defined RT_USING_FINSH) && (defined UNTILS_DEBUG)
+		rt_kprintf("the key id is invalid\n");
+#endif // MACRO
+	switch (key.key_type)
+	{
+		case KEY_TYPE_FPRINT:
+			{
+				len = KEY_FPRINT_CODE_SIZE;
+				break;
+			}
+		case KEY_TYPE_RFID:
+			{
+				len = KEY_RFID_CODE_SIZE;
+				break;
+			}
+		case KEY_TYPE_KBOARD:
+			{
+				len = KEY_KBOARD_CODE_SIZE;
+				break;
+			}
+		default :
+			{
+#if (defined RT_USING_FINSH) && (defined UNTILS_DEBUG)
+				rt_kprintf("the key type is invalid\n");
+#endif // MACRO
+				return -1;
+			}
+	}
+	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+	fd = open(DEVICE_CONFIG_FILE_NAME, O_RDWR, 0x777);
+	if (fd > 0)
+	{
+		lseek(fd, DEVICE_CONFIG_FILE_KEY_OFFSET(key_id), SEEK_SET);
+		if (flag) {
+			if (write(fd, buf, len) != len)
+				result = -1;
+		} else {
+			if (read(fd, buf, len) != len)
+				result = -1;
+		}
+		close(fd);
+	}
+	rt_mutex_release(device_config.mutex);
+	return result;
+}
+
+int
+device_config_init(DEVICE_CONFIG_TYPEDEF *config)
+{
+	int result;
+
+	config->mutex = rt_mutex_create("m_config", RT_IPC_FLAG_FIFO);
+	if (config->mutex == RT_NULL)
+		return -1;
+
+	result = device_config_file_operate(config, 0);
+
+	return result;
+}
+
+/*******************************************************************************
+* Function Name  : system_file_operate
+* Description    :  system config file operate
+*
+* Input				: flag :1>>write ; 0>>read
+* Output			: None
+* Return		: None
+*******************************************************************************/
+int
+device_config_file_operate(DEVICE_CONFIG_TYPEDEF *config, uint8_t flag)
+{
+	int fd;
+	int cnts;
+	int result = 0;
+
+	RT_ASSERT(config!=RT_NULL);
+	RT_ASSERT(config->mutex!=RT_NULL);
+
+	rt_mutex_take(config->mutex, RT_WAITING_FOREVER);
+	fd = open(DEVICE_CONFIG_FILE_NAME,O_RDWR,0x777);
+	if(fd < 0)
+	{
+		unlink(DEVICE_CONFIG_FILE_NAME);
+		//system_file_key_init(arg);
+		fd = open(DEVICE_CONFIG_FILE_NAME,O_CREAT | O_RDWR,0x777);
+		if (fd < 0) {
+#if (defined RT_USING_FINSH) && (defined UNTILS_DEBUG)
+			rt_kprintf("Creat Config File failure\n");
+#endif // MACRO
+			rt_mutex_release(config->mutex);
+			return -1;
+		} else {
+#if (defined RT_USING_FINSH) && (defined UNTILS_DEBUG)
+			rt_kprintf("Creat Config File success\n");
+			if ((cnts = write(fd, &(config->param), sizeof(config->param))) != sizeof(config->param))
+				result = -1;
+			lseek(fd, 0, SEEK_SET);
+#endif // MACRO
+		}
+	}
+
+	if (flag) {
+
+		if ((cnts = write(fd, &(config->param), sizeof(config->param))) != sizeof(config->param))
+			result = -1;
+	} else {
+		if ((cnts = read(fd, &(config->param), sizeof(config->param))) != sizeof(config->param))
+			result = -1;
+	}
+	close(fd);
+	rt_mutex_release(config->mutex);
+
+	return result;
+}
 
 void
 delay_us(uint32_t time)
@@ -79,54 +258,3 @@ memmem(const void *haystack, rt_size_t haystack_len,
 }
 
 #endif
-
-DEVICE_PARAMETERS_TYPEDEF device_parameters = {
-	//alarm telephone
-	{
-		{
-			0,
-			"8613316975697"
-		},
-		{
-			1,
-			"8618675557185"
-		},
-	},
-	//key
-	{
-		{
-			0,
-			KEY_TYPE_NUMBER,
-			OPERATION_TYPE_FOREVER,
-			0, 0,
-		},
-		{
-			0,
-			KEY_TYPE_RFID,
-			OPERATION_TYPE_FOREVER,
-			0, 0,
-		},
-		{
-			0,
-			KEY_TYPE_FINGER_PRINT,
-			OPERATION_TYPE_FOREVER,
-			0, 0,
-		},
-	},
-	{
-		"iyuet.com",
-		6800
-	},
-	//lock gate alarm time
-	30,
-	//device id
-	{0x01,0xA1,0x00,0x01,0x01,0xA9,0x01,0x01},
-	//CDKEY
-	{0x9C,0x9E,0x11,0x36,0xD3,0x64,0xAF,0xA9},
-	//key0
-	{0x31,0x32,0x33,0x34,0x35,0x36,0x37,0x38},
-	//key1
-	{0x00,0x00,0xCB,0x17,0x62,0x2F,0x7A,0xC5},
-	//
-	0,
-};

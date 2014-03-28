@@ -493,6 +493,11 @@
               <FilePath>drivers\comm_window.c</FilePath>
             </File>
             <File>
+              <FileName>fprint.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>drivers\fprint.c</FilePath>
+            </File>
+            <File>
               <FileName>sdcard.c</FileName>
               <FileType>1</FileType>
               <FilePath>drivers\sdcard.c</FilePath>

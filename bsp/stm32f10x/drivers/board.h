@@ -22,6 +22,8 @@
 #include "sms.h"
 #include "untils.h"
 #include "comm.h"
+#include "fprint.h"
+#include "gpio_pin.h"
 /* board configuration */
 
 /* whether use board external SRAM memory */

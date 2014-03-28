@@ -71,12 +71,20 @@ void alarm_thread_entry(void *parameter)
 	rt_err_t result;
 	ALARM_MAIL_TYPEDEF alarm_mail_buf;
 	LOCAL_MAIL_TYPEDEF local_mail_buf;
-
+    
+    if (device_config_init(&device_config) < 0)
+	{
+#ifdef RT_USING_FINSH
+		rt_kprintf("device config init failure");
+#endif // RT_USING_FINSH
+	}
     // get rtc clock
 	rtc_device = rt_device_find("rtc");
 	if (rtc_device == RT_NULL)
 	{
+#ifdef RT_USING_FINSH
 		rt_kprintf("rtc_device is not exist!!!");
+#endif // RT_USING_FINSH
 	}
 	// open device
 	device_enable(DEVICE_NAME_SWITCH1);

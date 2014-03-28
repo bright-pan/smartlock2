@@ -641,12 +641,12 @@ sms_thread_entry(void *parameter)
 			//			gsm_muntex_control(RT_TRUE,"SMS");
 			while (alarm_telephone_counts < TELEPHONE_NUMBERS)
 			{
-				if (device_parameters.telephone_address[alarm_telephone_counts].flag)
+				if (device_config.param.telephone_address[alarm_telephone_counts].flag)
 				{
 					rt_kprintf("\nsend sms to ");
-					rt_kprintf((char *)(device_parameters.telephone_address[alarm_telephone_counts].address));
+					rt_kprintf((char *)(device_config.param.telephone_address[alarm_telephone_counts].address));
 					rt_kprintf("\n");
-					sms_pdu_ucs_send(device_parameters.telephone_address[alarm_telephone_counts].address, smsc, sms_ucs, sms_ucs_length);
+					sms_pdu_ucs_send(device_config.param.telephone_address[alarm_telephone_counts].address, smsc, sms_ucs, sms_ucs_length);
 				}
 				alarm_telephone_counts++;
 			}
