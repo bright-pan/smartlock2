@@ -16,7 +16,7 @@
 
 #include "spiflash.h"
 
-
+//#define USE_FLASH_WRITE_CMD
 
 /* hardware define ---------------------------------------------------------*/
 
@@ -485,6 +485,7 @@ void spi_flash_write_nocheck(const u8* pBuffer,u32 WriteAddr,u16 NumByteToWrite)
 		}
 	};	    
 } 
+#ifdef USE_FLASH_WRITE_CMD
 u8 SPI_FLASH_BUF[4097];
 void flashwrite(const u8* pBuffer,u32 WriteAddr,u16 NumByteToWrite)   
 { 
@@ -549,6 +550,7 @@ void flashwrite(const u8* pBuffer,u32 WriteAddr,u16 NumByteToWrite)
 }
 
 FINSH_FUNCTION_EXPORT(flashwrite,flashwrite(pBuffer,writeaddr,size)--wirte data go to flash);
+#endif
 
 #endif
 
