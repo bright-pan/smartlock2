@@ -1059,7 +1059,7 @@ static void net_send_wnd_process(net_msgmail_p msg)
 		else
 		{
 			//释放资源
-			net_msg_user_delete(msg);
+			//net_msg_user_delete(msg);
 		}
   }
   else //新类型的邮件
@@ -1123,7 +1123,7 @@ static void net_send_message(net_msgmail_p msg,void *user)
   message = rt_calloc(1,sizeof(net_message));
   RT_ASSERT(message != RT_NULL);
   message->sendsem = rt_sem_create("netsend",0,RT_IPC_FLAG_FIFO);
-
+	RT_ASSERT(message->sendsem != RT_NULL);
   net_set_message(&data,msg);//设置报文信息准备打包
 
   net_pack_data(message,&data);//打包
