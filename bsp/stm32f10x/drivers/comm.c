@@ -21,6 +21,9 @@ rt_mutex_t comm_tx_mutex = RT_NULL;
 
 char smsc[20] = {0,};
 char phone_call[20] = {0,};
+static struct rt_ringbuffer gprsringbuffer;
+static rt_uint8_t buffer[BUF_SIZE];
+
 
 typedef enum {
 
@@ -91,6 +94,35 @@ process_response(uint8_t cmd, uint8_t *rep_frame, uint16_t length)
 	return result;
 }
 
+rt_size_t comm_recv_gprs_data(rt_uint8_t *buffer,rt_size_t size)
+{
+	rt_uint8_t *ptr;
+
+  ptr = buffer;
+
+	/* interrupt mode Rx */
+	while (size)
+	{
+    rt_uint8_t ch;
+
+    if (rt_ringbuffer_getchar(&gprsringbuffer,&ch) == 0)
+    {
+    	break;
+    }
+    *ptr = ch;
+    ptr ++;
+    size --;
+	}
+	size = (rt_uint32_t)ptr - (rt_uint32_t)buffer;
+	/* set error code */
+	if (size == 0)
+	{
+	    rt_set_errno(-RT_EEMPTY);
+	}
+
+	return size;
+}
+
 __STATIC_INLINE CW_STATUS
 process_request(uint8_t cmd, uint8_t order, uint8_t *rep_frame, uint16_t length)
 {
@@ -111,6 +143,26 @@ process_request(uint8_t cmd, uint8_t order, uint8_t *rep_frame, uint16_t length)
 				rt_memcpy(phone_call, rep_frame, length);
 				result = CW_STATUS_OK;
 				send_ctx_mail(rep_cmd, order, 0, &result, 1);
+				break;
+			}
+		case COMM_TYPE_GPRS:
+			{
+				rt_uint8_t *ptr = rep_frame+1;
+				printf_data(rep_frame,length);
+				rt_kprintf("COMM_TYPE_GPRS\n");
+				result = CW_STATUS_OK;
+				send_ctx_mail(rep_cmd, order, 0, &result, 1);
+				while (length-1)
+        {
+            if (rt_ringbuffer_putchar(&gprsringbuffer,*ptr) != -1)
+            {
+                ptr ++;
+                length --;
+            }
+            else
+                break;
+        }
+				/* process data */
 				break;
 			}
 		default :
@@ -197,7 +249,7 @@ comm_rx_thread_entry(void *parameters)
 	uint8_t process_buf[BUF_SIZE];
 
 	device_comm = device_enable(DEVICE_NAME_COMM);
-
+	rt_ringbuffer_init(&gprsringbuffer,buffer,BUF_SIZE);
 	while (1) {
 		process_buf_bk = process_buf;
 		recv_counts = 0;
@@ -365,6 +417,8 @@ send_ctx_mail(COMM_TYPE_TYPEDEF comm_type, uint8_t order, uint16_t delay, uint8_
 	{
 		rt_kprintf("comm_mq is RT_NULL!!!!\n");
 	}
+	result = *comm_mail_buf.result;
+	
 	return result;
 }
 
