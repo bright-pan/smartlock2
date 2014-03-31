@@ -3,6 +3,8 @@
 */
 #include "irsensor.h"
 
+#include "alarm.h"
+
 #define DEVICE_NAME_INFRA_PULSE_PWM_IC "infra_ic"
 #define DEVICE_NAME_INFRA_PULSE        "infra_s"
 
@@ -72,6 +74,7 @@ void ir_cover_process(void)
     {
       /* send sem camera */
       //camera
+      camera_send_mail(ALARM_TYPE_CAMERA_IRDASENSOR,sys_cur_date());
       rt_kprintf("start make picture\n");
     }
     ok_num = 0;
