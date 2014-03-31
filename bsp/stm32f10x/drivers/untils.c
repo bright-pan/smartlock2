@@ -51,7 +51,7 @@ DEVICE_CONFIG_TYPEDEF device_config = {
 				0, 0,
 			},
 			{
-				0,
+				1,
 				KEY_TYPE_FPRINT,
 				OPERATION_TYPE_FOREVER,
 				0, 0,
@@ -117,7 +117,7 @@ device_config_key_operate(uint16_t key_id, uint8_t *buf, uint8_t flag)
 	}
 	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 	fd = open(DEVICE_CONFIG_FILE_NAME, O_RDWR, 0x777);
-	if (fd > 0)
+	if (fd >= 0)
 	{
 		lseek(fd, DEVICE_CONFIG_FILE_KEY_OFFSET(key_id), SEEK_SET);
 		if (flag) {
