@@ -27,6 +27,7 @@ net_col net_order;
 void message_ASYN(rt_uint8_t type);
 //邮件接收处理函数
 rt_uint8_t (*NetMsg_Recv_handle)(net_recvmsg_p Mail,void *UserData);
+void (*NetMsg_Recv_CallBack_Fun)(void);
 
 /*
 设置:报文接收的回调函数
@@ -39,18 +40,47 @@ void Net_Set_MsgRecv_Callback(rt_uint8_t (*Callback)(net_recvmsg_p Mail,void *Us
 	}
 }
 
-void Net_MsgRecv_handle(net_recvmsg_p Mail,void *UserData)
+void Net_NetMsg_thread_callback(void (*Callback)(void))
 {
+	if(Callback != RT_NULL)
+	{
+		NetMsg_Recv_CallBack_Fun = Callback;
+	}
+}
+
+/*
+功能:协议接收到报文的回调函数
+*/
+static rt_int8_t Net_MsgRecv_handle(net_recvmsg_p Mail,void *UserData)
+{
+	rt_int8_t result;
+	
 	if(NetMsg_Recv_handle != RT_NULL)
 	{
-		NetMsg_Recv_handle(Mail,UserData);
+		result = NetMsg_Recv_handle(Mail,UserData);
 	}
 	else
 	{
 		RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NetMsg_Recv_handle Is NULL\n"));
 	}
+
+	return result;
 }
 
+/*
+功能:协议处理线程回调函数
+*/
+static void Net_Msg_thread_callback(void)
+{
+	if(NetMsg_Recv_CallBack_Fun != RT_NULL)
+	{
+		NetMsg_Recv_CallBack_Fun();
+	}
+	/*else
+	{
+		RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NetMsg_Recv_CallBack_Fun Is NULL\n"));
+	}*/
+}
 /*
 功能:获得最新的序号
 */
@@ -370,6 +400,14 @@ void net_pack_data(net_message *message,net_encrypt *data)
 			rt_memcpy(bufp,data->data.filedata.data,data->lenmap.bit.data);
 			break;
 		}
+		case NET_MSGTYPE_KEYADD:
+		{
+			rt_memcpy(bufp,&data->data.keyadd,16);
+			rt_memcpy(bufp + 16,data->data.keyadd.data,data->lenmap.bit.data - 16);
+			rt_kprintf("data->lenmap.bit.data = %d\n",data->lenmap.bit.data);
+			
+			break;
+		}
 		case NET_MSGTYPE_HTTPUPDATE:
 		{
 			break;
@@ -552,8 +590,17 @@ void net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
     case NET_MSGTYPE_FILEREQUE_ACK:
     {
     	//文件请求应答
+    	net_filereq_ack_user *data;
+    	
     	msg_data->cmd = NET_MSGTYPE_FILEREQUE_ACK;
-      net_set_lenmap(&msg_data->lenmap,1,1,0,2);
+      net_set_lenmap(&msg_data->lenmap,1,1,1,2);
+
+			data = MsgMail->user;
+      if(data != RT_NULL)
+      {
+				msg_data->data.FileReqAck = data->result;
+      }
+      
 			break;
     }
     case NET_MSGTYPE_FILEDATA:
@@ -599,7 +646,7 @@ void net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
       msg_data->cmd = NET_MSGTYPE_PHONEDDEL_ACK;
       net_set_lenmap(&msg_data->lenmap,1,1,1,2);
       
-      msg_data->data.phonedelete.result = 1;
+//      msg_data->data.phonedelete.result = 1;
       break;
     }
     case NET_MSGTYPE_ALARMARG:
@@ -649,27 +696,45 @@ void net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
     	if(MsgMail->user != RT_NULL)
     	{
 				keydata = (net_keyadd_user*)MsgMail->user;
-				msg_data->cmd = NET_MSGTYPE_LINK_ACK;
-				net_set_lenmap(&msg_data->lenmap,1,1,keydata->DataLen,2);
+				msg_data->data.keyadd = keydata->data;
+
+				msg_data->cmd = NET_MSGTYPE_KEYADD;
+				net_set_lenmap(&msg_data->lenmap,1,1,keydata->DataLen + 16,2);
     	}
       break;
     }
     case NET_MSGTYPE_KEYADD_ACK:
     {
     	//钥匙添加应答
+    	net_keyadd_ack *data;
+    	
     	msg_data->cmd = NET_MSGTYPE_KEYADD_ACK ;
-      net_set_lenmap(&msg_data->lenmap,1,1,1,2);
+      net_set_lenmap(&msg_data->lenmap,1,1,3,2);
 
-      msg_data->data.KeyAddAck.result = 0;
+			data = MsgMail->user;
+			if(data != RT_NULL)
+			{
+				msg_data->data.KeyAddAck = *data;
+				msg_data->data.KeyAddAck.result = 0;
+				msg_data->data.KeyAddAck.pos = 0;
+			}
+      
 			break;
     }
     case NET_MSGTYPE_KEYDELETE:
     { 
     	//钥匙删除
+    	net_keydelete_user *data;
+
       msg_data->cmd = NET_MSGTYPE_KEYDELETE ;
       net_set_lenmap(&msg_data->lenmap,1,1,1,2);
 
-      msg_data->data.keydelete.number = 0;
+			data = MsgMail->user;
+      if(data != RT_NULL)
+      {
+				msg_data->data.keydelete = data->data;
+      }
+      
       break;
     }
     case NET_MSGTYPE_KEYDEL_ACK:
@@ -1074,7 +1139,7 @@ static void net_send_wnd_process(net_msgmail_p msg)
 功能:接收到一份邮件后对窗口的处理
 参数:msg 接收到的邮件
 */
-static void net_recv_wnd_process(net_recvmsg_p msg)
+static void net_recv_wnd_process(net_recvmsg_p msg,rt_int8_t result)
 {
 	rt_int8_t pos;	
 	rt_uint8_t cmd = NET_MSGTYPE_NULL;
@@ -1091,7 +1156,7 @@ static void net_recv_wnd_process(net_recvmsg_p msg)
 		if(cmd == get_wnd_pos_cmd(pos))
 		{
 		  RT_DEBUG_LOG(SHOW_WND_INFO,("clear window %d Col %d\n",pos,msg->col.bit.col));
-      clear_wnd_mail_pos(pos,SEND_OK);
+      clear_wnd_mail_pos(pos,result);
 		}
 	}
 }
@@ -1197,8 +1262,9 @@ static void net_recv_message(net_msgmail_p mail)
 {
 	net_recvmsg_p msg;
 	rt_err_t    result;
+	rt_int8_t   SendResult = SEND_OK;
 
-	result = rt_mb_recv(net_datrecv_mb,(rt_uint32_t *)&msg,10);
+	result = rt_mb_recv(net_datrecv_mb,(rt_uint32_t *)&msg,1);
 	if(result == RT_EOK)
 	{
 	  RT_DEBUG_LOG(SHOW_RECV_MAIL_ADDR,("Recv mailbox addr %X\n",msg));
@@ -1206,7 +1272,7 @@ static void net_recv_message(net_msgmail_p mail)
 	  //如果已经登陆在线收到的所有报文都解密
 	  if(net_event_process(1,NET_ENVET_ONLINE) == 0)
 	  {
-	  	rt_kprintf("NO NET_MSGTYPE_LANDED_ACK cmd %x\n",msg->cmd);
+	  	//rt_kprintf("NO NET_MSGTYPE_LANDED_ACK cmd %x\n",msg->cmd);
       if(net_des_decode(msg) < 0)
       {
         //解密失败
@@ -1227,7 +1293,7 @@ static void net_recv_message(net_msgmail_p mail)
     if(msg->cmd & 0x80)
     {
       rt_int8_t pos;
-
+			
       pos = get_wnd_order_pos(msg->col);
       if(pos < 0)
       {
@@ -1444,29 +1510,16 @@ static void net_recv_message(net_msgmail_p mail)
 				break;
 			}
 		}
-		/* 接收时对窗口的处理 */
-		net_recv_wnd_process(msg);
+		if(msg->cmd & 0x80)
+		{
+      /* 接收时对窗口的处理 */
+      net_recv_wnd_process(msg,SendResult);
+		}
 		rt_free(msg);
 		rt_timer_start(sendwnd_timer);
 	}
 }
 
-
-void send_net_landed_mail(void)
-{
-  net_msgmail mail;
-
-  
-  mail.user = RT_NULL;
-  mail.time = 0;
-  mail.type = NET_MSGTYPE_LANDED;
-  mail.resend = 3;
-  mail.outtime = 600;
-  mail.sendmode = ASYN_MODE;
-  mail.col.byte = net_order.byte;
-  net_order.bit.col++;
-  net_msg_send_mail(&mail);
-}
 
 /*
 功能:定时器处理函数
@@ -1556,18 +1609,19 @@ void netmsg_thread_entry(void *arg)
       }
     }
     net_recv_message(&msg_mail);
-    net_wnd_timer_process();
+    net_wnd_timer_process();		//窗口定时器处理
+    Net_Msg_thread_callback();  //执行回调函数
     //发送心跳
     HearTime++;
     //rt_kprintf("HearTime = %d\n",HearTime);
-    if(HearTime >= 10*60)
+    if(HearTime >= 10*600)
     {
-    	rt_kprintf("send heart\n");
 			HearTime = 0;
 			//如果已经登陆
 			if(net_event_process(1,NET_ENVET_ONLINE) == 0)
 			{
-				//message_ASYN(NET_MSGTYPE_HEART);
+				rt_kprintf("send heart\n");
+				message_ASYN(NET_MSGTYPE_HEART);
 			}
     }
   }
@@ -1664,7 +1718,7 @@ int netmsg_thread_init(void)
 
   id = rt_thread_create("msg",
                          netmsg_thread_entry, RT_NULL,
-                         1024, 29, 20);
+                         1024, 106, 20);
 
   if(id == RT_NULL)
   {

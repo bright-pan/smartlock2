@@ -147,6 +147,12 @@ typedef struct
   rt_uint8_t crc32[4];     //CRC32
 }net_filerequest;
 
+//文件请求应答
+typedef struct 
+{
+	rt_uint8_t result;
+}net_filereq_ack;
+
 //文件数据
 typedef struct 
 {
@@ -168,12 +174,24 @@ typedef struct
   rt_uint8_t result;
 }net_phoneadd;
 
+//添加手机应答
+typedef struct 
+{
+	rt_uint8_t result;
+	rt_uint8_t pos;
+}net_phoneadd_ack;
+
 //响应删除手机号
 typedef struct 
 {
 	rt_uint8_t pos;
-  rt_uint8_t result;       //处理结果
 }net_phonedelete;
+
+typedef struct 
+{
+	rt_uint8_t result;
+	
+}net_phonedel_ack;
 
 //报警参数
 typedef struct 
@@ -191,19 +209,26 @@ typedef struct
 //添加钥匙
 typedef struct 
 {
-  rt_uint8_t col;
-  rt_uint8_t type;
-  rt_uint8_t accredit;
-  rt_uint8_t start_t[4];
-  rt_uint8_t stop_t[4];
-  rt_uint8_t *data;//钥匙编码
+  rt_uint8_t col[2];			//序号
+  rt_uint8_t type;				//类型
+  rt_uint8_t createt[4];  //创建时间
+  rt_uint8_t accredit;		//授权
+  rt_uint8_t start_t[4];	//开始使用时间
+  rt_uint8_t stop_t[4];		//停止使用时间
+  rt_uint8_t *data;				//钥匙编码
 }net_keyadd;
+
+//添加钥匙应答
+typedef struct 
+{
+	rt_uint8_t  result;			//操作结果
+	rt_uint16_t pos;					//钥匙位置
+}net_keyadd_ack;
 
 //删除钥匙
 typedef struct 
 {
-	rt_uint8_t pos;
-  rt_uint8_t number;
+	rt_uint8_t pos[2];
 }net_keydelete;
 
 //更新
@@ -280,16 +305,18 @@ typedef union
   net_opendoor      opendoor;  		//开门记录
   net_battery       battery;   		//电池信息
   net_filerequest   filerequest; 	//文件请求
+  net_filereq_ack   FileReqAck;   //文件请求应答
   net_filedata      filedata;   	//文件数据
   net_filedat_ack   FileDatAck;   //文件数据传送应答
   net_phoneadd      phoneadd;   	//添加电话
+  net_phoneadd_ack  PhoneAddAck;  //
   net_phonedelete   phonedelete; 	//删除电话
   net_alarmarg      alarmarg;  		//报警时间参数
   net_ack           AlarmArgAck;	//报警参数应答
   net_link          link;      		//链接状态管理
   net_ack           LinkAck;      //链接状态管理应答
   net_keyadd        keyadd;    		//添加钥匙
-  net_ack           KeyAddAck;    //添加钥匙应答
+  net_keyadd_ack    KeyAddAck;    //添加钥匙应答
   net_keydelete     keydelete;		//删除钥匙
   net_ack           KeyDelAck; 		//钥匙删除应答
   net_update        update;    		//用文件协议更新
@@ -507,7 +534,13 @@ typedef struct
   net_filerequest file;
 }net_filerequest_user;
 
+//文件包请求应答
+typedef struct
+{
+	net_filereq_ack result;
+}net_filereq_ack_user;
 
+//文件数据
 typedef struct 
 {
   net_send_result result;
@@ -526,8 +559,15 @@ typedef struct
 {
 	net_send_result result;
 	net_keyadd data;
-	rt_uint8_t DataLen;
+	rt_uint16_t DataLen;
 }net_keyadd_user;
+
+//钥匙删除
+typedef struct 
+{
+  net_send_result result;
+	net_keydelete data;
+}net_keydelete_user;
 
 //较时
 typedef struct 
@@ -555,6 +595,8 @@ extern rt_mailbox_t net_datrecv_mb;//接收邮箱
 
 void net_msg_send_mail(net_msgmail_p mail);
 void Net_Set_MsgRecv_Callback(rt_uint8_t (*Callback)(net_recvmsg_p Mail,void *UserData));
+void Net_NetMsg_thread_callback(void (*Callback)(void));
+
 
 rt_uint8_t net_event_process(rt_uint8_t mode,rt_uint32_t type);
 rt_uint8_t get_msg_new_order(void);//获得报文的新序号
