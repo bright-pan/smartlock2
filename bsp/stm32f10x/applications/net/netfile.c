@@ -260,7 +260,7 @@ static rt_int8_t send_file_request(char *FileName)
 	RequestInfo->file.packsize = 4;//包大小512k
 	net_uint32_copy_string(RequestInfo->file.packnum,PackNum);//包数量
 	//计算CRC32
-	file_get_crc32(FileName,&CRC32Value);
+	file_get_crc32((rt_uint8_t *)FileName,&CRC32Value);
 	net_uint32_copy_string(RequestInfo->file.crc32,CRC32Value);
 	RT_DEBUG_LOG(SHOW_NFILE_CRC32,("File:%s CRC32:%X\n",FileName,CRC32Value));
 
@@ -311,7 +311,7 @@ static rt_int8_t send_file_process(rt_uint8_t Type,rt_uint32_t Time,char *FileNa
 	}
   init_net_msgmail(mail,FILE_PACKNUM_MAX);	
 	//发送控制信号量
-	SendSem = rt_sem_create("sendpic",3,RT_IPC_FLAG_FIFO);
+	SendSem = rt_sem_create("sendpic",FILE_PACKNUM_MAX,RT_IPC_FLAG_FIFO);
 	if(SendSem == RT_NULL)
 	{
 		rt_kprintf("Send Semaphore Create Fail\n");
@@ -414,7 +414,7 @@ void send_file(char *FileName)
 
 	thread_id = rt_thread_create("netfile",
 															net_file_entry,(void *)FileName,
-                         			1024, 27, 20);
+                         			1024, 104, 20);
   RT_ASSERT(thread_id != RT_NULL);
   rt_thread_startup(thread_id);
 }
@@ -522,8 +522,14 @@ void FileShowHex(const char *filename)
 	}
 	while(1)
 	{
-		read(id,&data,1);
-		rt_kprintf("%02X");
+		if(read(id,&data,1) == 1)
+		{
+      rt_kprintf("%02X");
+		}
+		else
+		{
+			break;
+		}
 	}
 	close(id);
 }
