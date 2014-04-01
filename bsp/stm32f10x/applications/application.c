@@ -222,7 +222,7 @@ int rt_application_init(void)
 	// initial sms thread
 	sms_thread = rt_thread_create("sms",
 								  sms_thread_entry, RT_NULL,
-								  1024, 102, 5);
+								  1024, 103, 5);
 	if (sms_thread != RT_NULL)
 	{
 		rt_thread_startup(sms_thread);
