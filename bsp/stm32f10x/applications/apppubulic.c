@@ -30,3 +30,24 @@ rt_uint16_t get_average_value(rt_uint16_t dat[],rt_uint8_t num)
 }
 
 
+/*
+功能:获得当前时间
+*/
+rt_uint32_t sys_cur_date(void)
+{
+  rt_device_t device;
+  rt_uint32_t time=0;
+
+  device = rt_device_find("rtc");
+  if (device != RT_NULL)
+  {
+      rt_device_control(device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
+  }
+
+	rt_kprintf("Current System Time: 0x%X\n",time);
+  return time;
+}
+RTM_EXPORT(sys_cur_date);
+
+
+
