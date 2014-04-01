@@ -529,9 +529,10 @@ int camera_thread_init(void)
 {
 	rt_thread_t id;
 
+	//camrea in anytime only make a photo
 	CameraMail_mq = rt_mq_create("CMMail",
 																sizeof(CameraMail),
-																8,
+																1,
 																RT_IPC_FLAG_FIFO);
 	RT_ASSERT(CameraMail_mq != RT_NULL);
 	
