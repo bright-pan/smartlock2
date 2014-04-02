@@ -85,28 +85,6 @@
 
 #define UART4_REMAP         (((uint32_t)0x00000000))// remap is disable
 
-/* STM32 uart driver */
-struct stm32_uart
-{
-    USART_TypeDef* uart_device;
-    IRQn_Type irq;
-
-    uint16_t uart_tx_pin;
-    GPIO_TypeDef *uart_tx_gpio;
-
-    uint16_t uart_rx_pin;
-    GPIO_TypeDef *uart_rx_gpio;
-
-    uint16_t uart_cts_pin;
-    GPIO_TypeDef *uart_cts_gpio;
-
-    uint16_t uart_rts_pin;
-    GPIO_TypeDef *uart_rts_gpio;
-
-    uint32_t uart_remap;
-
-};
-
 static rt_err_t stm32_configure(struct rt_serial_device *serial, struct serial_configure *cfg)
 {
     struct stm32_uart* uart;
@@ -257,11 +235,13 @@ __STATIC_INLINE void serial_device_isr(struct rt_serial_device *serial)
 
 #if defined(RT_USING_UART1)
 /* UART1 device driver structure */
+struct rt_mutex uart1_lock;
 struct serial_ringbuffer uart1_int_rx;
 #define UART1_POOL_SIZE 64
 rt_uint8_t uart1_pool[UART1_POOL_SIZE];
 struct stm32_uart uart1 =
 {
+    RT_NULL,
     USART1,
     USART1_IRQn,
 
@@ -293,11 +273,13 @@ void USART1_IRQHandler(void)
 
 #if defined(RT_USING_UART2)
 /* UART2 device driver structure */
+struct rt_mutex uart2_lock;
 struct serial_ringbuffer uart2_int_rx;
 #define UART2_POOL_SIZE 1024
 rt_uint8_t uart2_pool[UART2_POOL_SIZE];
 struct stm32_uart uart2 =
 {
+    RT_NULL,
     USART2,
     USART2_IRQn,
 
@@ -330,11 +312,13 @@ void USART2_IRQHandler(void)
 
 #if defined(RT_USING_UART3)
 /* UART3 device driver structure */
+struct rt_mutex uart3_lock;
 struct serial_ringbuffer uart3_int_rx;
 #define UART3_POOL_SIZE 1024
 rt_uint8_t uart3_pool[UART3_POOL_SIZE];
 struct stm32_uart uart3 =
 {
+    RT_NULL,
     USART3,
     USART3_IRQn,
 
@@ -366,11 +350,13 @@ void USART3_IRQHandler(void)
 
 #if defined(RT_USING_UART4)
 /* UART4 device driver structure */
+struct rt_mutex uart4_lock;
 struct serial_ringbuffer uart4_int_rx;
 #define UART4_POOL_SIZE 64
 rt_uint8_t uart4_pool[UART4_POOL_SIZE];
 struct stm32_uart uart4 =
 {
+    RT_NULL,
     UART4,
     UART4_IRQn,
 
@@ -402,11 +388,13 @@ void UART4_IRQHandler(void)
 
 #if defined(RT_USING_UART5)
 /* UART5 device driver structure */
+struct rt_mutex uart5_lock;
 struct serial_ringbuffer uart5_int_rx;
 #define UART5_POOL_SIZE 64
 rt_uint8_t uart5_pool[UART5_POOL_SIZE];
 struct stm32_uart uart5 =
 {
+    RT_NULL,
     UART5,
     UART5_IRQn,
 
@@ -569,6 +557,8 @@ rt_hw_usart_init(void)
 	uart = &uart1;
 	serial = &serial1;
 
+    rt_mutex_init(&uart1_lock, "l_uart1", RT_IPC_FLAG_FIFO);
+    uart->lock = &uart1_lock;
 	uart1_int_rx.pool = uart1_pool;
 	uart1_int_rx.size = UART1_POOL_SIZE;
 
@@ -592,6 +582,8 @@ rt_hw_usart_init(void)
 	uart = &uart2;
 	serial = &serial2;
 
+    rt_mutex_init(&uart2_lock, "l_uart2", RT_IPC_FLAG_FIFO);
+    uart->lock = &uart2_lock;
 	uart2_int_rx.pool = uart2_pool;
 	uart2_int_rx.size = UART2_POOL_SIZE;
 
@@ -615,6 +607,8 @@ rt_hw_usart_init(void)
 	uart = &uart3;
 	serial = &serial3;
 
+    rt_mutex_init(&uart3_lock, "l_uart3", RT_IPC_FLAG_FIFO);
+    uart->lock = &uart3_lock;
 	uart3_int_rx.pool = uart3_pool;
 	uart3_int_rx.size = UART3_POOL_SIZE;
 
@@ -638,6 +632,8 @@ rt_hw_usart_init(void)
 	uart = &uart4;
 	serial = &serial4;
 
+    rt_mutex_init(&uart4_lock, "l_uart4", RT_IPC_FLAG_FIFO);
+    uart->lock = &uart4_lock;
 	uart4_int_rx.pool = uart4_pool;
 	uart4_int_rx.size = UART4_POOL_SIZE;
 
@@ -661,6 +657,8 @@ rt_hw_usart_init(void)
 	uart = &uart5;
 	serial = &serial5;
 
+    rt_mutex_init(&uart5_lock, "l_uart5", RT_IPC_FLAG_FIFO);
+    uart->lock = &uart5_lock;
 	uart5_int_rx.pool = uart5_pool;
 	uart5_int_rx.size = UART5_POOL_SIZE;
 

@@ -26,7 +26,6 @@
 COMM_TWINDOW_LIST comm_twindow_list;
 COMM_RWINDOW_LIST comm_rwindow_list;
 
-
 static void
 ctw_timer_out(void *parameters)
 {
@@ -38,51 +37,32 @@ ctw_timer_out(void *parameters)
 	list_for_each_safe(pos, q, &ctw_list->list)
 	{
 		tmp= list_entry(pos, COMM_TWINDOW_NODE, list);
+        if (tmp->data.cnts++ > tmp->data.delay)
+        {
+#ifdef RT_USING_FINSH
+            rt_kprintf("resend request frame %d \ncmd: 0x%02X, order: 0x%02X, length: %d\n",
+                       tmp->data.r_cnts + 1,(tmp->data.mail).comm_type, tmp->data.order, (tmp->data.mail).len);
+            print_hex((tmp->data.mail).buf, (tmp->data.mail).len);
+#endif // RT_USING_FINSH
+            send_frame(ctw_list->device, &((tmp->data).mail), tmp->data.order);
 
-		if (tmp->data.flag == CTW_FLAG_REQUEST) // request
-		{
-			if (tmp->data.cnts == 1)
-			{
+            tmp->data.cnts = 0;
+            tmp->data.r_cnts++;
+        }
+        if (tmp->data.r_cnts > CTW_TIMER_RESEND_COUNTS)
+        {
 #ifdef RT_USING_FINSH
-				rt_kprintf("send request frame\ncmd: 0x%02X, order: 0x%02X, length: %d\n",
-						   (tmp->data.mail).comm_type, tmp->data.order, (tmp->data.mail).len);
-				print_hex((tmp->data.mail).buf, (tmp->data.mail).len);
+            rt_kprintf("send failure and delete cw node\ncomm_type: 0x%02X, order: 0x%02X, length: %d\n",
+                       (tmp->data.mail).comm_type, tmp->data.order, (tmp->data.mail).len);
+            print_hex((tmp->data.mail).buf, (tmp->data.mail).len);
 #endif // RT_USING_FINSH
-				send_frame(ctw_list->device, &((tmp->data).mail), tmp->data.order);
-			}
-			if (tmp->data.cnts++ > tmp->data.delay)
-			{
-				tmp->data.cnts = 1;
-				tmp->data.r_cnts++;
-			}
-			if (tmp->data.r_cnts >= CTW_TIMER_RESEND_COUNTS)
-			{
-#ifdef RT_USING_FINSH
-				rt_kprintf("send failure and delete cw node\ncomm_type: 0x%02X, order: 0x%02X, length: %d\n",
-						   (tmp->data.mail).comm_type, tmp->data.order, (tmp->data.mail).len);
-				print_hex((tmp->data.mail).buf, (tmp->data.mail).len);
-#endif // RT_USING_FINSH
-				*((tmp->data.mail).result) = CTW_STATUS_SEND_ERROR;
-				rt_sem_release((tmp->data.mail).result_sem);
-				rt_free((tmp->data.mail).buf);
-				list_del(pos);
-				ctw_list->size--;
-				rt_free(tmp);
-			}
-		}
-		else // response
-		{
-#ifdef RT_USING_FINSH
-				rt_kprintf("send response frame and delete cw node\n cmd: 0x%02X, order: 0x%02X, length: %d\n",
-						   (tmp->data.mail).comm_type, tmp->data.order, (tmp->data.mail).len);
-				print_hex((tmp->data.mail).buf, (tmp->data.mail).len);
-#endif // RT_USING_FINSH
-			send_frame(ctw_list->device, &tmp->data.mail, tmp->data.order);
-			rt_free((tmp->data.mail).buf);
-			list_del(pos);
-			ctw_list->size--;
-			rt_free(tmp);
-		}
+            *((tmp->data.mail).result) = CTW_STATUS_SEND_ERROR;
+            rt_sem_release((tmp->data.mail).result_sem);
+            rt_free((tmp->data.mail).buf);
+            list_del(pos);
+            ctw_list->size--;
+            rt_free(tmp);
+        }
     }
 	rt_mutex_release(ctw_list->mutex);
 }

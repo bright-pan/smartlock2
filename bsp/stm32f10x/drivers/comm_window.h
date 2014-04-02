@@ -50,7 +50,6 @@ typedef struct {
 typedef struct {
 
 	COMM_TMAIL_TYPEDEF mail;
-	uint8_t flag;
 	uint8_t order;
 	uint8_t r_cnts;// resend counts
 	uint8_t cnts;// counts for timer

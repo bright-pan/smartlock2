@@ -14,6 +14,7 @@
 
 #include "comm.h"
 #include "comm_window.h"
+#include "usart.h"
 
 #define BUF_SIZE 768
 
@@ -157,22 +158,20 @@ process_frame(uint8_t *frame, uint16_t frame_size)
 		list_for_each_safe(pos, q, &ctw_list_bk->list)
 		{
 			tmp= list_entry(pos, COMM_TWINDOW_NODE, list);
-			if (tmp->data.flag == CTW_FLAG_REQUEST) // request
-			{
-				if ((tmp->data.mail).comm_type == cmd &&
-					tmp->data.order == order)
-				{
+
+            if ((tmp->data.mail).comm_type == cmd &&
+                tmp->data.order == order)
+            {
 #ifdef RT_USING_FINSH
-					rt_kprintf("recv response and delete cw node\n");
+                rt_kprintf("recv response and delete cw node\n");
 #endif // RT_USING_FINSH
-					*((tmp->data.mail).result) = process_response(cmd, frame, length);
-					rt_sem_release((tmp->data.mail).result_sem);
-					rt_free((tmp->data.mail).buf);
-					list_del(pos);
-					ctw_list_bk->size--;
-					rt_free(tmp);
-				}
-			}
+                *((tmp->data.mail).result) = process_response(cmd, frame, length);
+                rt_sem_release((tmp->data.mail).result_sem);
+                rt_free((tmp->data.mail).buf);
+                list_del(pos);
+                ctw_list_bk->size--;
+                rt_free(tmp);
+            }
 		}
 		rt_mutex_release(ctw_list_bk->mutex);
 	}
@@ -245,7 +244,6 @@ comm_rx_thread_entry(void *parameters)
 		}
 	}
 }
-
 void
 comm_tx_thread_entry(void *parameters)
 {
@@ -255,7 +253,9 @@ comm_tx_thread_entry(void *parameters)
 	CTW_STATUS ctw_status;
 	COMM_TWINDOW_NODE *ctw_node;
 	uint8_t order = 0;
-
+    rt_device_t device_comm = device_enable(DEVICE_NAME_COMM);
+    
+    RT_ASSERT(device_comm != RT_NULL);
 	RT_ASSERT(ctw_list_init(&comm_twindow_list) == CTW_STATUS_OK);
 
 	while (1)
@@ -271,43 +271,61 @@ comm_tx_thread_entry(void *parameters)
 			//RT_ASSERT(comm_tmail_buf.result_sem != RT_NULL);
 			RT_ASSERT(comm_tmail_buf.result != RT_NULL);
 			RT_ASSERT(comm_tmail_buf.buf != RT_NULL);
-
-			data.mail = comm_tmail_buf;
-			if (comm_tmail_buf.order)
-			{
-				data.order = comm_tmail_buf.order;
-			}
-			else
-			{
-				if (order++)
-					data.order = order++;
-				else
-					data.order = 1;
-			}
-			if (comm_tmail_buf.delay)
-			{
-				data.delay = comm_tmail_buf.delay;
-			}
-			data.flag = (comm_tmail_buf.comm_type & 0x80) ? CTW_FLAG_RESPONSE : CTW_FLAG_REQUEST;
-			ctw_status = ctw_list_new(&ctw_node, &comm_twindow_list, &data);
-			if (ctw_status == CTW_STATUS_OK)
-			{
+            if (comm_tmail_buf.comm_type & 0x80) {
+                if (comm_tmail_buf.buf != RT_NULL) {
+                    send_frame(device_comm, &comm_tmail_buf, comm_tmail_buf.order);
 #ifdef RT_USING_FINSH
-				rt_kprintf("process comm tx mail:\n");
-				rt_kprintf("cmd: %02x, length: %d\n", comm_tmail_buf.comm_type, comm_tmail_buf.len);
-				print_hex(comm_tmail_buf.buf, comm_tmail_buf.len);
+                    rt_kprintf("send response frame and delete cw node\n cmd: 0x%02X, order: 0x%02X, length: %d\n",
+                               comm_tmail_buf.comm_type, comm_tmail_buf.order, comm_tmail_buf.len);
+                    print_hex(comm_tmail_buf.buf, comm_tmail_buf.len);
+#endif // RT_USING_FINSH 
+                    rt_free(comm_tmail_buf.buf);
+                }
+
+
+            } else {
+                
+                data.mail = comm_tmail_buf;
+                if (comm_tmail_buf.order)
+                {
+                    data.order = comm_tmail_buf.order;
+                }
+                else
+                {
+                    if (order++)
+                        data.order = order++;
+                    else
+                        data.order = 1;
+                }
+                if (comm_tmail_buf.delay)
+                {
+                    data.delay = comm_tmail_buf.delay;
+                }
+
+                ctw_status = ctw_list_new(&ctw_node, &comm_twindow_list, &data);
+                if (ctw_status == CTW_STATUS_OK)
+                {
+                    send_frame(device_comm, &comm_tmail_buf, data.order);
+#ifdef RT_USING_FINSH
+                    rt_kprintf("send request frame\n cmd: 0x%02X, order: 0x%02X, length: %d\n",
+                               comm_tmail_buf.comm_type, data.order, comm_tmail_buf.len);
+                    print_hex(comm_tmail_buf.buf, comm_tmail_buf.len);
 #endif // RT_USING_FINSH
-			}
-			else
-			{
-				/* tell error for mail sender */
-				if (!(comm_tmail_buf.comm_type & 0x80)) {
-					*comm_tmail_buf.result = ctw_status;
-					rt_sem_release(comm_tmail_buf.result_sem);
-				}
-
-
-			}
+                }
+                else
+                {
+                    /* tell error for mail sender */
+                    if (!(comm_tmail_buf.comm_type & 0x80)) {
+                        *comm_tmail_buf.result = ctw_status;
+                        rt_sem_release(comm_tmail_buf.result_sem);
+                    }
+                    if (comm_tmail_buf.buf != RT_NULL) {
+                        rt_free(comm_tmail_buf.buf);
+                    }
+                        
+                }
+            }
+            
 		}
 		else // time out
 		{
@@ -319,7 +337,10 @@ comm_tx_thread_entry(void *parameters)
 void
 send_frame(rt_device_t device, COMM_TMAIL_TYPEDEF *mail, uint8_t order)
 {
-	uint16_t length;
+    uint16_t length;
+    struct rt_serial_device *dev = (struct rt_serial_device *)device;
+    struct stm32_uart *uart = dev->parent.user_data;
+    rt_mutex_take(uart->lock, RT_WAITING_FOREVER);
 	// send length data
 	length = mail->len + 2;
 	rt_device_write(device, 0, (uint8_t *)&length, 2);
@@ -331,6 +352,7 @@ send_frame(rt_device_t device, COMM_TMAIL_TYPEDEF *mail, uint8_t order)
 	// send "\r\n"
 	rt_device_write(device, 0, "\r\n", 2);
 	// free mail buf memory
+    rt_mutex_release(uart->lock);
 }
 
 CTW_STATUS

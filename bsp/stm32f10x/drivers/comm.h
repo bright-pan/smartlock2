@@ -19,6 +19,7 @@
 #include <stm32f10x.h>
 #include "untils.h"
 #include "comm_window.h"
+#include <rtdevice.h>
 
 #define DEVICE_NAME_COMM "uart3"
 #define COMM_TMAIL_MAX_MSGS 5
