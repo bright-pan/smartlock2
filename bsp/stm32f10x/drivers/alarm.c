@@ -15,7 +15,7 @@
 #include "alarm.h"
 #include "gpio_exti.h"
 #include "local.h"
-#include "board.h"
+#include "untils.h"
 
 rt_mq_t alarm_mq = RT_NULL;
 rt_device_t rtc_device;

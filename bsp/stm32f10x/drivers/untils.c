@@ -181,7 +181,8 @@ device_config_file_operate(DEVICE_CONFIG_TYPEDEF *config, uint8_t flag)
 		} else {
 #if (defined RT_USING_FINSH) && (defined UNTILS_DEBUG)
 			rt_kprintf("Creat Config File success\n");
-			if ((cnts = write(fd, &(config->param), sizeof(config->param))) != sizeof(config->param))
+            cnts = write(fd, &(config->param), sizeof(config->param));
+			if (cnts != sizeof(config->param))
 				result = -1;
 			lseek(fd, 0, SEEK_SET);
 #endif // MACRO
@@ -189,11 +190,12 @@ device_config_file_operate(DEVICE_CONFIG_TYPEDEF *config, uint8_t flag)
 	}
 
 	if (flag) {
-
-		if ((cnts = write(fd, &(config->param), sizeof(config->param))) != sizeof(config->param))
+        cnts = write(fd, &(config->param), sizeof(config->param));
+		if (cnts != sizeof(config->param))
 			result = -1;
 	} else {
-		if ((cnts = read(fd, &(config->param), sizeof(config->param))) != sizeof(config->param))
+        cnts = read(fd, &(config->param), sizeof(config->param));
+		if (cnts != sizeof(config->param))
 			result = -1;
 	}
 	close(fd);
@@ -257,4 +259,31 @@ memmem(const void *haystack, rt_size_t haystack_len,
 	return NULL;
 }
 
+#endif
+
+rt_device_t
+device_enable(const char *name)
+{
+    rt_device_t device = RT_NULL;
+    device = rt_device_find(name);
+    if (device != RT_NULL)
+    {
+        if (device->open_flag == RT_DEVICE_OFLAG_CLOSE)
+        {
+            rt_device_open(device, RT_DEVICE_OFLAG_RDWR);
+        }
+    }
+    else
+    {
+#ifdef RT_USING_FINSH
+        rt_kprintf("the exti device %s is not found!\n", name);
+#endif
+    }
+	return device;
+}
+
+#ifdef RT_USING_FINSH
+#include <finsh.h>
+
+FINSH_FUNCTION_EXPORT(device_enable, device_enable[name]);
 #endif

@@ -40,6 +40,15 @@
 #include <rtgui/calibration.h>
 #endif
 
+#include "board.h"
+#include "alarm.h"
+#include "local.h"
+#include "sms.h"
+#include "untils.h"
+#include "comm.h"
+#include "fprint.h"
+#include "gpio_pin.h"
+
 #ifdef RT_USING_RTGUI
 rt_bool_t cali_setup(void)
 {
@@ -185,8 +194,8 @@ int rt_application_init(void)
 	}
 
 	// initial comm msg queue
-	comm_tx_mq = rt_mq_create("comm_tx", sizeof(COMM_MAIL_TYPEDEF),
-							  COMM_MAIL_MAX_MSGS, RT_IPC_FLAG_FIFO);
+	comm_tx_mq = rt_mq_create("comm_tx", sizeof(COMM_TMAIL_TYPEDEF),
+							  COMM_TMAIL_MAX_MSGS, RT_IPC_FLAG_FIFO);
 
 	// initial comm thread
 	comm_tx_thread = rt_thread_create("comm_tx",

@@ -17,13 +17,6 @@
 #define __BOARD_H__
 
 #include "stm32f10x.h"
-#include "alarm.h"
-#include "local.h"
-#include "sms.h"
-#include "untils.h"
-#include "comm.h"
-#include "fprint.h"
-#include "gpio_pin.h"
 /* board configuration */
 
 /* whether use board external SRAM memory */
@@ -49,9 +42,6 @@
 #define RT_USING_UART3
 #define RT_USING_UART4
 //#define RT_USING_UART5
-
-rt_device_t
-device_enable(const char *name);
 
 #endif /* __BOARD_H__ */
 

@@ -19,6 +19,7 @@
 #include "stm32f10x.h"
 #include "stm32f10x_fsmc.h"
 #include "board.h"
+#include "usart.h"
 
 #ifdef  RT_USING_COMPONENTS_INIT
 #include <components.h>
@@ -204,32 +205,5 @@ void rt_hw_board_init(void)
     rt_components_board_init();
 #endif
 }
-
-rt_device_t
-device_enable(const char *name)
-{
-    rt_device_t device = RT_NULL;
-    device = rt_device_find(name);
-    if (device != RT_NULL)
-    {
-        if (device->open_flag == RT_DEVICE_OFLAG_CLOSE)
-        {
-            rt_device_open(device, RT_DEVICE_OFLAG_RDWR);
-        }
-    }
-    else
-    {
-#ifdef RT_USING_FINSH
-        rt_kprintf("the exti device %s is not found!\n", name);
-#endif
-    }
-	return device;
-}
-
-#ifdef RT_USING_FINSH
-#include <finsh.h>
-
-FINSH_FUNCTION_EXPORT(device_enable, device_enable[name]);
-#endif
 
 /*@}*/

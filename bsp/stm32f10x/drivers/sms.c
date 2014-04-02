@@ -13,6 +13,9 @@
 
 #include "sms.h"
 
+char smsc[20] = {0,};
+char phone_call[20] = {0,};
+
 #define SMS_RESEND_NUM	3
 
 /* PDU构造 */

@@ -13,6 +13,7 @@
  ********************************************************************/
 
 #include "fprint.h"
+#include "gpio_pin.h"
 
 //#define FPRINT_DEBUG
 #define DEVICE_NAME_FPRINT "uart2"

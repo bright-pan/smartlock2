@@ -123,6 +123,8 @@ print_hex(uint8_t *buf, uint16_t length);
 void
 delay_us(uint32_t time);
 
+rt_device_t
+device_enable(const char *name);
 #ifndef __GNUC__
 void *
 memmem(const void *haystack,
