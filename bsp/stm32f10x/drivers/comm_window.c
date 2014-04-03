@@ -102,9 +102,9 @@ ctw_list_new(COMM_TWINDOW_NODE **node, COMM_TWINDOW_LIST *ctw_list, COMM_TWINDOW
 		*node = rt_malloc(sizeof(**node));
 		if (*node != RT_NULL)
 		{
-	    (*node)->data = *data;
-				rt_kprintf("add cmd: 0x%02X, order: 0x%02X, length: %d\n",
-						   ((*node)->data.mail).comm_type, (*node)->data.order, ((*node)->data.mail).len);
+			(*node)->data = *data;
+			rt_kprintf("add cmd: 0x%02X, order: 0x%02X, length: %d\n",
+					   ((*node)->data.mail).comm_type, (*node)->data.order, ((*node)->data.mail).len);
 			rt_mutex_take(ctw_list->mutex, RT_WAITING_FOREVER);
 			list_add(&(*node)->list, &ctw_list->list);
 			ctw_list->size++;
@@ -137,12 +137,12 @@ crw_timer_out(void *parameters)
 			error = rt_sem_take(tmp->data.sem, RT_WAITING_NO);
 			if (error == RT_EOK) {
 				send_ctx_mail(tmp->data.comm_type, tmp->data.order, 0, (uint8_t *)(tmp->data.result), 1);
-		if (tmp->data.buf != RT_NULL)
-		    rt_free(tmp->data.buf);
-		if (tmp->data.result != RT_NULL)
-		    rt_free(tmp->data.result);
-		if (tmp->data.sem != RT_NULL)
-		    rt_sem_delete(tmp->data.sem);
+				if (tmp->data.buf != RT_NULL)
+					rt_free(tmp->data.buf);
+				if (tmp->data.result != RT_NULL)
+					rt_free(tmp->data.result);
+				if (tmp->data.sem != RT_NULL)
+					rt_sem_delete(tmp->data.sem);
 				list_del(pos);
 				crw_list->size--;
 				rt_free(tmp);
@@ -192,7 +192,7 @@ crw_list_new(COMM_RWINDOW_NODE **node, COMM_RWINDOW_LIST *crw_list, COMM_RWINDOW
 		if (*node != RT_NULL)
 		{
 			rt_mutex_take(crw_list->mutex, RT_WAITING_FOREVER);
-	    (*node)->data = *data;
+			(*node)->data = *data;
 			list_add(&(*node)->list, &crw_list->list);
 			crw_list->size++;
 			rt_mutex_release(crw_list->mutex);

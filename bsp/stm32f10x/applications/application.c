@@ -66,6 +66,43 @@ void cali_store(struct calibration_data *data)
 }
 #endif /* RT_USING_RTGUI */
 
+#if defined(RT_USING_DFS) && defined(RT_USING_DFS_ELMFAT)
+#define FILE_SYSTEM_DEVICE_NAME	"flash1"
+#define FILE_SYSTEM_TYPE_NAME		"elm"
+
+void dfs_mount_processing(void)
+{
+	/* mount sd card fat partition 1 as root directory */
+	if (dfs_mount(FILE_SYSTEM_DEVICE_NAME, "/", FILE_SYSTEM_TYPE_NAME, 0, 0) == 0)
+	{
+	rt_kprintf("\nFile System initialized ok!\n");
+	}
+	else
+	{
+		extern int dfs_mkfs(const char *fs_name, const char *device_name);
+		rt_kprintf("mount fatfs fail\n");
+		if(dfs_mount(FILE_SYSTEM_DEVICE_NAME, "/", FILE_SYSTEM_TYPE_NAME,0, 0) != 0)
+		{
+			if(dfs_mkfs(FILE_SYSTEM_TYPE_NAME,FILE_SYSTEM_DEVICE_NAME) == 0)
+			{
+				if (dfs_mount("flash1", "/", "elm", 0, 0) == 0)
+				{
+				  rt_kprintf("\nFile System initialized ok!\n");
+				}
+			}
+			else
+			{
+				rt_kprintf("\nFile System initialzation failed!\n");
+			} 
+		}
+		else
+		{
+			rt_kprintf("\nFile System initialized ok!\n");
+		}
+	}
+}
+#endif
+
 void rt_init_thread_entry(void* parameter)
 {
 #ifdef RT_USING_COMPONENTS_INIT
@@ -80,12 +117,7 @@ void rt_init_thread_entry(void* parameter)
     /* Filesystem Initialization */
 #if defined(RT_USING_DFS) && defined(RT_USING_DFS_ELMFAT)
     /* mount sd card fat partition 1 as root directory */
-    if (dfs_mount("flash1", "/", "elm", 0, 0) == 0)
-    {
-        rt_kprintf("File System initialized!\n");
-    }
-    else
-        rt_kprintf("File System initialzation failed!\n");
+    dfs_mount_processing();
 #endif  /* RT_USING_DFS */
 
 #ifdef RT_USING_RTGUI
@@ -196,7 +228,6 @@ int rt_application_init(void)
 	// initial comm msg queue
 	comm_tx_mq = rt_mq_create("comm_tx", sizeof(COMM_TMAIL_TYPEDEF),
 							  COMM_TMAIL_MAX_MSGS, RT_IPC_FLAG_FIFO);
-
 	// initial comm thread
 	comm_tx_thread = rt_thread_create("comm_tx",
 							   comm_tx_thread_entry, RT_NULL,
@@ -205,13 +236,14 @@ int rt_application_init(void)
 	{
 		rt_thread_startup(comm_tx_thread);
 	}
+
 	// initial sms msg queue
 	sms_mq = rt_mq_create("sms", sizeof(SMS_MAIL_TYPEDEF),
 						  SMS_MAIL_MAX_MSGS, RT_IPC_FLAG_FIFO);
 	// initial sms thread
 	sms_thread = rt_thread_create("sms",
 								  sms_thread_entry, RT_NULL,
-								  1024, 102, 5);
+								  1024, 103, 5);
 	if (sms_thread != RT_NULL)
 	{
 		rt_thread_startup(sms_thread);

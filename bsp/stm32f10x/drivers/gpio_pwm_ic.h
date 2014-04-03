@@ -56,6 +56,6 @@ struct gpio_pwm_ic_user_data
   void (* tim_rcc_cmd)(uint32_t RCC_APB2Periph, FunctionalState NewState);
 };
 
-void rt_hw_infra_pulse_pwm_ic_register(void);
+int rt_hw_infra_pulse_pwm_ic_register(void);
 
 #endif

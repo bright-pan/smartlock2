@@ -43,8 +43,6 @@ typedef enum {
 
 }COMM_TYPE_TYPEDEF;
 
-
-
 extern rt_mq_t comm_tx_mq;
 extern rt_mutex_t comm_mutex;
 

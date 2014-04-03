@@ -352,7 +352,7 @@ void USART3_IRQHandler(void)
 /* UART4 device driver structure */
 struct rt_mutex uart4_lock;
 struct serial_ringbuffer uart4_int_rx;
-#define UART4_POOL_SIZE 64
+#define UART4_POOL_SIZE 1048
 rt_uint8_t uart4_pool[UART4_POOL_SIZE];
 struct stm32_uart uart4 =
 {

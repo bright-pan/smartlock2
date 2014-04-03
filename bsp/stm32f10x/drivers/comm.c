@@ -24,6 +24,9 @@ rt_mutex_t comm_tx_mutex = RT_NULL;
 extern char smsc[20];
 extern char phone_call[20];
 
+static struct rt_ringbuffer gprsringbuffer;
+static rt_uint8_t buffer[BUF_SIZE];
+
 typedef enum {
 
 	FRAME_STATUS_INVALID = 0,
@@ -94,10 +97,39 @@ process_response(uint8_t cmd, uint8_t *rep_frame, uint16_t length)
 	return result;
 }
 
-__STATIC_INLINE CTW_STATUS
+rt_size_t comm_recv_gprs_data(rt_uint8_t *buffer,rt_size_t size)
+{
+	rt_uint8_t *ptr;
+
+  ptr = buffer;
+
+	/* interrupt mode Rx */
+	while (size)
+	{
+    rt_uint8_t ch;
+
+    if (rt_ringbuffer_getchar(&gprsringbuffer,&ch) == 0)
+    {
+    	break;
+    }
+    *ptr = ch;
+    ptr ++;
+    size --;
+	}
+	size = (rt_uint32_t)ptr - (rt_uint32_t)buffer;
+	/* set error code */
+	if (size == 0)
+	{
+	    rt_set_errno(-RT_EEMPTY);
+	}
+
+	return size;
+}
+
+__STATIC_INLINE CW_STATUS
 process_request(uint8_t cmd, uint8_t order, uint8_t *rep_frame, uint16_t length)
 {
-	CTW_STATUS result = CTW_STATUS_ERROR;
+	CW_STATUS result = CW_STATUS_ERROR;
 	uint8_t rep_cmd = cmd | 0x80;
 
 	switch (cmd)// process request
@@ -112,8 +144,29 @@ process_request(uint8_t cmd, uint8_t order, uint8_t *rep_frame, uint16_t length)
 		case COMM_TYPE_GSM_PHONE_CALL:
 			{
 				rt_memcpy(phone_call, rep_frame, length);
-				result = CTW_STATUS_OK;
+				result = CW_STATUS_OK;
 				send_ctx_mail(rep_cmd, order, 0, &result, 1);
+				break;
+			}
+		case COMM_TYPE_GPRS:
+			{
+				rt_uint8_t *ptr = rep_frame+1;
+				printf_data(rep_frame,length);
+				rt_kprintf("COMM_TYPE_GPRS\n");
+				while (length-1)
+        {
+            if (rt_ringbuffer_putchar(&gprsringbuffer,*ptr) != -1)
+            {
+                ptr ++;
+                length --;
+            }
+            else
+                break;
+        }
+        
+				result = CW_STATUS_OK;
+				send_ctx_mail(rep_cmd, order, 0, &result, 1);
+				/* process data */
 				break;
 			}
 		default :
@@ -186,7 +239,6 @@ process_frame(uint8_t *frame, uint16_t frame_size)
 	return result;
 }
 
-
 void
 comm_rx_thread_entry(void *parameters)
 {
@@ -199,6 +251,7 @@ comm_rx_thread_entry(void *parameters)
 
     //RT_ASSERT(crw_list_init(&comm_rwindow_list) == CRW_STATUS_OK);
 	device_comm = device_enable(DEVICE_NAME_COMM);
+	rt_ringbuffer_init(&gprsringbuffer,buffer,BUF_SIZE);
 
 	while (1) {
 		process_buf_bk = process_buf;
@@ -244,6 +297,7 @@ comm_rx_thread_entry(void *parameters)
 		}
 	}
 }
+
 void
 comm_tx_thread_entry(void *parameters)
 {
@@ -254,7 +308,7 @@ comm_tx_thread_entry(void *parameters)
 	COMM_TWINDOW_NODE *ctw_node;
 	uint8_t order = 0;
     rt_device_t device_comm = device_enable(DEVICE_NAME_COMM);
-    
+
     RT_ASSERT(device_comm != RT_NULL);
 	RT_ASSERT(ctw_list_init(&comm_twindow_list) == CTW_STATUS_OK);
 
@@ -322,10 +376,8 @@ comm_tx_thread_entry(void *parameters)
                     if (comm_tmail_buf.buf != RT_NULL) {
                         rt_free(comm_tmail_buf.buf);
                     }
-                        
                 }
             }
-            
 		}
 		else // time out
 		{

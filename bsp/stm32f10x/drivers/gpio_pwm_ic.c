@@ -14,8 +14,8 @@
 #include "gpio_pwm_ic.h"
 #include "gpio_exti.h"
 #include "gpio_pin.h"
-#include "sms.h"
-#include "gprs.h"
+//#include "sms.h"
+//#include "gprs.h"
 #include "local.h"
 
 /*
@@ -34,6 +34,7 @@ static void __gpio_pin_configure(gpio_device *gpio)
   GPIO_Init(user->gpiox,&gpio_init_structure);
   if (user->gpio_pin_remap != RT_NULL)
   {
+  	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO,ENABLE);
     GPIO_PinRemapConfig(user->gpio_pin_remap, ENABLE);
   }
 }
@@ -66,10 +67,21 @@ static void __gpio_timer_configure(gpio_device *gpio)
   TIM_TimeBaseInitTypeDef time_base_structure;
   TIM_ICInitTypeDef time_ic_structure;
   struct gpio_pwm_ic_user_data *user = (struct gpio_pwm_ic_user_data*)gpio->parent.user_data;
+  
   TIM_TimeBaseStructInit(&time_base_structure);
   TIM_ICStructInit(&time_ic_structure);
-  user->tim_rcc_cmd(user->tim_rcc, ENABLE);
+  
+  if(user->timx == TIM1)
+  {
+		RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1,ENABLE);
+  }
+  else
+  {
+    user->tim_rcc_cmd(user->tim_rcc, ENABLE);
+  }
+  TIM_DeInit(user->timx);
   /* timer base configuration */
+  rt_kprintf("user->tim_base_reload_value = %d\n",user->tim_base_reload_value);
   time_base_structure.TIM_Period = user->tim_base_reload_value;
   time_base_structure.TIM_Prescaler = (uint16_t) (SystemCoreClock / user->tim_base_clock) - 1;
   time_base_structure.TIM_ClockDivision = user->tim_base_clock_division;
@@ -85,16 +97,16 @@ static void __gpio_timer_configure(gpio_device *gpio)
 
   TIM_ICInit(user->timx, &time_ic_structure);
 
- /*
+  /*
   // Select the TIMx Input Trigger
   TIM_SelectInputTrigger(user->timx, user->tim_ic_input_trigger);
  
   // Select the slave Mode: Reset Mode
-  TIM_SelectSlaveMode(user->timx, TIM_SlaveMode_Reset);
+  TIM_SelectSlaveMode(user->timx, TIM_SlaveMode_);
  
   // Enable the Master/Slave Mode
   TIM_SelectMasterSlaveMode(user->timx, TIM_MasterSlaveMode_Enable);
- */
+  */
   if(RT_DEVICE_FLAG_INT_RX & gpio->parent.flag)
   {
     TIM_ITConfig(user->timx, user->tim_int_flag, ENABLE);
@@ -196,15 +208,15 @@ struct rt_gpio_ops gpio_pwm_ic_user_ops=
 struct gpio_pwm_ic_user_data infra_pulse_pwm_ic_user_data = 
 {
   DEVICE_NAME_INFRA_PULSE_PWM_IC,
-  GPIOB,
-  GPIO_Pin_6,
+  GPIOE,
+  GPIO_Pin_11,
   GPIO_Mode_IN_FLOATING,
   GPIO_Speed_50MHz,
-  RCC_APB2Periph_GPIOB,
-  RT_NULL,
+  RCC_APB2Periph_GPIOE,
+  GPIO_FullRemap_TIM1,
   /* timer base */
-  TIM4,
-  RCC_APB1Periph_TIM4,
+  TIM1,
+  RCC_APB2Periph_TIM1,
   72000000,
   65535,
   0,
@@ -214,20 +226,20 @@ struct gpio_pwm_ic_user_data infra_pulse_pwm_ic_user_data =
   TIM_ICPSC_DIV1,
   0,// filter value
   TIM_ICPolarity_Falling,
-  TIM_Channel_1,
-  TIM_TS_TI1FP1,
-  TIM_IT_CC1|TIM_IT_Update,
+  TIM_Channel_2,
+  TIM_TS_TI2FP2,
+  TIM_IT_CC2|TIM_IT_Update,
   0,// pulse counts
-  RT_NULL,
-  TIM4_IRQn,
+  TIM1_UP_IRQn,
+  TIM1_CC_IRQn,
+  2,
   1,
-  0,
   RT_NULL,
 };
 
 gpio_device infra_pulse_pwm_ic_device;
 
-void rt_hw_infra_pulse_pwm_ic_register(void)
+int rt_hw_infra_pulse_pwm_ic_register(void)
 {
   gpio_device *pwm_device = &infra_pulse_pwm_ic_device;
   struct gpio_pwm_ic_user_data *pwm_user_data = &infra_pulse_pwm_ic_user_data;
@@ -235,7 +247,72 @@ void rt_hw_infra_pulse_pwm_ic_register(void)
   pwm_device->ops = &gpio_pwm_ic_user_ops;
   pwm_user_data->tim_rcc_cmd = RCC_APB1PeriphClockCmd;
   rt_hw_gpio_register(pwm_device,pwm_user_data->name, (RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_PWM_RX | RT_DEVICE_FLAG_INT_RX), pwm_user_data);
+  
+  return 0;
 }
+
+
+INIT_DEVICE_EXPORT(rt_hw_infra_pulse_pwm_ic_register);
+
+
+
+__IO uint16_t IC2Value = 0;
+__IO uint8_t ic_complete_flag = 0;
+__IO uint32_t ic_update = 0;
+static uint32_t ic_palarity_flag = TIM_ICPolarity_Falling;
+
+void TIM1_UP_IRQHandler(void)
+{
+	  /* enter interrupt */
+  rt_interrupt_enter();
+	if(TIM_GetITStatus(infra_pulse_pwm_ic_user_data.timx,TIM_IT_Update) == SET)
+	{
+	  if(ic_palarity_flag != infra_pulse_pwm_ic_user_data.tim_ic_polarity)
+	  {
+	    ic_update++;
+	  }
+	}
+	TIM_ClearITPendingBit(infra_pulse_pwm_ic_user_data.timx, infra_pulse_pwm_ic_user_data.tim_int_flag);
+	 /* leave interrupt */
+  rt_interrupt_leave();
+}
+
+
+void TIM1_CC_IRQHandler(void)
+{
+  /* enter interrupt */
+  rt_interrupt_enter();
+
+  /* tim1 isr */
+  if(TIM_GetITStatus(infra_pulse_pwm_ic_user_data.timx, TIM_IT_CC2) == SET)
+  {
+    //TIM_ClearITPendingBit(infra_pulse_pwm_ic_user_data.timx, TIM_IT_CC2);
+    if (ic_palarity_flag == infra_pulse_pwm_ic_user_data.tim_ic_polarity)
+		{
+			// Get the Input Capture value
+			TIM_SetCounter(infra_pulse_pwm_ic_user_data.timx, 0);
+			ic_palarity_flag = (infra_pulse_pwm_ic_user_data.tim_ic_polarity == TIM_ICPolarity_Rising) ? TIM_ICPolarity_Falling : TIM_ICPolarity_Rising;
+			TIM_OC2PolarityConfig(infra_pulse_pwm_ic_user_data.timx, ic_palarity_flag); //CC1P=1 ÉèÖÃÎªÏÂ½µÑØ²¶»ñ
+			ic_update = 0;
+		  //rt_kprintf("TIM_ICPolarity_Falling\n");
+		}
+		else
+		{
+			IC2Value = TIM_GetCapture1(infra_pulse_pwm_ic_user_data.timx);
+			//rt_kprintf("IC2Value = %d,ic_update = %d\n",IC2Value,ic_update);
+			ic_palarity_flag = infra_pulse_pwm_ic_user_data.tim_ic_polarity;
+			TIM_OC2PolarityConfig(infra_pulse_pwm_ic_user_data.timx, ic_palarity_flag); //CC1P=1 ÉèÖÃÎªÏÂ½µÑØ²¶»ñ      
+			ic_complete_flag = 1;
+			//TIM_ITConfig(infra_pulse_pwm_ic_user_data.timx,infra_pulse_pwm_ic_user_data.tim_int_flag,DISABLE);
+			//rt_kprintf("TIM_ICPolarity_Rising\n");
+		}
+  }
+	TIM_ClearITPendingBit(infra_pulse_pwm_ic_user_data.timx, infra_pulse_pwm_ic_user_data.tim_int_flag);
+  /* leave interrupt */
+  rt_interrupt_leave();
+}
+
+
 
 #ifdef RT_USING_FINSH
 #include <finsh.h>
@@ -245,11 +322,15 @@ void pwm_ic_start(char *str)
   device = rt_device_find(str);
   if(device != RT_NULL)
   {
+  	if(!(device->open_flag & RT_DEVICE_OFLAG_OPEN))
+  	{
+			rt_device_open(device,RT_DEVICE_OFLAG_RDWR);
+  	}
     rt_device_control(device, RT_DEVICE_CTRL_PWM_IC_START, (void *)0);
   }
   
 }
-FINSH_FUNCTION_EXPORT(pwm_ic_start, pwm_set_pulse_counts[device_name x])
+FINSH_FUNCTION_EXPORT(pwm_ic_start, pwm_set_pulse_counts[device_name x]);
 
 void pwm_ic_stop(char *str)
 {
@@ -260,9 +341,9 @@ void pwm_ic_stop(char *str)
     rt_device_control(device, RT_DEVICE_CTRL_PWM_IC_STOP, (void *)0);
   }
 }
-FINSH_FUNCTION_EXPORT(pwm_ic_stop, pwm_set_pulse_value[device_name x])
+FINSH_FUNCTION_EXPORT(pwm_ic_stop, pwm_set_pulse_value[device_name x]);
 
-uint32_t pwm_ic_get(char *str)
+rt_uint32_t pwm_ic_get(char *str)
 {
   uint32_t width;
   rt_device_t device = RT_NULL;
@@ -277,8 +358,6 @@ uint32_t pwm_ic_get(char *str)
 
 void pwm_ic_print()
 {
-  extern __IO uint16_t IC2Value;
-  extern __IO uint32_t ic_update;
   uint32_t	result;
   char str[20];
 
@@ -287,10 +366,8 @@ void pwm_ic_print()
   rt_kprintf("%d, %ld, %s\n", IC2Value, ic_update,str );
 
 }
-uint32_t	pwm_ic_time(void)
+rt_uint32_t	pwm_ic_time(void)
 {
-	extern __IO uint16_t IC2Value;
-	extern __IO uint32_t ic_update;
 	uint32_t result;
 
 	result = (65535.0*ic_update + IC2Value)/72.0;
@@ -300,4 +377,5 @@ uint32_t	pwm_ic_time(void)
 }
 FINSH_FUNCTION_EXPORT(pwm_ic_print, pwm_send_pulse[device_name])
 FINSH_FUNCTION_EXPORT(pwm_ic_get, pwm_send_pulse[device_name])
+
 #endif
