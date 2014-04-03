@@ -133,6 +133,7 @@ process_request(uint8_t cmd, uint8_t order, uint8_t *rep_frame, uint16_t length)
 	{
 		case COMM_TYPE_GSM_SMSC:
 			{
+				rt_kprintf("COMM_TYPE_GSM_SMSC\n");
 				rt_memcpy(smsc, rep_frame, length);
 				result = CW_STATUS_OK;
 				send_ctx_mail(rep_cmd, order, 0, &result, 1);
@@ -150,8 +151,6 @@ process_request(uint8_t cmd, uint8_t order, uint8_t *rep_frame, uint16_t length)
 				rt_uint8_t *ptr = rep_frame+1;
 				printf_data(rep_frame,length);
 				rt_kprintf("COMM_TYPE_GPRS\n");
-				result = CW_STATUS_OK;
-				send_ctx_mail(rep_cmd, order, 0, &result, 1);
 				while (length-1)
         {
             if (rt_ringbuffer_putchar(&gprsringbuffer,*ptr) != -1)
@@ -162,6 +161,9 @@ process_request(uint8_t cmd, uint8_t order, uint8_t *rep_frame, uint16_t length)
             else
                 break;
         }
+        
+				result = CW_STATUS_OK;
+				send_ctx_mail(rep_cmd, order, 0, &result, 1);
 				/* process data */
 				break;
 			}
