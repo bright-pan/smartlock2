@@ -11,6 +11,7 @@
 
 
 #define VOICE_FILE_NAME1      "/2_16k.WAV"
+#define VOICE_FILE_NAME2      "/hi.wav"
 #define VOICE_DEVICE_NAME     "PT8211"
 #define WAV_PLAY_BUFFER       256
 

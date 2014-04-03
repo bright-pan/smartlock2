@@ -8,6 +8,7 @@ voice type
 typedef enum
 {
   VOICE_TYPE_TEST,
+  VOICE_TYPE_HI
 }VoiceType;
 
 void send_voice_mail(VoiceType type);
