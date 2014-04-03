@@ -81,6 +81,46 @@ static void Net_Msg_thread_callback(void)
 		RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NetMsg_Recv_CallBack_Fun Is NULL\n"));
 	}*/
 }
+
+/** 
+@brief net message pack CRC16 verify
+@param receive net message mail
+@retval RT_TRUE	 :verify succeed
+@retval RT_FALSE :verify fail
+*/
+rt_bool_t net_mail_crc16_check(net_recvmsg_p Mail)
+{
+	rt_uint16_t CRC16Right;
+	rt_uint16_t CurCRC16;
+	rt_uint16_t CRCLength;
+	rt_uint8_t  *tmp;
+	
+	CRCLength = Mail->lenmap.bit.check +
+							Mail->lenmap.bit.data +
+							Mail->lenmap.bit.col +
+							Mail->lenmap.bit.cmd;
+
+	tmp = (rt_uint8_t *)Mail;
+	rt_memcpy((void *)&CRC16Right,(const void *)(tmp+CRCLength+2),2);
+
+  CRC16Right = net_rev16(CRC16Right);
+
+	Mail->lenmap.bype = net_rev16(Mail->lenmap.bype);
+	
+	CurCRC16 = net_crc16((unsigned char *)(tmp+2),CRCLength);
+
+	Mail->lenmap.bype = net_rev16(Mail->lenmap.bype);
+	
+	rt_kprintf("CRC16Right = %04X\n",CRC16Right);
+	rt_kprintf("CurCRC16   = %04X\n",CurCRC16);
+	if(CurCRC16 == CRC16Right)
+	{
+		return RT_TRUE;
+	}
+	
+	return RT_FALSE;
+}
+
 /*
 功能:获得最新的序号
 */
@@ -634,19 +674,33 @@ void net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
     case NET_MSGTYPE_PHONEADD_ACK:
     {
       //手机号码添加应答
-      msg_data->cmd = NET_MSGTYPE_PHONEADD_ACK;
-      net_set_lenmap(&msg_data->lenmap,1,1,1,2);
+			net_phoneadd_ack *data;
       
-      msg_data->data.phoneadd.result = 1;
+      msg_data->cmd = NET_MSGTYPE_PHONEADD_ACK;
+      net_set_lenmap(&msg_data->lenmap,1,1,2,2);
+
+			data = MsgMail->user;
+      if(data != RT_NULL)
+      {
+        msg_data->data.PhoneAddAck = *data;
+      }
+      
       break;
     }
-    case NET_MSGTYPE_PHONEDDEL_ACK:
+    case NET_MSGTYPE_PHONEDEL_ACK:
     {
       //手机号码删除应答
-      msg_data->cmd = NET_MSGTYPE_PHONEDDEL_ACK;
-      net_set_lenmap(&msg_data->lenmap,1,1,1,2);
+			net_phonedel_ack *data;
       
-//      msg_data->data.phonedelete.result = 1;
+      msg_data->cmd = NET_MSGTYPE_PHONEDEL_ACK;
+      net_set_lenmap(&msg_data->lenmap,1,1,2,2);
+      
+			data = MsgMail->user;
+      if(data != RT_NULL)
+      {
+				msg_data->data.PhoneDelAck = *data;
+      }
+      
       break;
     }
     case NET_MSGTYPE_ALARMARG:
@@ -715,8 +769,6 @@ void net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
 			if(data != RT_NULL)
 			{
 				msg_data->data.KeyAddAck = *data;
-				msg_data->data.KeyAddAck.result = 0;
-				msg_data->data.KeyAddAck.pos = 0;
 			}
       
 			break;
@@ -727,7 +779,7 @@ void net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
     	net_keydelete_user *data;
 
       msg_data->cmd = NET_MSGTYPE_KEYDELETE ;
-      net_set_lenmap(&msg_data->lenmap,1,1,1,2);
+      net_set_lenmap(&msg_data->lenmap,1,1,2,2);
 
 			data = MsgMail->user;
       if(data != RT_NULL)
@@ -740,10 +792,16 @@ void net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
     case NET_MSGTYPE_KEYDEL_ACK:
     {
     	//钥匙删除应答
+			net_keydel_ack *data;
+  		
     	msg_data->cmd = NET_MSGTYPE_KEYDEL_ACK ;
-      net_set_lenmap(&msg_data->lenmap,1,1,1,2);
+      net_set_lenmap(&msg_data->lenmap,1,1,3,2);
 
-      msg_data->data.KeyDelAck.result = 0;
+			data = MsgMail->user;
+			if(data != RT_NULL)
+			{
+				 msg_data->data.KeyDelAck = *data;
+			}
       
 			break;
     }
@@ -1263,6 +1321,7 @@ static void net_recv_message(net_msgmail_p mail)
 	net_recvmsg_p msg;
 	rt_err_t    result;
 	rt_int8_t   SendResult = SEND_OK;
+	rt_bool_t   CRC16Result;
 
 	result = rt_mb_recv(net_datrecv_mb,(rt_uint32_t *)&msg,1);
 	if(result == RT_EOK)
@@ -1272,10 +1331,10 @@ static void net_recv_message(net_msgmail_p mail)
 	  //如果已经登陆在线收到的所有报文都解密
 	  if(net_event_process(1,NET_ENVET_ONLINE) == 0)
 	  {
-	  	//rt_kprintf("NO NET_MSGTYPE_LANDED_ACK cmd %x\n",msg->cmd);
       if(net_des_decode(msg) < 0)
       {
         //解密失败
+        rt_kprintf("Message decryption failure\n");
         rt_free(msg);
         return ;
       }
@@ -1304,6 +1363,19 @@ static void net_recv_message(net_msgmail_p mail)
     }
 		show_recvmsg(msg);
     rt_timer_stop(sendwnd_timer);
+    if(net_event_process(1,NET_ENVET_ONLINE) == 0)
+    {
+      CRC16Result = net_mail_crc16_check(msg);
+      //verify crc16
+      if(CRC16Result == RT_FALSE)
+      {
+        rt_kprintf("Message CRC16 verify Fial\n");
+        rt_free(msg);
+        rt_timer_start(sendwnd_timer);
+        return ;
+      }
+    }
+
 		switch(msg->cmd)
 		{
 			case NET_MSGTYPE_LANDED_ACK:
@@ -1377,7 +1449,7 @@ static void net_recv_message(net_msgmail_p mail)
 				rt_kprintf("NET_MSGTYPE_PHONEADD_ACK\n");
 				break;
 			}
-			case NET_MSGTYPE_PHONEDDEL_ACK:
+			case NET_MSGTYPE_PHONEDEL_ACK:
 			{
 				rt_kprintf("NET_MSGTYPE_PHONEDDEL_ACK\n");
 				break;
@@ -1468,14 +1540,15 @@ static void net_recv_message(net_msgmail_p mail)
 			{	
 				//添加手机白名单
 				rt_kprintf("NET_MSGTYPE_PHONEADD\n");
-				message_ASYN(NET_MSGTYPE_PHONEADD_ACK);
+				//message_ASYN(NET_MSGTYPE_PHONEADD_ACK);
+				Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
 			case NET_MSGTYPE_PHONEDELETE:
 			{	
 				//删除手机白名单
 				rt_kprintf("NET_MSGTYPE_PHONEDELETE\n");
-				message_ASYN(NET_MSGTYPE_PHONEDDEL_ACK);
+				message_ASYN(NET_MSGTYPE_PHONEDEL_ACK);
 				break;
 			}
 			case NET_MSGTYPE_ALARMARG:
@@ -1614,14 +1687,14 @@ void netmsg_thread_entry(void *arg)
     //发送心跳
     HearTime++;
     //rt_kprintf("HearTime = %d\n",HearTime);
-    if(HearTime >= 10*600)
+    if(HearTime >= 100*60)
     {
 			HearTime = 0;
 			//如果已经登陆
 			if(net_event_process(1,NET_ENVET_ONLINE) == 0)
 			{
 				rt_kprintf("send heart\n");
-				message_ASYN(NET_MSGTYPE_HEART);
+				//message_ASYN(NET_MSGTYPE_HEART);
 			}
     }
   }

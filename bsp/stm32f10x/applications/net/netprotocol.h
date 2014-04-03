@@ -43,7 +43,7 @@ typedef enum
   NET_MSGTYPE_PHONEADD      = 0x0b, //添加电话
   NET_MSGTYPE_PHONEADD_ACK  = 0X8B, //添加电话应答
   NET_MSGTYPE_PHONEDELETE   = 0x0c, //删除电话
-  NET_MSGTYPE_PHONEDDEL_ACK = 0X8C, //删除电话应答信息
+  NET_MSGTYPE_PHONEDEL_ACK = 0X8C, //删除电话应答信息
   NET_MSGTYPE_ALARMARG      = 0x0d, //报警参数
   NET_MSGTYPE_ALARMARG_ACK  = 0X8d, //报警参数应答
   NET_MSGTYPE_LINK          = 0x0e, //休眠
@@ -171,7 +171,7 @@ typedef struct
 typedef struct 
 {
 	rt_uint8_t pos;
-  rt_uint8_t result;
+  rt_uint8_t data[12];
 }net_phoneadd;
 
 //添加手机应答
@@ -187,10 +187,11 @@ typedef struct
 	rt_uint8_t pos;
 }net_phonedelete;
 
+//删除手机号码应答
 typedef struct 
 {
 	rt_uint8_t result;
-	
+	rt_uint8_t pos;
 }net_phonedel_ack;
 
 //报警参数
@@ -230,6 +231,13 @@ typedef struct
 {
 	rt_uint8_t pos[2];
 }net_keydelete;
+
+//钥匙删除应答
+typedef struct 
+{
+	rt_uint8_t result;
+	rt_uint8_t pos[2];
+}net_keydel_ack;
 
 //更新
 typedef struct 
@@ -308,9 +316,10 @@ typedef union
   net_filereq_ack   FileReqAck;   //文件请求应答
   net_filedata      filedata;   	//文件数据
   net_filedat_ack   FileDatAck;   //文件数据传送应答
-  net_phoneadd      phoneadd;   	//添加电话
+  //net_phoneadd      phoneadd;   	//添加电话
   net_phoneadd_ack  PhoneAddAck;  //
-  net_phonedelete   phonedelete; 	//删除电话
+  //net_phonedelete   phonedelete; 	//删除电话
+  net_phonedel_ack  PhoneDelAck;  //删除电话号码应答
   net_alarmarg      alarmarg;  		//报警时间参数
   net_ack           AlarmArgAck;	//报警参数应答
   net_link          link;      		//链接状态管理
@@ -318,7 +327,7 @@ typedef union
   net_keyadd        keyadd;    		//添加钥匙
   net_keyadd_ack    KeyAddAck;    //添加钥匙应答
   net_keydelete     keydelete;		//删除钥匙
-  net_ack           KeyDelAck; 		//钥匙删除应答
+  net_keydel_ack    KeyDelAck; 		//钥匙删除应答
   net_update        update;    		//用文件协议更新
   net_ack           UpDateAck; 		//用文件协议更新应答
   net_time          time;      		//时间同步
@@ -394,6 +403,13 @@ typedef struct
 	rt_uint8_t crc16[2];
 }net_recv_null;
 
+//数据只有结果
+typedef struct 
+{
+	rt_uint8_t result;
+	rt_uint8_t crc16[2];
+}net_recv_result;
+
 //接收文件包应答
 typedef struct 
 {
@@ -410,6 +426,13 @@ typedef struct
   rt_uint8_t crc16[2];
 }net_recv_phoneadd;
 
+//删除手机号码
+typedef struct 
+{
+	rt_uint8_t pos;
+	rt_uint8_t crc16[2];
+}net_recv_phonedel;
+
 //文件请求
 typedef struct 
 {
@@ -425,6 +448,41 @@ typedef struct
 	//rt_uint8_t crc16[2];
 }net_recv_filedata;
 
+//报警参数
+typedef struct 
+{
+	net_alarmarg arg;
+	rt_uint8_t crc16[2];
+}net_recv_alarmarg;
+
+//钥匙添加
+typedef struct 
+{
+	net_keyadd key;
+	rt_uint8_t crc16[2];
+}net_recv_keyadd;
+
+//钥匙添加应答
+typedef struct 
+{
+	net_keyadd_ack keyAck;
+	rt_uint8_t crc16[2];
+}net_recv_keyadd_ack;
+
+//钥匙删除
+typedef struct 
+{
+	net_keydelete key;
+	rt_uint8_t crc16[2];
+}net_recv_keydel;
+
+//钥匙删除应答
+typedef struct 
+{
+	net_keydelete keyAck;
+	rt_uint8_t crc16[2];
+}net_recv_keydel_ack;
+
 //接收报文的数据域
 typedef union 
 {
@@ -439,6 +497,13 @@ typedef union
   net_recv_filedata 	filedata;     //文件数据
   net_recv_filedatack filedata_ack; //文件数据应答
   net_recv_phoneadd 	phoneadd;			//添加手机号码
+  net_recv_phonedel   phonedel;     //删除手机号码
+  net_recv_alarmarg   AlarmArg;     //报警参数
+  net_recv_result     AlarmArgAck;  //报警参数应答
+  net_recv_keyadd     keyadd;				//钥匙添加
+  net_recv_keyadd_ack KeyAddAck;    //钥匙添加应答
+  net_recv_keydel     keydel;       //钥匙删除
+  net_recv_keyadd_ack KeyDelAck;    //钥匙删除应答
 }net_recv_data;
 
 //接收报文的描述结构体
@@ -453,7 +518,7 @@ typedef struct
 
 
 
-/*报文的发送模式*/
+//报文发送的模式
 typedef enum
 {
   SYNC_MODE,    //同步
@@ -600,6 +665,7 @@ void Net_NetMsg_thread_callback(void (*Callback)(void));
 
 rt_uint8_t net_event_process(rt_uint8_t mode,rt_uint32_t type);
 rt_uint8_t get_msg_new_order(void);//获得报文的新序号
+rt_bool_t net_mail_crc16_check(net_recvmsg_p Mail);
 
 
 #endif
