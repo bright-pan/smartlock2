@@ -26,7 +26,7 @@ static void file_msg_mail_send(net_msgmail_p mail,rt_uint8_t *buffer,rt_uint16_t
   mail->time = 0;
   mail->type = NET_MSGTYPE_FILEDATA;
   mail->resend = 3;
-  mail->outtime = 500;
+  mail->outtime = 3000;
   mail->sendmode = SYNC_MODE;
   mail->col.byte = net_order.byte;
   net_order.bit.col++;
