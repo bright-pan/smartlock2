@@ -5,8 +5,12 @@
 */
 #include "netfile.h"
 #include <cyg/crc/crc.h>
+#include "crc16.h"
 
 #define NET_MAIL_OK  0
+
+#define FILE_RECV_MAX_TIME    10    //文件接收最长时间
+#define SYS_APP_BIN_FILE_NAME "/app.bin"
 
 
 
@@ -22,7 +26,7 @@ static void file_msg_mail_send(net_msgmail_p mail,rt_uint8_t *buffer,rt_uint16_t
   mail->time = 0;
   mail->type = NET_MSGTYPE_FILEDATA;
   mail->resend = 3;
-  mail->outtime = 0xffff;
+  mail->outtime = 500;
   mail->sendmode = SYNC_MODE;
   mail->col.byte = net_order.byte;
   net_order.bit.col++;
@@ -404,6 +408,331 @@ void net_file_entry(void *arg)
 	}
 }
 
+/**
+		文件接收处理
+*/
+//收到的包描述结构
+typedef struct 
+{
+	rt_uint8_t *buf;   //标记包的数组
+	rt_size_t  size;   //数组大小
+	rt_size_t  bitmax; //位数的最大值
+}FilePackPosMap;
+
+//文件接收描述结构
+typedef struct
+{
+	FilePackPosMap *PackMap;
+	//rt_size_t      CurPackNum; //当前收到的包数量
+	rt_size_t      FileSize;   //文件大小
+	rt_uint8_t     PackSize;   //包大小
+	rt_size_t      PackNum;    //包数量
+	rt_uint32_t    CRC32;      //crc32
+}NetFileInfo,*NetFileInfo_p;
+
+//接收文件时使用的定时器描述
+typedef struct
+{
+	rt_timer_t timer;
+	rt_uint8_t cnt;
+}NetFileTimer;
+//接收文件时用于记录文件信息
+static NetFileInfo_p NetRecvFileInfo = RT_NULL;
+static NetFileTimer FileRecvTimer = {RT_NULL,0};
+
+
+/*
+功能:设置文件信息结构
+*/
+static void net_fileinfo_set(NetFileInfo_p info,net_recvmsg_p mail)
+{	
+	info->PackSize = mail->data.filerq.request.packsize;
+	net_string_copy_uint32(&info->FileSize,mail->data.filerq.request.size);
+	net_string_copy_uint32(&info->PackNum,mail->data.filerq.request.packnum);
+	net_string_copy_uint32(&info->CRC32,mail->data.filerq.request.crc32);
+	rt_kprintf("\nCRC32    = %x\n",info->CRC32);
+	rt_kprintf("FileSize = %d\n",info->FileSize);
+	rt_kprintf("PackNum  = %d\n",info->PackNum);
+	rt_kprintf("PackSize = %d\n",info->PackSize);
+}
+
+//#ifdef 1
+FilePackPosMap * file_pack_pos_create(rt_size_t PackNum)
+{
+	FilePackPosMap *map;
+
+	map = rt_calloc(1,sizeof(FilePackPosMap));
+	RT_ASSERT(map != RT_NULL);
+	if(PackNum % 8 == 0)
+	{
+		map->size = PackNum / 8;
+	}
+	else
+	{
+		map->size = PackNum / 8;
+		map->size++;
+	}
+	map->bitmax = PackNum;
+	
+	map->buf = rt_calloc(1,map->size);
+	RT_ASSERT(map->buf != RT_NULL);
+	
+	return map;
+}
+
+void file_pack_pos_delete(FilePackPosMap *map)
+{
+	rt_free(map->buf);
+	rt_free(map);
+}
+
+void file_pack_pos_add(FilePackPosMap *Map,rt_size_t PackPos)
+{
+	rt_size_t BytePos;
+	rt_uint8_t BitPos;
+
+	if(PackPos >= Map->bitmax)
+	{
+		rt_kprintf("bit max is %d\n",Map->bitmax);
+		return ;
+	}
+	BytePos = PackPos / 8;
+	BitPos = PackPos % 8;
+	Map->buf[BytePos] |= 1<<(7-BitPos);
+}
+/*
+功能:文件包数据是否接收完成
+*/
+rt_int8_t file_pack_complete(FilePackPosMap *Map)
+{
+	rt_size_t BytePos;
+	rt_size_t BitPos;
+	rt_size_t CompleteNum = 0;
+	
+	for(BytePos = 0;BytePos < Map->size;BytePos++)
+	{
+		for(BitPos = 0 ; BitPos < 8;BitPos++)
+		{
+			if((Map->buf[BytePos]>>(7-BitPos) & 0x01) == 0)
+			{
+				return -1;
+			}
+			else
+			{
+				CompleteNum++;
+				if(CompleteNum >= Map->bitmax)
+				{
+					return CompleteNum;
+				}
+			}
+		}
+	}
+	return CompleteNum;
+}
+
+void file_pack_map_show(FilePackPosMap *Map)
+{
+	rt_size_t i;
+	rt_size_t j;
+	
+	for(i = 0;i < Map->size;i++)
+	{
+		for(j = 0 ; j < 8;j++)
+		{
+			rt_kprintf("%d",Map->buf[i]>>(7-j) &0x01);
+		}
+		rt_kprintf("\n");
+	}
+}
+void testfp(rt_uint8_t pos)
+{
+  FilePackPosMap *map;
+  rt_int8_t result;
+
+  map = file_pack_pos_create(22);
+  file_pack_pos_add(map,pos);
+  file_pack_map_show(map);
+  result = file_pack_complete(map);
+  rt_kprintf("complete = %d\n",result);
+  
+
+}
+//#endif
+
+/*
+功能:创建一个NetFileInfo实体
+返回:NetFileInfo实体的地址
+*/
+static NetFileInfo_p net_fileinfo_create(rt_size_t PackNum)
+{
+	NetFileInfo_p FileInfo;
+	
+	FileInfo = rt_calloc(1,sizeof(NetFileInfo));
+	RT_ASSERT(FileInfo != RT_NULL);
+	FileInfo->PackMap = file_pack_pos_create(PackNum);
+	
+	return FileInfo;
+}
+
+/*
+功能:删除NetFileInfo实体
+*/
+static void net_fileinfo_delete(NetFileInfo_p FileInfo)
+{
+	file_pack_pos_delete(FileInfo->PackMap);
+	rt_free(FileInfo);
+}
+
+static void net_file_timer_handler(void *arg)
+{
+	FileRecvTimer.cnt++;
+	if(FileRecvTimer.cnt >= FILE_RECV_MAX_TIME)
+	{
+		rt_timer_stop(FileRecvTimer.timer);
+	}
+	rt_kprintf("entry timer\n");
+}
+void net_file_timer_process(void)
+{
+	if(FileRecvTimer.cnt >= FILE_RECV_MAX_TIME)
+	{
+		FileRecvTimer.cnt = 0;
+		rt_timer_delete(FileRecvTimer.timer);
+		net_event_process(2,NET_ENVET_FILERQ);
+		net_fileinfo_delete(NetRecvFileInfo);
+		NetRecvFileInfo = RT_NULL;
+		rt_kprintf("delete file timer\n");
+	}
+}
+
+static void net_file_timer_del(void)
+{
+	FileRecvTimer.cnt = 0;
+	rt_timer_stop(FileRecvTimer.timer);
+	rt_timer_delete(FileRecvTimer.timer);
+	FileRecvTimer.timer = RT_NULL;
+}
+static void net_file_timer_clear(void)
+{
+	FileRecvTimer.cnt = 0;
+}
+/*
+功能:处理文件请求
+返回: 0 成功 1 失败
+*/
+rt_uint8_t net_recv_filerq_process(net_recvmsg_p mail)
+{	
+	rt_uint8_t result = 1;
+	rt_size_t  PackNum = 0;
+	
+	if(net_event_process(1,NET_ENVET_FILERQ) == 0)
+	{
+		rt_kprintf("Being Receive File\n");
+		return 1;
+	}
+	//不同文件类型保存为不同名字
+	if(mail->data.filerq.request.type == 1)
+	{
+		int FileID;
+		
+		unlink(SYS_APP_BIN_FILE_NAME);
+		FileID = open(SYS_APP_BIN_FILE_NAME,O_CREAT|O_RDWR,0x777);
+		if(FileID < 0)
+		{
+			rt_kprintf("Creat APP.BIN File Fail\n");
+			result = 1;
+		}
+		else
+		{
+      close(FileID);
+      //标志在接收文件状态
+      net_event_process(0,NET_ENVET_FILERQ);
+      if(NetRecvFileInfo != RT_NULL)
+      {
+        rt_kprintf("NetRecvFileInfo Data Abnormal\n\n");
+        net_fileinfo_delete(NetRecvFileInfo);
+      }
+      //文件信息获取
+      net_string_copy_uint32(&PackNum,mail->data.filerq.request.packnum);
+      NetRecvFileInfo = net_fileinfo_create(PackNum);
+      net_fileinfo_set(NetRecvFileInfo,mail);
+      //创建定时器
+			FileRecvTimer.timer = rt_timer_create("filerecv",
+																						net_file_timer_handler,
+																						RT_NULL,6000,
+																						RT_TIMER_FLAG_PERIODIC);
+			RT_ASSERT(FileRecvTimer.timer != RT_NULL);
+			rt_timer_start(FileRecvTimer.timer);
+			
+      result = 0;
+		}
+		
+	}
+	return result;
+}
+
+//rt_uint8_t filebuffer[3*1024];
+rt_uint8_t net_file_packdata_process(net_recvmsg_p mail)
+{
+	rt_uint8_t result = 1;
+	int fileid ;
+	rt_uint16_t PackSizeRmap[6] = {64,128,256,0,512,1024};
+	
+	//如果是文件包接收状态
+	if(net_event_process(1,NET_ENVET_FILERQ) == 0)
+	{
+		rt_uint32_t CurWritePos;
+		
+		fileid = open(SYS_APP_BIN_FILE_NAME,O_RDWR,0x777);
+		if(fileid < 0)
+		{
+			//接收数据异常
+			rt_kprintf("Receive data anomalies\n");
+			result = 2;
+		}
+		net_string_copy_uint32(&CurWritePos,mail->data.filedata.pos);
+		lseek(fileid,CurWritePos*PackSizeRmap[NetRecvFileInfo->PackSize],DFS_SEEK_SET);
+		rt_kprintf("write size %d\n",write(fileid,mail->data.filedata.data,mail->lenmap.bit.data-4));
+		close(fileid);
+		net_file_timer_clear();
+		/*rt_memcpy(filebuffer+CurWritePos*PackSizeRmap[NetRecvFileInfo->PackSize],
+							mail->data.filedata.data,mail->lenmap.bit.data-4);*/
+							
+		file_pack_pos_add(NetRecvFileInfo->PackMap,CurWritePos);
+		rt_kprintf("Recv ok Num:%d\n",file_pack_complete(NetRecvFileInfo->PackMap));
+		if(file_pack_complete(NetRecvFileInfo->PackMap) != -1)
+		{
+			rt_uint32_t crc32;
+
+			//rt_kprintf("RAM FILE crc32:%x\n",cyg_ether_crc32(filebuffer,NetRecvFileInfo->FileSize));
+			file_get_crc32(SYS_APP_BIN_FILE_NAME,&crc32);
+			if(crc32 != NetRecvFileInfo->CRC32)
+			{
+				result = 2;
+				rt_kprintf("File Recv Fail CRC32 Error\n\n\n");
+			}
+			else
+			{	
+				rt_kprintf("File Recv Succeed\n");
+				result = 0;
+			}
+			net_file_timer_del();
+			net_event_process(2,NET_ENVET_FILERQ);
+			net_fileinfo_delete(NetRecvFileInfo);
+			NetRecvFileInfo = RT_NULL;
+		}
+		else
+		{
+      result = 0;
+		}
+	}
+	else
+	{
+		rt_kprintf("Now not Recv File\n");
+	}
+	return result;
+}
+
 
 #ifdef RT_USING_FINSH
 #include <finsh.h>
@@ -543,6 +872,8 @@ void testcrc32(void)
 	rt_kprintf("crc32: %X\n",crc32);
 }
 FINSH_FUNCTION_EXPORT(testcrc32,"test misc.c file crc32");
+
+FINSH_FUNCTION_EXPORT(testfp,"(MSGType)Send Ack Data Is NULL Message");
 
 #endif
 
