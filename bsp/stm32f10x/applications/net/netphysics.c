@@ -4,7 +4,7 @@
 作者:wangzw@yuettak.com
 */
 #include "netphysics.h"
-#include "testcom.h"
+#include "bdcom.h"
 
 #define TCP_BUF_SIZE       1024 //接收缓冲区
 
