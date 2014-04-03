@@ -540,7 +540,7 @@ int camera_thread_init(void)
 												camera_thread_entry,
 												RT_NULL,
 												1024,
-												102,
+												100,
 												100);
 	if(RT_NULL == id )
 	{
