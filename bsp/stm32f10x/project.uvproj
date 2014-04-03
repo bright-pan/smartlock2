@@ -212,7 +212,7 @@
             <hadIRAM2>0</hadIRAM2>
             <hadIROM2>0</hadIROM2>
             <StupSel>8</StupSel>
-            <useUlib>0</useUlib>
+            <useUlib>1</useUlib>
             <EndSel>0</EndSel>
             <uLtcg>0</uLtcg>
             <RoSelD>3</RoSelD>
@@ -416,6 +416,71 @@
               <FileName>irsensor.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\applications\irsensor.c</FilePath>
+            </File>
+            <File>
+              <FileName>voice.C</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\voice.C</FilePath>
+            </File>
+            <File>
+              <FileName>crc16.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\net\crc16.c</FilePath>
+            </File>
+            <File>
+              <FileName>des.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\net\des.c</FilePath>
+            </File>
+            <File>
+              <FileName>crc32.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\components\dfs\filesystems\jffs2\cyg\crc\crc32.c</FilePath>
+            </File>
+            <File>
+              <FileName>netcomm.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\net\netcomm.c</FilePath>
+            </File>
+            <File>
+              <FileName>netfile.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\net\netfile.c</FilePath>
+            </File>
+            <File>
+              <FileName>netmailclass.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\net\netmailclass.c</FilePath>
+            </File>
+            <File>
+              <FileName>netprotocol.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\net\netprotocol.c</FilePath>
+            </File>
+            <File>
+              <FileName>netphysics.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\net\netphysics.c</FilePath>
+            </File>
+            <File>
+              <FileName>netterminal.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\net\netterminal.c</FilePath>
+            </File>
+            <File>
+              <FileName>netphone.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\net\netphone.c</FilePath>
+            </File>
+            <File>
+              <FileName>netkey.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\net\netkey.c</FilePath>
+            </File>
+            <File>
+              <FileName>bdcom.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\bdcom.c</FilePath>
             </File>
           </Files>
         </Group>
