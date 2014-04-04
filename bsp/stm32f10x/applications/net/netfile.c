@@ -743,7 +743,7 @@ void send_file(char *FileName)
 
 	thread_id = rt_thread_create("netfile",
 															net_file_entry,(void *)FileName,
-                         			1024, 104, 20);
+                         			1024, 107, 20);
   RT_ASSERT(thread_id != RT_NULL);
   rt_thread_startup(thread_id);
 }
