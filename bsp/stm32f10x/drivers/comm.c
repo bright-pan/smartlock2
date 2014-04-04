@@ -282,7 +282,6 @@ comm_rx_thread_entry(void *parameters)
 					if (length > BUF_SIZE -4 || length + 4 < recv_counts) {
                         rt_kprintf("\ncomm recv error frame length: %d\n", recv_counts);
                         print_hex(process_buf, recv_counts);
-                        process_frame(process_buf, recv_counts);
                         break;
                     }
 					if (length + 4 > recv_counts)
@@ -291,6 +290,7 @@ comm_rx_thread_entry(void *parameters)
 					{
 						rt_kprintf("\ncomm recv frame length: %d\n", recv_counts);
 						print_hex(process_buf, recv_counts);
+                        process_frame(process_buf, recv_counts);
 						break;
 					}
 				}
