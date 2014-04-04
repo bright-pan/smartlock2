@@ -279,21 +279,27 @@ comm_rx_thread_entry(void *parameters)
 				if (check_frame(process_buf_bk) == FRAME_STATUS_OK)
 				{
 					length = *((uint16_t *)process_buf);
-					if (length > BUF_SIZE -4 || length + 4 < recv_counts)
-						break;
+					if (length > BUF_SIZE -4 || length + 4 < recv_counts) {
+                        rt_kprintf("\ncomm recv error frame length: %d\n", recv_counts);
+                        print_hex(process_buf, recv_counts);
+                        process_frame(process_buf, recv_counts);
+                        break;
+                    }
 					if (length + 4 > recv_counts)
 						goto continue_check;
 					if (length + 4 == recv_counts)
 					{
 						rt_kprintf("\ncomm recv frame length: %d\n", recv_counts);
 						print_hex(process_buf, recv_counts);
-						process_frame(process_buf, recv_counts);
 						break;
 					}
 				}
 		  continue_check:
-				if (recv_counts >= BUF_SIZE)
+				if (recv_counts >= BUF_SIZE) {
+                    rt_kprintf("\ncomm recv error frame length: %d\n", recv_counts);
+                    print_hex(process_buf, recv_counts);
 					break;
+                }
 				process_buf_bk++;
 			}
 			else
@@ -436,7 +442,7 @@ send_ctx_mail(COMM_TYPE_TYPEDEF comm_type, uint8_t order, uint16_t delay, uint8_
 		if (len) {
 			buf_bk = (uint8_t *)rt_malloc(len);
 			if (buf_bk == RT_NULL)
-				goto free_process;
+				goto __free_process;
 			rt_memcpy(buf_bk, buf, len);
 		}
 		else
@@ -444,9 +450,12 @@ send_ctx_mail(COMM_TYPE_TYPEDEF comm_type, uint8_t order, uint16_t delay, uint8_
 
 		if (comm_type & 0x80)
 			comm_tmail_buf.result_sem = RT_NULL;
-		else
+		else {
 			comm_tmail_buf.result_sem = rt_sem_create("s_ctx", 0, RT_IPC_FLAG_FIFO);
-		comm_tmail_buf.result = &ctw_status;
+            if (comm_tmail_buf.result_sem == RT_NULL)
+                goto __free_process;
+        }
+        comm_tmail_buf.result = &ctw_status;
 		comm_tmail_buf.comm_type = comm_type;
 		comm_tmail_buf.order = order;
 		comm_tmail_buf.buf = buf_bk;
@@ -463,6 +472,7 @@ send_ctx_mail(COMM_TYPE_TYPEDEF comm_type, uint8_t order, uint16_t delay, uint8_
 		if (result == -RT_EFULL)
 		{
 			rt_kprintf("comm_mq is full!!!\n");
+            goto __free_process;
 		}
 		else
 		{
@@ -480,11 +490,11 @@ send_ctx_mail(COMM_TYPE_TYPEDEF comm_type, uint8_t order, uint16_t delay, uint8_
 	}
     return CTW_STATUS_OK;
 
-free_process:
+__free_process:
     if (buf_bk != RT_NULL)
 		rt_free(buf_bk);
     if (comm_tmail_buf.result_sem != RT_NULL)
-		rt_sem_release(comm_tmail_buf.result_sem);
+		rt_sem_delete(comm_tmail_buf.result_sem);
 	return CTW_STATUS_ERROR;
 }
 
