@@ -4,7 +4,10 @@
 作者:wangzw@yuettak.com
 */
 #include "netphysics.h"
+#include "netmailclass.h"
 #include "bdcom.h"
+#include "comm.h"
+
 
 #define TCP_BUF_SIZE       1024 //接收缓冲区
 
@@ -35,14 +38,13 @@ rt_size_t find_package_end(rt_uint8_t *buffer,rt_size_t size)
 */
 void netprotocol_thread_entry(void *arg)
 { 
-  char *recv_data;
+  rt_uint8_t *recv_data;
   rt_size_t SavePos = 0;   //最新数据保存位置
-  rt_size_t bytenum = 0;   //收到字节数总和
+  //rt_size_t bytenum = 0;   //收到字节数总和
   rt_size_t MsgEndPos = 0; //一条报文结束的位置
   rt_size_t bytes_received;
   while(1)
   {
-
     recv_data = rt_calloc(1,TCP_BUF_SIZE);
     if (recv_data == RT_NULL)
     {
@@ -76,7 +78,8 @@ void netprotocol_thread_entry(void *arg)
 				rt_thread_delay(100);
     	}
     }
-    /*while(1)
+    #if 0
+    while(1)
     {
       int  i;
     	
@@ -86,7 +89,8 @@ void netprotocol_thread_entry(void *arg)
 	      rt_kprintf("%02X",recv_data[i]);
 	    }
 			rt_thread_delay(100);
-    }*/
+    }
+    #endif
 		//连接成功开始登陆 
 		send_net_landed_mail();
     while(1)
@@ -148,11 +152,8 @@ void netprotocol_thread_entry(void *arg)
       mq_result = rt_mq_recv(net_datsend_mq,(void *)&message,sizeof(net_message),1);
       if(mq_result == RT_EOK)
       {
-        int result = 0;
-
         if(message.buffer != RT_NULL)
         {
-
           GSM_Mail_p mail;
 
 					mail = (GSM_Mail_p)rt_calloc(1,sizeof(GSM_Mail));
@@ -168,13 +169,6 @@ void netprotocol_thread_entry(void *arg)
           rt_free(mail);
         }
         rt_sem_release(message.sendsem);
-       /* if(result <= 0)
-        {
-          rt_kprintf("send fail\n");
-          gsm_set_link(0);
-          rt_free(recv_data);
-          break;
-        } */
       }
     }
   }
