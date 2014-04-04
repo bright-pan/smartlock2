@@ -47,9 +47,9 @@
           <OutputName>rtthread-stm32</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
-          <CreateHexFile>0</CreateHexFile>
+          <CreateHexFile>1</CreateHexFile>
           <DebugInformation>1</DebugInformation>
-          <BrowseInformation>0</BrowseInformation>
+          <BrowseInformation>1</BrowseInformation>
           <ListingPath>.\build\</ListingPath>
           <HexFormatSelection>1</HexFormatSelection>
           <Merge32K>0</Merge32K>
@@ -139,7 +139,7 @@
             <RestoreTracepoints>0</RestoreTracepoints>
           </Target>
           <RunDebugAfterBuild>0</RunDebugAfterBuild>
-          <TargetSelection>0</TargetSelection>
+          <TargetSelection>5</TargetSelection>
           <SimDlls>
             <CpuDll></CpuDll>
             <CpuDllArguments></CpuDllArguments>
@@ -153,7 +153,7 @@
             <PeripheralDll></PeripheralDll>
             <PeripheralDllArguments></PeripheralDllArguments>
             <InitializationFile></InitializationFile>
-            <Driver>BIN\UL2CM3.DLL</Driver>
+            <Driver>Segger\JL2CM3.dll</Driver>
           </TargetDlls>
         </DebugOption>
         <Utilities>
@@ -163,10 +163,10 @@
             <RunIndependent>0</RunIndependent>
             <UpdateFlashBeforeDebugging>1</UpdateFlashBeforeDebugging>
             <Capability>1</Capability>
-            <DriverSelection>4096</DriverSelection>
+            <DriverSelection>4099</DriverSelection>
           </Flash1>
           <bUseTDR>1</bUseTDR>
-          <Flash2>BIN\UL2CM3.DLL</Flash2>
+          <Flash2>Segger\JL2CM3.dll</Flash2>
           <Flash3>"" ()</Flash3>
           <Flash4></Flash4>
         </Utilities>
@@ -212,7 +212,7 @@
             <hadIRAM2>0</hadIRAM2>
             <hadIROM2>0</hadIROM2>
             <StupSel>8</StupSel>
-            <useUlib>0</useUlib>
+            <useUlib>1</useUlib>
             <EndSel>0</EndSel>
             <uLtcg>0</uLtcg>
             <RoSelD>3</RoSelD>
@@ -351,7 +351,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F10X_HD, USE_STDPERIPH_DRIVER</Define>
               <Undefine></Undefine>
-              <IncludePath>.;..\..\components\CMSIS\Include;..\..\components\dfs;..\..\components\dfs\include;..\..\components\drivers\include;..\..\components\finsh;..\..\components\init;..\..\include;..\..\libcpu\arm\common;..\..\libcpu\arm\cortex-m3;Libraries\CMSIS\CM3\DeviceSupport\ST\STM32F10x;Libraries\STM32F10x_StdPeriph_Driver\inc;applications;drivers</IncludePath>
+              <IncludePath>.;..\..\components\CMSIS\Include;..\..\components\dfs;..\..\components\dfs\include;..\..\components\drivers\include;..\..\components\finsh;..\..\components\init;..\..\include;..\..\libcpu\arm\common;..\..\libcpu\arm\cortex-m3;Libraries\CMSIS\CM3\DeviceSupport\ST\STM32F10x;Libraries\STM32F10x_StdPeriph_Driver\inc;applications;drivers;.\applications\net;..\..\components\dfs\filesystems\jffs2</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -382,7 +382,7 @@
             <ScatterFile></ScatterFile>
             <IncludeLibs></IncludeLibs>
             <IncludeLibsPath></IncludeLibsPath>
-            <Misc> --keep __fsym_* --keep __vsym_*   --keep __rt_init* </Misc>
+            <Misc>--keep __fsym_* --keep __vsym_*   --keep __rt_init*</Misc>
             <LinkerInputFile></LinkerInputFile>
             <DisabledWarnings></DisabledWarnings>
           </LDads>
@@ -531,6 +531,16 @@
               <FileName>rtc.c</FileName>
               <FileType>1</FileType>
               <FilePath>drivers\rtc.c</FilePath>
+            </File>
+            <File>
+              <FileName>gpio_pwm_ic.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\gpio_pwm_ic.c</FilePath>
+            </File>
+            <File>
+              <FileName>pt8211.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\pt8211.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -921,6 +931,96 @@
               <FileName>components.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\components\init\components.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>zmodem</GroupName>
+          <Files>
+            <File>
+              <FileName>rz.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\components\utilities\zmodem\rz.c</FilePath>
+            </File>
+            <File>
+              <FileName>sz.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\components\utilities\zmodem\sz.c</FilePath>
+            </File>
+            <File>
+              <FileName>zcore.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\components\utilities\zmodem\zcore.c</FilePath>
+            </File>
+            <File>
+              <FileName>zdevice.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\components\utilities\zmodem\zdevice.c</FilePath>
+            </File>
+            <File>
+              <FileName>zstart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\components\utilities\zmodem\zstart.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>NetProtocol</GroupName>
+          <Files>
+            <File>
+              <FileName>crc16.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\net\crc16.c</FilePath>
+            </File>
+            <File>
+              <FileName>des.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\net\des.c</FilePath>
+            </File>
+            <File>
+              <FileName>netcomm.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\net\netcomm.c</FilePath>
+            </File>
+            <File>
+              <FileName>netfile.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\net\netfile.c</FilePath>
+            </File>
+            <File>
+              <FileName>netkey.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\net\netkey.c</FilePath>
+            </File>
+            <File>
+              <FileName>netmailclass.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\net\netmailclass.c</FilePath>
+            </File>
+            <File>
+              <FileName>netphone.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\net\netphone.c</FilePath>
+            </File>
+            <File>
+              <FileName>netphysics.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\net\netphysics.c</FilePath>
+            </File>
+            <File>
+              <FileName>netprotocol.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\net\netprotocol.c</FilePath>
+            </File>
+            <File>
+              <FileName>netterminal.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\net\netterminal.c</FilePath>
+            </File>
+            <File>
+              <FileName>crc32.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\components\dfs\filesystems\jffs2\cyg\crc\crc32.c</FilePath>
             </File>
           </Files>
         </Group>

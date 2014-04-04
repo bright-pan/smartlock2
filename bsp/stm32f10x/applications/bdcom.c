@@ -1,5 +1,6 @@
 #include "bdcom.h"
 #include "comm.h"
+#include "untils.h"
 #define SHOW_GSM_OP_INFO   1
 #define GPRS_PACK_RESEND_T 1000
 
@@ -25,7 +26,7 @@ rt_bool_t gsm_close(void)
   rt_err_t  result;
 
 	result = send_ctx_mail(COMM_TYPE_GSM_CTRL_CLOSE,0,1000,"\x01",1);
-	if(result ==  CW_STATUS_OK)
+	if(result ==  CTW_STATUS_OK)
 	{
 		RT_DEBUG_LOG(SHOW_GSM_OP_INFO,("Close GSM Module\n"));
 		return RT_TRUE;
@@ -45,7 +46,7 @@ rt_bool_t gsm_open(void)
   rt_err_t  result;
   
 	result = send_ctx_mail(COMM_TYPE_GSM_CTRL_OPEN,0,1000,"\x01",1);
-	if(result ==  CW_STATUS_OK)
+	if(result ==  CTW_STATUS_OK)
 	{
 	  RT_DEBUG_LOG(SHOW_GSM_OP_INFO,("Open GSM Module\n"));
 	  return RT_TRUE;
@@ -90,7 +91,7 @@ rt_bool_t gsm_switch_mode(GSM_Module_p gsm,rt_uint8_t mode)
 		if(mode == 0)//cmd mdoe
 		{
       result =  send_ctx_mail(COMM_TYPE_GSM_CTRL_SWITCH_TO_CMD,0,1000,"\x01",1);
-	    if(result == CW_STATUS_OK)
+	    if(result == CTW_STATUS_OK)
 	    {
 	      RT_DEBUG_LOG(SHOW_GSM_OP_INFO,("SWTICH AT CMD Mode\n"));
 	      gsm->WorkMode = 0;
@@ -101,7 +102,7 @@ rt_bool_t gsm_switch_mode(GSM_Module_p gsm,rt_uint8_t mode)
 		else //gprs mode
 		{
 			result =  send_ctx_mail(COMM_TYPE_GSM_CTRL_SWITCH_TO_GPRS,0,1000,"\x01",1);
-			if(result == CW_STATUS_OK)
+			if(result == CTW_STATUS_OK)
 			{
 			  RT_DEBUG_LOG(SHOW_GSM_OP_INFO,("SWTICH GPRS Mode\n"));
 			  gsm->WorkMode = 1;
@@ -125,10 +126,11 @@ rt_bool_t gsm_link(GSM_Module_p gsm)
 
 	gsm_switch_mode(gsm,0);
 	*buf = 1;
-	rt_memcpy(buf+1, &(device_parameters.tcp_domain[0]), sizeof(device_parameters.tcp_domain[0]));
-	result = send_ctx_mail(COMM_TYPE_GSM_CTRL_DIALING, 0, 2000, buf, sizeof(device_parameters.tcp_domain[0])+1);
+  rt_kprintf("device IP :%s\n",device_config.param.tcp_domain[0].domain);
+	rt_memcpy(buf+1, &(device_config.param.tcp_domain[0]), sizeof(device_config.param.tcp_domain[0]));
+	result = send_ctx_mail(COMM_TYPE_GSM_CTRL_DIALING, 0, 2000, buf, sizeof(device_config.param.tcp_domain[0])+1);
 	rt_free(buf);
-	if(result == CW_STATUS_OK)
+	if(result == CTW_STATUS_OK)
 	{
 		RT_DEBUG_LOG(SHOW_GSM_OP_INFO,("GSM Link IP\n"));
 		gsm->LinkStatus = 1;
@@ -154,7 +156,7 @@ void mail_gprs_process(GSM_Mail_p Mail)
 	*buf = Mail->SendMode;
 	rt_memcpy(buf+1,Mail->buf,Mail->BufSize);
 	result = send_ctx_mail(COMM_TYPE_GPRS,0,GPRS_PACK_RESEND_T,buf,Mail->BufSize+1);
-  if(result == CW_STATUS_OK)
+  if(result == CTW_STATUS_OK)
   {
     rt_kprintf("Send Data\n");
   }
