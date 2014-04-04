@@ -2,6 +2,8 @@
 #define __NETMAILCLASS_H__
 #include "netprotocol.h"
 
+void send_net_landed_mail(void);
+
 rt_uint8_t msg_mail_alarm(rt_uint8_t alarm,rt_uint8_t LockStatus,rt_uint32_t time);
 rt_uint8_t msg_mail_fault(rt_uint8_t fault,rt_uint32_t time);
 rt_uint8_t msg_mail_opendoor(rt_uint8_t type,rt_uint16_t key,rt_uint32_t time);

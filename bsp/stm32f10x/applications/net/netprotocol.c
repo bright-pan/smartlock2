@@ -1670,7 +1670,7 @@ void netmsg_thread_entry(void *arg)
     rt_err_t result;
     net_msgmail msg_mail;
 
-    result = rt_mq_recv(net_msgmail_mq,(void *)&msg_mail,sizeof(net_msgmail),RT_WAITING_NO);
+    result = rt_mq_recv(net_msgmail_mq,(void *)&msg_mail,sizeof(net_msgmail),1);
     if(result == RT_EOK)
     {
       rt_kprintf("rev net_msgmail_mq \n");
@@ -1791,7 +1791,7 @@ int netmsg_thread_init(void)
 
   id = rt_thread_create("msg",
                          netmsg_thread_entry, RT_NULL,
-                         1024, 106, 20);
+                         1024,110, 20);
 
   if(id == RT_NULL)
   {
@@ -1919,7 +1919,9 @@ FINSH_FUNCTION_EXPORT(heart_net,"(DoorStatus)Send heart message");
 void wnd_show(void)
 {
 	rt_uint8_t i;
+	rt_base_t  level;
 
+	level = rt_hw_interrupt_disable();
 	for(i = 0;i < NET_WND_MAX_NUM; i++)
 	{
 		rt_kprintf("[%2d] permission=%d order=%03d resend=%d outtime=%3d curtime=%3d resend=0x%X type=0x%2X *user=%X\n"
@@ -1933,6 +1935,7 @@ void wnd_show(void)
 		,sendwnd_node[i].mail.type
 		,sendwnd_node[i].mail.user);
 	}
+	rt_hw_interrupt_enable(level);
 }
 FINSH_FUNCTION_EXPORT(wnd_show,"show send window status");
 

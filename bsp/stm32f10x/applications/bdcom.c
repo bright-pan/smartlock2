@@ -2,7 +2,7 @@
 #include "comm.h"
 #include "untils.h"
 #define SHOW_GSM_OP_INFO   1
-#define GPRS_PACK_RESEND_T 1000
+#define GPRS_PACK_RESEND_T 300
 
 
 rt_mailbox_t GSM_Mail_mb = RT_NULL; //GSMÄ£¿éÓÊ¼þ
@@ -158,11 +158,11 @@ void mail_gprs_process(GSM_Mail_p Mail)
 	result = send_ctx_mail(COMM_TYPE_GPRS,0,GPRS_PACK_RESEND_T,buf,Mail->BufSize+1);
   if(result == CTW_STATUS_OK)
   {
-    rt_kprintf("Send Data\n");
+    rt_kprintf("COM Send Data OK\n");
   }
   else
   {
-    rt_kprintf("send Data Fail\n");
+    rt_kprintf("COM send Data Fail\n");
     GSMModule.LinkStatus = 0;
   }
   rt_free(buf);
@@ -270,7 +270,7 @@ int GSM_manage_thread_init(void)
 
 	RT_ASSERT(GSM_Mail_mb != RT_NULL);
 	
-	id = rt_thread_create("ComTest",
+	id = rt_thread_create("DBCOM",
 												GSM_manage_thread_entry,
 												RT_NULL,
 												512,

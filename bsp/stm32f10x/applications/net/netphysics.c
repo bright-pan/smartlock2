@@ -182,7 +182,7 @@ int netprotocol_thread_init(void)
 
   id = rt_thread_create("NPDU",
                          netprotocol_thread_entry, RT_NULL,
-                         512, 105, 20);
+                         512,109, 20);
 
   if(id == RT_NULL)
   {

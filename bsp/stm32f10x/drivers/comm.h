@@ -57,4 +57,7 @@ send_ctx_mail(COMM_TYPE_TYPEDEF comm_type, uint8_t order, uint16_t delay, uint8_
 void
 send_frame(rt_device_t device, COMM_TMAIL_TYPEDEF *mail, uint8_t order);
 
+rt_size_t 
+comm_recv_gprs_data(rt_uint8_t *buffer,rt_size_t size);
+
 #endif /* _COMM_H_ */

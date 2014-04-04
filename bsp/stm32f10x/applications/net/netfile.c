@@ -133,8 +133,26 @@ void init_net_msgmail(net_msgmail_p mail[],rt_uint8_t size)
 */
 void delete_net_msgmail(net_msgmail_p mail[],rt_uint8_t pos)
 {
+	net_filedata_user *file;
+	
 	if(mail[pos] != RT_NULL)
 	{
+		if(mail[pos]->user != RT_NULL)
+		{
+			file = mail[pos]->user;
+			if(file->data.data != RT_NULL)
+			{
+        rt_free(file->data.data);
+        file->data.data = RT_NULL;
+			}
+			if(file->result.complete != RT_NULL)
+			{
+				rt_sem_delete(file->result.complete);
+				file->result.complete = RT_NULL;
+			}
+			rt_free(mail[pos]->user);
+			mail[pos]->user = RT_NULL;
+		}
 		rt_free(mail[pos]);
 		mail[pos] = RT_NULL;
 	}
@@ -188,7 +206,7 @@ rt_uint8_t check_msgmail_succeed(net_msgmail_p mail[],rt_uint8_t size,rt_sem_t S
 			if(mail[i]->user != RT_NULL)
 			{
 				file = mail[i]->user;
-				result = rt_sem_take(file->result.complete,10);
+				result = rt_sem_take(file->result.complete,RT_WAITING_NO);
 				if(result == RT_EOK)
 				{	
 					RT_DEBUG_LOG(SHOW_NFILE_SRESULT,("File Pack Send Result: %d\n",file->result.result));     
@@ -201,18 +219,14 @@ rt_uint8_t check_msgmail_succeed(net_msgmail_p mail[],rt_uint8_t size,rt_sem_t S
           	RunResult = 0xff;
 					  return RunResult;
           }
-          //释放资源
-          
-          rt_sem_delete(file->result.complete);
-          rt_free(file->data.data);
-          rt_free(file);
+          //释放资源 文件 信号量 邮件
           delete_net_msgmail(mail,i);
           rt_sem_release(SendSem);
 				}
 			}
 			else
 			{
-				//rt_kprintf("mail[i]->user == RT_NULL\n\n");
+				rt_kprintf("mail[i]->user == RT_NULL\n\n");
 			}
 		}
 	}	
@@ -343,10 +357,9 @@ static rt_int8_t send_file_process(rt_uint8_t Type,rt_uint32_t Time,char *FileNa
 		rt_int8_t NetMailPos = 0;
 		rt_uint8_t RecvResult = 0;
 
-		rt_thread_delay(10);
 		if(CurPackOrder < PackNum)
 		{
-			result = rt_sem_take(SendSem,10);
+			result = rt_sem_take(SendSem,2);
 			if(result == RT_EOK)
 			{	
 				if((CurPackOrder +1) == PackNum)
@@ -374,6 +387,10 @@ static rt_int8_t send_file_process(rt_uint8_t Type,rt_uint32_t Time,char *FileNa
 		if(RecvResult != 0xff)
 		{
       SendOk += RecvResult;
+      if(RecvResult)
+      {
+				rt_kprintf("sendok = %d",SendOk);
+      }
 		}
 		else
 		{
@@ -743,12 +760,20 @@ void send_file(char *FileName)
 
 	thread_id = rt_thread_create("netfile",
 															net_file_entry,(void *)FileName,
-                         			1024, 107, 20);
+                         			1024,111, 20);
   RT_ASSERT(thread_id != RT_NULL);
   rt_thread_startup(thread_id);
 }
 FINSH_FUNCTION_EXPORT(send_file,"(FileBName) send test file");
 
+void netfiletest(void)
+{
+	while(1)
+	{
+		send_file("\1.jpg");
+	}
+}
+FINSH_FUNCTION_EXPORT(netfiletest,"test net file send");
 
 void fileack(rt_uint8_t startcol,rt_uint8_t num)
 {

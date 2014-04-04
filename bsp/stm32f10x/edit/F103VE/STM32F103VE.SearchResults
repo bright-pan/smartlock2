@@ -1,6 +1,11 @@
----- net_event_process 匹配 (5 in 0 文件) ----
-netfile.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):		net_event_process(2,NET_ENVET_FILERQ);
-netfile.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):	if(net_event_process(1,NET_ENVET_FILERQ) == 0)
-netfile.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):      net_event_process(0,NET_ENVET_FILERQ);
-netfile.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):	if(net_event_process(1,NET_ENVET_FILERQ) == 0)
-netfile.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):			net_event_process(2,NET_ENVET_FILERQ);
+---- result_sem 匹配 (10 in 0 文件) ----
+comm.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\drivers):                rt_sem_release((tmp->data.mail).result_sem);
+comm.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\drivers):			//RT_ASSERT(comm_tmail_buf.result_sem != RT_NULL);
+comm.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\drivers):                        rt_sem_release(comm_tmail_buf.result_sem);
+comm.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\drivers):    comm_tmail_buf.result_sem = RT_NULL;
+comm.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\drivers):			comm_tmail_buf.result_sem = RT_NULL;
+comm.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\drivers):			comm_tmail_buf.result_sem = rt_sem_create("s_ctx", 0, RT_IPC_FLAG_FIFO);
+comm.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\drivers):				rt_sem_take(comm_tmail_buf.result_sem, RT_WAITING_FOREVER);
+comm.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\drivers):			rt_sem_delete(comm_tmail_buf.result_sem);
+comm.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\drivers):    if (comm_tmail_buf.result_sem != RT_NULL)
+comm.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\drivers):		rt_sem_release(comm_tmail_buf.result_sem);

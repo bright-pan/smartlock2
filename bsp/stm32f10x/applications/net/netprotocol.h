@@ -545,7 +545,7 @@ typedef struct _NET_SENDWND_LIST_
 {
   net_msgmail  mail;      //原始的报文描述邮件
   rt_uint16_t  curtime;   //当前计时器
-  rt_int8_t    permission; //窗口的发送权限
+  volatile rt_int8_t permission; //窗口的发送权限
 }net_sendwnd,*net_sendwnd_p;
 
 
