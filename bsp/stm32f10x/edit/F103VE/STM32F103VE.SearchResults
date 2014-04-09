@@ -1,11 +1,39 @@
----- result_sem 匹配 (10 in 0 文件) ----
-comm.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\drivers):                rt_sem_release((tmp->data.mail).result_sem);
-comm.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\drivers):			//RT_ASSERT(comm_tmail_buf.result_sem != RT_NULL);
-comm.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\drivers):                        rt_sem_release(comm_tmail_buf.result_sem);
-comm.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\drivers):    comm_tmail_buf.result_sem = RT_NULL;
-comm.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\drivers):			comm_tmail_buf.result_sem = RT_NULL;
-comm.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\drivers):			comm_tmail_buf.result_sem = rt_sem_create("s_ctx", 0, RT_IPC_FLAG_FIFO);
-comm.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\drivers):				rt_sem_take(comm_tmail_buf.result_sem, RT_WAITING_FOREVER);
-comm.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\drivers):			rt_sem_delete(comm_tmail_buf.result_sem);
-comm.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\drivers):    if (comm_tmail_buf.result_sem != RT_NULL)
-comm.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\drivers):		rt_sem_release(comm_tmail_buf.result_sem);
+---- get_msg_new_order 匹配 (35 in 4 文件) ----
+netmailclass.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):  mail->col.byte = get_msg_new_order();
+netmailclass.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):  mail->col.byte = get_msg_new_order();
+netmailclass.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):  mail->col.byte = get_msg_new_order();
+netmailclass.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):  mail->col.byte = get_msg_new_order();
+netmailclass.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):    mail->col.byte = get_msg_new_order();
+netmailclass.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):  mail->col.byte = get_msg_new_order();
+netmailclass.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):  mail->col.byte = get_msg_new_order();
+netmailclass.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):  mail->col.byte = get_msg_new_order();
+netmailclass.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):  mail->col.byte = get_msg_new_order();
+netmailclass.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):  mail->col.byte = get_msg_new_order(); 
+netmailclass.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):  mail->col.byte = get_msg_new_order();
+netmailclass.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):  mail->col.byte = get_msg_new_order(); 
+netmailclass.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):	mail->col.byte = get_msg_new_order();
+netmailclass.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):  mail->col.byte = get_msg_new_order();
+netmailclass.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):	mail->col.byte = get_msg_new_order();
+netmailclass.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):	mail->col.byte = get_msg_new_order();
+netprotocol.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):rt_uint8_t get_msg_new_order(void)
+netprotocol.h (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):rt_uint8_t get_msg_new_order(void);//获得报文的新序号
+rtthread-stm32.htm (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\build):<LI><a href="#[548]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;get_msg_new_order
+rtthread-stm32.htm (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\build):<LI><a href="#[548]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;get_msg_new_order
+rtthread-stm32.htm (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\build):<LI><a href="#[548]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;get_msg_new_order
+rtthread-stm32.htm (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\build):<LI><a href="#[548]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;get_msg_new_order
+rtthread-stm32.htm (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\build):<LI><a href="#[548]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;get_msg_new_order
+rtthread-stm32.htm (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\build):<LI><a href="#[548]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;get_msg_new_order
+rtthread-stm32.htm (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\build):<LI><a href="#[548]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;get_msg_new_order
+rtthread-stm32.htm (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\build):<LI><a href="#[548]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;get_msg_new_order
+rtthread-stm32.htm (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\build):<LI><a href="#[548]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;get_msg_new_order
+rtthread-stm32.htm (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\build):<LI><a href="#[548]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;get_msg_new_order
+rtthread-stm32.htm (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\build):<LI><a href="#[548]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;get_msg_new_order
+rtthread-stm32.htm (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\build):<LI><a href="#[548]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;get_msg_new_order
+rtthread-stm32.htm (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\build):<LI><a href="#[548]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;get_msg_new_order
+rtthread-stm32.htm (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\build):<LI><a href="#[548]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;get_msg_new_order
+rtthread-stm32.htm (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\build):<LI><a href="#[548]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;get_msg_new_order
+rtthread-stm32.htm (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\build):<LI><a href="#[548]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;get_msg_new_order
+rtthread-stm32.htm (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\build):<P><STRONG><a name="[548]"></a>get_msg_new_order</STRONG> (Thumb, 26 bytes, Stack size 0 bytes, netprotocol.o(.text))
+---- get_msg_new_order 搜索遇到错误 (1) ----
+以下1个文件不能被处理：
+E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\JLinkLog.txt : 文件打不开。
