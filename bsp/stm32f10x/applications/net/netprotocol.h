@@ -21,6 +21,8 @@
 #define NET_DEVICE_ID_LEN       8
 #define NET_CHECK_LEN           2
 
+#define NET_RECV_MSG_MAX        5
+
 //报文命令
 typedef enum
 {
@@ -223,7 +225,7 @@ typedef struct
 typedef struct 
 {
 	rt_uint8_t  result;			//操作结果
-	rt_uint16_t pos;					//钥匙位置
+	rt_uint8_t  pos[2];			//钥匙位置
 }net_keyadd_ack;
 
 //删除钥匙
@@ -513,7 +515,8 @@ typedef struct
 	net_lenmap    lenmap;  //长度映射域
   message_type  cmd;     //命令
   net_col       col;     //序号
-  net_recv_data data;
+  rt_uint16_t   reserve; //用于结构体对齐
+  net_recv_data data;    //各种报文的数据
 }net_recvmsg,*net_recvmsg_p;
 
 
