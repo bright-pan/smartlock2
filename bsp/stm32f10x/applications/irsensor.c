@@ -59,6 +59,7 @@ void ir_cover_process(void)
       ok_num = 3;
       /* send camera infrared alarm information */      
       // sms
+      send_alarm_mail(ALARM_TYPE_CAMERA_IRDASENSOR,ALARM_PROCESS_FLAG_LOCAL,0,0);
       rt_kprintf("start send SMS\n");
     }
     else if(ok_num > 2)
