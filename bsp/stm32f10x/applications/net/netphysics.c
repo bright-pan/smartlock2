@@ -123,7 +123,10 @@ void netprotocol_thread_entry(void *arg)
             
             recvmail = (net_recvmsg_p)rt_calloc(1,sizeof(net_recvmsg));
             RT_ASSERT(recvmail != RT_NULL);
-          	rt_memcpy(recvmail,recv_data,MsgEndPos);
+            if(MsgEndPos <= sizeof(net_recvmsg))
+            {
+              rt_memcpy(recvmail,recv_data,MsgEndPos);
+            }
           	RT_DEBUG_LOG(SHOW_RECV_MAIL_ADDR,("Send mailbox addr %X\n",recvmail));
           	if(rt_mb_send(net_datrecv_mb,(rt_uint32_t)recvmail) != RT_EOK)
           	{
