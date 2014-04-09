@@ -19,6 +19,7 @@ typedef struct
 }GSM_Module,*GSM_Module_p;
 
 static GSM_Module GSMModule;//gsmÄ£¿é¶ÔÏó
+static rt_mutex_t GSMMutex = RT_NULL;
 
 /** 
 @brief 	close gsm module
@@ -322,3 +323,24 @@ void gsm_mail_send(GSM_Mail_p mail)
 	rt_mb_send(GSM_Mail_mb,(rt_uint32_t)mail);
 }
 
+/** 
+@brief GSM Module Work mode Mutex
+@param flag : RT_TRUE take RT_FALSE release
+@retval void
+*/
+void gsm_mutex_operation(rt_bool_t flag)
+{
+	if(GSMMutex == RT_NULL)
+	{
+		GSMMutex = rt_mutex_create("GSMMode",RT_IPC_FLAG_FIFO);
+		RT_ASSERT(GSMMutex);
+	}
+	if(flag = RT_TRUE)
+	{
+		rt_mutex_take(GSMMutex,RT_WAITING_FOREVER);
+	}
+	else
+	{
+		rt_mutex_release(GSMMutex);
+	}
+}

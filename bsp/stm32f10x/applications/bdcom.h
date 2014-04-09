@@ -27,6 +27,7 @@ rt_bool_t gsm_is_link(void);
 
 void gsm_mail_send(GSM_Mail_p mail);
 
+void gsm_mutex_operation(rt_bool_t flag);
 
 #endif
 
