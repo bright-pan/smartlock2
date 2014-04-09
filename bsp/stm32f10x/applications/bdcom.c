@@ -2,7 +2,11 @@
 #include "comm.h"
 #include "untils.h"
 #define SHOW_GSM_OP_INFO   1
-#define GPRS_PACK_RESEND_T 300
+#define GPRS_PACK_RESEND_T 200
+#define GSM_MODE_SWITCH_T  100
+#define GSM_OPEN_WAIT_T    100
+#define GSM_CLOSE_WAIT_T   100
+#define GSM_LINK_WAIT_T    300
 
 
 rt_mailbox_t GSM_Mail_mb = RT_NULL; //GSMÄ£¿éÓÊ¼þ
@@ -25,7 +29,7 @@ rt_bool_t gsm_close(void)
 {
   rt_err_t  result;
 
-	result = send_ctx_mail(COMM_TYPE_GSM_CTRL_CLOSE,0,1000,"\x01",1);
+	result = send_ctx_mail(COMM_TYPE_GSM_CTRL_CLOSE,0,GSM_CLOSE_WAIT_T,"\x01",1);
 	if(result ==  CTW_STATUS_OK)
 	{
 		RT_DEBUG_LOG(SHOW_GSM_OP_INFO,("Close GSM Module\n"));
@@ -45,7 +49,7 @@ rt_bool_t gsm_open(void)
 {
   rt_err_t  result;
   
-	result = send_ctx_mail(COMM_TYPE_GSM_CTRL_OPEN,0,1000,"\x01",1);
+	result = send_ctx_mail(COMM_TYPE_GSM_CTRL_OPEN,0,GSM_OPEN_WAIT_T,"\x01",1);
 	if(result ==  CTW_STATUS_OK)
 	{
 	  RT_DEBUG_LOG(SHOW_GSM_OP_INFO,("Open GSM Module\n"));
@@ -90,7 +94,7 @@ rt_bool_t gsm_switch_mode(GSM_Module_p gsm,rt_uint8_t mode)
 	{
 		if(mode == 0)//cmd mdoe
 		{
-      result =  send_ctx_mail(COMM_TYPE_GSM_CTRL_SWITCH_TO_CMD,0,1000,"\x01",1);
+      result =  send_ctx_mail(COMM_TYPE_GSM_CTRL_SWITCH_TO_CMD,0,GSM_MODE_SWITCH_T,"\x01",1);
 	    if(result == CTW_STATUS_OK)
 	    {
 	      RT_DEBUG_LOG(SHOW_GSM_OP_INFO,("SWTICH AT CMD Mode\n"));
@@ -101,7 +105,7 @@ rt_bool_t gsm_switch_mode(GSM_Module_p gsm,rt_uint8_t mode)
 		}
 		else //gprs mode
 		{
-			result =  send_ctx_mail(COMM_TYPE_GSM_CTRL_SWITCH_TO_GPRS,0,1000,"\x01",1);
+			result =  send_ctx_mail(COMM_TYPE_GSM_CTRL_SWITCH_TO_GPRS,0,GSM_MODE_SWITCH_T,"\x01",1);
 			if(result == CTW_STATUS_OK)
 			{
 			  RT_DEBUG_LOG(SHOW_GSM_OP_INFO,("SWTICH GPRS Mode\n"));
@@ -128,7 +132,7 @@ rt_bool_t gsm_link(GSM_Module_p gsm)
 	*buf = 1;
   rt_kprintf("device IP :%s\n",device_config.param.tcp_domain[0].domain);
 	rt_memcpy(buf+1, &(device_config.param.tcp_domain[0]), sizeof(device_config.param.tcp_domain[0]));
-	result = send_ctx_mail(COMM_TYPE_GSM_CTRL_DIALING, 0, 2000, buf, sizeof(device_config.param.tcp_domain[0])+1);
+	result = send_ctx_mail(COMM_TYPE_GSM_CTRL_DIALING, 0, GSM_LINK_WAIT_T, buf, sizeof(device_config.param.tcp_domain[0])+1);
 	rt_free(buf);
 	if(result == CTW_STATUS_OK)
 	{
