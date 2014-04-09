@@ -26,11 +26,14 @@ rt_err_t net_modify_alarm_arg(net_recvmsg_p mail)
 }
 
 /** 
-@brief modify SmartLock alarm arg
+@brief net motor control 
 @param mail: receive net message mail
 @retval RT_EOK	 :Successful operation
 @retval RT_ERROR :operation failure
 */
-//rt_err_t net_m
+rt_err_t net_motor_Control(net_recvmsg_p mail)
+{
+	return RT_EOK;
+}
 
 
