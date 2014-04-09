@@ -447,7 +447,6 @@ typedef struct
 {
 	rt_uint8_t pos[4];
 	rt_uint8_t data[600];
-	//rt_uint8_t crc16[2];
 }net_recv_filedata;
 
 //报警参数
@@ -667,7 +666,7 @@ void Net_NetMsg_thread_callback(void (*Callback)(void));
 
 
 rt_uint8_t net_event_process(rt_uint8_t mode,rt_uint32_t type);
-rt_uint8_t get_msg_new_order(void);//获得报文的新序号
+rt_uint8_t get_msg_new_order(rt_bool_t flag);//获得报文的新序号
 rt_bool_t net_mail_crc16_check(net_recvmsg_p Mail);
 
 

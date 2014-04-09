@@ -22,14 +22,14 @@
 static void file_msg_mail_send(net_msgmail_p mail,rt_uint8_t *buffer,rt_uint16_t size)
 {
   net_filedata_user *file;
+  char SemName[RT_NAME_MAX];
   
   mail->time = 0;
   mail->type = NET_MSGTYPE_FILEDATA;
   mail->resend = 3;
   mail->outtime = 3000;
   mail->sendmode = SYNC_MODE;
-  mail->col.byte = net_order.byte;
-  net_order.bit.col++;
+  mail->col.byte = get_msg_new_order(RT_TRUE);
   
   mail->user = file = (net_filedata_user *)rt_calloc(1,sizeof(net_filedata_user));
   RT_ASSERT(file!=RT_NULL);
@@ -37,7 +37,8 @@ static void file_msg_mail_send(net_msgmail_p mail,rt_uint8_t *buffer,rt_uint16_t
   RT_ASSERT(file->data.data!=RT_NULL);
 	
   file->length = size;//°ü´óÐ¡
-  file->result.complete = rt_sem_create("netsend",0,RT_IPC_FLAG_FIFO);
+  rt_sprintf(SemName,"NFile%d",get_msg_new_order(RT_FALSE));
+  file->result.complete = rt_sem_create(SemName,0,RT_IPC_FLAG_FIFO);
   
   net_msg_send_mail(mail);
 }
@@ -751,6 +752,34 @@ rt_uint8_t net_file_packdata_process(net_recvmsg_p mail)
 	return result;
 }
 
+/** 
+@brief net upload file
+@param FileName :file of name 
+@retval RT_EOK	 :anon_upload_enableyes
+@retval RT_ERROR :can¡®nt upload file
+*/
+rt_err_t net_upload_file(char *FileName)
+{
+  rt_thread_t thread_id;
+
+	thread_id = rt_thread_find("Upload");
+  if(thread_id != RT_NULL)
+  {
+		return RT_ERROR;
+  }
+  
+	thread_id = rt_thread_create("Upload",
+	                            net_file_entry,
+	                            (void *)FileName,
+	                            1024,
+	                            111, 
+	                            20);
+	                            
+	RT_ASSERT(thread_id != RT_NULL);
+	rt_thread_startup(thread_id);
+
+	return RT_EOK;
+}
 
 #ifdef RT_USING_FINSH
 #include <finsh.h>
@@ -759,7 +788,7 @@ void send_file(char *FileName)
 {
 	rt_thread_t thread_id;
 
-	thread_id = rt_thread_create("netfile",
+	thread_id = rt_thread_create("Upload",
 															net_file_entry,(void *)FileName,
                          			1024,111, 20);
   RT_ASSERT(thread_id != RT_NULL);
@@ -834,36 +863,6 @@ void resetcol(void)
 	net_order.bit.col = 1;
 }
 FINSH_FUNCTION_EXPORT(resetcol,"test file send");
-
-
-void createfile(void)
-{
-	rt_uint32_t i;
-	rt_uint8_t  data;
-	rt_uint8_t pos;
-	int file;
-
-	file = open("/test.txt",O_CREAT|O_RDWR,0x777);
-	for(i = 0;i < 1024*4 ;i++)
-	{
-		data = i;
-		data = data%128+0x30;
-		if(data == '0')
-		{
-			write(file,"\n\r",2);
-			pos++;
-			data = pos+0x30;
-			write(file,&data,1);
-		}
-		else
-		{
-      write(file,&data,1);
-		}
-		
-	}
-	close(file);
-}
-FINSH_FUNCTION_EXPORT(createfile,"createfile");
 
 void FileShowHex(const char *filename)
 {

@@ -123,13 +123,18 @@ rt_bool_t net_mail_crc16_check(net_recvmsg_p Mail)
 
 /*
 功能:获得最新的序号
+参数:flag :RT_TRUE序号更新 
+参数:flag :RT_FALSE 获得最新序号
 */
-rt_uint8_t get_msg_new_order(void)
+rt_uint8_t get_msg_new_order(rt_bool_t flag)
 {
 	rt_uint8_t CurOrder;
 
 	CurOrder = net_order.byte;
-	net_order.bit.col++;
+	if(flag == RT_TRUE)
+	{
+    net_order.bit.col++;
+	}
 	
 	return CurOrder;
 }
@@ -1331,6 +1336,8 @@ static void net_recv_alagn_process(net_recvmsg_p msg)
 	rt_memcpy((void *)tmp,(void *)msg,sizeof(net_recvmsg));
 	rt_memcpy((void *)&msg->data,(void *)&tmp->reserve,sizeof(net_recvmsg)-8);
 	rt_free(tmp);
+	tmp = RT_NULL;
+	rt_kprintf("receive alagn process ok\n");
 }
 
 /** 

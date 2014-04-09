@@ -8,6 +8,7 @@
 #include "netfile.h"
 #include "netkey.h"
 #include "netphone.h"
+#include "netterminal.h"
 
 #define MAIL_FAULT_RESEND     3
 #define MAIL_FAULT_OUTTIME    1000
@@ -44,6 +45,7 @@ rt_uint8_t msg_mail_alarm(rt_uint8_t alarm,rt_uint8_t LockStatus,rt_uint32_t tim
 	rt_uint8_t result;
 	net_msgmail_p mail = RT_NULL;
 	net_alarm_user *UserData = RT_NULL;
+	char SemName[RT_NAME_MAX];
 
 	//获取资源
 	mail = (net_msgmail_p)rt_calloc(1,sizeof(net_msgmail));
@@ -51,7 +53,8 @@ rt_uint8_t msg_mail_alarm(rt_uint8_t alarm,rt_uint8_t LockStatus,rt_uint32_t tim
 	RT_ASSERT(mail != RT_NULL);
 	RT_ASSERT(UserData != RT_NULL);
 	mail->user = UserData;
-	UserData->result.complete = rt_sem_create("NAlarm",0,RT_IPC_FLAG_FIFO);
+	rt_sprintf(SemName,"NMSG%s",get_msg_new_order(RT_FALSE)+1);
+	UserData->result.complete = rt_sem_create(SemName,0,RT_IPC_FLAG_FIFO);
   RT_ASSERT(UserData != RT_NULL);
 
 	//设置邮件
@@ -59,7 +62,7 @@ rt_uint8_t msg_mail_alarm(rt_uint8_t alarm,rt_uint8_t LockStatus,rt_uint32_t tim
   mail->resend = MAIL_FAULT_RESEND;									//重发技术
   mail->outtime = MAIL_FAULT_OUTTIME;              //超时间
   mail->sendmode = SYNC_MODE;       //同步
-  mail->col.byte = get_msg_new_order();
+  mail->col.byte = get_msg_new_order(RT_TRUE);
 	//设置私有数据
 	UserData->alarm.lock_status = LockStatus;
 	UserData->alarm.type = alarm;
@@ -86,6 +89,7 @@ rt_uint8_t msg_mail_fault(rt_uint8_t fault,rt_uint32_t time)
 	rt_uint8_t result;
 	net_msgmail_p mail = RT_NULL;
 	net_fault_user *UserData = RT_NULL;
+	char SemName[RT_NAME_MAX];
 
 	//获取资源
 	mail = (net_msgmail_p)rt_calloc(1,sizeof(net_msgmail));
@@ -93,7 +97,8 @@ rt_uint8_t msg_mail_fault(rt_uint8_t fault,rt_uint32_t time)
 	RT_ASSERT(mail != RT_NULL);
 	RT_ASSERT(UserData != RT_NULL);
 	mail->user = UserData;
-	UserData->result.complete = rt_sem_create("NFault",0,RT_IPC_FLAG_FIFO);
+	rt_sprintf(SemName,"NMSG%d",get_msg_new_order(RT_FALSE)+1);
+	UserData->result.complete = rt_sem_create(SemName,0,RT_IPC_FLAG_FIFO);
   RT_ASSERT(UserData != RT_NULL);
 
 	//设置邮件
@@ -101,7 +106,7 @@ rt_uint8_t msg_mail_fault(rt_uint8_t fault,rt_uint32_t time)
   mail->resend = MAIL_FAULT_RESEND;									//重发技术
   mail->outtime = MAIL_FAULT_OUTTIME;              //超时间
   mail->sendmode = SYNC_MODE;       //同步
-  mail->col.byte = get_msg_new_order();
+  mail->col.byte = get_msg_new_order(RT_TRUE);
 	//设置私有数据
 	UserData->fault.type = fault;
 	net_uint32_copy_string(UserData->fault.time,time);
@@ -142,7 +147,7 @@ rt_uint8_t msg_mail_opendoor(rt_uint8_t type,rt_uint16_t key,rt_uint32_t time)
   mail->resend = MAIL_FAULT_RESEND;									//重发技术
   mail->outtime = MAIL_FAULT_OUTTIME;              //超时间
   mail->sendmode = SYNC_MODE;       //同步
-  mail->col.byte = get_msg_new_order();
+  mail->col.byte = get_msg_new_order(RT_TRUE);
 	//设置私有数据
 	UserData->opendoor.type = type;
 	net_uint16_copy_string(UserData->opendoor.key,key);
@@ -184,7 +189,7 @@ rt_uint8_t msg_mail_battery(rt_uint8_t status,rt_uint8_t capacity,rt_uint32_t ti
   mail->resend = MAIL_FAULT_RESEND;	  //重发技术
   mail->outtime = MAIL_FAULT_OUTTIME; //超时间
   mail->sendmode = SYNC_MODE;         //同步
-  mail->col.byte = get_msg_new_order();
+  mail->col.byte = get_msg_new_order(RT_TRUE);
   
 	//设置私有数据
 	UserData->battery.status = status;
@@ -227,7 +232,7 @@ rt_uint8_t msg_mail_battery(rt_uint8_t status,rt_uint8_t capacity,rt_uint32_t ti
     mail->resend = MAIL_FAULT_RESEND;                 //重发技术
     mail->outtime = MAIL_FAULT_OUTTIME;              //超时间
     mail->sendmode = SYNC_MODE;       //同步
-    mail->col.byte = get_msg_new_order();
+    mail->col.byte = get_msg_new_order(RT_TRUE);
     //设置私有数据
     net_copy_date_str(UserData->date.time);
     //发送邮件
@@ -267,7 +272,7 @@ rt_uint8_t msg_mail_alarmarg(rt_uint8_t Type,rt_uint8_t arg)
   mail->resend = MAIL_FAULT_RESEND;									//重发技术
   mail->outtime = MAIL_FAULT_OUTTIME;              //超时间
   mail->sendmode = SYNC_MODE;       //同步
-  mail->col.byte = get_msg_new_order();
+  mail->col.byte = get_msg_new_order(RT_TRUE);
 	//设置私有数据
 	UserData->args.type = Type;
 	UserData->args.arg = arg;
@@ -306,7 +311,7 @@ void msg_mail_phoneadd_ack(rt_uint8_t pos ,rt_uint8_t result)
   mail->resend = 0;													//重发计数
   mail->outtime = MAIL_FAULT_OUTTIME;       //超时间
   mail->sendmode = ASYN_MODE;       				//异步
-  mail->col.byte = get_msg_new_order();
+  mail->col.byte = get_msg_new_order(RT_TRUE);
 	//设置私有数据
 	UserData->pos = pos;
 	UserData->result = result;
@@ -320,7 +325,7 @@ void msg_mail_phoneadd_ack(rt_uint8_t pos ,rt_uint8_t result)
 /*
 功能:删除手机白名单
 */
-void msg_mail_phonedel_ack(rt_uint8_t pos ,rt_uint8_t result)
+void msg_mail_phonedel_ack(net_recvmsg_p RMail,rt_uint8_t result)
 {
 	net_msgmail_p mail = RT_NULL;
 	net_phonedel_ack *UserData = RT_NULL;
@@ -337,9 +342,9 @@ void msg_mail_phonedel_ack(rt_uint8_t pos ,rt_uint8_t result)
   mail->resend = 0;													//重发计数
   mail->outtime = MAIL_FAULT_OUTTIME;       //超时间
   mail->sendmode = ASYN_MODE;       				//异步
-  mail->col.byte = get_msg_new_order();
+  mail->col = RMail->col;
 	//设置私有数据
-	UserData->pos = pos;
+	UserData->pos = RMail->data.phonedel.pos;
 	UserData->result = result;
 	//发送邮件
   net_msg_send_mail(mail);
@@ -372,7 +377,7 @@ rt_uint8_t msg_mail_keyadd(net_keyadd_user *KeyData)
   mail->resend = MAIL_FAULT_RESEND;									//重发技术
   mail->outtime = MAIL_FAULT_OUTTIME;              //超时间
   mail->sendmode = SYNC_MODE;       //同步
-  mail->col.byte = get_msg_new_order();
+  mail->col.byte = get_msg_new_order(RT_TRUE);
 	//设置私有数据
 	//
 	//发送邮件
@@ -392,7 +397,7 @@ rt_uint8_t msg_mail_keyadd(net_keyadd_user *KeyData)
 /*
 功能:发送添加钥匙应答
 */
-void msg_mail_keyadd_ack(rt_uint16_t pos,rt_uint8_t result)
+void msg_mail_keyadd_ack(net_recvmsg_p RMail,rt_uint8_t result)
 {
   net_msgmail_p mail = RT_NULL;
   net_keyadd_ack *data = RT_NULL;
@@ -409,10 +414,9 @@ void msg_mail_keyadd_ack(rt_uint16_t pos,rt_uint8_t result)
   mail->resend = 0;											//重发技术
   mail->outtime = MAIL_FAULT_OUTTIME; 	//超时间
   mail->sendmode = ASYN_MODE;						//同步
-  mail->col.byte = get_msg_new_order(); 
-
+  mail->col = RMail->col;
   //私有数据
-  data->pos = pos;
+  rt_memcpy(data->pos,RMail->data.keyadd.key.col,2);
   data->result = result;
   mail->user = data;
 
@@ -444,7 +448,7 @@ rt_uint8_t msg_mail_keydelete(rt_uint16_t pos)
   mail->resend = MAIL_FAULT_RESEND;									//重发技术
   mail->outtime = MAIL_FAULT_OUTTIME;              //超时间
   mail->sendmode = SYNC_MODE;       //同步
-  mail->col.byte = get_msg_new_order();
+  mail->col.byte = get_msg_new_order(RT_TRUE);
   
 	//设置私有数据
 	pos = net_rev16(pos);
@@ -464,13 +468,47 @@ rt_uint8_t msg_mail_keydelete(rt_uint16_t pos)
 	return result;
 }
 
+/*
+功能:发送添加钥匙应答
+*/
+void msg_mail_keydel_ack(net_recvmsg_p RMail,rt_uint8_t result)
+{
+  net_msgmail_p mail = RT_NULL;
+  net_keydel_ack *data = RT_NULL;
+
+  //获取资源
+	mail = (net_msgmail_p)rt_calloc(1,sizeof(net_msgmail));
+	RT_ASSERT(mail != RT_NULL);
+
+	data = (net_keydel_ack *)rt_calloc(1,sizeof(net_keydel_ack));
+	RT_ASSERT(data != RT_NULL);
+
+	//设置邮件
+	mail->type = NET_MSGTYPE_KEYDEL_ACK;	//邮件类型
+  mail->resend = 0;											//重发技术
+  mail->outtime = MAIL_FAULT_OUTTIME; 	//超时间
+  mail->sendmode = ASYN_MODE;						//同步
+  mail->col = RMail->col;
+
+  //私有数据
+  rt_memcpy(data->pos,RMail->data.keydel.key.pos,2);
+  data->result = result;
+  mail->user = data;
+
+  //发送邮件
+  net_msg_send_mail(mail);
+
+  //释放资源
+	rt_free(mail);
+}
+
 /** 
 @brief send MSGType type message process result
 @param MSGType :message type 
 @param result :process result
 @retval void
 */
-void msg_mail_resultack(message_type MSGType,rt_uint8_t result)
+void msg_mail_resultack(net_recvmsg_p RMail,rt_uint8_t result)
 {
 	net_msgmail_p mail = RT_NULL;
 	net_ack *UserData;
@@ -480,11 +518,11 @@ void msg_mail_resultack(message_type MSGType,rt_uint8_t result)
 	RT_ASSERT(mail != RT_NULL);
 
 	//设置邮件
-	mail->type = NET_MSGTYPE_FILEREQUE_ACK;	//邮件类型
-	mail->resend = 0;         							//重发技术
-	mail->outtime = 0;        							//超时间
-	mail->sendmode = ASYN_MODE;							//同步
-	mail->col.byte = get_msg_new_order();
+	mail->type = RMail->cmd;	//邮件类型
+	mail->resend = 0;     //重发技术
+	mail->outtime = 0;    //超时间
+	mail->sendmode = ASYN_MODE;	//同步
+	mail->col = RMail->col;
 
 	//设置数据域 在发送完成后销毁
 	UserData = rt_calloc(1,sizeof(net_ack));
@@ -516,7 +554,7 @@ void msg_mail_nullack(message_type MSGType)
   mail->resend = MAIL_FAULT_RESEND;		//重发技术
   mail->outtime = MAIL_FAULT_OUTTIME; //超时间
   mail->sendmode = ASYN_MODE;					//同步
-  mail->col.byte = get_msg_new_order();
+  mail->col.byte = get_msg_new_order(RT_TRUE);
   mail->user = RT_NULL;
 	
 	//发送邮件
@@ -529,7 +567,7 @@ void msg_mail_nullack(message_type MSGType)
 /*
 功能:文件请求应答
 */
-void msg_mail_filereq_ack(rt_uint8_t result)
+void msg_mail_filereq_ack(net_col col,rt_uint8_t result)
 {
 	net_msgmail_p mail = RT_NULL;
 	net_filereq_ack_user *UserData;
@@ -543,7 +581,7 @@ void msg_mail_filereq_ack(rt_uint8_t result)
 	mail->resend = 0;         							//重发技术
 	mail->outtime = 0;        							//超时间
 	mail->sendmode = ASYN_MODE;							//同步
-	mail->col.byte = get_msg_new_order();
+	mail->col = col;
 
 	//设置数据域 在发送完成后销毁
 	UserData = rt_calloc(1,sizeof(net_filereq_ack_user));
@@ -561,7 +599,7 @@ void msg_mail_filereq_ack(rt_uint8_t result)
 /*
 功能:文件包应答
 */
-void msg_mail_fileack(rt_size_t PackOrder,rt_uint8_t Fresult)
+void msg_mail_fileack(net_col col,rt_size_t PackOrder,rt_uint8_t Fresult)
 {
 	net_msgmail_p mail = RT_NULL;
 	net_filedata_ack_user *FileAck;
@@ -575,7 +613,7 @@ void msg_mail_fileack(rt_size_t PackOrder,rt_uint8_t Fresult)
 	mail->resend = 0;         							//重发技术
 	mail->outtime = 0;        							//超时间
 	mail->sendmode = ASYN_MODE;							//同步
-	mail->col.byte = get_msg_new_order();
+	mail->col = col;
 
 	//设置数据域 在发送完成后销毁
 	FileAck = rt_calloc(1,sizeof(net_filedata_ack_user));
@@ -622,7 +660,7 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 	  {
 	  	//文件请求
 			result = net_recv_filerq_process(Mail);
-			msg_mail_filereq_ack(result);
+			msg_mail_filereq_ack(Mail->col,result);
 	  	
 	    break;
 	  }
@@ -633,12 +671,13 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 
 			result = net_file_packdata_process(Mail);
 			net_string_copy_uint32(&PackOrder,Mail->data.filedata.pos);
-			msg_mail_fileack(PackOrder,result);
+			msg_mail_fileack(Mail->col,PackOrder,result);
 				
 			break;
 	  }
 	 	case NET_MSGTYPE_PHONEADD:
 	 	{
+	 		//手机白名单添加
 	 		ProcessResult = net_phone_add_process(Mail);
 
 	 		result = (ProcessResult == RT_EOK)?1:0;
@@ -647,21 +686,20 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 	 	}
 	 	case NET_MSGTYPE_PHONEDELETE:
 	 	{
+	 		//手机白名单删除
 	 		ProcessResult = net_phone_del_process(Mail);
 
 			result = (ProcessResult == RT_EOK)?1:0;
-			msg_mail_phonedel_ack(Mail->data.phonedel.pos,result);
+			msg_mail_phonedel_ack(Mail,result);
 			break;
 	 	}
 	 	case NET_MSGTYPE_KEYADD:
 	 	{
-	 		rt_uint16_t pos;
-	 		
+	 		//钥匙添加
 	 		ProcessResult = net_key_add_process(Mail);
 
 	 		result = (ProcessResult == RT_EOK)?1:0;
-	 		net_string_copy_uint16(&pos,Mail->data.keyadd.key.col);
-	 		msg_mail_keyadd_ack(pos,result);
+	 		msg_mail_keyadd_ack(Mail,result);
 			break;
 	 	}
 	 	case NET_MSGTYPE_KEYADD_ACK:
@@ -670,12 +708,11 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 	 	}
 	 	case NET_MSGTYPE_KEYDELETE:
 	 	{
-	 		rt_uint16_t pos;
-
+	 		//钥匙删除
 	 		ProcessResult = net_key_del_process(Mail);
 
 	 		result = (ProcessResult == RT_EOK)?1:0;
-	 		net_string_copy_uint16(&pos,Mail->data.keydel.key.pos);
+	 		msg_mail_keydel_ack(Mail,result);
 			break;
 	 	}
 	 	case NET_MSGTYPE_KEYDEL_ACK:
@@ -684,10 +721,21 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 	 	}
 	 	case NET_MSGTYPE_ALARMARG:
 	 	{
+	 		ProcessResult = net_modify_alarm_arg(Mail);
+
+	 		result = (ProcessResult == RT_EOK)?1:0;
+	 		msg_mail_resultack(Mail,result);
 			break;
 	 	}
 	 	case NET_MSGTYPE_ALARMARG_ACK:
 	 	{
+			break;
+	 	}
+	 	case NET_MSGTYPE_MOTOR:
+	 	{
+	 		ProcessResult = net_motor_Control(Mail);
+	 		result = (ProcessResult == RT_EOK)?1:0;
+	 		msg_mail_resultack(Mail,result);
 			break;
 	 	}
 	  default:
@@ -698,10 +746,28 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 
 	return result;
 }
+//#define FILE_UPLOAD_TEST
+#ifdef FILE_UPLOAD_TEST
+void fileSendT(void)
+{
+	rt_thread_t id;
+	
+	id = rt_thread_find("Upload");
+	if(id == RT_NULL)
+	{
+		mq();
+		rt_thread_delay(1000);
+		send_file("/1.jpg");
+	}
+}
+#endif
 
 static void net_msg_thread_process(void)
 {
 	net_file_timer_process();
+	#ifdef FILE_UPLOAD_TEST
+	fileSendT();
+	#endif
 }
 
 int InitNetRecvFun(void)
