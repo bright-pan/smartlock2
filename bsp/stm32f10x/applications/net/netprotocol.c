@@ -1316,6 +1316,28 @@ static rt_int8_t net_des_decode(net_recvmsg_p msg)
   return 0;
 }
 
+/** 
+@brief net recvice data alagn process
+@param receive net message mail
+@retval void
+*/
+static void net_recv_alagn_process(net_recvmsg_p msg)
+{
+	net_recvmsg_p tmp = RT_NULL;
+
+	tmp = (net_recvmsg_p)rt_calloc(1,sizeof(net_recvmsg));
+	RT_ASSERT(tmp != RT_NULL);
+	
+	rt_memcpy((void *)tmp,(void *)msg,sizeof(net_recvmsg));
+	rt_memcpy((void *)&msg->data,(void *)&tmp->reserve,sizeof(net_recvmsg)-8);
+	rt_free(tmp);
+}
+
+/** 
+@brief window recvice mail process 
+@param receive net message mail
+@retval void
+*/
 static void net_recv_message(net_msgmail_p mail)
 {
 	net_recvmsg_p msg;
@@ -1375,7 +1397,7 @@ static void net_recv_message(net_msgmail_p mail)
         return ;
       }
     }
-
+    net_recv_alagn_process(msg);
 		switch(msg->cmd)
 		{
 			case NET_MSGTYPE_LANDED_ACK:
@@ -1628,6 +1650,11 @@ static void net_wnd_timer_process(void)
 		
 		return;
 	}
+	//如果是断线状态
+	if(net_event_process(1,NET_ENVET_ONLINE) == 1)
+	{
+		return ;
+	}
   for(pos = 0 ;pos < NET_WND_MAX_NUM; pos++)
   {
     if(sendwnd_node[pos].permission != -1)
@@ -1775,7 +1802,7 @@ int netmsg_thread_init(void)
   RT_ASSERT(net_datsend_mq != RT_NULL);
   
   net_datrecv_mb = rt_mb_create("datrecv",
-                          5,
+                          NET_RECV_MSG_MAX,
                           RT_IPC_FLAG_FIFO);
   RT_ASSERT(net_datrecv_mb != RT_NULL);
 

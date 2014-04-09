@@ -226,7 +226,7 @@ rt_uint8_t check_msgmail_succeed(net_msgmail_p mail[],rt_uint8_t size,rt_sem_t S
 			}
 			else
 			{
-				rt_kprintf("mail[i]->user == RT_NULL\n\n");
+				//rt_kprintf("mail[i]->user == RT_NULL\n\n");
 			}
 		}
 	}	
@@ -307,7 +307,7 @@ static rt_int8_t send_file_request(char *FileName)
 功能:发送一个文件到服务器
 参数:type 文件类型  time发送时间  file 文件名称
 */
-#define FILE_PACKNUM_MAX      3
+#define FILE_PACKNUM_MAX      NET_RECV_MSG_MAX-2
 static rt_int8_t send_file_process(rt_uint8_t Type,rt_uint32_t Time,char *FileName)
 {
 	rt_uint32_t FileSize;			 //文件大小
@@ -387,7 +387,7 @@ static rt_int8_t send_file_process(rt_uint8_t Type,rt_uint32_t Time,char *FileNa
 		if(RecvResult != 0xff)
 		{
       SendOk += RecvResult;
-      if(RecvResult)
+      if(RecvResult > 0)
       {
 				rt_kprintf("sendok = %d",SendOk);
       }
@@ -587,6 +587,7 @@ static NetFileInfo_p net_fileinfo_create(rt_size_t PackNum)
 	FileInfo = rt_calloc(1,sizeof(NetFileInfo));
 	RT_ASSERT(FileInfo != RT_NULL);
 	FileInfo->PackMap = file_pack_pos_create(PackNum);
+	RT_ASSERT(FileInfo->PackMap != RT_NULL);
 	
 	return FileInfo;
 }
@@ -639,8 +640,8 @@ static void net_file_timer_clear(void)
 */
 rt_uint8_t net_recv_filerq_process(net_recvmsg_p mail)
 {	
-	rt_uint8_t result = 1;
-	rt_size_t  PackNum = 0;
+	volatile rt_uint8_t result = 1;
+	rt_uint32_t  PackNum = 0;
 	
 	if(net_event_process(1,NET_ENVET_FILERQ) == 0)
 	{
@@ -648,7 +649,7 @@ rt_uint8_t net_recv_filerq_process(net_recvmsg_p mail)
 		return 1;
 	}
 	//不同文件类型保存为不同名字
-	if(mail->data.filerq.request.type == 1)
+	if(mail->data.filerq.request.type == 2)
 	{
 		int FileID;
 		
