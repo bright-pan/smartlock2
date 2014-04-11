@@ -10,8 +10,20 @@
 #include <dfs_posix.h>
 
 
-#define VOICE_FILE_NAME1      "/2_16k.WAV"
-#define VOICE_FILE_NAME2      "/hi.wav"
+#define VOICE_FILE_NAME1      "/0.WAV"
+#define VOICE_FILE_NAME2      "/1.wav"
+#define VOICE_FILE_NAME3      "/2.wav"
+#define VOICE_FILE_NAME4      "/3.wav"
+#define VOICE_FILE_NAME5      "/4.wav"
+#define VOICE_FILE_NAME6      "/5.wav"
+#define VOICE_FILE_NAME7      "/6.wav"
+
+
+
+
+
+
+
 #define VOICE_DEVICE_NAME     "PT8211"
 #define WAV_PLAY_BUFFER       256
 
@@ -226,6 +238,36 @@ static voice_recv_mail_process(void)
         voice_file_process(VOICE_FILE_NAME1);
         break;
       }
+      case VOICE_TYPE_HI:
+      {
+        voice_file_process(VOICE_FILE_NAME2);
+        break;
+      }
+      case VOICE_TYPE_CCDIR:
+      {
+        voice_file_process(VOICE_FILE_NAME2);
+        break;
+      }
+      case VOICE_TYPE_ALARM:
+      {
+        voice_file_process(VOICE_FILE_NAME3);
+        break;
+      }
+      case VOICE_TYPE_KEY1_ERRPR:
+      {
+        voice_file_process(VOICE_FILE_NAME4);
+        break;
+      }
+      case VOICE_TYPE_MANAGE1KEY1:
+      {
+        voice_file_process(VOICE_FILE_NAME5);
+        break;
+      }
+      case VOICE_TYPE_KEY1_OK:
+      {
+        voice_file_process(VOICE_FILE_NAME6);
+        break;
+      }
       default:
       {
         break;
@@ -287,9 +329,9 @@ void send_voice_mail(VoiceType type)
 #ifdef RT_USING_FINSH
 #include <finsh.h>
 
-void voice(void)
+void voice(rt_uint8_t type)
 {
-  send_voice_mail(VOICE_TYPE_TEST);
+  send_voice_mail(type);
 }
 FINSH_FUNCTION_EXPORT(voice,send voice cmd);
 
