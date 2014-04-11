@@ -49,5 +49,14 @@ rt_uint32_t sys_cur_date(void)
 }
 RTM_EXPORT(sys_cur_date);
 
+#ifdef RT_USING_FINSH
+#include <finsh.h>
+#include "stm32f10x.h"
+void sysreset()
+{
+  NVIC_SystemReset();
+}
+FINSH_FUNCTION_EXPORT(sysreset,sysreset() -- reset stm32);
 
+#endif
 
