@@ -535,15 +535,17 @@ void net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
   {
     case NET_MSGTYPE_LANDED:
     {
+    	net_landed *data = RT_NULL;
+    	
     	//µÇÂ½±¨ÎÄ
       msg_data->cmd = NET_MSGTYPE_LANDED;
       net_set_lenmap(&msg_data->lenmap,1,1,32,2);
       
-      rt_memcpy((char *)msg_data->data.landed.id,
-                (const char *)"\x12\x34\x56\x78\x9a\xbc\xde\xf0",8);
-      rt_memcpy((char *)msg_data->data.landed.k1,
-                (const char *)"\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa",8);
-      msg_data->data.landed.version = 0x01;
+      data = (net_landed *)MsgMail->user;
+      if(data != RT_NULL)
+      {
+				msg_data->data.landed = *data;
+      }
       
       break;
     }

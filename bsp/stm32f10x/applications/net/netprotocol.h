@@ -534,7 +534,7 @@ typedef enum
 typedef struct
 {
   rt_uint16_t  outtime; //超时时间
-  message_type type;    //发送类型
+  rt_uint8_t   type;    //发送类型
   net_msgmode  sendmode;//发送模式
   net_col      col;     //包序号
   rt_uint32_t  time;    //发送时间
