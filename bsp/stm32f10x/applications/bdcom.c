@@ -335,7 +335,7 @@ void gsm_mutex_operation(rt_bool_t flag)
 		GSMMutex = rt_mutex_create("GSMMode",RT_IPC_FLAG_FIFO);
 		RT_ASSERT(GSMMutex);
 	}
-	if(flag = RT_TRUE)
+	if(flag == RT_TRUE)
 	{
 		rt_mutex_take(GSMMutex,RT_WAITING_FOREVER);
 	}
