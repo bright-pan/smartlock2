@@ -36,4 +36,15 @@ rt_err_t net_motor_Control(net_recvmsg_p mail)
 	return RT_EOK;
 }
 
+/** 
+@brief set system time
+@param mail: receive net message mail
+@retval RT_EOK	 :Successful operation
+@retval RT_ERROR :operation failure
+*/
+rt_err_t net_set_system_time(net_recvmsg_p mail)
+{
+	return RT_EOK;
+}
+
 
