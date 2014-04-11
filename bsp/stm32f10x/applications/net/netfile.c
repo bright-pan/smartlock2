@@ -37,7 +37,7 @@ static void file_msg_mail_send(net_msgmail_p mail,rt_uint8_t *buffer,rt_uint16_t
   RT_ASSERT(file->data.data!=RT_NULL);
 	
   file->length = size;//°ü´óÐ¡
-  rt_sprintf(SemName,"NFile%d",get_msg_new_order(RT_FALSE));
+  rt_sprintf(SemName,"NF%d",get_msg_new_order(RT_FALSE));
   file->result.complete = rt_sem_create(SemName,0,RT_IPC_FLAG_FIFO);
   
   net_msg_send_mail(mail);
@@ -895,6 +895,7 @@ void testcrc32(void)
 	
 	file_get_crc32("/misc.c",&crc32);
 	rt_kprintf("crc32: %X\n",crc32);
+	rt_kprintf("sizeof = %d\n",sizeof(message_type));
 }
 FINSH_FUNCTION_EXPORT(testcrc32,"test misc.c file crc32");
 
