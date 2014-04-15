@@ -178,37 +178,79 @@ void mail_gprs_process(GSM_Mail_p Mail)
 @param 
 @retval 
 */
-void gsm_mail_process(GSM_Mail_p Mail)
+void mail_sms_process(GSM_Mail_p Mail)
 {
 	rt_err_t  result;
-	rt_uint8_t retry; 
-	
-  //open gsm 
-  retry = 3;
-  while((!GSMModule.WorkStatus) & retry)
-  {
-    if(gsm_setup(&GSMModule) == RT_TRUE)
-    {
-      break;
-    }
-    //retry--;
-  }
+	rt_uint8_t *buf;
+
+	buf = rt_calloc(1,Mail->BufSize+1);
+	*buf = Mail->SendMode;
+	rt_memcpy(buf+1,Mail->buf,Mail->BufSize);
+	result = send_ctx_mail(COMM_TYPE_SMS,0,GPRS_PACK_RESEND_T,buf,Mail->BufSize+1);
+	if(result == CTW_STATUS_OK)
+	{
+		rt_kprintf("COM Send Data OK\n");
+	}
+	else
+	{
+		rt_kprintf("COM send Data Fail\n");
+		GSMModule.LinkStatus = 0;
+	}
+	rt_free(buf);
+}
+
+/** 
+@brief 
+@param 
+@retval 
+*/
+void gsm_entry_init(void)
+{
+  rt_uint8_t retry; 
+    
+	//open gsm 
+	retry = 3;
+	while((!GSMModule.WorkStatus) & retry)
+	{
+	  if(gsm_setup(&GSMModule) == RT_TRUE)
+	  {
+	    break;
+	  }
+	  retry--;
+	  if(retry == 0)
+	  {
+	    rt_thread_delay(1000);
+	    retry = 3;
+	  }
+	}
 
 	retry = 3;
-  while((!GSMModule.LinkStatus) & retry)
-  {
-    if(gsm_link(&GSMModule) == RT_TRUE)
-    {
-      break;
-    }
-    retry--;
-  }
+	while((!GSMModule.LinkStatus) & retry)
+	{
+	  if(gsm_link(&GSMModule) == RT_TRUE)
+	  {
+	    break;
+	  }
+	  retry--;
+	}
+}
+
+/** 
+@brief 
+@param 
+@retval 
+*/
+void gsm_mail_process(GSM_Mail_p Mail)
+{
+	
+  gsm_entry_init();
   
 	switch(Mail->type)
 	{
 		case GSM_MAIL_SMS:
 		{
 			gsm_switch_mode(&GSMModule,0);
+			//mail_sms_process(Mail);
 			break;
 		}
 		case GSM_MAIL_MMS:
@@ -243,6 +285,7 @@ void GSM_manage_thread_entry(void *arg)
 {
 	rt_kprintf("entry com thread \n");
 	rt_memset(&GSMModule,0,sizeof(GSM_Module));
+	gsm_entry_init();
 	while(1)
 	{
 		rt_err_t   result;
