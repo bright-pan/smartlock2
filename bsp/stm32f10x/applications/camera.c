@@ -7,7 +7,8 @@
 #include "untils.h"
 #include "gpio_adc.h"
 #include "gpio_pwm.h"
-
+#include "netfile.h"
+#include "gprs.h"
 
 #define CAMERA_BUF_SIZE       	 512    //»º³åÇø´óÐ¡
 #define PIC_DATA_MAX_SIZE			 	 70000	//70K
@@ -37,6 +38,7 @@
 #define DEVICE_NAME_CAMERA_LDR   "cm_light"
 
 static rt_mq_t CameraMail_mq = RT_NULL;
+static rt_sem_t Camera_sem = RT_NULL;
 
 typedef enum 
 {
@@ -71,6 +73,22 @@ rt_uint8_t CM_RecvOk[] = {0x76,0x00,0x32,0x00,0x00};
 rt_uint8_t CM_ReadBuf[16] = {0x56,0x00,0x32,0x0C,0x00,0x0a,0x00,0x00,0x00,0x00,0xff,0xff,0xff,0xff,0x00,0x00};
 
 
+/*void get_pic_file_name(char *name)
+{
+	rt_sprintf(name,"/%d.jpg",Camera_sem->value);
+}*/
+
+void pic_file_sem_operate(rt_bool_t arg)
+{
+	if(arg == RT_TRUE)
+	{
+		rt_sem_take(Camera_sem,RT_WAITING_FOREVER);
+	}
+	else
+	{
+		rt_sem_release(Camera_sem);
+	}
+}
 
 void printf_data(rt_uint8_t data[],rt_size_t size)
 {
@@ -462,7 +480,7 @@ void camera_timer(void *parameter)
 }
 
 
-void camera_data_process(CameraObj_p camera,CameraMail_p mail)
+void camera_data_process(CameraObj_p camera,CameraMail_p mail,char *FileName)
 {
 	int FileID;
 	rt_timer_t timer;
@@ -481,8 +499,8 @@ void camera_data_process(CameraObj_p camera,CameraMail_p mail)
 		return ;
 	}
 
-	unlink(CM_MAKE_PIC_NAME);
-	FileID = open(CM_MAKE_PIC_NAME,O_CREAT | O_RDWR, 0x777);
+	unlink((const char*)FileName);
+	FileID = open((const char*)FileName,O_CREAT | O_RDWR, 0x777);
 	if(FileID < 0)
 	{
 		rt_kprintf("File Create Fail\n");
@@ -500,12 +518,15 @@ void camera_thread_entry(void *arg)
 	rt_err_t    result;
 	CameraMail  CameraMail;
 	CameraObj_p CameraDat = RT_NULL;
+	char 				*FileName;
 
 	CameraDat = camera_obj_create();
 	camera_power_control(CameraDat,CM_POWER_CLOSE);
 	camera_obj_delete(CameraDat);
 	while(1)
 	{
+		pic_file_sem_operate(RT_TRUE);
+		
 		result =  rt_mq_recv(CameraMail_mq,&CameraMail,sizeof(CameraMail),24*360000);
 		if(RT_EOK == result)		
 		{
@@ -515,32 +536,49 @@ void camera_thread_entry(void *arg)
 			rt_thread_delay(50);
 			rt_device_read(CameraDat->Uart,0,CameraDat->data,CAMERA_BUF_SIZE);
 			
-			camera_data_process(CameraDat,&CameraMail);
+			camera_data_process(CameraDat,&CameraMail,CM_MAKE_PIC_NAME);
 			
 			camera_light_control(CameraDat,CM_LIGHTLED_CLOSE);
 			camera_power_control(CameraDat,CM_POWER_CLOSE);
 			camera_obj_delete(CameraDat);
+			
+			//send_alarm_mail(ALARM_TYPE_CAMERA_IRDASENSOR,ALARM_PROCESS_FLAG_GPRS,0,CameraMail.time);
+			//send_gprs_mail(ALARM_TYPE_CAMERA_IRDASENSOR,CameraMail.time,RT_NULL);
+			FileName = rt_calloc(1,RT_NAME_MAX);
+			RT_ASSERT(FileName != RT_NULL);
+			rt_memcpy(FileName,CM_MAKE_PIC_NAME,rt_strlen(CM_MAKE_PIC_NAME));
+			send_gprs_mail(ALARM_TYPE_GPRS_UPLOAD_PIC,CameraMail.time,FileName);
 			rt_thread_delay(100);
 		}
 	}
 }
 
+static void pic_file_send_complete(void)
+{
+	pic_file_sem_operate(RT_FALSE);
+}
+
 int camera_thread_init(void)
 {
 	rt_thread_t id;
+	
+  net_upload_complete_Callback(pic_file_send_complete);
 
 	//camrea in anytime only make a photo
 	CameraMail_mq = rt_mq_create("CMMail",
 																sizeof(CameraMail),
-																1,
+																3,
 																RT_IPC_FLAG_FIFO);
 	RT_ASSERT(CameraMail_mq != RT_NULL);
+
+	Camera_sem = rt_sem_create("picfile",1,RT_IPC_FLAG_FIFO);
+	RT_ASSERT(Camera_sem != RT_NULL);
 	
 	id = rt_thread_create("Camera",
 												camera_thread_entry,
 												RT_NULL,
 												1024,
-												100,
+												104,
 												100);
 	if(RT_NULL == id )
 	{
@@ -559,6 +597,7 @@ void camera_send_mail(ALARM_TYPEDEF alarm_type,rt_uint32_t time)
 	if(CameraMail_mq != RT_NULL)
 	{
 		mail.AlarmType = alarm_type;
+		mail.time = time;
 		rt_mq_send(CameraMail_mq,&mail,sizeof(CameraMail));
 	}
 }

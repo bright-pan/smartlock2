@@ -12,7 +12,15 @@
 #define FILE_RECV_MAX_TIME    10    //文件接收最长时间
 #define SYS_APP_BIN_FILE_NAME "/app.bin"
 
+void (*file_complete_callback)(void);
 
+void net_upload_complete_Callback(void (*Callback)(void))
+{
+	if(Callback != RT_NULL)
+	{
+		file_complete_callback = Callback;
+	}
+}
 
 
 /*
@@ -211,7 +219,7 @@ rt_uint8_t check_msgmail_succeed(net_msgmail_p mail[],rt_uint8_t size,rt_sem_t S
 				if(result == RT_EOK)
 				{	
 					RT_DEBUG_LOG(SHOW_NFILE_SRESULT,("File Pack Send Result: %d\n",file->result.result));     
-          if(file->result.result == NET_MAIL_OK)
+          if((file->result.result == NET_MAIL_OK) && (file->sendresult == 0))
           {
 						RunResult++;
           }
@@ -308,7 +316,7 @@ static rt_int8_t send_file_request(char *FileName)
 功能:发送一个文件到服务器
 参数:type 文件类型  time发送时间  file 文件名称
 */
-#define FILE_PACKNUM_MAX      NET_RECV_MSG_MAX-2
+#define FILE_PACKNUM_MAX      (NET_RECV_MSG_MAX-2)
 static rt_int8_t send_file_process(rt_uint8_t Type,rt_uint32_t Time,char *FileName)
 {
 	rt_uint32_t FileSize;			 //文件大小
@@ -411,6 +419,8 @@ static rt_int8_t send_file_process(rt_uint8_t Type,rt_uint32_t Time,char *FileNa
 	return 0;
 }
 
+
+
 /*
 功能:文件发送线程
 */
@@ -420,10 +430,8 @@ void net_file_entry(void *arg)
 	{
 		send_file_process(1,1,(char *)arg);
 	}
-	else
-	{
-    send_file_process(1,1,"/FAVICON.ICO");
-	}
+	rt_free(arg);
+	file_complete_callback();
 }
 
 /**
@@ -761,7 +769,12 @@ rt_uint8_t net_file_packdata_process(net_recvmsg_p mail)
 rt_err_t net_upload_file(char *FileName)
 {
   rt_thread_t thread_id;
+  char *name;
 
+	name = rt_calloc(1,RT_NAME_MAX);
+	RT_ASSERT(name != RT_NULL);
+	rt_memcpy(name,FileName,RT_NAME_MAX);
+	
 	thread_id = rt_thread_find("Upload");
   if(thread_id != RT_NULL)
   {
@@ -770,7 +783,7 @@ rt_err_t net_upload_file(char *FileName)
   
 	thread_id = rt_thread_create("Upload",
 	                            net_file_entry,
-	                            (void *)FileName,
+	                            (void *)name,
 	                            1024,
 	                            111, 
 	                            20);
