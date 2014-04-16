@@ -427,6 +427,16 @@
               <FileType>1</FileType>
               <FilePath>applications\voice.C</FilePath>
             </File>
+            <File>
+              <FileName>gprs.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\gprs.c</FilePath>
+            </File>
+            <File>
+              <FileName>unlockprocess.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\unlockprocess.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1003,11 +1013,6 @@
               <FilePath>.\applications\net\netphone.c</FilePath>
             </File>
             <File>
-              <FileName>netphysics.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\net\netphysics.c</FilePath>
-            </File>
-            <File>
               <FileName>netprotocol.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\applications\net\netprotocol.c</FilePath>
@@ -1021,6 +1026,11 @@
               <FileName>crc32.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\components\dfs\filesystems\jffs2\cyg\crc\crc32.c</FilePath>
+            </File>
+            <File>
+              <FileName>netphysics.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\applications\net\netphysics.c</FilePath>
             </File>
           </Files>
         </Group>
