@@ -13,6 +13,9 @@
 
 #include "local.h"
 #include "gpio_exti.h"
+#include "voice.h"
+#include "unlockprocess.h" //unlock process fun
+#include "fprint.h"
 
 #define KEY_NOT_PULL_REVOKE_TIME								100*60*30		// 30min
 #define KEY_READ_TIMER_BASE											100					// 1s
@@ -31,7 +34,8 @@ local_thread_entry(void *parameter)
 {
 	rt_err_t result;
 	LOCAL_MAIL_TYPEDEF local_mail_buf;
-
+	
+	send_fp_mail(FPRINT_CMD_INIT,0);
 	while (1)
 	{
 		// receive mail
@@ -50,6 +54,21 @@ local_thread_entry(void *parameter)
 						rt_kprintf("process alarm switch...\n");
 						break;
 					}
+				case ALARM_TYPE_CAMERA_IRDASENSOR:
+				{
+					send_voice_mail(VOICE_TYPE_CCDIR);
+					break;
+				}
+				case ALARM_TYPE_FPRINT_INPUT:
+				{
+					fprint_unlock_process(&local_mail_buf);
+					break;
+				}
+				case ALARM_TYPE_FPRINT_KEY_ADD:
+				{
+					fprint_key_add(&local_mail_buf);
+					break;
+				}
 				default :
 					{
 						rt_kprintf("this alarm is not process...\n");

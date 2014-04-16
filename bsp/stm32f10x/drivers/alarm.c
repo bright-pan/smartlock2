@@ -35,6 +35,9 @@ const char *alarm_help_map[] = {
 	"ALARM_TYPE_BATTERY_REMAIN_20P",
 	"ALARM_TYPE_BATTERY_REMAIN_5P",
 	"ALARM_TYPE_BATTERY_SWITCH",
+	"ALARM_TYPE_FPRINT_INPUT",
+	"ALARM_TYPE_FPRINT_KEY_ADD",
+	"ALARM_TYPE_FPRINT_KEY_RIGHT",
 	"ALARM_TYPE_RFID_KEY_ERROR",// rfid key detect error alarm type 14
 	"ALARM_TYPE_RFID_KEY_SUCCESS",// rfid key detect success alarm type
 	"ALARM_TYPE_RFID_KEY_PLUGIN",// rfid key detect plugin alarm type
@@ -106,23 +109,11 @@ void alarm_thread_entry(void *parameter)
 			   }*/
 			if (alarm_mail_buf.alarm_process_flag & ALARM_PROCESS_FLAG_SMS)
 			{
-				/* produce mail
-				   sms_mail_buf.time = alarm_mail_buf.time;
-				   sms_mail_buf.alarm_type = alarm_mail_buf.alarm_type;
-
-				   send_sms_mail(sms_mail_buf.alarm_type,sms_mail_buf.time);
-				*/
+				   send_sms_mail(alarm_mail_buf.alarm_type,alarm_mail_buf.time);
 			}
 			if (alarm_mail_buf.alarm_process_flag & ALARM_PROCESS_FLAG_GPRS)
 			{
-				/* produce mail
-				   gprs_mail_buf.time = alarm_mail_buf.time;
-				   gprs_mail_buf.alarm_type = alarm_mail_buf.alarm_type;
-				if(gprs_mq != RT_NULL)
-				{
-					rt_mq_send(gprs_mq, &gprs_mail_buf, sizeof(GPRS_MAIL_TYPEDEF));
-					}
-				*/
+				
 			}
 			//if (alarm_mail_buf.alarm_process_flag & ALARM_PROCESS_FLAG_MMS)
 			{
