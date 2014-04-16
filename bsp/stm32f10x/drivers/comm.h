@@ -21,6 +21,8 @@
 #include "comm_window.h"
 #include <rtdevice.h>
 
+//#define COMM_DEBUG
+
 #define DEVICE_NAME_COMM "uart3"
 #define COMM_TMAIL_MAX_MSGS 5
 

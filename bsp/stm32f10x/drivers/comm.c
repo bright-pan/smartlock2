@@ -88,7 +88,7 @@ process_response(uint8_t cmd, uint8_t *rep_frame, uint16_t length)
 			}
 		default :
 			{
-#ifdef RT_USING_FINSH
+#if (defined RT_USING_FINSH) && (defined COMM_DEBUG)
 				rt_kprintf("the response cmd %02x is invalid!\n", cmd);
 #endif // RT_USING_FINSH
 				break;
@@ -215,7 +215,7 @@ process_frame(uint8_t *frame, uint16_t frame_size)
 
 	if (cmd & 0x80)
 	{
-#ifdef RT_USING_FINSH
+#if (defined RT_USING_FINSH) && (defined COMM_DEBUG)
 		rt_kprintf("recv response frame \ncmd: 0x%02X, order: 0x%02X, length: %d\n", cmd, order, length);
 		print_hex(frame, length);
 #endif // RT_USING_FINSH
@@ -228,7 +228,7 @@ process_frame(uint8_t *frame, uint16_t frame_size)
             if ((tmp->data.mail).comm_type == cmd &&
                 tmp->data.order == order)
             {
-#ifdef RT_USING_FINSH
+#if (defined RT_USING_FINSH) && (defined COMM_DEBUG)
                 rt_kprintf("recv response and delete cw node\n");
 #endif // RT_USING_FINSH
                 *((tmp->data.mail).result) = process_response(cmd, frame, length);
@@ -243,7 +243,7 @@ process_frame(uint8_t *frame, uint16_t frame_size)
 	}
 	else
 	{
-#ifdef RT_USING_FINSH
+#if (defined RT_USING_FINSH) && (defined COMM_DEBUG)
 		rt_kprintf("recv request frame \ncmd: 0x%02X, order: 0x%02X, length: %d\n", cmd, order, length);
 		print_hex(frame, length);
 #endif // RT_USING_FINSH
@@ -280,24 +280,30 @@ comm_rx_thread_entry(void *parameters)
 				{
 					length = *((uint16_t *)process_buf);
 					if (length > BUF_SIZE -4 || length + 4 < recv_counts) {
+#if (defined RT_USING_FINSH) && (defined COMM_DEBUG)
                         rt_kprintf("\ncomm recv error frame length: %d\n", recv_counts);
                         print_hex(process_buf, recv_counts);
+#endif
                         break;
                     }
 					if (length + 4 > recv_counts)
 						goto continue_check;
 					if (length + 4 == recv_counts)
 					{
+#if (defined RT_USING_FINSH) && (defined COMM_DEBUG)
 						rt_kprintf("\ncomm recv frame length: %d\n", recv_counts);
 						print_hex(process_buf, recv_counts);
+#endif
                         process_frame(process_buf, recv_counts);
 						break;
 					}
 				}
 		  continue_check:
 				if (recv_counts >= BUF_SIZE) {
+#if (defined RT_USING_FINSH) && (defined COMM_DEBUG)
                     rt_kprintf("\ncomm recv error frame length: %d\n", recv_counts);
                     print_hex(process_buf, recv_counts);
+#endif
 					break;
                 }
 				process_buf_bk++;
@@ -348,7 +354,7 @@ comm_tx_thread_entry(void *parameters)
             if (comm_tmail_buf.comm_type & 0x80) {
                 if (comm_tmail_buf.buf != RT_NULL) {
                     send_frame(device_comm, &comm_tmail_buf, comm_tmail_buf.order);
-#ifdef RT_USING_FINSH
+#if (defined RT_USING_FINSH) && (defined COMM_DEBUG)
                     rt_kprintf("send response frame and delete cw node\n cmd: 0x%02X, order: 0x%02X, length: %d\n",
                                comm_tmail_buf.comm_type, comm_tmail_buf.order, comm_tmail_buf.len);
                     print_hex(comm_tmail_buf.buf, comm_tmail_buf.len);
@@ -380,7 +386,7 @@ comm_tx_thread_entry(void *parameters)
                 if (ctw_status == CTW_STATUS_OK)
                 {
                     send_frame(device_comm, &comm_tmail_buf, data.order);
-#ifdef RT_USING_FINSH
+#if (defined RT_USING_FINSH) && (defined COMM_DEBUG)
                     rt_kprintf("send request frame\n cmd: 0x%02X, order: 0x%02X, length: %d\n",
                                comm_tmail_buf.comm_type, data.order, comm_tmail_buf.len);
                     print_hex(comm_tmail_buf.buf, comm_tmail_buf.len);
@@ -471,14 +477,18 @@ send_ctx_mail(COMM_TYPE_TYPEDEF comm_type, uint8_t order, uint16_t delay, uint8_
 
 		if (result == -RT_EFULL)
 		{
+#if (defined RT_USING_FINSH) && (defined COMM_DEBUG)
 			rt_kprintf("comm_mq is full!!!\n");
+#endif
             goto __free_process;
 		}
 		else
 		{
 			if (!(comm_type & 0x80)) {
 				rt_sem_take(comm_tmail_buf.result_sem, RT_WAITING_FOREVER);
+#if (defined RT_USING_FINSH) && (defined COMM_DEBUG)
 				rt_kprintf("send result is %d\n", *comm_tmail_buf.result);
+#endif
 			}
 		}
 		if (!(comm_type & 0x80))
@@ -486,7 +496,9 @@ send_ctx_mail(COMM_TYPE_TYPEDEF comm_type, uint8_t order, uint16_t delay, uint8_
 	}
 	else
 	{
+#if (defined RT_USING_FINSH) && (defined COMM_DEBUG)
 		rt_kprintf("comm_mq is RT_NULL!!!!\n");
+#endif
 	}
     return CTW_STATUS_OK;
 

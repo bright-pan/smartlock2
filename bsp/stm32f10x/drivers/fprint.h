@@ -38,6 +38,7 @@ typedef enum {
 	FPRINT_EERROR,
 	FPRINT_ERESPONSE,
 	FPRINT_EEXIST,
+    FPRINT_ENO_DETECTED,
 
 }FPRINT_ERROR_TYPEDEF;
 
@@ -56,6 +57,6 @@ void
 fprint_thread_entry(void *parameters);
 
 FPRINT_ERROR_TYPEDEF
-send_fp_mail(FPRINT_CMD_TYPEDEF cmd, uint16_t key_id);
+send_fp_mail(FPRINT_CMD_TYPEDEF cmd, uint16_t key_id, uint8_t flag);
 
 #endif /* _FPRINT_H_ */

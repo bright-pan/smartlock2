@@ -14,6 +14,8 @@
 
 #include "fprint.h"
 #include "gpio_pin.h"
+#include "gpio_pwm.h"
+#include "comm.h"
 
 //#define FPRINT_DEBUG
 #define DEVICE_NAME_FPRINT "uart2"
@@ -723,6 +725,8 @@ fprint_frame_process(uint16_t cmd, uint16_t prefix, uint8_t sid,
 				}
 			case FPRINT_FRAME_CMD_GET_IMAGE:
 				{
+                    if (frame_data->rep_get_image.result == FPRINT_FRAME_ERR_FP_NOT_DETECTED)
+                        error = FPRINT_ENO_DETECTED;
 					if (frame_data->rep_get_image.result == FPRINT_FRAME_ERR_SUCCESS)
 						error = FPRINT_EOK;
 					break;
@@ -928,7 +932,8 @@ fprint_enroll(uint16_t template_id, FPRINT_FRAME_DATA_TYPEDEF *frame_data)
 	return error;
 }
 
-FPRINT_ERROR_TYPEDEF fprint_verify(FPRINT_FRAME_DATA_TYPEDEF *frame_data)
+FPRINT_ERROR_TYPEDEF 
+fprint_verify(FPRINT_FRAME_DATA_TYPEDEF *frame_data)
 {
 	FPRINT_ERROR_TYPEDEF error = FPRINT_EERROR;
 
@@ -1014,25 +1019,66 @@ fprint_thread_entry(void *parameters)
 						break;
 					}
 			}
-			*fprint_mail.result = error;
-			rt_sem_release(fprint_mail.result_sem);
+            if (fprint_mail.result_sem != RT_NULL) {
+                *fprint_mail.result = error;
+                rt_sem_release(fprint_mail.result_sem);
+            }
 		}
 		else // time out
 		{
-			if (fprint_verify(&frame_data) == FPRINT_EOK)
-			{
+            static uint16_t s_detect = 0;
+            static uint16_t f_detect = 0;
+            static uint16_t template_id = 0;
+            error = fprint_verify(&frame_data);
+            
+			if (error == FPRINT_EOK) {
+                if (s_detect++) {
+                    if (template_id != frame_data.rep_search.template_id) {
+                        template_id = frame_data.rep_search.template_id;
+                        s_detect = 0;
+                    }
+                } else {
+                    template_id = frame_data.rep_search.template_id;
+                    gpio_pin_output(DEVICE_NAME_LOGO_LED,1);
 #if (defined RT_USING_FINSH)
-				rt_kprintf("fprint verify is exist, %d\n", frame_data.rep_search.template_id);
+                    rt_kprintf("fprint verify is exist, %d\n", frame_data.rep_search.template_id);
 #endif // RT_USING_FINSH
 
-			}
+                }
+
+			} else {
+
+                s_detect = 0;
+                gpio_pin_output(DEVICE_NAME_LOGO_LED,0);
+
+            }
+            if (error == FPRINT_ENO_DETECTED) {
+#if (defined RT_USING_FINSH) && (defined FPRINT_DEBUG)
+                rt_kprintf("fprint verify is no detected\n");
+#endif // RT_USING_FINSH
+            }
+            if (error == FPRINT_EERROR) {
+
+                if (f_detect++) {
+
+                } else {
+
+
+#if (defined RT_USING_FINSH)
+                    rt_kprintf("fprint verify is error\n");
+#endif // RT_USING_FINSH
+
+                }
+            } else {
+                f_detect = 0;
+            }
 
 		}
 	}
 }
 
 FPRINT_ERROR_TYPEDEF
-send_fp_mail(FPRINT_CMD_TYPEDEF cmd, uint16_t key_id)
+send_fp_mail(FPRINT_CMD_TYPEDEF cmd, uint16_t key_id, uint8_t flag)
 {
 	FPRINT_MAIL_TYPEDEF mail;
 	rt_err_t result;
@@ -1040,8 +1086,13 @@ send_fp_mail(FPRINT_CMD_TYPEDEF cmd, uint16_t key_id)
 
 	if (fprint_mq != RT_NULL)
 	{
-		mail.result_sem = rt_sem_create("s_fprint", 0, RT_IPC_FLAG_FIFO);
-		mail.result = &error;
+        if (flag) {
+            mail.result_sem = rt_sem_create("s_fp", 0, RT_IPC_FLAG_FIFO);
+            RT_ASSERT(mail.result_sem != RT_NULL);
+        } else {
+            mail.result_sem = RT_NULL;
+        }
+        mail.result = &error;
 		mail.cmd = cmd;
 		mail.key_id = key_id;
 		result = rt_mq_send(fprint_mq, &mail, sizeof(mail));
@@ -1053,12 +1104,14 @@ send_fp_mail(FPRINT_CMD_TYPEDEF cmd, uint16_t key_id)
 		}
 		else
 		{
-			rt_sem_take(mail.result_sem, RT_WAITING_FOREVER);
+            if (flag)
+                rt_sem_take(mail.result_sem, RT_WAITING_FOREVER);
 #if (defined RT_USING_FINSH)
 			rt_kprintf("send result is %d\n", *mail.result);
 #endif // RT_USING_FINSH
 		}
-		rt_sem_delete(mail.result_sem);
+        if (flag)
+            rt_sem_delete(mail.result_sem);
 	}
 	else
 	{

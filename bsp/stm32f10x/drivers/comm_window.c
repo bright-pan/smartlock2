@@ -39,7 +39,7 @@ ctw_timer_out(void *parameters)
 		tmp= list_entry(pos, COMM_TWINDOW_NODE, list);
         if (tmp->data.cnts++ > tmp->data.delay)
         {
-#ifdef RT_USING_FINSH
+#if (defined RT_USING_FINSH) && (defined COMM_DEBUG)
             rt_kprintf("resend request frame %d \ncmd: 0x%02X, order: 0x%02X, length: %d\n",
                        tmp->data.r_cnts + 1,(tmp->data.mail).comm_type, tmp->data.order, (tmp->data.mail).len);
             print_hex((tmp->data.mail).buf, (tmp->data.mail).len);
@@ -51,7 +51,7 @@ ctw_timer_out(void *parameters)
         }
         if (tmp->data.r_cnts > CTW_TIMER_RESEND_COUNTS)
         {
-#ifdef RT_USING_FINSH
+#if (defined RT_USING_FINSH) && (defined COMM_DEBUG)
             rt_kprintf("send failure and delete cw node\ncomm_type: 0x%02X, order: 0x%02X, length: %d\n",
                        (tmp->data.mail).comm_type, tmp->data.order, (tmp->data.mail).len);
             print_hex((tmp->data.mail).buf, (tmp->data.mail).len);
@@ -103,8 +103,10 @@ ctw_list_new(COMM_TWINDOW_NODE **node, COMM_TWINDOW_LIST *ctw_list, COMM_TWINDOW
 		if (*node != RT_NULL)
 		{
 			(*node)->data = *data;
+#if (defined RT_USING_FINSH) && (defined COMM_DEBUG)
 			rt_kprintf("add cmd: 0x%02X, order: 0x%02X, length: %d\n",
 					   ((*node)->data.mail).comm_type, (*node)->data.order, ((*node)->data.mail).len);
+#endif
 			rt_mutex_take(ctw_list->mutex, RT_WAITING_FOREVER);
 			list_add(&(*node)->list, &ctw_list->list);
 			ctw_list->size++;

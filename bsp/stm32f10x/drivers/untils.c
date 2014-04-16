@@ -286,6 +286,20 @@ device_enable(const char *name)
 
 #ifdef RT_USING_FINSH
 #include <finsh.h>
+int
+print_rcc(void)
+{
+	RCC_ClocksTypeDef RCC_ClockFreq;
+	RCC_GetClocksFreq(&RCC_ClockFreq);
+	rt_kprintf("\n******************* CLOCK *********************");
+	rt_kprintf("\nSYSCLK = %ld", RCC_ClockFreq.SYSCLK_Frequency);
+	rt_kprintf("\nHCLK = %ld", RCC_ClockFreq.HCLK_Frequency);
+	rt_kprintf("\nPCLK1 = %ld", RCC_ClockFreq.PCLK1_Frequency);
+	rt_kprintf("\nPCLK2 = %ld", RCC_ClockFreq.PCLK2_Frequency);
+	rt_kprintf("\nADCCLK = %ld", RCC_ClockFreq.ADCCLK_Frequency);
+    return 0;
+}
 
 FINSH_FUNCTION_EXPORT(device_enable, device_enable[name]);
+INIT_APP_EXPORT(print_rcc);
 #endif
