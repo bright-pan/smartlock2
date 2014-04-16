@@ -17,9 +17,10 @@
 #include "untils.h"
 #include "fprint.h"
 #include "apppubulic.h"
+#include "gpio_pwm.h"
 
 
-
+#define MOTOR_PWM_COUNT     50
 
 #define PRINTF_FPRINT_INFO  1
 
@@ -48,17 +49,40 @@ INIT_APP_EXPORT(fprint_mail_init);
 										RT_FALSE->lock
 @retval RT_TRUE :unlcok RT_FALSE:lock
 */
+void motor_pwm_operate(const char *DeviceName)
+{
+  rt_device_t dev = RT_NULL;
+  rt_uint16_t value = MOTOR_PWM_COUNT;
+  
+  dev = rt_device_find(DeviceName);
+  if(dev != RT_NULL)
+  {
+    if(!(dev->open_flag & RT_DEVICE_OFLAG_OPEN))
+    {
+      rt_device_open(dev,RT_DEVICE_FLAG_WRONLY);
+    }
+    rt_device_control(dev,RT_DEVICE_CTRL_SET_PULSE_COUNTS,(void *)&value);
+    rt_device_control(dev,RT_DEVICE_CTRL_SEND_PULSE,RT_NULL);
+  }
+}
+
+/** 
+@brief  send fprint input data
+@param  direction : RT_TRUE->unlock 
+										RT_FALSE->lock
+@retval RT_TRUE :unlcok RT_FALSE:lock
+*/
 rt_bool_t motor_rotate(rt_bool_t direction)
 {
 	rt_bool_t result;
 	
 	if(direction == RT_TRUE)
 	{
-
+		motor_pwm_operate(DEVICE_NAME_MOTOR1);
 	}
 	else
 	{
-
+		motor_pwm_operate(DEVICE_NAME_MOTOR2);
 	}
 
 	return result;
@@ -259,6 +283,8 @@ void regfp(void)
 }
 
 FINSH_FUNCTION_EXPORT(regfp,"test Computer Regietration Availability");
+
+FINSH_FUNCTION_EXPORT(motor_rotate,"(direction) motor operated");
 
 #endif
 

@@ -16,6 +16,7 @@ void send_fprint_dat_mail(FPrintData *data);
 
 void fprint_key_add(LOCAL_MAIL_TYPEDEF *mail);
 
+rt_bool_t motor_rotate(rt_bool_t direction);
 
 #endif
 
