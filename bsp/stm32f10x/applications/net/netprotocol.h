@@ -491,7 +491,7 @@ typedef union
   net_recv_null   		heart_ack;    //报警
   net_recv_null   		alarm_ack;    //报警
   net_recv_null   		fault_ack;    //报警
-  net_recv_null   		opendoor_ack; //报警
+  net_recv_null   		opendoor_ack; //开门应答
   net_recv_null   		battery_ack;  //电池
   net_recv_filerq 		filerq;       //文件请求
   net_recv_null       filerq_ack;   //文件请求应答
