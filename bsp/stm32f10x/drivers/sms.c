@@ -12,6 +12,7 @@
  ********************************************************************/
 
 #include "sms.h"
+#include "bdcom.h"
 
 char smsc[20] = {0,};
 char phone_call[20] = {0,};
@@ -545,7 +546,22 @@ sms_pdu_ucs_send(char *dest_address, char *smsc_address, uint16_t *content, uint
 
 	hex_to_string(send_pdu_string + 2, (uint8_t *)&send_pdu_frame, sms_pdu_length);
 	*(uint16_t *)send_pdu_string = (uint16_t)(send_pdu_frame.TPDU.TP_UDL + sizeof(send_pdu_frame.TPDU) - sizeof(send_pdu_frame.TPDU.TP_UD));
-	send_ctx_mail(COMM_TYPE_SMS, 0, 0, send_pdu_string, (sms_pdu_length << 1) + 2);
+	//send_ctx_mail(COMM_TYPE_SMS, 0, 0, send_pdu_string, (sms_pdu_length << 1) + 2);
+	{
+		GSM_Mail_p mail;
+
+		mail = (GSM_Mail_p)rt_calloc(1,sizeof(GSM_Mail));
+		mail->ResultSem = rt_sem_create("gsmsms",0,RT_IPC_FLAG_FIFO);
+		RT_ASSERT(mail->ResultSem != RT_NULL);
+		mail->buf = send_pdu_string;
+		mail->BufSize = (sms_pdu_length << 1) + 2;
+		mail->SendMode = 1;
+		mail->type = GSM_MAIL_SMS;
+		gsm_mail_send(mail);
+		rt_sem_take(mail->ResultSem,RT_WAITING_FOREVER);
+		rt_sem_delete(mail->ResultSem);
+		rt_free(mail);
+	}
 	/*
 	gsm_mail_buf.send_mode = GSM_MODE_CMD;
 	gsm_mail_buf.result = &send_result;
