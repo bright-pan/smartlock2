@@ -70,12 +70,12 @@ typedef struct
 
 static void voice_open_amp(void)
 {
-	send_ctx_mail(COMM_TYPE_VOICE_AMP,0,200,"\x01",1);	
+	send_ctx_mail(COMM_TYPE_VOICE_AMP,0,10,"\x01",1);	
 }
 
 static void voice_close_amp(void)
 {
-  send_ctx_mail(COMM_TYPE_VOICE_AMP,0,200,"\x00",1);  
+  send_ctx_mail(COMM_TYPE_VOICE_AMP,0,10,"\x00",1);  
 }
 
 static rt_err_t wav_data_send(rt_device_t dev, void *buffer)
@@ -208,7 +208,7 @@ static void voice_file_process(const char *file)
       WavDat.ReadyBuf2 = 2;
     }
   }
-  
+  /*
   rt_kprintf("RIFFchunksize %c%c%c%c\n",wav.RIFF[0],wav.RIFF[1],wav.RIFF[2],wav.RIFF[3]);
   rt_kprintf("FileSize      %d\n",wav.FileSize);
   rt_kprintf("RIFFchunksize %c%c%c%c\n",wav.WAVE[0],wav.WAVE[1],wav.WAVE[2],wav.WAVE[3]);
@@ -222,7 +222,7 @@ static void voice_file_process(const char *file)
   rt_kprintf("Bits          %d\n",wav.Bits);
   rt_kprintf("DataFlag      %c%c%c%c\n",wav.DataFlag[0],wav.DataFlag[1],wav.DataFlag[2],wav.DataFlag[3]);
   rt_kprintf("DataSize      %d\n",wav.DataSize);
-
+	*/
   //释放内存资源
   close(FileID);
   delete_play_data(&WavDat);
@@ -236,6 +236,7 @@ static voice_recv_mail_process(void)
   RecvResult = rt_mq_recv(voice_mq,&type,sizeof(VoiceType),RT_WAITING_FOREVER);
   if(RecvResult == RT_EOK)
   {
+  	rt_kprintf("recv voice mail !!!!!!!!!\n\n");
     voice_open_amp();
     voice_file_process(VoiceFileMap[type]);
     voice_close_amp();
@@ -261,7 +262,7 @@ int voice_thread_init(void)
 	
   thread_id = rt_thread_create("voice",
 		                           voice_thread_entry, 
-		                           RT_NULL,1024, 21, 20);//优先级不能太高
+		                           RT_NULL,1024,21, 20);//优先级不能太高
   if(thread_id != RT_NULL)
   {
     rt_thread_startup(thread_id);
