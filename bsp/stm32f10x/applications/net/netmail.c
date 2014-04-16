@@ -60,7 +60,7 @@ int net_mail_manage_init(void)
 {
 	rt_thread_t id;
 
-	NetMsg_mq = rt_mq_create("NetMsg",sizeof(NetMsg_Mail),10,RT_IPC_FLAG_FIFO);
+	NetMsg_mq = rt_mq_create("GPRS",sizeof(NetMsg_Mail),10,RT_IPC_FLAG_FIFO);
 	RT_ASSERT(NetMsg_mq != RT_NULL);
 	
   //设置接收处理函数

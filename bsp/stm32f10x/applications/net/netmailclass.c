@@ -30,9 +30,10 @@ rt_sem_t smg_send_wait_sem_crate(void)
   SemName = (char *)rt_calloc(1,RT_NAME_MAX);
   RT_ASSERT(SemName != RT_NULL);
 
-  rt_sprintf(SemName,"NMSG%s",get_msg_new_order(RT_FALSE)+1);
-  
+  rt_sprintf(SemName,"NM%d",get_msg_new_order(RT_FALSE)+1);
+
   sem = rt_sem_create(SemName,0,RT_IPC_FLAG_FIFO);
+
   RT_ASSERT(sem != RT_NULL);
   
 	rt_free(SemName);
@@ -64,7 +65,7 @@ void send_net_landed_mail(void)
   mail->col.byte = get_msg_new_order(RT_TRUE);
 
 	rt_memcpy((char *)UserData->id,
-	        (const char *)"\x12\x34\x56\x78\x9a\xbc\xde\xfe",8);
+	        (const char *)"\x12\x34\x56\x78\x9a\xbc\xde\xf0",8);
 	rt_memcpy((char *)UserData->k1,
 	        (const char *)"\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa",8);
 	UserData->version = 0x01;
@@ -714,6 +715,14 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 				
 			break;
 	  }
+	  case NET_MSGTYPE_FILEDATA_ACK:
+	  {
+	  	net_filedata_user *data;
+
+	  	data = (net_filedata_user*)net_get_wnd_user(Mail);
+			data->sendresult = Mail->data.filedata_ack.result;
+			break;
+	  }
 	 	case NET_MSGTYPE_PHONEADD:
 	 	{
 	 		//手机白名单添加
@@ -874,7 +883,7 @@ void TestAddKey(void)
 	col = 0xabcd;
 	col = net_rev16(col);
 	rt_memcpy(KeyData->data.col,&col,2);
-	KeyData->data.type = 1;
+	KeyData->data.type = 0;
 	rt_memcpy(KeyData->data.createt,"\x12\x34\x56\x78",4);
 	KeyData->data.accredit = 1;
 	rt_memcpy(KeyData->data.start_t,"\x00\x09\x00\xa",4);
