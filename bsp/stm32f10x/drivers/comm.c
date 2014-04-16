@@ -166,7 +166,7 @@ process_request(uint8_t cmd, uint8_t order, uint8_t *rep_frame, uint16_t length)
 	    		rt_mutex_take(gprs_mutex,RT_WAITING_FOREVER);
 	    		readsize = rt_ringbuffer_putchar(&gprsringbuffer,*ptr);
 	    		rt_mutex_release(gprs_mutex);
-	        if (readsize != -1)
+	        if (readsize != 0)
 	        {
 	            ptr ++;
 	            length --;
