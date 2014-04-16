@@ -1,0 +1,21 @@
+#ifndef __UNLOCKPROCESS_H__
+#define __UNLOCKPROCESS_H__
+#include "rtthread.h"
+#include "voice.h"
+#include "gpio_pwm.h"
+#include "local.h"
+
+typedef struct 
+{
+	rt_uint16_t KeyMapPos;
+}FPrintData;
+
+void fprint_unlock_process(LOCAL_MAIL_TYPEDEF *mail);
+
+void send_fprint_dat_mail(FPrintData *data);
+
+void fprint_key_add(LOCAL_MAIL_TYPEDEF *mail);
+
+
+#endif
+
