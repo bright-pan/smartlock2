@@ -60,7 +60,7 @@ DEVICE_CONFIG_TYPEDEF device_config = {
 		{
 			"iyuet.com",
 			6800
-      //"121.34.1.41",
+      //"121.15.124.150",
       //8090
 		},
 		//lock gate alarm time
