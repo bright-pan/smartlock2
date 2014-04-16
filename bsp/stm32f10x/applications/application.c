@@ -210,7 +210,7 @@ int rt_application_init(void)
     // init local thread
     local_thread = rt_thread_create("local",
 									local_thread_entry, RT_NULL,
-									512, 102, 5);
+									1024, 102, 5);
     if (local_thread != RT_NULL)
     {
         rt_thread_startup(local_thread);
