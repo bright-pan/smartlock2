@@ -19,15 +19,29 @@ rt_size_t find_package_end(rt_uint8_t *buffer,rt_size_t size)
 {
   rt_size_t i;
   rt_uint8_t FlagStr[2];
-  
+  rt_uint16_t length;
+
+  net_string_copy_uint16(&length,buffer);
+  rt_kprintf("pack length = %d %x\n",length,length);
+
+	if(length >= TCP_BUF_SIZE)//长度大于缓冲区长度
+	{
+		return size;
+	}
+	
   for(i = 0; i < size; i++)
   {
     FlagStr[0] = FlagStr[1];
     FlagStr[1] = buffer[i];
     if((FlagStr[0] == 0x0d) && (FlagStr[1] == 0x0a))
     {
+    	if(length < i+1)
       return i+1;
     }
+  }
+  if(i > length)//长度错误
+  {
+		return size;
   }
   return 0;
 }
@@ -133,6 +147,8 @@ void netprotocol_thread_entry(void *arg)
           	  rt_kprintf("send mailbox fail\n");
               rt_free(recvmail);
           	}
+
+          	//打印调试信息
           	rt_kprintf("\nReceives the encrypted data:\n");
             for(i = 0;i < MsgEndPos;i++)
             {
