@@ -613,6 +613,7 @@ typedef struct
   net_send_result result;
   net_filedata    data;
   rt_uint16_t     length;
+  rt_uint8_t      sendresult;
 }net_filedata_user;
 
 //文件包应答 异步
@@ -669,6 +670,7 @@ rt_uint8_t net_event_process(rt_uint8_t mode,rt_uint32_t type);
 rt_uint8_t get_msg_new_order(rt_bool_t flag);//获得报文的新序号
 rt_bool_t net_mail_crc16_check(net_recvmsg_p Mail);
 
+rt_uint32_t net_get_wnd_user(net_recvmsg_p msg);
 
 #endif
 

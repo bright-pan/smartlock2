@@ -349,6 +349,7 @@ void net_pack_data(net_message *message,net_encrypt *data)
   rt_uint8_t  *des_start = RT_NULL;
   rt_uint8_t  *crc_start = RT_NULL;
 
+	RT_ASSERT(message != RT_NULL);
   //显示报文的一些重要信息
   show_sendmsg(data);
   show_lenmap(data->lenmap);
@@ -983,7 +984,7 @@ static void clear_wnd_mail_pos(rt_int8_t pos,rt_int8_t result)
 *获得type类型的邮件在窗口中的位置
 *返回 -1 表示不存在该类型 
 */
-static rt_int8_t get_wnd_mail_pos(message_type type)
+static rt_int8_t get_wnd_mail_pos(rt_uint8_t type)
 {
   rt_uint8_t i;
 
@@ -1020,7 +1021,7 @@ static rt_int8_t get_wnd_space_pos(void)
 /*
 功能:获取窗口某个位置的邮件命令
 */
-static message_type get_wnd_pos_cmd(rt_uint8_t pos)
+static rt_uint8_t get_wnd_pos_cmd(rt_uint8_t pos)
 {
 	return sendwnd_node[pos].mail.type;
 }
@@ -1201,6 +1202,32 @@ static void net_send_wnd_process(net_msgmail_p msg)
 }
 
 /*
+功能:获取收到的应答报文对应报文的私有数据地址
+参数:msg 接收到的邮件
+*/
+rt_uint32_t net_get_wnd_user(net_recvmsg_p msg)
+{
+	rt_int8_t pos;	
+	rt_uint8_t cmd = NET_MSGTYPE_NULL;
+
+	pos = get_wnd_order_pos(msg->col);
+	if(pos != -1)
+	{
+	  if(msg->cmd & 0x80)
+	  {
+      cmd = (message_type)msg->cmd - 0x80;
+	  }
+	  //将接收到的邮件的命令和在发送窗口中
+	  //找到的包命令比较
+		if(cmd == get_wnd_pos_cmd(pos))
+		{
+		  return (rt_uint32_t)sendwnd_node[pos].mail.user;
+		}
+	}
+
+	return RT_NULL;
+}
+/*
 功能:接收到一份邮件后对窗口的处理
 参数:msg 接收到的邮件
 */
@@ -1370,10 +1397,6 @@ static void net_recv_message(net_msgmail_p mail)
         return ;
       }
 	  }
-	  else
-	  {
-			rt_kprintf("Is NET_MSGTYPE_LANDED_ACK cmd %x\n",msg->cmd);
-	  }
 	  
 	  //大小端转换
 		//msg.length = net_rev16(msg.length);
@@ -1466,6 +1489,7 @@ static void net_recv_message(net_msgmail_p mail)
 			{
 				//文件数据包应答
 				rt_kprintf("NET_MSGTYPE_FILEDATA_ACK\n");
+				Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
 			case NET_MSGTYPE_FILEDATA:
