@@ -484,6 +484,13 @@ typedef struct
 	rt_uint8_t crc16[2];
 }net_recv_keydel_ack;
 
+//电机控制
+typedef struct 
+{
+	net_motor  motor;
+	rt_uint8_t crc16[2];
+}net_recv_motor;
+
 //接收报文的数据域
 typedef union 
 {
@@ -505,6 +512,7 @@ typedef union
   net_recv_keyadd_ack KeyAddAck;    //钥匙添加应答
   net_recv_keydel     keydel;       //钥匙删除
   net_recv_keyadd_ack KeyDelAck;    //钥匙删除应答
+	net_recv_motor      motor;        //电机控制
 }net_recv_data;
 
 //接收报文的描述结构体

@@ -4,11 +4,10 @@
 作者:wangzw <wangzw@yuettak.com>
 */
 #include "netcomm.h"
-
+#include <cyg/crc/crc.h>
 
 /*
 功能:换位操作
-
 */
 void net_swap(rt_uint8_t *dat1,rt_uint8_t *dat2)
 {
@@ -80,7 +79,6 @@ void net_string_copy_uint16(rt_uint16_t *data,rt_uint8_t str[])
 {	
 	rt_memcpy((void *)data,(const void*)str,sizeof(rt_uint16_t));
 	*data = net_rev16(*data);
-	rt_kprintf(" *data = %X ",*data);
 }
 
 
@@ -91,7 +89,6 @@ void net_string_copy_uint32(rt_uint32_t *data,rt_uint8_t str[])
 {
 	rt_memcpy((void *)data,(const void*)str,sizeof(rt_uint32_t));
 	*data = net_rev32(*data);
-	rt_kprintf(" *data = %X ",*data);
 }
 
 

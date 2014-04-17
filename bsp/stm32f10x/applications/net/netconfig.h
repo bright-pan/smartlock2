@@ -1,6 +1,7 @@
 #ifndef __NETCONFIG_H__
 #define __NETCONFIG_H__
-#define SHOW_MSG_THREAD             0
+#define SHOW_MSG_THREAD             0 //显示协议线程处理的信息
+#define SHOW_RECV_GSM_RST           1 //显示接收报文的结果
 #define SHOW_RECV_MSG_INFO          0 //显示接收报文信息
 #define SHOW_SEND_MSG_INFO          0 //显示发送报文信息
 #define SHOW_LENMAP_INFO            0 //显示长度映射域详细信息

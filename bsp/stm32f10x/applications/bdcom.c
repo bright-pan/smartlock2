@@ -1,6 +1,7 @@
 #include "bdcom.h"
 #include "comm.h"
 #include "untils.h"
+
 #define SHOW_GSM_OP_INFO   1
 #define GPRS_PACK_RESEND_T 200
 #define GSM_MODE_SWITCH_T  100
@@ -131,9 +132,14 @@ rt_bool_t gsm_link(GSM_Module_p gsm)
 
 	gsm_switch_mode(gsm,0);
 	*buf = 1;
-  rt_kprintf("device IP :%s\n",device_config.param.tcp_domain[0].domain);
+  RT_DEBUG_LOG(SHOW_GSM_OP_INFO,("Connect IP :%s ...\n",device_config.param.tcp_domain[0].domain));
 	rt_memcpy(buf+1, &(device_config.param.tcp_domain[0]), sizeof(device_config.param.tcp_domain[0]));
-	result = send_ctx_mail(COMM_TYPE_GSM_CTRL_DIALING, 0, GSM_LINK_WAIT_T, buf, sizeof(device_config.param.tcp_domain[0])+1);
+	
+	result = send_ctx_mail(COMM_TYPE_GSM_CTRL_DIALING, 
+												0, 
+												GSM_LINK_WAIT_T, 
+												buf, 
+												sizeof(device_config.param.tcp_domain[0])+1);
 	rt_free(buf);
 	if(result == CTW_STATUS_OK)
 	{
@@ -163,11 +169,11 @@ void mail_gprs_process(GSM_Mail_p Mail)
 	result = send_ctx_mail(COMM_TYPE_GPRS,0,GPRS_PACK_RESEND_T,buf,Mail->BufSize+1);
   if(result == CTW_STATUS_OK)
   {
-    rt_kprintf("COM Send Data OK\n");
+    RT_DEBUG_LOG(SHOW_GSM_OP_INFO,("COM Send Data OK\n"));
   }
   else
   {
-    rt_kprintf("COM send Data Fail\n");
+    RT_DEBUG_LOG(SHOW_GSM_OP_INFO,("COM send Data Fail\n"));
     GSMModule.LinkStatus = 0;
   }
   rt_free(buf);
@@ -189,11 +195,11 @@ void mail_sms_process(GSM_Mail_p Mail)
 	result = send_ctx_mail(COMM_TYPE_SMS,0,GPRS_PACK_RESEND_T,buf,Mail->BufSize+1);
 	if(result == CTW_STATUS_OK)
 	{
-		rt_kprintf("COM Send Data OK\n");
+		RT_DEBUG_LOG(SHOW_GSM_OP_INFO,("COM Send Data OK\n"));
 	}
 	else
 	{
-		rt_kprintf("COM send Data Fail\n");
+		RT_DEBUG_LOG(SHOW_GSM_OP_INFO,("COM send Data Fail\n"));
 		GSMModule.LinkStatus = 0;
 	}
 	rt_free(buf);

@@ -1,6 +1,8 @@
+
 #include "gprs.h"
 #include "unlockprocess.h"
 #include "netmailclass.h"
+#include "netfile.h"
 #include "untils.h"
 #include "fprint.h"
 #include "apppubulic.h"
@@ -43,26 +45,37 @@ static void fprint_upload_process(GPRS_MAIL_TYPEDEF *mail)
 	result = msg_mail_keyadd(data);
 	if(result == 0)
 	{
-		send_fp_mail(FPRINT_CMD_DELETE,keypos);
+		send_fp_mail(FPRINT_CMD_DELETE,keypos,1);
 	}
 
 	rt_free(data);
 
 }
 
+/** 
+@brief  gprs thread mail process
+@param  mail :gprs thread mail
+@retval void
+*/
 static void gprs_mail_process(GPRS_MAIL_TYPEDEF *mail)
 {
 	switch(mail->alarm_type)
 	{
 		case ALARM_TYPE_CAMERA_IRDASENSOR:
 		{
-			msg_mail_alarm(0,1,mail->time);
+			msg_mail_alarm(0,motor_status(),mail->time);
 			
 			break;
 		}
 		case ALARM_TYPE_GPRS_UPLOAD_PIC:
 		{
 			net_upload_file(mail->user);
+			
+			break;
+		}
+		case ALARM_TYPE_RFID_KEY_ERROR:
+		{
+			msg_mail_alarm(2,motor_status(),mail->time);
 			
 			break;
 		}
@@ -89,6 +102,11 @@ static void gprs_mail_process(GPRS_MAIL_TYPEDEF *mail)
 	}
 }
 
+/** 
+@brief  Delete mail the memory resources
+@param  mail :gprs thread mail
+@retval void
+*/
 void gprs_mail_delete(GPRS_MAIL_TYPEDEF *mail)
 {
 	RT_ASSERT(mail != RT_NULL);
@@ -97,8 +115,11 @@ void gprs_mail_delete(GPRS_MAIL_TYPEDEF *mail)
 		rt_free(mail->user);
 	}
 }
-/*
-功能:线程入口
+
+/** 
+@brief  gprs thread entry
+@param  *arg
+@retval void
 */
 void gprs_mail_manage_entry(void* arg)
 {
@@ -108,11 +129,16 @@ void gprs_mail_manage_entry(void* arg)
 	rt_kprintf("mail manage thread run\n");
 	while(1)
 	{
+		if(net_event_process(1,NET_ENVET_ONLINE) == 1)
+		{
+			rt_thread_delay(10);
+			continue;
+		}
 		mq_result = rt_mq_recv(gprs_mq,&mail,sizeof(GPRS_MAIL_TYPEDEF),100);
 		if(mq_result == RT_EOK)
 		{
 			rt_kprintf("receive gprs mail < time: %d alarm_type: %s >\n",\
-					   mail.time, alarm_help_map[mail.alarm_type]);
+					   		mail.time, alarm_help_map[mail.alarm_type]);
 			gprs_mail_process(&mail);
 			gprs_mail_delete(&mail);
 		}
