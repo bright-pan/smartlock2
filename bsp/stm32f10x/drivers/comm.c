@@ -158,7 +158,7 @@ process_request(uint8_t cmd, uint8_t order, uint8_t *rep_frame, uint16_t length)
 			{
 				rt_uint8_t *ptr = rep_frame+1;
 				//printf_data(rep_frame,length);
-				rt_kprintf("COMM_TYPE_GPRS\n");
+				//rt_kprintf("COMM_TYPE_GPRS\n");
 				while (length-1)
         {
         	rt_size_t readsize;

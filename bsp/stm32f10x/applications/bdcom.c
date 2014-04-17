@@ -294,9 +294,6 @@ void GSM_manage_thread_entry(void *arg)
 		result = rt_mb_recv(GSM_Mail_mb,(rt_uint32_t *)&GsmMail,RT_WAITING_FOREVER);
 		if(result == RT_EOK)
 		{
-			rt_kprintf("BufSize  = %d\n",GsmMail->BufSize);
-			rt_kprintf("type     = %d\n",GsmMail->type);
-			rt_kprintf("SendMode = %d\n",GsmMail->SendMode);
 			gsm_mail_process(GsmMail);
 			rt_sem_release(GsmMail->ResultSem);
 		}

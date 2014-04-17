@@ -3,6 +3,9 @@
 */
 #include "irsensor.h"
 
+#include "apppubulic.h"
+#include "gprs.h"
+#include "camera.h"
 #include "alarm.h"
 
 #define DEVICE_NAME_INFRA_PULSE_PWM_IC "infra_ic"
@@ -58,7 +61,6 @@ void ir_cover_process(void)
     {
       ok_num = 3;
       /* send camera infrared alarm information */      
-      // sms
       send_alarm_mail(ALARM_TYPE_CAMERA_IRDASENSOR,
       								ALARM_PROCESS_FLAG_LOCAL |
       								ALARM_PROCESS_FLAG_SMS,
