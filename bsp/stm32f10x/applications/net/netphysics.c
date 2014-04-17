@@ -8,6 +8,7 @@
 #include "bdcom.h"
 #include "comm.h"
 
+#define SHOW_PRINTF_INFO   0    //打印调试信息
 
 #define TCP_BUF_SIZE       1024 //接收缓冲区
 
@@ -22,7 +23,7 @@ rt_size_t find_package_end(rt_uint8_t *buffer,rt_size_t size)
   rt_uint16_t length;
 
   net_string_copy_uint16(&length,buffer);
-  rt_kprintf("pack length = %d %x\n",length,length);
+  RT_DEBUG_LOG(SHOW_PRINTF_INFO,("Receive the packet length:%d = %x!!\n",length,length));
 
 	if(length >= TCP_BUF_SIZE)//长度大于缓冲区长度
 	{
@@ -60,11 +61,8 @@ void netprotocol_thread_entry(void *arg)
   while(1)
   {
     recv_data = rt_calloc(1,TCP_BUF_SIZE);
-    if (recv_data == RT_NULL)
-    {
-        rt_kprintf("No memory\n");
-        return;
-    }
+
+		RT_ASSERT(recv_data != RT_NULL);
     while(!gsm_is_link())
     {
     	GSM_Mail_p mail;
@@ -85,10 +83,13 @@ void netprotocol_thread_entry(void *arg)
 	      int  i;
 	    	
 	    	bytes_received = comm_recv_gprs_data(recv_data,TCP_BUF_SIZE);
+	    	
+		   	RT_DEBUG_LOG(SHOW_PRINTF_INFO,("Invalid data is received gprs:\n"));
 	    	for(i = 0;i < bytes_received;i++)
 		    {
-		      rt_kprintf("%c",recv_data[i]);
+		      RT_DEBUG_LOG(SHOW_PRINTF_INFO,("%c",recv_data[i]));
 		    }
+		   	RT_DEBUG_LOG(SHOW_PRINTF_INFO,("\n"));
 				rt_thread_delay(100);
     	}
     }
@@ -116,7 +117,7 @@ void netprotocol_thread_entry(void *arg)
 			//如果收到重新连接事件
     	if(net_event_process(2,NET_ENVET_RELINK) == 0)
     	{
-				rt_kprintf("relink TCP/IP\n");
+				RT_DEBUG_LOG(SHOW_PRINTF_INFO,("relink TCP/IP !!!!\n"));
 				gsm_set_link(0);
 				rt_free(recv_data);
 				break;
@@ -144,17 +145,19 @@ void netprotocol_thread_entry(void *arg)
           	RT_DEBUG_LOG(SHOW_RECV_MAIL_ADDR,("Send mailbox addr %X\n",recvmail));
           	if(rt_mb_send(net_datrecv_mb,(rt_uint32_t)recvmail) != RT_EOK)
           	{
-          	  rt_kprintf("send mailbox fail\n");
+          	  RT_DEBUG_LOG(SHOW_PRINTF_INFO,
+						          	  ("%s mail full send fail !!!\n",
+						          	  net_datrecv_mb->parent.parent.name));
               rt_free(recvmail);
           	}
 
           	//打印调试信息
-          	rt_kprintf("\nReceives the encrypted data:\n");
+          	RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("\nReceives the encrypted data:\n"));
             for(i = 0;i < MsgEndPos;i++)
             {
-              rt_kprintf("%02X",recv_data[i]);
+              RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("%02X",recv_data[i]));
             }
-            rt_kprintf("\n");
+            RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("\n"));
 
             //将找到包的后面数据移动到buffer首地址处
             SavePos -= MsgEndPos;
@@ -205,7 +208,7 @@ int netprotocol_thread_init(void)
 
   if(id == RT_NULL)
   {
-    rt_kprintf("NPDU thread init fail !\n");
+    rt_kprintf("%s thread init fail !\n",id->name);
 
     return 1;
   }

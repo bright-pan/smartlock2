@@ -13,7 +13,7 @@
 #define MAIL_FAULT_RESEND     3
 #define MAIL_FAULT_OUTTIME    1000
 
-
+#define SHWO_PRINTF_INFO      1
 /**
 网络协议发送接口
 */
@@ -110,7 +110,7 @@ rt_uint8_t msg_mail_alarm(rt_uint8_t alarm,rt_uint8_t LockStatus,rt_uint32_t tim
   net_msg_send_mail(mail);
   rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
   rt_sem_delete(UserData->result.complete);
-  rt_kprintf("send result = %d\n",UserData->result.result);
+  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
   result = UserData->result.result;
   
   //释放资源
@@ -151,7 +151,7 @@ rt_uint8_t msg_mail_fault(rt_uint8_t fault,rt_uint32_t time)
   net_msg_send_mail(mail);
   rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
   rt_sem_delete(UserData->result.complete);
-  rt_kprintf("send result = %d\n",UserData->result.result);
+  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
   result = UserData->result.result;
   
   //释放资源
@@ -193,7 +193,7 @@ rt_uint8_t msg_mail_opendoor(rt_uint8_t type,rt_uint16_t key,rt_uint32_t time)
   net_msg_send_mail(mail);
   rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
   rt_sem_delete(UserData->result.complete);
-  rt_kprintf("send result = %d\n",UserData->result.result);
+  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
   result = UserData->result.result;
   
   //释放资源
@@ -236,7 +236,7 @@ rt_uint8_t msg_mail_battery(rt_uint8_t status,rt_uint8_t capacity,rt_uint32_t ti
   net_msg_send_mail(mail);
   rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
   rt_sem_delete(UserData->result.complete);
-  rt_kprintf("send result = %d\n",UserData->result.result);
+  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
   result = UserData->result.result;
   
   //释放资源
@@ -276,7 +276,7 @@ rt_uint8_t msg_mail_adjust_time(void)
 	net_msg_send_mail(mail);
 	rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
 	rt_sem_delete(UserData->result.complete);
-	rt_kprintf("send result = %d\n",UserData->result.result);
+	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
 	result = UserData->result.result;
 
 	//释放资源
@@ -317,7 +317,7 @@ rt_uint8_t msg_mail_alarmarg(rt_uint8_t Type,rt_uint8_t arg)
   net_msg_send_mail(mail);
   rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
   rt_sem_delete(UserData->result.complete);
-  rt_kprintf("send result = %d\n",UserData->result.result);
+  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
   result = UserData->result.result;
   
   //释放资源
@@ -423,7 +423,7 @@ rt_uint8_t msg_mail_keyadd(net_keyadd_user *KeyData)
   net_msg_send_mail(mail);
   rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
   rt_sem_delete(UserData->result.complete);
-  rt_kprintf("send result = %d\n",UserData->result.result);
+  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
   result = UserData->result.result;
   
   //释放资源
@@ -497,7 +497,7 @@ rt_uint8_t msg_mail_keydelete(rt_uint16_t pos)
   net_msg_send_mail(mail);
   rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
   rt_sem_delete(UserData->result.complete);
-  rt_kprintf("send result = %d\n",UserData->result.result);
+  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
   result = UserData->result.result;
   
   //释放资源

@@ -110,9 +110,9 @@ rt_bool_t net_mail_crc16_check(net_recvmsg_p Mail)
 	CurCRC16 = net_crc16((unsigned char *)(tmp+2),CRCLength);
 
 	Mail->lenmap.bype = net_rev16(Mail->lenmap.bype);
-	
-	rt_kprintf("CRC16Right = %04X\n",CRC16Right);
-	rt_kprintf("CurCRC16   = %04X\n",CurCRC16);
+
+	RT_DEBUG_LOG(SHOW_CRC16_INIF,("Right CRC16 = %04X\n",CRC16Right));
+	RT_DEBUG_LOG(SHOW_CRC16_INIF,("Cur   CRC16 = %04X\n",CurCRC16));
 	if(CurCRC16 == CRC16Right)
 	{
 		return RT_TRUE;
@@ -450,7 +450,6 @@ void net_pack_data(net_message *message,net_encrypt *data)
 		{
 			rt_memcpy(bufp,&data->data.keyadd,16);
 			rt_memcpy(bufp + 16,data->data.keyadd.data,data->lenmap.bit.data - 16);
-			rt_kprintf("data->lenmap.bit.data = %d\n",data->lenmap.bit.data);
 			
 			break;
 		}
@@ -486,12 +485,12 @@ void net_pack_data(net_message *message,net_encrypt *data)
  {
     rt_uint16_t i;
 
-    //rt_kprintf("Send encrypt message:\n");
+    RT_DEBUG_LOG(SHOW_SEND_MSG_INFO,("Send encrypt message:\n"));
     for(i = 0;i < message->length+4;i++)
     {
-      rt_kprintf("%02X",*(message->buffer+i));
+      RT_DEBUG_LOG(SHOW_SEND_MSG_INFO,("%02X",*(message->buffer+i)));
     }
-    rt_kprintf("\n");
+    RT_DEBUG_LOG(SHOW_SEND_MSG_INFO,("\n"));
  }
 }
 
@@ -933,7 +932,7 @@ static void clear_wnd_mail_pos(rt_int8_t pos,rt_int8_t result)
 		  RT_DEBUG_LOG(SHOW_SEND_MODE_INFO,("This is asynchronous sending mode,Result OK\n"));
       if(sendwnd_node[pos].mail.user != RT_NULL)
       {
-        rt_kprintf("free user memroy\n");
+        RT_DEBUG_LOG(SHOW_MEM_INFO,("free user memroy\n"));
         rt_free(sendwnd_node[pos].mail.user);
         sendwnd_node[pos].mail.user = RT_NULL;
       }
@@ -1048,7 +1047,7 @@ static rt_int8_t get_wnd_order_pos(net_col col)
 		wnd_show();
   }*/
   
-  rt_kprintf("Send window not find Mail Col:%d\n",col.bit.col);
+  RT_DEBUG_LOG(SHOW_WND_INFO,("Send window not find Mail Col:%d\n",col.bit.col));
   return -1; 
 }
 
@@ -1175,7 +1174,7 @@ static void net_send_wnd_process(net_msgmail_p msg)
 	if(msg->type & 0x80)
 	{
 		//不需要添加到窗口的报文释放资源
-		rt_kprintf("This ACK Message\n");
+		RT_DEBUG_LOG(SHOW_WND_INFO,("This ACK Message\n"));
 		net_msg_user_delete(msg);
 		return ;
 	}
@@ -1313,15 +1312,15 @@ static rt_int8_t net_des_decode(net_recvmsg_p msg)
   des_setkey_dec(&ctx_key1_enc, "\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa");
 
   //小端转换
-  rt_kprintf("length = %X ",msg->length);
   msg->length = net_rev16(msg->length);
-  rt_kprintf("length = %X \n",msg->length);
+  RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("Receive data length = %X \n",msg->length));
 
   //判断包长度是否大于buffer长度
   if(msg->length > sizeof(net_recvmsg))
   {
-  	rt_kprintf("Array Bounds Write sizeof(net_recvmsg):%d RecvMSG->length%d\n",
-  							sizeof(net_recvmsg),msg->length);
+  	RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,
+  							("Array Bounds Write sizeof(net_recvmsg):%d RecvMSG->length:%d!!!!\n",
+  							sizeof(net_recvmsg),msg->length));
     return -1;
   } 
   enc_num  = msg->length/8;
@@ -1366,7 +1365,7 @@ static void net_recv_alagn_process(net_recvmsg_p msg)
 	rt_memcpy((void *)&msg->data,(void *)&tmp->reserve,sizeof(net_recvmsg)-8);
 	rt_free(tmp);
 	tmp = RT_NULL;
-	rt_kprintf("receive alagn process ok\n");
+	RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("Receive alagn process ok\n"));
 }
 
 /** 
@@ -1392,7 +1391,7 @@ static void net_recv_message(net_msgmail_p mail)
       if(net_des_decode(msg) < 0)
       {
         //解密失败
-        rt_kprintf("Message decryption failure\n");
+        RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("Message decryption failure\n"));
         rt_free(msg);
         return ;
       }
@@ -1410,7 +1409,6 @@ static void net_recv_message(net_msgmail_p mail)
       pos = get_wnd_order_pos(msg->col);
       if(pos < 0)
       {
-        rt_kprintf("Recv Message ACK Window Couldn't Find msg->col = %d\n",msg->col);
         rt_free(msg);
         return ;
       }
@@ -1423,7 +1421,7 @@ static void net_recv_message(net_msgmail_p mail)
       //verify crc16
       if(CRC16Result == RT_FALSE)
       {
-        rt_kprintf("Message CRC16 verify Fial\n");
+        RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("Message CRC16 verify Fial\n"));
         rt_free(msg);
         rt_timer_start(sendwnd_timer);
         return ;
@@ -1439,126 +1437,126 @@ static void net_recv_message(net_msgmail_p mail)
 				{
 				  set_wnd_mail_permission(msg->col,-1);
           set_wnd_allmail_permission(NET_WND_MAX_NUM-1);
-          rt_kprintf("clear wnd permission\n");
+          RT_DEBUG_LOG(SHOW_WND_INFO,("clear wnd permission\n"));
           Net_MsgRecv_handle(msg,RT_NULL);
 				}
 				//在线标志
 				net_event_process(0,NET_ENVET_ONLINE);
-				rt_kprintf("NET_MSGTYPE_LANDED_ACK\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_LANDED_ACK\n"));
 				break;
 			}
 			case NET_MSGTYPE_HEART_ACK:
 			{
-				rt_kprintf("NET_MSGTYPE_HEART_ACK\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_HEART_ACK\n"));
 				break;
 			}
 			case NET_MSGTYPE_ALARM_ACK:
 			{
-				rt_kprintf("NET_MSGTYPE_ALARM_ACK\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_ALARM_ACK\n"));
 				break;
 			}
 			case NET_MSGTYPE_FAULT_ACK:
 			{
-				rt_kprintf("NET_MSGTYPE_FAULT_ACK\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_FAULT_ACK\n"));
 				break;
 			}
 			case NET_MSGTYPE_OPENDOOR_ACK:
 			{
-				rt_kprintf("NET_MSGTYPE_OPENDOOR_ACK\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_OPENDOOR_ACK\n"));
 				break;
 			}
 			case NET_MSGTYPE_BATTERY_ACK:
 			{
-				rt_kprintf("NET_MSGTYPE_BATTERY_ACK\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_BATTERY_ACK\n"));
 				break;
 			}
 			case NET_MSGTYPE_FILEREQUEST:
 			{
 				//文件请求
-				rt_kprintf("NET_MSGTYPE_FILEREQUEST\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_FILEREQUEST\n"));
 				Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
 			case NET_MSGTYPE_FILEREQUE_ACK:
 			{
 				//文件请求应答
-				rt_kprintf("NET_MSGTYPE_FILEREQUE_ACK\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_FILEREQUE_ACK\n"));
 				break;
 			}
 			case NET_MSGTYPE_FILEDATA_ACK:
 			{
 				//文件数据包应答
-				rt_kprintf("NET_MSGTYPE_FILEDATA_ACK\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_FILEDATA_ACK\n"));
 				Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
 			case NET_MSGTYPE_FILEDATA:
 			{
 				//文件数据包
-				rt_kprintf("NET_MSGTYPE_FILEDATA\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_FILEDATA\n"));
 				Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
 			case NET_MSGTYPE_PHONEADD_ACK:
 			{
-				rt_kprintf("NET_MSGTYPE_PHONEADD_ACK\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_PHONEADD_ACK\n"));
 				break;
 			}
 			case NET_MSGTYPE_PHONEDEL_ACK:
 			{
-				rt_kprintf("NET_MSGTYPE_PHONEDDEL_ACK\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_PHONEDDEL_ACK\n"));
 				break;
 			}
 			case NET_MSGTYPE_ALARMARG_ACK:
 			{
-				rt_kprintf("NET_MSGTYPE_ALARMARG_ACK\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_ALARMARG_ACK\n"));
 				break;
 			}
 			case NET_MSGTYPE_LINK_ACK:
 			{
-				rt_kprintf("NET_MSGTYPE_LINK_ACK\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_LINK_ACK\n"));
 				break;
 			}
 			case NET_MSGTYPE_KEYADD_ACK:
 			{
-				rt_kprintf("NET_MSGTYPE_KEYADD_ACK\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_KEYADD_ACK\n"));
 				break;
 			}
 			case NET_MSGTYPE_KEYDEL_ACK:
 			{
-				rt_kprintf("NET_MSGTYPE_KEYDEL_ACK\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_KEYDEL_ACK\n"));
 				break;
 			}
 			case NET_MSGTYPE_UPDATE:
 			{
 				//远程更新
-				rt_kprintf("NET_MSGTYPE_UPDATE\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_UPDATE\n"));
 				message_ASYN(NET_MSGTYPE_UPDATE_ACK);
 				break;
 			}
 			case NET_MSGTYPE_TIME_ACK:
 			{
-				rt_kprintf("NET_MSGTYPE_TIME_ACK\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_TIME_ACK\n"));
 				break;
 			}
 			case NET_MSGTYPE_SETK0:
 			{
 				//K0设置
-				rt_kprintf("NET_MSGTYPE_SETK0\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_SETK0\n"));
 				message_ASYN(NET_MSGTYPE_SETK0_ACK);
 				break;
 			}
 			case NET_MSGTYPE_HTTPUPDATE:
 			{
 				//http更新
-				rt_kprintf("NET_MSGTYPE_HTTPUPDATE\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_HTTPUPDATE\n"));
 				message_ASYN(NET_MSGTYPE_HTTPUPDAT_ACK);
 				break;
 			}
 			case NET_MSGTYPE_MOTOR:
 			{
 				//远程开门
-				rt_kprintf("NET_MSGTYPE_MOTOR\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_MOTOR\n"));
 				message_ASYN(NET_MSGTYPE_MOTOR_ACK);
 				Net_MsgRecv_handle(msg,RT_NULL);
 				break;
@@ -1566,35 +1564,35 @@ static void net_recv_message(net_msgmail_p mail)
 			case NET_MSGTYPE_DOORMODE:
 			{
 				//开门方式管理
-				rt_kprintf("NET_MSGTYPE_DOORMODE\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_DOORMODE\n"));
 				message_ASYN(NET_MSGTYPE_DOORMODE_ACK);
 				break;
 			}
 			case NET_MSGTYPE_CAMERA:
 			{
 				//远程拍照
-				rt_kprintf("NET_MSGTYPE_CAMERA\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_CAMERA\n"));
 				message_ASYN(NET_MSGTYPE_CAMERA_ACK);
 				break;
 			}
 			case NET_MSGTYPE_TERMINAL:
 			{
 				//模块查询
-				rt_kprintf("NET_MSGTYPE_TERMINAL\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_TERMINAL\n"));
 				message_ASYN(NET_MSGTYPE_TERMINAL_ACK);
 				break;
 			}
 			case NET_MSGTYPE_DOMAIN:
 			{
 				//域名设置
-				rt_kprintf("NET_MSGTYPE_DOMAIN\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_DOMAIN\n"));
 				message_ASYN(NET_MSGTYPE_DOMAIN_ACK);
 				break;
 			}
 			case NET_MSGTYPE_PHONEADD:
 			{	
 				//添加手机白名单
-				rt_kprintf("NET_MSGTYPE_PHONEADD\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_PHONEADD\n"));
 				//message_ASYN(NET_MSGTYPE_PHONEADD_ACK);
 				Net_MsgRecv_handle(msg,RT_NULL);
 				break;
@@ -1602,35 +1600,35 @@ static void net_recv_message(net_msgmail_p mail)
 			case NET_MSGTYPE_PHONEDELETE:
 			{	
 				//删除手机白名单
-				rt_kprintf("NET_MSGTYPE_PHONEDELETE\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_PHONEDELETE\n"));
 				message_ASYN(NET_MSGTYPE_PHONEDEL_ACK);
 				break;
 			}
 			case NET_MSGTYPE_ALARMARG:
 			{
 				//报警参数设置
-				rt_kprintf("NET_MSGTYPE_ALARMARG\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_ALARMARG\n"));
 				message_ASYN(NET_MSGTYPE_ALARMARG_ACK);
 				break;
 			}
 			case NET_MSGTYPE_LINK:
 			{
 				//终端休眠
-				rt_kprintf("NET_MSGTYPE_LINK\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_LINK\n"));
 				message_ASYN(NET_MSGTYPE_LINK_ACK);
 				break;
 			}
 			case NET_MSGTYPE_KEYADD:
 			{
 				//钥匙添加
-				rt_kprintf("NET_MSGTYPE_KEYADD\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_KEYADD\n"));
 				message_ASYN(NET_MSGTYPE_KEYADD_ACK);
 				break;
 			}
 			case NET_MSGTYPE_KEYDELETE:
 			{
 				//钥匙删除
-				rt_kprintf("NET_MSGTYPE_KEYDELETE\n");
+				RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NET_MSGTYPE_KEYDELETE\n"));
 				message_ASYN(NET_MSGTYPE_KEYDEL_ACK);
 			}
 			default:
@@ -1724,7 +1722,7 @@ static void net_wnd_timer_process(void)
 void netmsg_thread_entry(void *arg)
 {
 	rt_uint32_t  HearTime = 0;
-  rt_kprintf("message thread run\n");
+
   while(1)
   {
     rt_err_t result;
@@ -1733,8 +1731,8 @@ void netmsg_thread_entry(void *arg)
     result = rt_mq_recv(net_msgmail_mq,(void *)&msg_mail,sizeof(net_msgmail),1);
     if(result == RT_EOK)
     {
-      rt_kprintf("rev net_msgmail_mq \n");
-      rt_kprintf("send mode %d\n",msg_mail.sendmode);
+      RT_DEBUG_LOG(SHOW_MSG_THREAD,("MSG Thread recv net_msgmail mail\n"));
+
       net_send_message(&msg_mail,RT_NULL);//发送数据
       if(msg_mail.sendmode == SYNC_MODE)
       {
@@ -1753,7 +1751,7 @@ void netmsg_thread_entry(void *arg)
 			//如果已经登陆
 			if(net_event_process(1,NET_ENVET_ONLINE) == 0)
 			{
-				rt_kprintf("send heart\n");
+				RT_DEBUG_LOG(SHOW_SEND_MSG_INFO,("send heart\n"));
 				//message_ASYN(NET_MSGTYPE_HEART);
 			}
     }
@@ -1855,7 +1853,7 @@ int netmsg_thread_init(void)
 
   if(id == RT_NULL)
   {
-    rt_kprintf("msg thread init fail !\n");
+    rt_kprintf("%S Thread init fail !\n",id->name);
 
     return 1;
   }
