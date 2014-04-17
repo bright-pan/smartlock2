@@ -261,6 +261,36 @@ typedef union {
 
 rt_mq_t fprint_mq;
 
+//fprint output data API
+static fprint_call_back 	fprintf_ok_fun;
+static fprint_call_back 	fprintf_error_fun;
+static fprint_call_back 	fprintf_null_fun;
+
+void fp_ok_callback(fprint_call_back fun)
+{
+	if(fun != RT_NULL)
+	{
+		fprintf_ok_fun = fun;
+	}
+}
+
+void fp_error_callback(fprint_call_back fun)
+{
+	if(fun != RT_NULL)
+	{
+		fprintf_error_fun = fun;
+	}
+}
+
+void fp_null_callback(fprint_call_back fun)
+{
+	if(fun != RT_NULL)
+	{
+		fprintf_null_fun = fun;
+	}
+}
+
+
 static uint16_t
 check_sum(uint8_t *frame, uint16_t len)
 {
@@ -1043,7 +1073,13 @@ fprint_thread_entry(void *parameters)
 #if (defined RT_USING_FINSH)
                     rt_kprintf("fprint verify is exist, %d\n", frame_data.rep_search.template_id);
 #endif // RT_USING_FINSH
+										if(fprintf_ok_fun != RT_NULL)
+										{
+											FPINTF_USER key;
 
+											key.KeyPos = frame_data.rep_search.template_id - FPRINT_TEMPLATE_OFFSET;
+											fprintf_ok_fun((void *)&key);
+										}
                 }
 
 			} else {
@@ -1056,6 +1092,10 @@ fprint_thread_entry(void *parameters)
 #if (defined RT_USING_FINSH) && (defined FPRINT_DEBUG)
                 rt_kprintf("fprint verify is no detected\n");
 #endif // RT_USING_FINSH
+            if(fprintf_null_fun != RT_NULL)
+		        {
+		          fprintf_null_fun(RT_NULL);
+		        }
             }
             if (error == FPRINT_EERROR) {
 
@@ -1067,7 +1107,13 @@ fprint_thread_entry(void *parameters)
 #if (defined RT_USING_FINSH)
                     rt_kprintf("fprint verify is error\n");
 #endif // RT_USING_FINSH
+								if(fprintf_error_fun != RT_NULL)
+				        {
+				        	FPINTF_USER key;
 
+				        	key.KeyPos = 0xffff;
+				          fprintf_error_fun((void *)&key);
+				        }
                 }
             } else {
                 f_detect = 0;

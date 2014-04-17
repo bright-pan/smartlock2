@@ -53,10 +53,28 @@ typedef struct {
 
 extern rt_mq_t fprint_mq;
 
+typedef  rt_err_t (*fprint_call_back)(void *user);
+
+typedef struct
+{
+	rt_uint16_t KeyPos;
+}FPINTF_USER;
+
 void
 fprint_thread_entry(void *parameters);
 
 FPRINT_ERROR_TYPEDEF
 send_fp_mail(FPRINT_CMD_TYPEDEF cmd, uint16_t key_id, uint8_t flag);
+
+void 
+fp_ok_callback(fprint_call_back fun);
+
+void 
+fp_error_callback(fprint_call_back fun);
+
+void 
+fp_null_callback(fprint_call_back fun);
+
+
 
 #endif /* _FPRINT_H_ */
