@@ -39,22 +39,22 @@ DEVICE_CONFIG_TYPEDEF device_config = {
 		//key
 		{
 			{
-				0,
+				0, 0,
 				KEY_TYPE_KBOARD,
 				OPERATION_TYPE_FOREVER,
-				0, 0,
+				0, 0, 0,
 			},
 			{
-				0,
+				0,0,
 				KEY_TYPE_RFID,
 				OPERATION_TYPE_FOREVER,
-				0, 0,
+				0, 0, 0,
 			},
 			{
 				1,
 				KEY_TYPE_FPRINT,
 				OPERATION_TYPE_FOREVER,
-				0, 0,
+				0, 0, 0,
 			},
 		},
 		{

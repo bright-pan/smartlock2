@@ -62,8 +62,10 @@ typedef enum {
 typedef struct {
 
 	uint8_t flag;
+	uint8_t is_updated;
 	KEY_TYPE key_type;
 	OPERATION_TYPE operation_type;
+	uint32_t created_time;
 	uint32_t start_time;
 	uint32_t end_time;
 
