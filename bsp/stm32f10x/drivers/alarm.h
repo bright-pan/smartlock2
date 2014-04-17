@@ -97,6 +97,7 @@ typedef enum
 	ALARM_TYPE_FPRINT_INPUT,
 	ALARM_TYPE_FPRINT_KEY_ADD,
 	ALARM_TYPE_FPRINT_KEY_RIGHT,
+	ALARM_TYPE_FPRINT_KEY_ERROR,
 	ALARM_TYPE_RFID_KEY_ERROR,// rfid key detect error alarm type 14
 	ALARM_TYPE_RFID_KEY_SUCCESS,// rfid key detect success alarm type
 	ALARM_TYPE_RFID_KEY_PLUGIN,// rfid key detect plugin alarm type

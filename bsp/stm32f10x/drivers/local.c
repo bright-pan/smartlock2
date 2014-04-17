@@ -34,8 +34,8 @@ local_thread_entry(void *parameter)
 {
 	rt_err_t result;
 	LOCAL_MAIL_TYPEDEF local_mail_buf;
-	
-	send_fp_mail(FPRINT_CMD_INIT,0);
+
+	fprint_module_init();
 	while (1)
 	{
 		// receive mail
@@ -56,6 +56,7 @@ local_thread_entry(void *parameter)
 					}
 				case ALARM_TYPE_CAMERA_IRDASENSOR:
 				{
+					motor_rotate(RT_FALSE);
 					send_voice_mail(VOICE_TYPE_CCDIR);
 					break;
 				}

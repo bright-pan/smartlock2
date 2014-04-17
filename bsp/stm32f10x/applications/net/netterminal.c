@@ -12,7 +12,7 @@
   ******************************************************************************
   */
 #include "netterminal.h"
-
+#include "unlockprocess.h"
 
 /** 
 @brief modify SmartLock alarm arg
@@ -33,6 +33,7 @@ rt_err_t net_modify_alarm_arg(net_recvmsg_p mail)
 */
 rt_err_t net_motor_Control(net_recvmsg_p mail)
 {
+	motor_rotate((rt_bool_t)mail->data.motor.motor.operation);
 	return RT_EOK;
 }
 

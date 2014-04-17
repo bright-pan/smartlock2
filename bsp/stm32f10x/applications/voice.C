@@ -9,6 +9,8 @@
 #include <dfs.h>
 #include <dfs_posix.h>
 
+#define SHOW_PRINTF_INFO     0
+
 const char VoiceFileMap[][16] = 
 {
 	{"/0.WAV"},
@@ -113,7 +115,7 @@ static rt_err_t wav_data_send(rt_device_t dev, void *buffer)
 }
 void printf_wavdata(VoicePlayData *WavDat)
 {
-  rt_kprintf("bufsize = %d\n",WavDat->BufSize);
+  RT_DEBUG_LOG(SHOW_PRINTF_INFO,("bufsize = %d\n",WavDat->BufSize));
 }
 static rt_int8_t create_play_data(VoicePlayData *WavDat)
 { 
@@ -144,19 +146,19 @@ static void voice_file_process(const char *file)
   rt_device_t dev;
   VoicePlayData WavDat = {0,};
 
-	rt_kprintf("VoicePlayData      = %d\n",sizeof(VoicePlayData));
-	rt_kprintf("WAVE_FormatTypeDef = %d\n",sizeof(WAVE_FormatTypeDef));
+	RT_DEBUG_LOG(SHOW_PRINTF_INFO,("VoicePlayData      = %d\n",sizeof(VoicePlayData)));
+	RT_DEBUG_LOG(SHOW_PRINTF_INFO,("WAVE_FormatTypeDef = %d\n",sizeof(WAVE_FormatTypeDef)));
   //初始化缓冲区控制块
   if(create_play_data(&WavDat) < 0)
   {
-    rt_kprintf("create wav play data fail\n");
+    RT_DEBUG_LOG(SHOW_PRINTF_INFO,("create wav play data fail\n"));
     return ;
   }
   printf_wavdata(&WavDat);
   FileID = open(file,O_RDONLY,0x777);
   if(FileID < 0)
   {
-    rt_kprintf("can`t open %s file\n",file);
+    RT_DEBUG_LOG(SHOW_PRINTF_INFO,("can`t open %s file\n",file));
     delete_play_data(&WavDat);
     return ;
   }
@@ -180,7 +182,7 @@ static void voice_file_process(const char *file)
   }
   else
   {
-    rt_kprintf("wav read 1 buffer is fail\n");
+    RT_DEBUG_LOG(SHOW_PRINTF_INFO,("wav read 1 buffer is fail\n"));
   }
   
   while(1)
@@ -208,21 +210,25 @@ static void voice_file_process(const char *file)
       WavDat.ReadyBuf2 = 2;
     }
   }
-  /*
-  rt_kprintf("RIFFchunksize %c%c%c%c\n",wav.RIFF[0],wav.RIFF[1],wav.RIFF[2],wav.RIFF[3]);
-  rt_kprintf("FileSize      %d\n",wav.FileSize);
-  rt_kprintf("RIFFchunksize %c%c%c%c\n",wav.WAVE[0],wav.WAVE[1],wav.WAVE[2],wav.WAVE[3]);
-  rt_kprintf("RIFFchunksize %c%c%c%c\n",wav.fmt[0],wav.fmt[1],wav.fmt[2],wav.fmt[3]);
-  rt_kprintf("reserve       %s\n",wav.reserve);
-  rt_kprintf("FormatTag     %d\n",wav.FormatTag);
-  rt_kprintf("NumChannels   %d\n",wav.NumChannels);
-  rt_kprintf("SampleRate    %d\n",wav.SampleRate);
-  rt_kprintf("ByteRate      %d\n",wav.ByteRate);
-  rt_kprintf("BlockAlign    %d\n",wav.BlockAlign);
-  rt_kprintf("Bits          %d\n",wav.Bits);
-  rt_kprintf("DataFlag      %c%c%c%c\n",wav.DataFlag[0],wav.DataFlag[1],wav.DataFlag[2],wav.DataFlag[3]);
-  rt_kprintf("DataSize      %d\n",wav.DataSize);
-	*/
+  
+  RT_DEBUG_LOG(SHOW_PRINTF_INFO,("RIFFchunksize %c%c%c%c\n",
+  															 wav.RIFF[0],wav.RIFF[1],wav.RIFF[2],wav.RIFF[3]));
+  RT_DEBUG_LOG(SHOW_PRINTF_INFO,("FileSize      %d\n",wav.FileSize));
+  RT_DEBUG_LOG(SHOW_PRINTF_INFO,("RIFFchunksize %c%c%c%c\n",
+  															 wav.WAVE[0],wav.WAVE[1],wav.WAVE[2],wav.WAVE[3]));
+  RT_DEBUG_LOG(SHOW_PRINTF_INFO,("RIFFchunksize %c%c%c%c\n",
+  															 wav.fmt[0],wav.fmt[1],wav.fmt[2],wav.fmt[3]));
+  RT_DEBUG_LOG(SHOW_PRINTF_INFO,("reserve       %s\n",wav.reserve));
+  RT_DEBUG_LOG(SHOW_PRINTF_INFO,("FormatTag     %d\n",wav.FormatTag));
+  RT_DEBUG_LOG(SHOW_PRINTF_INFO,("NumChannels   %d\n",wav.NumChannels));
+  RT_DEBUG_LOG(SHOW_PRINTF_INFO,("SampleRate    %d\n",wav.SampleRate));
+  RT_DEBUG_LOG(SHOW_PRINTF_INFO,("ByteRate      %d\n",wav.ByteRate));
+  RT_DEBUG_LOG(SHOW_PRINTF_INFO,("BlockAlign    %d\n",wav.BlockAlign));
+  RT_DEBUG_LOG(SHOW_PRINTF_INFO,("Bits          %d\n",wav.Bits));
+  RT_DEBUG_LOG(SHOW_PRINTF_INFO,("DataFlag      %c%c%c%c\n",
+  						 wav.DataFlag[0],wav.DataFlag[1],wav.DataFlag[2],wav.DataFlag[3]));
+  RT_DEBUG_LOG(SHOW_PRINTF_INFO,("DataSize      %d\n",wav.DataSize));
+	
   //释放内存资源
   close(FileID);
   delete_play_data(&WavDat);
@@ -236,7 +242,7 @@ static voice_recv_mail_process(void)
   RecvResult = rt_mq_recv(voice_mq,&type,sizeof(VoiceType),RT_WAITING_FOREVER);
   if(RecvResult == RT_EOK)
   {
-  	rt_kprintf("recv voice mail !!!!!!!!!\n\n");
+  	RT_DEBUG_LOG(SHOW_PRINTF_INFO,("recv voice mail !!!!!!!!!\n\n"));
     voice_open_amp();
     voice_file_process(VoiceFileMap[type]);
     voice_close_amp();
@@ -269,7 +275,7 @@ int voice_thread_init(void)
   }
 	else
 	{
-		rt_kprintf("voice thread create fail\n");
+		rt_kprintf("%s thread create fail\n",thread_id->name);
 	}
   
 	return 0;
@@ -295,7 +301,7 @@ void send_voice_mail(VoiceType type)
 #ifdef RT_USING_FINSH
 #include <finsh.h>
 
-void voice(rt_uint8_t type)
+void voice(VoiceType type)
 {
   send_voice_mail(type);
 }

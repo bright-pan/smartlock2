@@ -16,6 +16,7 @@
 #include "gpio_exti.h"
 #include "local.h"
 #include "untils.h"
+#include "sms.h"
 
 rt_mq_t alarm_mq = RT_NULL;
 rt_device_t rtc_device;
@@ -38,6 +39,7 @@ const char *alarm_help_map[] = {
 	"ALARM_TYPE_FPRINT_INPUT",
 	"ALARM_TYPE_FPRINT_KEY_ADD",
 	"ALARM_TYPE_FPRINT_KEY_RIGHT",
+	"ALARM_TYPE_FPRINT_KEY_ERRO",
 	"ALARM_TYPE_RFID_KEY_ERROR",// rfid key detect error alarm type 14
 	"ALARM_TYPE_RFID_KEY_SUCCESS",// rfid key detect success alarm type
 	"ALARM_TYPE_RFID_KEY_PLUGIN",// rfid key detect plugin alarm type

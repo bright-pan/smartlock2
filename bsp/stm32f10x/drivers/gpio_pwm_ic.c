@@ -81,7 +81,7 @@ static void __gpio_timer_configure(gpio_device *gpio)
   }
   TIM_DeInit(user->timx);
   /* timer base configuration */
-  rt_kprintf("user->tim_base_reload_value = %d\n",user->tim_base_reload_value);
+  //rt_kprintf("user->tim_base_reload_value = %d\n",user->tim_base_reload_value);
   time_base_structure.TIM_Period = user->tim_base_reload_value;
   time_base_structure.TIM_Prescaler = (uint16_t) (SystemCoreClock / user->tim_base_clock) - 1;
   time_base_structure.TIM_ClockDivision = user->tim_base_clock_division;
