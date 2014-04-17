@@ -45,7 +45,10 @@ rt_uint16_t get_new_key_pos(void)
 	{
 		if(device_config.param.key[i].flag == 0)
 		{
-			return i;
+			if(device_config.param.key[i].key_type == 0)
+			{
+        return i;
+			}
 		}
 	}
 
@@ -98,10 +101,10 @@ void set_key_using_status(rt_uint16_t key,KEY_TYPE type,rt_uint8_t status)
 }
 
 /** 
-@brief  change key use status
-@param  key :key position
-@param	status :this position key new status
-@retval void 
+@brief  Check to see if the fingerprint has been registered
+@param  pos :key position
+@retval RT_TRUE :  have 
+@retval RT_FALSE : none
 */
 rt_bool_t check_fprint_pos_inof(rt_uint16_t pos)
 {
@@ -236,6 +239,13 @@ void sysreset()
   NVIC_SystemReset();
 }
 FINSH_FUNCTION_EXPORT(sysreset,sysreset() -- reset stm32);
+
+void syskey(void)
+{
+	rt_kprintf("new key pos :%d\n",get_new_key_pos());
+	rt_kprintf("cur key num :%d\n",get_fprint_key_num());
+}
+FINSH_FUNCTION_EXPORT(syskey,"show system key lib information");
 
 #endif
 
