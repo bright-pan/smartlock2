@@ -187,12 +187,12 @@ rt_bool_t motor_rotate(rt_bool_t direction)
 	
 	if(direction == RT_TRUE)
 	{
-		motor_pwm_operate(DEVICE_NAME_MOTOR1);
+		motor_pwm_operate(DEVICE_NAME_MOTOR2);
 		LockStatus = RT_TRUE;
 	}
 	else
 	{
-		motor_pwm_operate(DEVICE_NAME_MOTOR2);
+    motor_pwm_operate(DEVICE_NAME_MOTOR1);
 		LockStatus = RT_FALSE;
 	}
 
