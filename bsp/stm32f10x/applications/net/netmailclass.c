@@ -9,6 +9,7 @@
 #include "netkey.h"
 #include "netphone.h"
 #include "netterminal.h"
+#include "untils.h"
 
 #define MAIL_FAULT_RESEND     3
 #define MAIL_FAULT_OUTTIME    1000
@@ -65,9 +66,9 @@ void send_net_landed_mail(void)
   mail->col.byte = get_msg_new_order(RT_TRUE);
 
 	rt_memcpy((char *)UserData->id,
-	        (const char *)"\x12\x34\x56\x78\x9a\xbc\xde\xf0",8);
+	        (const char *)device_config.param.device_id,8);
 	rt_memcpy((char *)UserData->k1,
-	        (const char *)"\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa",8);
+	        (const char *)device_config.param.key0,8);
 	UserData->version = 0x01;
 
 	mail->user = UserData;
