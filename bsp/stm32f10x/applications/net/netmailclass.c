@@ -395,7 +395,7 @@ void msg_mail_phonedel_ack(net_recvmsg_p RMail,rt_uint8_t result)
 /*
 ¹¦ÄÜ:ÖÕ¶ËÌí¼ÓÔ¿³×
 */
-rt_uint8_t msg_mail_keyadd(net_keyadd_user *KeyData)
+rt_bool_t msg_mail_keyadd(net_keyadd_user *KeyData)
 {
 	rt_uint8_t result;
 	net_msgmail_p mail = RT_NULL;
@@ -430,7 +430,7 @@ rt_uint8_t msg_mail_keyadd(net_keyadd_user *KeyData)
 	//rt_free(UserData);
 	rt_free(mail);
 
-	return result;
+	return result?RT_TRUE:RT_FALSE;
 }
 
 /*

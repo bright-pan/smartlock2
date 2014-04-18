@@ -19,7 +19,7 @@ static void fprint_upload_process(GPRS_MAIL_TYPEDEF *mail)
 	FPrintData *key; 
 	net_keyadd_user *data;
 	rt_uint16_t keypos;
-	rt_uint8_t result;
+	rt_bool_t result;
 
 	RT_ASSERT(mail != RT_NULL);
 	key = (FPrintData *)mail->user;
@@ -32,20 +32,25 @@ static void fprint_upload_process(GPRS_MAIL_TYPEDEF *mail)
   rt_memcpy(data->data.col,&keypos,2);
 
 	data->data.type = 0;
-  net_uint32_copy_string(data->data.createt,mail->time);
+  net_uint32_copy_string(data->data.createt,device_config.param.key[key->KeyMapPos].created_time);
 	data->data.accredit = 1;
-	rt_memcpy(data->data.start_t,"\x00\x09\x00\xa",4);
-	rt_memcpy(data->data.stop_t, "\x00\x0a\x00\xa",4);
+
+  net_uint32_copy_string(data->data.start_t,device_config.param.key[key->KeyMapPos].start_time);
+  
+  net_uint32_copy_string(data->data.stop_t,device_config.param.key[key->KeyMapPos].end_time);
+
 	data->DataLen = KEY_FPRINT_CODE_SIZE;
+	
 	data->data.data = rt_calloc(1,data->DataLen);
+	
 	RT_ASSERT(data->data.data != RT_NULL);
 	
 	device_config_key_operate(keypos,data->data.data,0);
 	
 	result = msg_mail_keyadd(data);
-	if(result == 0)
+	if(result == RT_TRUE)
 	{
-		send_fp_mail(FPRINT_CMD_DELETE,keypos,1);
+		device_config.param.key[key->KeyMapPos].is_updated = 0;
 	}
 
 	rt_free(data);

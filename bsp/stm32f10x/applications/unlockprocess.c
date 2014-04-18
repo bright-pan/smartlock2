@@ -28,6 +28,7 @@
 #define RF_ERR_OUTTIME_T    6000
 #define FP_ERR_ALARM_CNT    3
 
+//fingerprint data transfer mail
 static rt_mq_t fprint_mq = RT_NULL;
 
 typedef struct 
@@ -40,7 +41,7 @@ static FPError fp_error = {RT_NULL,0};
 static volatile rt_bool_t LockStatus;
 
 /** 
-@brief  fprint ok API
+@brief  fingerprint ok API
 @param  *user  fprint data
 @retval RT_EOK Successful operation
 */
@@ -64,7 +65,7 @@ rt_err_t fprint_ok_cb(void *user)
 }
 
 /** 
-@brief  fprint error API
+@brief  fingerprint error API
 @param  *user  fprint data
 @retval RT_EOK Successful operation
 */
@@ -88,7 +89,7 @@ rt_err_t fprint_error_cb(void *user)
 }
 
 /** 
-@brief  fprint module init
+@brief  fingerprint module init
 @param  void
 @retval 0 :succeed 1:fail
 */
@@ -101,7 +102,6 @@ void fprint_module_init(void)
 		if(send_fp_mail(FPRINT_CMD_INIT,0,1) != FPRINT_EOK)
 		{
 		  RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("FPrint Init Fail !!!\n"));
-		  rt_thread_delay(100);
 		}
 		else
 		{
@@ -111,7 +111,7 @@ void fprint_module_init(void)
 }
 
 /** 
-@brief  fprint API init
+@brief  fingerprint API init
 @param  void
 @retval 0 :succeed 1:fail
 */
@@ -200,13 +200,20 @@ rt_bool_t motor_rotate(rt_bool_t direction)
 }
 
 /** 
-@brief  send fprint input data
+@brief  send fingerprint input data
 @param  void
 @retval void
 */
 void send_fprint_dat_mail(FPrintData *data)
 {
-	rt_mq_send(fprint_mq,(void *)data,sizeof(*data));
+	if(data != RT_NULL)
+	{
+    rt_mq_send(fprint_mq,(void *)data,sizeof(*data));
+	}
+	else
+	{
+		rt_kprintf("%s:%d Fingerprint Mail data is RT_NULL!!!\n", __FUNCTION__, __LINE__);
+	}
 }
 
 /** 

@@ -92,6 +92,8 @@ void set_key_using_status(rt_uint16_t key,KEY_TYPE type,rt_uint8_t status)
 	{
     device_config.param.key[key].flag = status;
     device_config.param.key[key].key_type = type;
+    device_config.param.key[key].created_time = status?sys_cur_date():0;
+   	device_config.param.key[key].is_updated = 1;
 	}
 	else
 	{
