@@ -13,6 +13,7 @@
 
 #include "gpio_exti.h"
 #include "gpio_pin.h"
+#include "keyboard.h"
 
 extern rt_device_t rtc_device;
 
@@ -249,7 +250,7 @@ int rt_hw_switch1_register(void)
 										 switch1_exti_timeout,
 										 RT_NULL,
 										 SWITCH1_INT_INTERVAL,
-										 RT_TIMER_FLAG_ONE_SHOT);
+										 RT_TIMER_FLAG_ONE_SHOT | RT_TIMER_FLAG_SOFT_TIMER);
     rt_device_set_rx_indicate((rt_device_t)gpio_device, gpio_user_data->gpio_exti_rx_indicate);
 
     return 0;
@@ -332,7 +333,7 @@ int rt_hw_switch2_register(void)
 										 switch2_exti_timeout,
 										 RT_NULL,
 										 SWITCH2_INT_INTERVAL,
-										 RT_TIMER_FLAG_ONE_SHOT);
+										 RT_TIMER_FLAG_ONE_SHOT | RT_TIMER_FLAG_SOFT_TIMER);
     rt_device_set_rx_indicate((rt_device_t)gpio_device, gpio_user_data->gpio_exti_rx_indicate);
 
     return 0;
@@ -386,7 +387,7 @@ rt_err_t switch3_rx_ind(rt_device_t dev, rt_size_t size)
 
 struct gpio_exti_user_data switch3_user_data =
 {
-	DEVICE_NAME_SWITCH2,
+	DEVICE_NAME_SWITCH3,
 	GPIOE,
 	GPIO_Pin_9,
 	GPIO_Mode_IPU,
@@ -415,7 +416,7 @@ int rt_hw_switch3_register(void)
 										 switch3_exti_timeout,
 										 RT_NULL,
 										 SWITCH3_INT_INTERVAL,
-										 RT_TIMER_FLAG_ONE_SHOT);
+										 RT_TIMER_FLAG_ONE_SHOT | RT_TIMER_FLAG_SOFT_TIMER);
     rt_device_set_rx_indicate((rt_device_t)gpio_device, gpio_user_data->gpio_exti_rx_indicate);
 
     return 0;
@@ -427,11 +428,8 @@ rt_timer_t key_exti_timer = RT_NULL;
 
 void key_exti_timeout(void *parameters)
 {
-
-	//time_t time;
-
 	rt_device_t device = RT_NULL;
-	uint8_t data;
+	uint8_t data = 0;
 
 	device = rt_device_find(DEVICE_NAME_KEY);
 	if (device != RT_NULL)
@@ -439,7 +437,7 @@ void key_exti_timeout(void *parameters)
 		rt_device_read(device,0,&data,0);
 		if (data == KEY_STATUS) // rfid key is plugin
 		{
-            rt_kprintf("it is key detect!\n");
+            kb_detect();
 			// produce mail
 			//rt_device_control(rtc_device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
 
@@ -498,7 +496,7 @@ int rt_hw_key_register(void)
 									 key_exti_timeout,
 									 RT_NULL,
 									 KEY_INT_INTERVAL,
-									 RT_TIMER_FLAG_ONE_SHOT);
+									 RT_TIMER_FLAG_ONE_SHOT | RT_TIMER_FLAG_SOFT_TIMER);
     rt_device_set_rx_indicate((rt_device_t)gpio_device, gpio_user_data->gpio_exti_rx_indicate);
 
     return 0;
@@ -1327,6 +1325,17 @@ void EXTI9_5_IRQHandler(void)
 		rt_hw_gpio_isr(&switch3_device);
 		EXTI_ClearITPendingBit(EXTI_Line9);
 	}
+	/* leave interrupt */
+	rt_interrupt_leave();
+}
+
+void EXTI15_10_IRQHandler(void)
+{
+	extern void rt_hw_gpio_isr(gpio_device *gpio);
+
+	/* enter interrupt */
+	rt_interrupt_enter();
+    // key board int
 	if(EXTI_GetITStatus(EXTI_Line15) == SET)
 	{
 		rt_hw_gpio_isr(&key_device);

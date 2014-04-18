@@ -57,9 +57,9 @@
 #define SWITCH3_STATUS 1
 #define SWITCH3_INT_INTERVAL 100
 
-#define KEY_EXTI_TRIGGER_MODE EXTI_Trigger_Rising
-#define KEY_STATUS 1
-#define KEY_INT_INTERVAL 100
+#define KEY_EXTI_TRIGGER_MODE EXTI_Trigger_Falling
+#define KEY_STATUS 0
+#define KEY_INT_INTERVAL 10
 
 //#define GSM_RING_EXTI_TRIGGER_MODE EXTI_Trigger_Rising
 //#define GSM_RING_DETECT_STATUS 1

@@ -3,232 +3,110 @@
  *
  * Description:
  *
- * Author:				Bright Pan
+ * Author:				BRIGHT PAN
  * Email:				bright_pan@yuettak.com
- * Date:				2014-04-03
+ * Date:				2014-04-18
  *
  * Modify:
  *
  * Copyright (C) 2014 Yuettak Co.,Ltd
  ********************************************************************/
 
-#include "i2c.h"
-#include "i2cbus.h"
+#include "keyboard.h"
+#include "kb_dev.h"
 #include "untils.h"
+#include "gpio_exti.h"
 
-#define DEVICE_NAME_KEY_BOARD "kboard"
+#define KB_DEBUG
 
-struct kb_device
+static rt_sem_t kb_sem;
+
+__STATIC_INLINE uint8_t bit_to_index(uint16_t data)
 {
-	struct rt_device               parent;      /**< RT-Thread device struct */
-	struct rt_i2c_device           i2c_device;  /**< I2C interface */
-	struct rt_mutex				   lock;		 /* key board mutex */
+    uint8_t result = 0;
+    while (data)
+    {
+        result++;
+        data >>= 1;
+    }
+    return result;
+}
+
+static const uint8_t char_remap[16] = {
+    '?','1', '2', '3', '4',
+    '5', '6', '7', '8',
+    '9', '0', '*', '#',
+    '?', '?', '?', 
 };
 
-#define KB_DEV(x) ((struct kb_device *)x)
-
-struct kb_device kb_device;
-
-void rt_kb_lock(struct kb_device* kb_dev)
+void
+kb_thread_entry(void *parameters)
 {
-	rt_mutex_take(&(kb_dev->lock),RT_WAITING_FOREVER);
-}
+	rt_err_t result;
+    rt_size_t size;
+    uint16_t data;
+    uint8_t c;
+    rt_device_t device = RT_NULL;
 
+    device_enable(DEVICE_NAME_KEY);
+    
+    device = device_enable(DEVICE_NAME_KEYBOARD);
+	while (1) {
 
-void rt_kb_unlock(struct kb_device* kb_dev)
-{
-	rt_mutex_release(&(kb_dev->lock));
-}
-
-
-static rt_err_t rt_kb_init(rt_device_t dev)
-{
-//	struct kb_device* kb = KB_DEV(dev);
-
-//	if(kb->i2c_device.bus->owner != &kb->i2c_device)
-//	{
-//		/*	current configuration spi bus */
-//		kb->i2c_device.bus->ops->configure(&kb->i2c_device,&kb->i2c_device.config);
-//	}
-
-	return RT_EOK;
-}
-
-static rt_err_t rt_kb_open(rt_device_t dev, rt_uint16_t oflag)
-{
-	return RT_EOK;
-}
-
-
-static rt_err_t rt_kb_close(rt_device_t dev)
-{
-	return RT_EOK;
-}
-
-
-static rt_size_t rt_kb_read(rt_device_t dev, rt_off_t pos, void* buffer, rt_size_t size)
-{
-	struct kb_device* kb = KB_DEV(dev);
-	struct rt_i2c_message message;
-    rt_uint8_t *buf = (rt_uint8_t *)buffer;
-    rt_err_t result = size;
-	rt_int32_t cnts;
-
-	RT_ASSERT(kb != RT_NULL);
-	if (size == 2) {
-
-		rt_kb_lock(kb);
-		rt_i2c_take_bus(&kb->i2c_device);
-		message.cmd = RT_I2C_CMD_START;
-		cnts = kb->i2c_device.bus->ops->xfer(&kb->i2c_device, &message);
-        if (cnts < 0) {
-            result = 0;
-            goto __exit;
-        }
-		message.cmd = RT_I2C_CMD_ADDR_R;
-		cnts = kb->i2c_device.bus->ops->xfer(&kb->i2c_device, &message);
-        if (cnts < 0) {
-            result = 0;
-            goto __exit;
-        }
-		/* While there is data to be read */
-		while(size)
-		{
-			if(size == 1)
-			{
-				/* Disable Acknowledgement */
-				message.cmd = RT_I2C_CMD_NACK;
-				cnts = kb->i2c_device.bus->ops->xfer(&kb->i2c_device, &message);
-                if (cnts < 0) {
-                    result = 0;
-                    goto __exit;
+		result = rt_sem_take(kb_sem, 10*RT_TICK_PER_SECOND);
+		if (result == RT_EOK) {
+            data = 0;
+            size = rt_device_read(device, 0, &data, 2);
+            if (size == 2) {
+				// filter keyboard input
+				if (data != 0x0100) {
+					data &= 0xfeff;
                 }
-				/* Send STOP Condition */
-				message.cmd = RT_I2C_CMD_STOP;
-				cnts = kb->i2c_device.bus->ops->xfer(&kb->i2c_device, &message);
-                if (cnts < 0) {
-                    result = 0;
-                    goto __exit;
-                }
+				__REV16(data);
+                c = char_remap[bit_to_index(data&0x0fff)];
+#if (defined RT_USING_FINSH) && (defined KB_DEBUG)
+                rt_kprintf("keyboard value is %04X, %c\n", data, c);
+                
+#endif
+			} else {
+				rt_kprintf("read key board failure!!!\n");
 			}
 
-			message.cmd = RT_I2C_CMD_READ;
-			message.buf = buf++;
-			cnts = kb->i2c_device.bus->ops->xfer(&kb->i2c_device, &message);
-            if (cnts < 0) {
-                result = 0;
-                goto __exit;
-            }
-            size--;
+		} else { //time out
+
 		}
-		/* Enable Acknowledgement to be ready for another reception */
-		message.cmd = RT_I2C_CMD_ACK;
-		cnts = kb->i2c_device.bus->ops->xfer(&kb->i2c_device, &message);
-        if (cnts < 0) {
-            result = 0;
-            goto __exit;
-        }
-		rt_i2c_release_bus(&kb->i2c_device);
-		rt_kb_unlock(kb);
-
-	} else {
-		result = 0;
 	}
-__exit:
-    message.cmd = RT_I2C_CMD_STOP;
-    cnts = kb->i2c_device.bus->ops->xfer(&kb->i2c_device, &message);
-    rt_i2c_release_bus(&kb->i2c_device);
-    rt_kb_unlock(kb);
-	return result;
 }
 
-
-static rt_size_t rt_kb_write(rt_device_t dev, rt_off_t pos,const void* buffer, rt_size_t size)
+void kb_detect(void)
 {
-	struct kb_device* kb = KB_DEV(dev);
-
-	RT_ASSERT(kb != RT_NULL);
-
-	rt_kb_lock(kb);
-
-//	spi_kb_buffer_write(kb->spi_device,buffer,pos*4096,size*4096);
-
-	rt_kb_unlock(kb);
-
-	return size;
-}
-
-
-static rt_err_t rt_kb_control(rt_device_t dev, rt_uint8_t cmd, void *args)
-{
-    struct kb_device* kb = (struct kb_device*)dev;
-
-    RT_ASSERT(kb != RT_NULL);
-
-    return RT_EOK;
+    rt_sem_release(kb_sem);
 }
 
 int
-rt_hw_kb_init(void)
+rt_keyboard_init(void)
 {
-    rt_err_t result;
-	struct rt_i2c_configuration i2c_configure = {
-	0x13,
-		RT_I2C_ADDR_7,
-		20000,
-	};
+	rt_thread_t kb_thread;
 
-	rt_memset(&kb_device, 0, sizeof(kb_device));
+	//initial keyboard sem
+    kb_sem = rt_sem_create("kboard", 0, RT_IPC_FLAG_FIFO);
+	if (kb_sem == RT_NULL)
+		return -1;
 
-	result = rt_mutex_init(&kb_device.lock, "m_kb", RT_IPC_FLAG_FIFO);
-	if (result != RT_EOK)
-	{
-#ifdef RT_USING_FINSH
-		rt_kprintf("mutex initial failure...\n");
-#endif // RT_USING_FINSH
-		return -RT_ENOSYS;
-	}
+	//key board thread
+	kb_thread = rt_thread_create("kboard", kb_thread_entry,
+									   RT_NULL, 512, 99, 5);
+	if (kb_thread == RT_NULL)
+		return -1;
 
-	rt_i2c_bus_attach_device(&kb_device.i2c_device, "i2c1_kb", STM32_I2C_BUS_0_NAME, RT_NULL);
-	kb_device.i2c_device.config = i2c_configure;
-
-	kb_device.parent.type = RT_Device_Class_Char;
-	kb_device.parent.init = rt_kb_init;
-	kb_device.parent.open = rt_kb_open;
-	kb_device.parent.close = rt_kb_close;
-	kb_device.parent.read = rt_kb_read;
-	kb_device.parent.write = rt_kb_write;
-	kb_device.parent.control = rt_kb_control;
-
-	kb_device.parent.user_data = RT_NULL;
-	kb_device.parent.rx_indicate = RT_NULL;
-	kb_device.parent.tx_complete = RT_NULL;
-
-	// initial i2c bus device
-	result = rt_device_register(&kb_device.parent, DEVICE_NAME_KEY_BOARD, RT_DEVICE_FLAG_RDWR);
-	return result;
+	rt_thread_startup(kb_thread);
+	return 0;
 }
 
-INIT_DEVICE_EXPORT(rt_hw_kb_init);
+INIT_APP_EXPORT(rt_keyboard_init);
 
 #ifdef RT_USING_FINSH
 #include <finsh.h>
 
-void kb_test(void)
-{
-	rt_device_t dev;
-	rt_size_t size;
-	rt_uint8_t temp[2] = {0,};
-	dev = device_enable(DEVICE_NAME_KEY_BOARD);
-	size = rt_device_read(dev, 0, temp, 2);
-	if (size == 2){
-		rt_kprintf("key board: %02X%02X\n", temp[0], temp[1]);
-	} else {
-		rt_kprintf("read key board failure!!!\n");
-        rt_kprintf("key board: %02X%02X\n", temp[0], temp[1]);	
-	}
-
-}
-
-FINSH_FUNCTION_EXPORT(kb_test, key board test.);
+FINSH_FUNCTION_EXPORT(kb_detect, kb_detect[]);
 #endif // RT_USING_FINSH
