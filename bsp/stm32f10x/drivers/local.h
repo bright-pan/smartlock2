@@ -22,8 +22,6 @@
 
 #include "alarm.h"
 
-#define LOCAL_MAIL_MAX_MSGS 20
-
 typedef struct
 {
 	time_t time;
@@ -35,7 +33,6 @@ typedef struct
 	rt_uint8_t key[4];
 }GPRS_MAIL_USER;
 
-extern rt_mq_t local_mq;
 /*
 extern GPRS_MAIL_USER gprs_mail_user;
 

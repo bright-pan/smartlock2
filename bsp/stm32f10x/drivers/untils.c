@@ -51,7 +51,7 @@ DEVICE_CONFIG_TYPEDEF device_config = {
 				0, 0, 0,
 			},
 			{
-				1,
+				0, 0,
 				KEY_TYPE_FPRINT,
 				OPERATION_TYPE_FOREVER,
 				0, 0, 0,
@@ -297,9 +297,10 @@ print_rcc(void)
 	rt_kprintf("\nPCLK1 = %ld", RCC_ClockFreq.PCLK1_Frequency);
 	rt_kprintf("\nPCLK2 = %ld", RCC_ClockFreq.PCLK2_Frequency);
 	rt_kprintf("\nADCCLK = %ld", RCC_ClockFreq.ADCCLK_Frequency);
+    rt_kprintf("\n******************* CLOCK *********************");
     return 0;
 }
 
 FINSH_FUNCTION_EXPORT(device_enable, device_enable[name]);
-INIT_APP_EXPORT(print_rcc);
+INIT_BOARD_EXPORT(print_rcc);
 #endif

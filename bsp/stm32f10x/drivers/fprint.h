@@ -21,8 +21,6 @@
 #include "untils.h"
 #include "board.h"
 
-#define FPRINT_MAIL_MAX_MSGS 10
-
 typedef enum {
 
 	FPRINT_CMD_INIT,
@@ -50,8 +48,6 @@ typedef struct {
 	FPRINT_ERROR_TYPEDEF *result;
 
 }FPRINT_MAIL_TYPEDEF;
-
-extern rt_mq_t fprint_mq;
 
 typedef  rt_err_t (*fprint_call_back)(void *user);
 

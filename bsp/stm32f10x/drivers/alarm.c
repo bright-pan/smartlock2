@@ -18,7 +18,9 @@
 #include "untils.h"
 #include "sms.h"
 
-rt_mq_t alarm_mq = RT_NULL;
+
+#define ALARM_MAIL_MAX_MSGS 20
+static rt_mq_t alarm_mq = RT_NULL;
 rt_device_t rtc_device;
 
 const char *alarm_help_map[] = {
@@ -75,8 +77,7 @@ void alarm_thread_entry(void *parameter)
 {
 	rt_err_t result;
 	ALARM_MAIL_TYPEDEF alarm_mail_buf;
-	LOCAL_MAIL_TYPEDEF local_mail_buf;
-    
+
     if (device_config_init(&device_config) < 0)
 	{
 #ifdef RT_USING_FINSH
@@ -93,7 +94,8 @@ void alarm_thread_entry(void *parameter)
 	}
 	// open device
 	device_enable(DEVICE_NAME_SWITCH1);
-
+	device_enable(DEVICE_NAME_SWITCH2);
+    	device_enable(DEVICE_NAME_SWITCH3);
 	while (1)
 	{
 		rt_memset(&alarm_mail_buf, 0, sizeof(alarm_mail_buf));
@@ -111,11 +113,11 @@ void alarm_thread_entry(void *parameter)
 			   }*/
 			if (alarm_mail_buf.alarm_process_flag & ALARM_PROCESS_FLAG_SMS)
 			{
-				   send_sms_mail(alarm_mail_buf.alarm_type,alarm_mail_buf.time);
+                send_sms_mail(alarm_mail_buf.alarm_type,alarm_mail_buf.time);
 			}
 			if (alarm_mail_buf.alarm_process_flag & ALARM_PROCESS_FLAG_GPRS)
 			{
-				
+
 			}
 			//if (alarm_mail_buf.alarm_process_flag & ALARM_PROCESS_FLAG_MMS)
 			{
@@ -128,12 +130,7 @@ void alarm_thread_entry(void *parameter)
 			if (alarm_mail_buf.alarm_process_flag & ALARM_PROCESS_FLAG_LOCAL)
 			{
 				//produce mail
-				local_mail_buf.time = alarm_mail_buf.time;
-				local_mail_buf.alarm_type = alarm_mail_buf.alarm_type;
-				if(local_mq != RT_NULL)
-				{
-					rt_mq_send(local_mq, &local_mail_buf, sizeof(LOCAL_MAIL_TYPEDEF));
-				}
+                send_local_mail(alarm_mail_buf.alarm_type,alarm_mail_buf.time);
 			}
 		}/* msg receive error */
 	}
@@ -169,3 +166,27 @@ void send_alarm_mail(ALARM_TYPEDEF alarm_type, ALARM_PROCESS_FLAG_TYPEDEF alarm_
 		rt_kprintf("alarm_mq is RT_NULL!!!\n");
 	}
 }
+
+int
+rt_alarm_init(void)
+{
+    rt_thread_t alarm_thread;
+
+	// initial alarm msg queue
+	alarm_mq = rt_mq_create("alarm", sizeof(ALARM_MAIL_TYPEDEF),
+							ALARM_MAIL_MAX_MSGS,
+							RT_IPC_FLAG_FIFO);
+    if (alarm_mq == RT_NULL)
+        return -1;
+    // init alarm thread
+    alarm_thread = rt_thread_create("alarm",
+									alarm_thread_entry, RT_NULL,
+									1024, 90, 5);
+    if (alarm_thread == RT_NULL)
+        return -1;
+
+    rt_thread_startup(alarm_thread);
+    return 0;
+}
+
+INIT_APP_EXPORT(rt_alarm_init);

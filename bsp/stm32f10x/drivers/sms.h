@@ -34,10 +34,6 @@ typedef struct {
 
 }SMS_MAIL_TYPEDEF;
 
-#define SMS_MAIL_MAX_MSGS 20
-
-extern rt_mq_t sms_mq;
-
 void
 send_sms_mail(ALARM_TYPEDEF alarm_type, time_t time);
 void

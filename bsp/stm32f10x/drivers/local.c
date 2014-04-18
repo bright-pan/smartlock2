@@ -26,8 +26,10 @@
 #endif
 #define BATTERY_CHECH_TIMER_BASE								6000				// 1min
 
+#define LOCAL_MAIL_MAX_MSGS 20
+
 // local msg queue for local alarm
-rt_mq_t local_mq;
+static rt_mq_t local_mq;
 
 void
 local_thread_entry(void *parameter)
@@ -110,3 +112,28 @@ send_local_mail(ALARM_TYPEDEF alarm_type, time_t time)
 		rt_kprintf("local_mq is RT_NULL!!!\n");
 	}
 }
+
+int
+rt_local_init(void)
+{
+	rt_thread_t local_thread;
+
+    // initial local msg queue
+	local_mq = rt_mq_create("local", sizeof(LOCAL_MAIL_TYPEDEF),
+							LOCAL_MAIL_MAX_MSGS, RT_IPC_FLAG_FIFO);
+    if (local_mq == RT_NULL)
+        return -1;
+
+    // init local thread
+    local_thread = rt_thread_create("local",
+									local_thread_entry, RT_NULL,
+									1024, 102, 5);
+    if (local_thread == RT_NULL)
+        return -1;
+
+    rt_thread_startup(local_thread);
+
+    return 0;
+}
+
+INIT_APP_EXPORT(rt_local_init);

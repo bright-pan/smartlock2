@@ -510,7 +510,37 @@ __free_process:
 	return CTW_STATUS_ERROR;
 }
 
+int
+rt_comm_init(void)
+{
+	rt_thread_t comm_rx_thread;
+	rt_thread_t comm_tx_thread;
+	// initial comm thread
+	comm_rx_thread = rt_thread_create("comm_rx",
+									  comm_rx_thread_entry, RT_NULL,
+									  2048,101,5);
+	if (comm_rx_thread == RT_NULL)
+        return -1;
 
+	rt_thread_startup(comm_rx_thread);
+
+	// initial comm msg queue
+	comm_tx_mq = rt_mq_create("comm_tx", sizeof(COMM_TMAIL_TYPEDEF),
+							  COMM_TMAIL_MAX_MSGS, RT_IPC_FLAG_FIFO);
+    if (comm_tx_mq == RT_NULL)
+        return -1;
+	// initial comm thread
+	comm_tx_thread = rt_thread_create("comm_tx",
+							   comm_tx_thread_entry, RT_NULL,
+							   512, 102, 5);
+	if (comm_tx_thread == RT_NULL)
+        return -1;
+
+    rt_thread_startup(comm_tx_thread);
+    return 0;
+}
+
+INIT_APP_EXPORT(rt_comm_init);
 
 #ifdef RT_USING_FINSH
 #include <finsh.h>

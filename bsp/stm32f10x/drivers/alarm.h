@@ -19,8 +19,6 @@
 #include <rtdevice.h>
 #include <time.h>
 
-#define ALARM_MAIL_MAX_MSGS 20
-
 #define ALARM_INTERVAL 10
 
 /* not sleep status */
@@ -158,7 +156,6 @@ typedef struct
 /*
  * alarm msg queue
  */
-extern rt_mq_t alarm_mq;
 extern const char *alarm_help_map[];
 extern rt_event_t mail_extra_event;
 /*

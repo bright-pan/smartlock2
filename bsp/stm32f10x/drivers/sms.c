@@ -18,6 +18,7 @@ char smsc[20] = {0,};
 char phone_call[20] = {0,};
 
 #define SMS_RESEND_NUM	3
+#define SMS_MAIL_MAX_MSGS 20
 
 /* PDU构造 */
 #define	INTERNATIONAL_ADDRESS_TYPE		0x91
@@ -120,7 +121,7 @@ typedef struct {
 
 }SMS_SEND_PDU_FRAME;
 
-rt_mq_t sms_mq = RT_NULL;
+static rt_mq_t sms_mq = RT_NULL;
 
 #ifdef USE_SMS_SEND_TYPE2
 rt_uint32_t sms_send_time[7] = {0,};
@@ -730,6 +731,31 @@ send_sms_mail(ALARM_TYPEDEF alarm_type, time_t time)
 		rt_kprintf("sms_mq is RT_NULL!!!\n");
 	}
 }
+
+int
+rt_sms_init(void)
+{
+	rt_thread_t sms_thread;
+
+	// initial sms msg queue
+	sms_mq = rt_mq_create("sms", sizeof(SMS_MAIL_TYPEDEF),
+						  SMS_MAIL_MAX_MSGS, RT_IPC_FLAG_FIFO);
+    if (sms_mq == RT_NULL)
+        return -1;
+	// initial sms thread
+	sms_thread = rt_thread_create("sms",
+								  sms_thread_entry, RT_NULL,
+								  1024, 103, 5);
+	if (sms_thread == RT_NULL)
+        return -1;
+
+    rt_thread_startup(sms_thread);
+
+    return 0;
+
+}
+
+INIT_APP_EXPORT(rt_sms_init);
 
 #ifdef RT_USING_FINSH
 #include <finsh.h>

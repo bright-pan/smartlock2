@@ -17,6 +17,8 @@
 #include "gpio_pwm.h"
 #include "comm.h"
 
+#define FPRINT_MAIL_MAX_MSGS 10
+
 //#define FPRINT_DEBUG
 #define DEVICE_NAME_FPRINT "uart2"
 #define FPRINT_TEMPLATE_OFFSET 1000 // 1 <= offset <= 2000
@@ -259,7 +261,7 @@ typedef union {
 
 }FPRINT_FRAME_DATA_TYPEDEF;
 
-rt_mq_t fprint_mq;
+static rt_mq_t fprint_mq;
 
 //fprint output data API
 static fprint_call_back 	fprintf_ok_fun;
@@ -1168,6 +1170,28 @@ send_fp_mail(FPRINT_CMD_TYPEDEF cmd, uint16_t key_id, uint8_t flag)
 	return error;
 }
 
+
+int rt_fprint_init(void)
+{
+	rt_thread_t fprint_thread;
+
+    //initial fprint msg queue
+	fprint_mq = rt_mq_create("fprint", sizeof(FPRINT_MAIL_TYPEDEF),
+							 FPRINT_MAIL_MAX_MSGS, RT_IPC_FLAG_FIFO);
+    if (fprint_mq == RT_NULL)
+        return -1;
+
+    // finger print thread
+	fprint_thread = rt_thread_create("fprint", fprint_thread_entry,
+									 RT_NULL, 1536, 100, 5);
+	if (fprint_thread == RT_NULL)
+        return -1;
+
+    rt_thread_startup(fprint_thread);
+    return 0;
+}
+
+INIT_APP_EXPORT(rt_fprint_init);
 
 #ifdef RT_USING_FINSH
 #include <finsh.h>

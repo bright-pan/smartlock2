@@ -157,12 +157,6 @@ void rt_init_thread_entry(void* parameter)
 int rt_application_init(void)
 {
     rt_thread_t init_thread;
-	rt_thread_t alarm_thread;
-	rt_thread_t local_thread;
-	rt_thread_t comm_rx_thread;
-	rt_thread_t comm_tx_thread;
-	rt_thread_t sms_thread;
-	rt_thread_t fprint_thread;
 
 #if (RT_THREAD_PRIORITY_MAX == 32)
     init_thread = rt_thread_create("init",
@@ -176,78 +170,6 @@ int rt_application_init(void)
 
 	if (init_thread != RT_NULL)
         rt_thread_startup(init_thread);
-
-	//initial fprint msg queue
-	fprint_mq = rt_mq_create("fprint", sizeof(FPRINT_MAIL_TYPEDEF),
-							 FPRINT_MAIL_MAX_MSGS, RT_IPC_FLAG_FIFO);
-
-	// finger print thread
-	fprint_thread = rt_thread_create("fprint", fprint_thread_entry,
-									 RT_NULL, 1536, 100, 5);
-	if (fprint_thread != RT_NULL)
-	{
-		rt_thread_startup(fprint_thread);
-	}
-
-	// initial alarm msg queue
-	alarm_mq = rt_mq_create("alarm", sizeof(ALARM_MAIL_TYPEDEF),
-							ALARM_MAIL_MAX_MSGS,
-							RT_IPC_FLAG_FIFO);
-
-    // init alarm thread
-    alarm_thread = rt_thread_create("alarm",
-									alarm_thread_entry, RT_NULL,
-									1024, 90, 5);
-    if (alarm_thread != RT_NULL)
-    {
-        rt_thread_startup(alarm_thread);
-    }
-
-	// initial local msg queue
-	local_mq = rt_mq_create("local", sizeof(LOCAL_MAIL_TYPEDEF),
-							LOCAL_MAIL_MAX_MSGS, RT_IPC_FLAG_FIFO);
-
-    // init local thread
-    local_thread = rt_thread_create("local",
-									local_thread_entry, RT_NULL,
-									1024, 102, 5);
-    if (local_thread != RT_NULL)
-    {
-        rt_thread_startup(local_thread);
-    }
-
-	// initial comm thread
-	comm_rx_thread = rt_thread_create("comm_rx",
-									  comm_rx_thread_entry, RT_NULL,
-									  2048,101,5);
-	if (comm_rx_thread != RT_NULL)
-	{
-		rt_thread_startup(comm_rx_thread);
-	}
-
-	// initial comm msg queue
-	comm_tx_mq = rt_mq_create("comm_tx", sizeof(COMM_TMAIL_TYPEDEF),
-							  COMM_TMAIL_MAX_MSGS, RT_IPC_FLAG_FIFO);
-	// initial comm thread
-	comm_tx_thread = rt_thread_create("comm_tx",
-							   comm_tx_thread_entry, RT_NULL,
-							   512, 102, 5);
-	if (comm_tx_thread != RT_NULL)
-	{
-		rt_thread_startup(comm_tx_thread);
-	}
-
-	// initial sms msg queue
-	sms_mq = rt_mq_create("sms", sizeof(SMS_MAIL_TYPEDEF),
-						  SMS_MAIL_MAX_MSGS, RT_IPC_FLAG_FIFO);
-	// initial sms thread
-	sms_thread = rt_thread_create("sms",
-								  sms_thread_entry, RT_NULL,
-								  1024, 103, 5);
-	if (sms_thread != RT_NULL)
-	{
-		rt_thread_startup(sms_thread);
-	}
 
 	return 0;
 }
