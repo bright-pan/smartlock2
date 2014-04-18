@@ -14,6 +14,7 @@
 
 #include "netkey.h"
 #include "untils.h"
+#include "unlockprocess.h"
 #include "apppubulic.h"
 
 #define SHOW_NETKEY_INFO      1
@@ -24,13 +25,13 @@
 @retval RT_EOK	 :add ok
 @retval RT_ERROR :add false
 */
-static rt_bool_t check_net_key_data(rt_uint16_t keypos,net_keyadd  *key)
+static rt_bool_t check_net_key_data(rt_uint16_t keypos,rt_uint8_t KeyType)
 {
 	if(keypos >= KEY_NUMBERS)
 	{
 		return RT_FALSE;
 	}
-	if(key->type > KEY_TYPE_KBOARD)
+	if(KeyType > KEY_TYPE_KBOARD)
 	{
 		return RT_FALSE;
 	}
@@ -57,7 +58,7 @@ rt_err_t net_key_add_process(net_recvmsg_p mail)
 
 	net_string_copy_uint16(&keypos,remote->col);
 	
-	if(check_net_key_data(keypos,remote) == RT_FALSE)
+	if(check_net_key_data(keypos,remote->type) == RT_FALSE)
 	{
 		RT_DEBUG_LOG(SHOW_NETKEY_INFO,("Remote key information error!!!\n"));
 		rt_free(key);
@@ -85,6 +86,8 @@ rt_err_t net_key_add_process(net_recvmsg_p mail)
 	  device_config.param.key[keypos] = *key;
 	  device_config_key_operate(keypos,remote->data,1);
 		device_config_file_operate(&device_config,1);   
+		fprint_module_init();
+		RT_DEBUG_LOG(SHOW_NETKEY_INFO,("Remote add keys to success!!!\n"));
 	}
 	else
 	{
@@ -103,5 +106,22 @@ rt_err_t net_key_add_process(net_recvmsg_p mail)
 */
 rt_err_t net_key_del_process(net_recvmsg_p mail)
 {
+	net_keydelete *remote;
+	rt_uint16_t keypos;
+	
+	remote = &(mail->data.keydel.key);
+
+	net_string_copy_uint16(&keypos,remote->pos);
+
+	if(keypos >= KEY_NUMBERS)
+	{
+		return RT_ERROR;
+	}
+	rt_memset(&device_config.param.key[keypos],0,sizeof(KEY_TYPEDEF));
+
+	fprint_module_init();
+	
+  RT_DEBUG_LOG(SHOW_NETKEY_INFO,("Remote delete keys to success!!!\n"));
+  
 	return RT_EOK;
 }
