@@ -86,6 +86,7 @@ device_config_key_operate(uint16_t key_id, uint8_t *buf, uint8_t flag)
 	uint16_t len;
 	KEY_TYPEDEF key;
 
+	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 	if (key_id < KEY_NUMBERS)
 		key = device_config.param.key[key_id];
 	else
@@ -114,10 +115,11 @@ device_config_key_operate(uint16_t key_id, uint8_t *buf, uint8_t flag)
 #if (defined RT_USING_FINSH) && (defined UNTILS_DEBUG)
 				rt_kprintf("the key type is invalid\n");
 #endif // MACRO
-				return -1;
+				result = -1;
+                goto __exit;
 			}
 	}
-	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+
 	fd = open(DEVICE_CONFIG_FILE_NAME, O_RDWR, 0x777);
 	if (fd >= 0)
 	{
@@ -131,6 +133,7 @@ device_config_key_operate(uint16_t key_id, uint8_t *buf, uint8_t flag)
 		}
 		close(fd);
 	}
+__exit:
 	rt_mutex_release(device_config.mutex);
 	return result;
 }
