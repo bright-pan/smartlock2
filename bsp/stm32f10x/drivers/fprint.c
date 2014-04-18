@@ -1170,8 +1170,8 @@ send_fp_mail(FPRINT_CMD_TYPEDEF cmd, uint16_t key_id, uint8_t flag)
 	return error;
 }
 
-
-int rt_fprint_init(void)
+int
+rt_fprint_init(void)
 {
 	rt_thread_t fprint_thread;
 

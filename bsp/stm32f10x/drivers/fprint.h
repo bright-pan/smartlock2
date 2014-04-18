@@ -62,13 +62,13 @@ fprint_thread_entry(void *parameters);
 FPRINT_ERROR_TYPEDEF
 send_fp_mail(FPRINT_CMD_TYPEDEF cmd, uint16_t key_id, uint8_t flag);
 
-void 
+void
 fp_ok_callback(fprint_call_back fun);
 
-void 
+void
 fp_error_callback(fprint_call_back fun);
 
-void 
+void
 fp_null_callback(fprint_call_back fun);
 
 
