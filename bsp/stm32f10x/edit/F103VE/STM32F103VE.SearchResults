@@ -1,9 +1,6 @@
----- NET_MSGTYPE_PHONEDEL 匹配 (8 in 0 文件) ----
-netprotocol.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):    case NET_MSGTYPE_PHONEDELETE:
-netprotocol.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):    case NET_MSGTYPE_PHONEDEL_ACK:
-netprotocol.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):      msg_data->cmd = NET_MSGTYPE_PHONEDEL_ACK;
-netprotocol.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):				RT_DEBUG_LOG(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_PHONEDEL_ACK message user is null\n"));
-netprotocol.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):			case NET_MSGTYPE_PHONEDEL_ACK:
-netprotocol.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):			case NET_MSGTYPE_PHONEDELETE:
-netprotocol.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_PHONEDELETE\n"));
-netprotocol.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):				message_ASYN(NET_MSGTYPE_PHONEDEL_ACK);
+---- #include "keyboard.h" 匹配 (2 in 2 文件) ----
+gpio_exti.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\drivers):#include "keyboard.h"
+keyboard.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\drivers):#include "keyboard.h"
+---- #include "keyboard.h" 搜索遇到错误 (1) ----
+以下1个文件不能被处理：
+E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\JLinkLog.txt : 文件打不开。

@@ -552,6 +552,31 @@
               <FileType>1</FileType>
               <FilePath>.\drivers\pt8211.c</FilePath>
             </File>
+            <File>
+              <FileName>keyboard.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\keyboard.c</FilePath>
+            </File>
+            <File>
+              <FileName>kb_dev.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\kb_dev.c</FilePath>
+            </File>
+            <File>
+              <FileName>i2cbus.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\i2cbus.c</FilePath>
+            </File>
+            <File>
+              <FileName>i2c_dev.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\i2c_dev.c</FilePath>
+            </File>
+            <File>
+              <FileName>i2c_core.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\i2c_core.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
