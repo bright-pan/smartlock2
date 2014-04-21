@@ -20,7 +20,7 @@ rt_bool_t motor_status(void);
 
 rt_bool_t motor_rotate(rt_bool_t direction);
 
-void fprint_module_init(void);
+rt_err_t fprint_module_init(void);
 
 #endif
 

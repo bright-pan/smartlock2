@@ -85,6 +85,7 @@ rt_err_t fprint_error_cb(void *user)
 	                  ALARM_PROCESS_FLAG_LOCAL,
 	                  0,0);
 	}
+	
 	return RT_EOK;
 }
 
@@ -93,7 +94,7 @@ rt_err_t fprint_error_cb(void *user)
 @param  void
 @retval 0 :succeed 1:fail
 */
-void fprint_module_init(void)
+rt_err_t fprint_module_init(void)
 {
 	rt_uint8_t run = 10;
 	
@@ -108,6 +109,8 @@ void fprint_module_init(void)
 			break;
 		}
 	}
+
+	return (run==0)?RT_ERROR:RT_EOK;
 }
 
 /** 
@@ -295,7 +298,7 @@ static void fprint_error_process(LOCAL_MAIL_TYPEDEF *mail)
 	{
 		fp_error.ErrCnt++;
 		RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("The number of input errors:%d\n",fp_error.ErrCnt));
-		if(fp_error.ErrCnt == FP_ERR_ALARM_CNT)
+		if(fp_error.ErrCnt > FP_ERR_ALARM_CNT)
 		{
 			//ÅÄÕÕ±¨¾¯
 			motor_rotate(RT_FALSE);
@@ -305,7 +308,7 @@ static void fprint_error_process(LOCAL_MAIL_TYPEDEF *mail)
 			
      	send_sms_mail(ALARM_TYPE_RFID_KEY_ERROR,mail->time);
      	send_gprs_mail(ALARM_TYPE_RFID_KEY_ERROR,mail->time,RT_NULL);
-     	
+     	fprint_error_clear();
 		}
 		else
 		{

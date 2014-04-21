@@ -82,8 +82,13 @@ rt_err_t net_key_add_process(net_recvmsg_p mail)
 	{
 	  key->flag = 1;
 	  key->is_updated = 1; 	
-
+	  
+		RT_ASSERT(device_config.mutex != RT_NULL);
+		rt_mutex_take(device_config.mutex,RT_WAITING_FOREVER);
+	
 	  device_config.param.key[keypos] = *key;
+
+	  rt_mutex_release(device_config.mutex);
 	  device_config_key_operate(keypos,remote->data,1);
 		device_config_file_operate(&device_config,1);   
 		fprint_module_init();
@@ -115,6 +120,7 @@ rt_err_t net_key_del_process(net_recvmsg_p mail)
 
 	if(keypos >= KEY_NUMBERS)
 	{
+    RT_DEBUG_LOG(SHOW_NETKEY_INFO,("Remote key positional fault!!!\n"));
 		return RT_ERROR;
 	}
 	rt_memset(&device_config.param.key[keypos],0,sizeof(KEY_TYPEDEF));
@@ -125,3 +131,4 @@ rt_err_t net_key_del_process(net_recvmsg_p mail)
   
 	return RT_EOK;
 }
+
