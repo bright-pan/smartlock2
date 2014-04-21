@@ -58,10 +58,10 @@ DEVICE_CONFIG_TYPEDEF device_config = {
 			},
 		},
 		{
-			//"iyuet.com",
-			//6800
-      "115.29.235.194",
-      6868
+			"iyuet.com",
+			6800
+      //"115.29.235.194",
+      //6868
 		},
 		//lock gate alarm time
 		30,
@@ -306,4 +306,40 @@ print_rcc(void)
 
 FINSH_FUNCTION_EXPORT(device_enable, device_enable[name]);
 INIT_BOARD_EXPORT(print_rcc);
+
+void sysconfig(void)
+{
+	rt_uint8_t i;
+
+	rt_kprintf("\n******************* System config file *********************\n");
+	for(i = 0 ; i < TELEPHONE_NUMBERS;i++)
+	{
+		if(device_config.param.telephone_address[i].flag == 0)
+		{
+			continue;
+		}
+    rt_kprintf("Telephone[%d]:%d:%s\n",i,
+                device_config.param.telephone_address[i].flag,
+                device_config.param.telephone_address[i].address);
+	}
+	
+	for(i = 0 ; i < TELEPHONE_NUMBERS;i++)
+	{
+		if(device_config.param.key[i].flag == 0)
+		{
+			continue;
+		}
+		rt_kprintf("Key[%d] update:%02x type:%d authority:%d start:%x end:%x\n",i,
+								device_config.param.key[i].is_updated,
+								device_config.param.key[i].key_type,
+								device_config.param.key[i].operation_type,
+								device_config.param.key[i].created_time,
+								device_config.param.key[i].start_time,
+								device_config.param.key[i].end_time);
+	}
+
+	rt_kprintf("******************* System config file *********************\n\n");
+}
+FINSH_FUNCTION_EXPORT(sysconfig,"show system config file");
+
 #endif
