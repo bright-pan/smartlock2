@@ -558,10 +558,10 @@ void msg_mail_resultack(net_recvmsg_p RMail,rt_uint8_t result)
 	RT_ASSERT(mail != RT_NULL);
 
 	//设置邮件
-	mail->type = RMail->cmd;	//邮件类型
+	mail->type = RMail->cmd+80;	//邮件类型
 	mail->resend = 0;     //重发技术
 	mail->outtime = 0;    //超时间
-	mail->sendmode = ASYN_MODE;	//同步
+	mail->sendmode = ASYN_MODE;	//异步
 	mail->col = RMail->col;
 
 	//设置数据域 在发送完成后销毁
@@ -881,7 +881,7 @@ void TestAddKey(void)
 	KeyData = rt_calloc(1,sizeof(net_keyadd_user));
 	RT_ASSERT(KeyData != RT_NULL);
 
-	col = 0xabcd;
+	col = 0;
 	col = net_rev16(col);
 	rt_memcpy(KeyData->data.col,&col,2);
 	KeyData->data.type = 0;

@@ -63,6 +63,8 @@ void netprotocol_thread_entry(void *arg)
     recv_data = rt_calloc(1,TCP_BUF_SIZE);
 
 		RT_ASSERT(recv_data != RT_NULL);
+
+		net_event_process(0,NET_ENVET_CONNECT);
     while(!gsm_is_link())
     {
     	GSM_Mail_p mail;
@@ -93,6 +95,7 @@ void netprotocol_thread_entry(void *arg)
 				rt_thread_delay(100);
     	}
     }
+    net_event_process(2,NET_ENVET_CONNECT);
     #if 0
     while(1)
     {

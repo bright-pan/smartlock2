@@ -318,9 +318,9 @@ typedef union
   net_filereq_ack   FileReqAck;   //文件请求应答
   net_filedata      filedata;   	//文件数据
   net_filedat_ack   FileDatAck;   //文件数据传送应答
-  //net_phoneadd      phoneadd;   	//添加电话
+  net_phoneadd      phoneadd;   	//添加电话
   net_phoneadd_ack  PhoneAddAck;  //
-  //net_phonedelete   phonedelete; 	//删除电话
+  net_phonedelete   phonedelete; 	//删除电话
   net_phonedel_ack  PhoneDelAck;  //删除电话号码应答
   net_alarmarg      alarmarg;  		//报警时间参数
   net_ack           AlarmArgAck;	//报警参数应答
@@ -520,7 +520,7 @@ typedef struct
 {
 	rt_uint16_t   length;  //包长度
 	net_lenmap    lenmap;  //长度映射域
-  message_type  cmd;     //命令
+  rt_uint8_t    cmd;     //命令
   net_col       col;     //序号
   rt_uint16_t   reserve; //用于结构体对齐
   net_recv_data data;    //各种报文的数据
@@ -565,6 +565,8 @@ typedef struct _NET_SENDWND_LIST_
 #define  NET_ENVET_RELINK              0X01<<0 //物理层重新链接
 #define  NET_ENVET_ONLINE              0X01<<1 //在线
 #define  NET_ENVET_FILERQ              0x01<<2 //文件请求
+#define  NET_ENVET_CONNECT             0X01<<3 //正在连接
+#define  NET_ENVET_FILE_ON             0X01<<4 //文件传送完成 
 #define  NET_EVENT_ALL                 0XFFFFFFFF
 
 
@@ -679,6 +681,8 @@ rt_uint8_t get_msg_new_order(rt_bool_t flag);//获得报文的新序号
 rt_bool_t net_mail_crc16_check(net_recvmsg_p Mail);
 
 rt_uint32_t net_get_wnd_user(net_recvmsg_p msg);
+
+void clear_wnd_cmd_all(rt_uint8_t cmd);
 
 #endif
 

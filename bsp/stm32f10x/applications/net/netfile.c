@@ -226,6 +226,7 @@ rt_uint8_t check_msgmail_succeed(net_msgmail_p mail[],rt_uint8_t size,rt_sem_t S
           else //发送失败
           {
           	RunResult = 0xff;
+          	
 					  return RunResult;
           }
           //释放资源 文件 信号量 邮件
@@ -428,7 +429,10 @@ void net_file_entry(void *arg)
 {
 	if(arg != RT_NULL)
 	{
+		//处理文件
 		send_file_process(1,1,(char *)arg);
+		//文件处理完之后 窗口中的数据必须清掉
+		clear_wnd_cmd_all(NET_MSGTYPE_FILEDATA);
 	}
 	rt_free(arg);
 	file_complete_callback();
@@ -832,7 +836,7 @@ void fileack(rt_uint8_t startcol,rt_uint8_t num)
 	rt_kprintf("Make File ACK Message:\n");
 	for(i = 0 ;i < num; i++)
 	{
-		extern void net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail);
+		extern rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail);
 		extern void net_pack_data(net_message *message,net_encrypt *data);
 		
 		msg.type = NET_MSGTYPE_FILEDATA_ACK;
