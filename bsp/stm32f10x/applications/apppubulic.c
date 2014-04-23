@@ -45,14 +45,57 @@ rt_uint16_t get_new_key_pos(void)
 	{
 		if(device_config.param.key[i].flag == 0)
 		{
-			if(device_config.param.key[i].key_type == 0)
-			{
         return i;
-			}
 		}
 	}
 
 	return KEY_NUMBERS;
+}
+
+/** 
+@brief  get fprint need update position
+@param  void
+@retval KEY_NUMBERS :none need update key 
+@retval 0 ~ < KEY_NUMBERS:need update key pos
+*/
+rt_uint16_t get_fprint_update_pos(void)
+{
+	rt_uint16_t i;
+
+	for(i = 0 ;i < KEY_NUMBERS;i++)
+	{
+		if(device_config.param.key[i].flag == 1)
+		{
+      if(device_config.param.key[i].is_updated == 1)
+      {
+      	rt_kprintf("update pos i = %d\n",i);
+        return i;
+      }
+		}
+	}
+
+	return KEY_NUMBERS;
+}
+
+/** 
+@brief  set fprint update flag 
+@param  void
+@retval KEY_NUMBERS :none need update key 
+@retval 0 ~ < KEY_NUMBERS:need update key pos
+*/
+void set_fprint_update_flag(rt_uint16_t pos,rt_uint8_t new_status)
+{
+  RT_ASSERT(device_config.mutex != RT_NULL);
+
+  if(device_config.param.key[pos].is_updated == 1)
+  {
+    rt_mutex_take(device_config.mutex,RT_WAITING_FOREVER);
+    
+		device_config.param.key[pos].is_updated = new_status;
+
+		rt_mutex_release(device_config.mutex);
+		device_config_file_operate(&device_config,1);
+  }
 }
 
 /** 
