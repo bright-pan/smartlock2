@@ -19,7 +19,7 @@
 rt_size_t find_package_end(rt_uint8_t *buffer,rt_size_t size)
 {
   rt_size_t i;
-  rt_uint8_t FlagStr[2];
+  rt_uint8_t FlagStr[2] = {0,0};
   rt_uint16_t length;
 
   net_string_copy_uint16(&length,buffer);

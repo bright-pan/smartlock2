@@ -344,7 +344,7 @@
             <PlainCh>0</PlainCh>
             <Ropi>0</Ropi>
             <Rwpi>0</Rwpi>
-            <wLevel>0</wLevel>
+            <wLevel>2</wLevel>
             <uThumb>0</uThumb>
             <uSurpInc>0</uSurpInc>
             <VariousControls>
@@ -531,11 +531,6 @@
               <FileName>fprint.c</FileName>
               <FileType>1</FileType>
               <FilePath>drivers\fprint.c</FilePath>
-            </File>
-            <File>
-              <FileName>sdcard.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>drivers\sdcard.c</FilePath>
             </File>
             <File>
               <FileName>rtc.c</FileName>

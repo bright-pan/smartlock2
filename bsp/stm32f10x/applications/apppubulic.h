@@ -19,11 +19,13 @@ rt_bool_t check_fprint_pos_inof(rt_uint16_t pos);
 
 void set_fprint_update_flag(rt_uint16_t pos,rt_uint8_t new_status);
 
-rt_uint16_t get_fprint_update_pos(void);
+rt_uint16_t get_key_update_pos(void);
 
 rt_uint32_t sys_cur_date(void);
 
 rt_uint8_t system_event_process(rt_uint8_t mode,rt_uint32_t type);
+
+KEY_TYPE get_key_type(rt_uint16_t pos);
 
 #endif
 

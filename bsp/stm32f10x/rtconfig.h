@@ -100,7 +100,7 @@
 #define RT_DFS_ELM_MAX_SECTOR_SIZE  4 * 1024
 
 /* the max number of mounted filesystem */
-#define DFS_FILESYSTEMS_MAX			2
+#define DFS_FILESYSTEMS_MAX			1
 /* the max number of opened files 		*/
 #define DFS_FD_MAX					4
 

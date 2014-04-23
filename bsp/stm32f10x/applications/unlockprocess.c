@@ -21,12 +21,12 @@
 #include "camera.h"
 #include "sms.h"
 
-#define MOTOR_PWM_COUNT     50
-
 #define PRINTF_FPRINT_INFO  1
-#define READ_FPRINT_COUNT   20
-#define RF_ERR_OUTTIME_T    6000
-#define FP_ERR_ALARM_CNT    3
+
+#define MOTOR_PWM_COUNT     50		//电机pwm个数
+#define READ_FPRINT_COUNT   20		//指纹采集次数
+#define RF_ERR_OUTTIME_T    6000  //指纹错误次数清零时间
+#define FP_ERR_ALARM_CNT    3     //最大允许指纹错误的次数
 
 //fingerprint data transfer mail
 static rt_mq_t fprint_mq = RT_NULL;
@@ -186,7 +186,7 @@ rt_bool_t motor_status(void)
 */
 rt_bool_t motor_rotate(rt_bool_t direction)
 {
-	rt_bool_t result;
+	rt_bool_t result = 0;
 	
 	if(direction == RT_TRUE)
 	{
@@ -217,35 +217,6 @@ void send_fprint_dat_mail(FPrintData *data)
 	{
 		rt_kprintf("%s:%d Fingerprint Mail data is RT_NULL!!!\n", __FUNCTION__, __LINE__);
 	}
-}
-
-/** 
-@brief  send add fingerprint data to server
-@param  void
-@retval void
-*/
-void fprint_gprs_send(rt_uint16_t  keypos)
-{
-	net_keyadd_user *KeyData;
-	rt_uint16_t     col;
-
-	KeyData = rt_calloc(1,sizeof(net_keyadd_user));
-	RT_ASSERT(KeyData != RT_NULL);
-
-	col = net_rev16(keypos);
-	rt_memcpy(KeyData->data.col,&col,2);
-	KeyData->data.type = 0;
-	rt_memcpy(KeyData->data.createt,"\x12\x34\x56\x78",4);
-	KeyData->data.accredit = 1;
-	rt_memcpy(KeyData->data.start_t,"\x00\x09\x00\xa",4);
-	rt_memcpy(KeyData->data.stop_t, "\x00\x0a\x00\xa",4);
-	KeyData->DataLen = 498;
-	KeyData->data.data = rt_calloc(1,KeyData->DataLen);
-	RT_ASSERT(KeyData->data.data != RT_NULL);
-
-	msg_mail_keyadd(KeyData);
-
-	rt_free(KeyData);
 }
 
 /** 
@@ -292,8 +263,9 @@ static void fprint_error_process(LOCAL_MAIL_TYPEDEF *mail)
 																		RT_NULL,
 																		RF_ERR_OUTTIME_T,
 																		RT_TIMER_FLAG_ONE_SHOT);
-	RT_ASSERT(fp_error.timer  != RT_NULL)
+		RT_ASSERT(fp_error.timer  != RT_NULL)
 	}
+	motor_rotate(RT_FALSE);
 	if (fp_error.timer ->parent.flag & RT_TIMER_FLAG_ACTIVATED)
 	{
 		fp_error.ErrCnt++;
@@ -301,7 +273,6 @@ static void fprint_error_process(LOCAL_MAIL_TYPEDEF *mail)
 		if(fp_error.ErrCnt > FP_ERR_ALARM_CNT)
 		{
 			//拍照报警
-			motor_rotate(RT_FALSE);
 			send_voice_mail(VOICE_TYPE_ALARM);
 			
 			camera_send_mail(ALARM_TYPE_RFID_KEY_ERROR,mail->time);
@@ -373,8 +344,8 @@ void fprint_key_add(LOCAL_MAIL_TYPEDEF *mail)
 {
 	rt_err_t result;
 	FPrintData data;
-  FPRINT_ERROR_TYPEDEF fprint_result;
-  rt_uint16_t fprintnum;
+  rt_uint16_t fprintnum = 0;
+  FPRINT_ERROR_TYPEDEF fprint_result = FPRINT_EOK;
 
 	system_event_process(0,SYS_FPRINT_REGISTER);//entry register
 	send_voice_mail(VOICE_TYPE_MANAGE1KEY1);
@@ -388,20 +359,24 @@ void fprint_key_add(LOCAL_MAIL_TYPEDEF *mail)
 		RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("Please enter the administrator fingerprints:\n"));
 		while(--Run)
 		{
-      fprint_result = send_fp_mail(FPRINT_CMD_ENROLL,fprintnum,1);
+			rt_uint16_t keypos;
+			
+			keypos = get_new_key_pos();
+      fprint_result = send_fp_mail(FPRINT_CMD_ENROLL,keypos,1);
       if(fprint_result == FPRINT_EOK)
       {
 				break;
       }
       else
       {
-        rt_thread_delay(2);
+      	result = rt_mq_recv(fprint_mq,(void*)&data,sizeof(FPrintData),10);
       }
 		}
     if(fprint_result != FPRINT_EOK)
     {
     	//注册失败
     	RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("The fingerprint registration results:%d\n",fprint_result));
+    	
     	if(Run == 0)
 	  	{
 	    	send_voice_mail(VOICE_TYPE_REGISTER_FIAL);
@@ -412,7 +387,7 @@ void fprint_key_add(LOCAL_MAIL_TYPEDEF *mail)
 	  	}
 	  	//对文件做处理
 			//send_fp_mail(FPRINT_CMD_DELETE,fprintnum,1);
-			fprint_module_init();
+			//fprint_module_init();
 			
 			return ;
     }
@@ -447,7 +422,7 @@ void fprint_key_add(LOCAL_MAIL_TYPEDEF *mail)
           fprint_result = send_fp_mail(FPRINT_CMD_ENROLL,keypos,1);
 					if(fprint_result == FPRINT_EOK)
 					{
-						result = rt_mq_recv(fprint_mq,(void*)&data,sizeof(FPrintData),100);
+						result = rt_mq_recv(fprint_mq,(void*)&data,sizeof(FPrintData),50);
 						if(result == RT_EOK)
 						{
 							if(check_fprint_pos_inof(data.KeyMapPos) == RT_TRUE)
@@ -462,18 +437,17 @@ void fprint_key_add(LOCAL_MAIL_TYPEDEF *mail)
 					}
 					else
 					{
-						rt_thread_delay(2);
+						result = rt_mq_recv(fprint_mq,(void*)&data,sizeof(FPrintData),2);
 					}
 	      }
 					
-	      if(fprint_result == FPRINT_EOK)
+	      if((fprint_result == FPRINT_EOK) && (data.KeyMapPos < KEY_NUMBERS))
 	      {
 	        FPrintData *key;
 	      
 	        key = rt_calloc(1,sizeof(*key));
 	        RT_ASSERT(key != RT_NULL);
 	        key->KeyMapPos = data.KeyMapPos;
-
 	        set_key_using_status(key->KeyMapPos,KEY_TYPE_FPRINT,1);
 	        send_voice_mail(VOICE_TYPE_REGISTER_OK);
 	        send_gprs_mail(mail->alarm_type,mail->time,(void *)key);
@@ -497,7 +471,7 @@ void fprint_key_add(LOCAL_MAIL_TYPEDEF *mail)
 		{
 			//如果是第一个录入的指纹
 			fprintnum  = get_fprint_key_num();
-			if(fprintnum == 0)
+			if((fprintnum == 0) && ((data.KeyMapPos < KEY_NUMBERS)))
 			{
 				//第一个指纹录入
 				FPrintData *key;
@@ -522,7 +496,7 @@ void fprint_key_add(LOCAL_MAIL_TYPEDEF *mail)
 	{
    	send_voice_mail(VOICE_TYPE_KEY1_OUTIME);
 	}
-  fprint_module_init();
+  //fprint_module_init();
 	system_event_process(2,SYS_FPRINT_REGISTER);
 }
 

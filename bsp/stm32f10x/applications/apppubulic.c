@@ -4,8 +4,10 @@
 #include "untils.h"
 #include "voice.h"
 
-/*
-@brief 求平均数
+/** 
+@brief  get new add key pos
+@param  void
+@retval spoce key pos
 */
 rt_uint16_t get_average_value(rt_uint16_t dat[],rt_uint8_t num)
 {
@@ -53,24 +55,43 @@ rt_uint16_t get_new_key_pos(void)
 }
 
 /** 
+@brief  get this positional key type
+@param  pos: positional
+@retval KEY_TYPE_FPRINT
+@retval KEY_TYPE_RFID
+@retval KEY_TYPE_KBOARD
+@retval KEY_TYPE_ERROR
+*/
+KEY_TYPE get_key_type(rt_uint16_t pos)
+{
+	if(pos < KEY_NUMBERS)
+	{
+		return device_config.param.key[pos].key_type;
+	}
+	
+	rt_kprintf("Key Position serious error!!!\n");
+	return KEY_TYPE_ERROR;
+}
+
+/** 
 @brief  get fprint need update position
 @param  void
 @retval KEY_NUMBERS :none need update key 
 @retval 0 ~ < KEY_NUMBERS:need update key pos
 */
-rt_uint16_t get_fprint_update_pos(void)
+rt_uint16_t get_key_update_pos(void)
 {
 	rt_uint16_t i;
 
 	for(i = 0 ;i < KEY_NUMBERS;i++)
 	{
 		if(device_config.param.key[i].flag == 1)
-		{
-      if(device_config.param.key[i].is_updated == 1)
-      {
-      	rt_kprintf("update pos i = %d\n",i);
-        return i;
-      }
+		{			
+			if(device_config.param.key[i].is_updated == 1)
+			{
+				rt_kprintf("update pos i = %d\n",i);
+				return i;
+			}
 		}
 	}
 
