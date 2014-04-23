@@ -1,8 +1,24 @@
+/**
+  ******************************************************************************
+  * @file    apppublic.c
+  * @author  wangzw <wangzw@yuettak.com>
+  * @version v0.1
+  * @date    2014-4-21
+  * @brief   This document provides some common functions.This All the function 
+  *					 of city opening to the outside world
+  ******************************************************************************
+  * @attention
+  *
+	*
+  ******************************************************************************
+  */
 #include "apppubulic.h"
 #include "alarm.h"
 #include "local.h"
 #include "untils.h"
 #include "voice.h"
+
+#define SHOW_APP_DEBUG_INFO  	1
 
 /** 
 @brief  get new add key pos
@@ -35,6 +51,24 @@ rt_uint16_t get_average_value(rt_uint16_t dat[],rt_uint8_t num)
 }
 
 /** 
+@brief  operation device_config mutex
+@param  way: RT_TRUE take;  RT_FALSE release;
+@retval void
+*/
+void config_file_mutex_op(rt_bool_t way)
+{
+	RT_ASSERT(device_config.mutex != RT_NULL);
+	if(way == RT_TRUE)
+	{
+    rt_mutex_take(device_config.mutex,RT_WAITING_FOREVER);
+	}
+	else if(way == RT_FALSE)
+	{
+		rt_mutex_release(device_config.mutex);
+	}
+}
+
+/** 
 @brief  get new add key pos
 @param  void
 @retval spoce key pos
@@ -43,13 +77,16 @@ rt_uint16_t get_new_key_pos(void)
 {
 	rt_uint16_t i;
 
+	config_file_mutex_op(RT_TRUE);
 	for(i = 0 ;i < KEY_NUMBERS;i++)
 	{
 		if(device_config.param.key[i].flag == 0)
 		{
+				config_file_mutex_op(RT_FALSE);
         return i;
 		}
 	}
+  config_file_mutex_op(RT_FALSE);
 
 	return KEY_NUMBERS;
 }
@@ -64,12 +101,20 @@ rt_uint16_t get_new_key_pos(void)
 */
 KEY_TYPE get_key_type(rt_uint16_t pos)
 {
+	KEY_TYPE type;
+	
 	if(pos < KEY_NUMBERS)
 	{
-		return device_config.param.key[pos].key_type;
+		config_file_mutex_op(RT_TRUE);
+		
+   	type = device_config.param.key[pos].key_type;
+
+		config_file_mutex_op(RT_FALSE);
+		
+		return type;
 	}
 	
-	rt_kprintf("Key Position serious error!!!\n");
+	RT_DEBUG_LOG(SHOW_APP_DEBUG_INFO,("Key Position serious error!!!\n"));
 	return KEY_TYPE_ERROR;
 }
 
@@ -83,38 +128,41 @@ rt_uint16_t get_key_update_pos(void)
 {
 	rt_uint16_t i;
 
+	config_file_mutex_op(RT_TRUE);
 	for(i = 0 ;i < KEY_NUMBERS;i++)
 	{
 		if(device_config.param.key[i].flag == 1)
 		{			
 			if(device_config.param.key[i].is_updated == 1)
 			{
-				rt_kprintf("update pos i = %d\n",i);
+				RT_DEBUG_LOG(SHOW_APP_DEBUG_INFO,("update pos : %d\n",i));
+				config_file_mutex_op(RT_FALSE);
+				
 				return i;
 			}
 		}
 	}
+  config_file_mutex_op(RT_FALSE);
 
 	return KEY_NUMBERS;
 }
 
 /** 
-@brief  set fprint update flag 
-@param  void
-@retval KEY_NUMBERS :none need update key 
-@retval 0 ~ < KEY_NUMBERS:need update key pos
+@brief  set key update flag 
+@param  pos: key of position
+@param  new_status: new status
+@retval void
 */
-void set_fprint_update_flag(rt_uint16_t pos,rt_uint8_t new_status)
+void set_key_update_flag(rt_uint16_t pos,rt_uint8_t new_status)
 {
-  RT_ASSERT(device_config.mutex != RT_NULL);
-
   if(device_config.param.key[pos].is_updated == 1)
   {
-    rt_mutex_take(device_config.mutex,RT_WAITING_FOREVER);
+    config_file_mutex_op(RT_TRUE);
     
 		device_config.param.key[pos].is_updated = new_status;
 
-		rt_mutex_release(device_config.mutex);
+		config_file_mutex_op(RT_FALSE);
+		
 		device_config_file_operate(&device_config,1);
   }
 }
@@ -128,18 +176,20 @@ rt_uint16_t get_fprint_key_num(void)
 {
   rt_uint16_t i;
   rt_uint16_t num = 0;
-  
+
+  config_file_mutex_op(RT_TRUE);
 	for(i = 0 ;i < KEY_NUMBERS;i++)
 	{
 	  if(device_config.param.key[i].flag == 1)
 	  {
 	  	if(device_config.param.key[i].key_type == KEY_TYPE_FPRINT)
 	  	{
-	  		rt_kprintf("this i = %d\n",i);
+	  		RT_DEBUG_LOG(SHOW_APP_DEBUG_INFO,("Have Key: %d\n",i));
         num++;
 	  	}
 	  }
 	}
+  config_file_mutex_op(RT_FALSE);
 
 	return num;
 }
@@ -154,17 +204,18 @@ void set_key_using_status(rt_uint16_t key,KEY_TYPE type,rt_uint8_t status)
 {
 	if(key < KEY_NUMBERS)
 	{
-		RT_ASSERT(device_config.mutex != RT_NULL);
-		rt_mutex_take(device_config.mutex,RT_WAITING_FOREVER);
+		config_file_mutex_op(RT_TRUE);
+		
     device_config.param.key[key].flag = status;
     device_config.param.key[key].key_type = type;
     device_config.param.key[key].created_time = status?sys_cur_date():0;
    	device_config.param.key[key].is_updated = 1;
-		rt_mutex_release(device_config.mutex);
+   	
+		config_file_mutex_op(RT_FALSE);
 	}
 	else
 	{
-		rt_kprintf("Key Pos Can,t > KEY_NUMBERS!!!\n");
+		RT_DEBUG_LOG(SHOW_APP_DEBUG_INFO,("Key Pos Can,t > KEY_NUMBERS!!!\n"));
 	}
 	device_config_file_operate(&device_config,1);
 }
@@ -178,7 +229,8 @@ void set_key_using_status(rt_uint16_t key,KEY_TYPE type,rt_uint8_t status)
 rt_bool_t check_fprint_pos_inof(rt_uint16_t pos)
 {
   rt_uint16_t i;
-  
+
+  config_file_mutex_op(RT_TRUE);
 	for(i = 0 ;i < KEY_NUMBERS;i++)
 	{
 	  if(device_config.param.key[i].flag == 1)
@@ -187,13 +239,16 @@ rt_bool_t check_fprint_pos_inof(rt_uint16_t pos)
 	  	{
         if(i == pos)
         {
+        	config_file_mutex_op(RT_FALSE);
+        	
 					return RT_TRUE;
         }
 	  	}
 	  }
 	}
-
-	rt_kprintf("Not find fprint\n\n");
+	config_file_mutex_op(RT_FALSE);
+	RT_DEBUG_LOG(SHOW_APP_DEBUG_INFO,("Key lib none find fprint\n\n"));
+	
 	return RT_FALSE;	
 }
 
@@ -295,10 +350,19 @@ rt_uint32_t sys_cur_date(void)
       rt_device_control(device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
   }
 
-	rt_kprintf("Current System Time: 0x%X\n",time);
+	RT_DEBUG_LOG(SHOW_APP_DEBUG_INFO,("Current System Time: 0x%X\n",time));
   return time;
 }
 RTM_EXPORT(sys_cur_date);
+
+
+
+
+
+
+
+
+
 
 #ifdef RT_USING_FINSH
 #include <finsh.h>
