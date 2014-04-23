@@ -42,7 +42,7 @@ typedef enum {
 	KEY_TYPE_FPRINT = 0,
 	KEY_TYPE_RFID = 1,
 	KEY_TYPE_KBOARD = 2,
-
+	KEY_TYPE_ERROR = 0XFF,
 }KEY_TYPE;
 
 typedef enum {
@@ -118,7 +118,7 @@ device_config_init(DEVICE_CONFIG_TYPEDEF *config);
 int
 device_config_file_operate(DEVICE_CONFIG_TYPEDEF *config, uint8_t flag);
 int
-device_config_key_operate(uint16_t key_id, uint8_t *buf, uint8_t flag);
+device_config_key_operate(uint16_t key_id, KEY_TYPE key_type, uint8_t *buf, uint8_t flag);
 
 void
 print_hex(uint8_t *buf, uint16_t length);

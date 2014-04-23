@@ -79,21 +79,23 @@ DEVICE_CONFIG_TYPEDEF device_config = {
 };
 
 int
-device_config_key_operate(uint16_t key_id, uint8_t *buf, uint8_t flag)
+device_config_key_operate(uint16_t key_id, KEY_TYPE key_type, uint8_t *buf, uint8_t flag)
 {
 	int fd;
 	int result = 0;
 	uint16_t len;
-	KEY_TYPEDEF key;
 
 	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
-	if (key_id < KEY_NUMBERS)
-		key = device_config.param.key[key_id];
-	else
+	if (key_id >= KEY_NUMBERS)
+	{
 #if (defined RT_USING_FINSH) && (defined UNTILS_DEBUG)
 		rt_kprintf("the key id is invalid\n");
 #endif // MACRO
-	switch (key.key_type)
+  	result = -1;
+    goto __exit;
+	}
+
+	switch (key_type)
 	{
 		case KEY_TYPE_FPRINT:
 			{
@@ -311,7 +313,7 @@ void sysconfig(void)
 {
 	rt_uint8_t i;
 
-	rt_kprintf("\n******************* System config file *********************\n");
+	rt_kprintf("\n******************************* System config file ********************************\n");
 	for(i = 0 ; i < TELEPHONE_NUMBERS;i++)
 	{
 		if(device_config.param.telephone_address[i].flag == 0)
@@ -329,7 +331,7 @@ void sysconfig(void)
 		{
 			continue;
 		}
-		rt_kprintf("Key[%d] update:%02x type:%d authority:%d start:%x end:%x\n",i,
+		rt_kprintf("Key[%d] update:%02x type:%d authority:%d create:%08x start:%08x end:%08x\n",i,
 								device_config.param.key[i].is_updated,
 								device_config.param.key[i].key_type,
 								device_config.param.key[i].operation_type,
@@ -338,7 +340,7 @@ void sysconfig(void)
 								device_config.param.key[i].end_time);
 	}
 
-	rt_kprintf("******************* System config file *********************\n\n");
+	rt_kprintf("******************************* System config file ********************************\n\n");
 }
 FINSH_FUNCTION_EXPORT(sysconfig,"show system config file");
 

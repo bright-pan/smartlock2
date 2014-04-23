@@ -880,7 +880,7 @@ fprint_init(FPRINT_FRAME_DATA_TYPEDEF *frame_data)
 				return error;
 			rt_memset(frame_data, 0, sizeof(*frame_data));
 			frame_data->dreq_down_char.ram_buf_id = 0;
-			device_config_key_operate(i, frame_data->dreq_down_char.template, 0);
+			device_config_key_operate(i, KEY_TYPE_FPRINT, frame_data->dreq_down_char.template, 0);
 			error = fprint_frame_process(FPRINT_FRAME_CMD_DOWN_CHAR, FPRINT_FRAME_PREFIX_DATA_REQUEST, 0, 0, frame_data);
 			if (error != FPRINT_EOK)
 				return error;
@@ -1027,7 +1027,7 @@ fprint_thread_entry(void *parameters)
 						error = fprint_enroll(fprint_mail.key_id + FPRINT_TEMPLATE_OFFSET, &frame_data);
 						if (error != FPRINT_EOK)
 							break;
-						if (device_config_key_operate(fprint_mail.key_id, frame_data.drep_up_char.template, 1) < 0) {
+						if (device_config_key_operate(fprint_mail.key_id, KEY_TYPE_FPRINT, frame_data.drep_up_char.template, 1) < 0) {
 #if (defined RT_USING_FINSH)
 							rt_kprintf("the finger print key save failure!\n");
 #endif // RT_USING_FINSH
