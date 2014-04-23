@@ -553,8 +553,20 @@ void camera_thread_entry(void *arg)
 	}
 }
 
-static void pic_file_send_complete(void)
+static void pic_file_send_complete(void *user)
 {
+	rt_int8_t SendResult;
+
+	SendResult = *(rt_int8_t *)user;
+
+	if(SendResult == -1)
+	{
+		rt_kprintf("Picture sent failure\n");
+	}
+	else
+	{
+		rt_kprintf("Picture sent succeed\n");
+	}
 	pic_file_sem_operate(RT_FALSE);
 }
 

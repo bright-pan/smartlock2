@@ -7,6 +7,9 @@
 #include "gprs.h"
 #include "camera.h"
 #include "alarm.h"
+#include "sms.h"
+
+#define SHOW_IR_DEBUG_INFO    1
 
 #define DEVICE_NAME_INFRA_PULSE_PWM_IC "infra_ic"
 #define DEVICE_NAME_INFRA_PULSE        "infra_s"
@@ -53,6 +56,7 @@ rt_uint8_t ir_check_process(void)
 void ir_cover_process(void)
 {
 	static rt_uint8_t	ok_num = 0;
+	rt_uint32_t AlarmTime;
 	
   if(ir_check_process())
   {
@@ -60,14 +64,13 @@ void ir_cover_process(void)
     if(ok_num == 2)
     {
       ok_num = 3;
+      
       /* send camera infrared alarm information */      
-      send_alarm_mail(ALARM_TYPE_CAMERA_IRDASENSOR,
-      								ALARM_PROCESS_FLAG_LOCAL |
-      								ALARM_PROCESS_FLAG_SMS,
-      								0,
-      								sys_cur_date());
-     	send_gprs_mail(ALARM_TYPE_CAMERA_IRDASENSOR,sys_cur_date(),RT_NULL);
-      rt_kprintf("start send SMS\n");
+      AlarmTime = sys_cur_date();
+      send_alarm_mail(ALARM_TYPE_CAMERA_IRDASENSOR,ALARM_PROCESS_FLAG_LOCAL,0,AlarmTime);
+    	send_sms_mail(ALARM_TYPE_CAMERA_IRDASENSOR,AlarmTime);
+     	send_gprs_mail(ALARM_TYPE_CAMERA_IRDASENSOR,AlarmTime,RT_NULL);
+      RT_DEBUG_LOG(SHOW_IR_DEBUG_INFO,("Start send IR alarm SMS\n"));
     }
     else if(ok_num > 2)
     {
@@ -83,7 +86,7 @@ void ir_cover_process(void)
       /* send sem camera */
       //camera
       camera_send_mail(ALARM_TYPE_CAMERA_IRDASENSOR,sys_cur_date());
-      rt_kprintf("start make picture\n");
+      RT_DEBUG_LOG(SHOW_IR_DEBUG_INFO,("Start make picture\n"));
     }
     ok_num = 0;
   }
