@@ -22,5 +22,8 @@ rt_bool_t motor_rotate(rt_bool_t direction);
 
 rt_err_t fprint_module_init(void);
 
+void motor_auto_lock(void);
+
+
 #endif
 

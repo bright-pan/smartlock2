@@ -84,6 +84,7 @@ local_thread_entry(void *parameter)
                 };
 			}
 		}
+		motor_auto_lock();
 	}
 }
 

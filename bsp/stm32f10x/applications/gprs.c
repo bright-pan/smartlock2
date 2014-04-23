@@ -89,10 +89,9 @@ static void fprint_upload_process(GPRS_MAIL_TYPEDEF *mail,rt_uint8_t keytype)
 	result = msg_mail_keyadd(data);
 	if(result == RT_TRUE)
 	{
-		set_fprint_update_flag(key->KeyMapPos,0);
+		set_key_update_flag(key->KeyMapPos,0);
 	}
 
-	
 	rt_free(data->data.data);
 	rt_free(data);
 

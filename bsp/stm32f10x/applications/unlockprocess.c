@@ -23,6 +23,8 @@
 
 #define PRINTF_FPRINT_INFO  1
 
+#define AUTO_LOCK_TIME			20 		//自动上锁时间
+
 #define MOTOR_PWM_COUNT     50		//电机pwm个数
 #define READ_FPRINT_COUNT   20		//指纹采集次数
 #define RF_ERR_OUTTIME_T    6000  //指纹错误次数清零时间
@@ -37,8 +39,14 @@ typedef struct
 	rt_uint8_t ErrCnt;
 }FPError;
 
+typedef struct 
+{
+	volatile rt_bool_t Status;
+	rt_uint16_t        cnt;
+}MotorDef;
+
 static FPError fp_error = {RT_NULL,0};
-static volatile rt_bool_t LockStatus;
+static MotorDef LockStatus;
 
 /** 
 @brief  fingerprint ok API
@@ -175,7 +183,25 @@ void motor_pwm_operate(const char *DeviceName)
 */
 rt_bool_t motor_status(void)
 {
-	return LockStatus;
+	return LockStatus.Status;
+}
+
+/** 
+@brief  set motor new status
+@param  vonew_statusid
+@retval void
+*/
+
+static void set_motor_status(rt_bool_t new_status)
+{
+	rt_base_t leave;
+
+	leave = rt_hw_interrupt_disable();
+
+	LockStatus.Status = new_status;
+	LockStatus.cnt = 0;
+	
+	rt_hw_interrupt_enable(leave);
 }
 
 /** 
@@ -188,19 +214,60 @@ rt_bool_t motor_rotate(rt_bool_t direction)
 {
 	rt_bool_t result = 0;
 	
-	if(direction == RT_TRUE)
+	if((direction == RT_TRUE) && (motor_status() != RT_TRUE))
 	{
 		motor_pwm_operate(DEVICE_NAME_MOTOR2);
-		LockStatus = RT_TRUE;
+		set_motor_status(RT_TRUE);
 	}
-	else
+	else if((direction == RT_FALSE) && (motor_status() != RT_FALSE))
 	{
     motor_pwm_operate(DEVICE_NAME_MOTOR1);
-		LockStatus = RT_FALSE;
+		set_motor_status(RT_FALSE);
 	}
 
 	return result;
 }
+
+/** 
+@brief  motor auto lock
+@param  vonew_statusid
+@retval void
+*/
+void motor_auto_lock(void)
+{
+	rt_uint8_t flag = 0;
+  rt_base_t leave;
+  
+  leave = rt_hw_interrupt_disable();
+
+	LockStatus.cnt++;
+	//rt_kprintf("%d",LockStatus.cnt);
+	if(LockStatus.cnt > AUTO_LOCK_TIME)
+	{
+		LockStatus.cnt = 0;
+		flag = 1;
+	}
+	rt_hw_interrupt_enable(leave);
+	if(flag == 1)
+	{
+    motor_rotate(RT_FALSE);
+	}
+}
+
+/** 
+@brief  motor default state
+@param  void
+@retval 0:ok 1:file
+*/
+int motor_status_init(void)
+{
+	motor_pwm_operate(DEVICE_NAME_MOTOR2);
+	set_motor_status(RT_TRUE);
+
+	return 0;
+}
+INIT_APP_EXPORT(motor_status_init);
+
 
 /** 
 @brief  send fingerprint input data
