@@ -9,7 +9,7 @@ void net_file_timer_process(void);
 //upload file
 rt_err_t net_upload_file(char *FileName);
 
-void net_upload_complete_Callback(void (*Callback)(void));
+void net_upload_complete_Callback(void (*Callback)(void *user));
 
 
 #endif

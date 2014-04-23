@@ -431,7 +431,7 @@ rt_bool_t msg_mail_keyadd(net_keyadd_user *KeyData)
 	//rt_free(UserData);
 	rt_free(mail);
 
-	return result?RT_TRUE:RT_FALSE;
+	return (result == 0)?RT_TRUE:RT_FALSE;
 }
 
 /*
@@ -456,7 +456,7 @@ void msg_mail_keyadd_ack(net_recvmsg_p RMail,rt_uint8_t result)
   mail->sendmode = ASYN_MODE;						//同步
   mail->col = RMail->col;
   //私有数据
-  rt_memcpy(data->pos,RMail->data.keyadd.key.col,2);
+  rt_memcpy(data->pos,RMail->data.keyadd.col,2);
   data->result = result;
   mail->user = data;
 
@@ -558,7 +558,7 @@ void msg_mail_resultack(net_recvmsg_p RMail,rt_uint8_t result)
 	RT_ASSERT(mail != RT_NULL);
 
 	//设置邮件
-	mail->type = RMail->cmd+80;	//邮件类型
+	mail->type = RMail->cmd+0x80;	//邮件类型
 	mail->resend = 0;     //重发技术
 	mail->outtime = 0;    //超时间
 	mail->sendmode = ASYN_MODE;	//异步
@@ -721,7 +721,11 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 	  	net_filedata_user *data;
 
 	  	data = (net_filedata_user*)net_get_wnd_user(Mail);
-			data->sendresult = Mail->data.filedata_ack.result;
+	  	if(data != RT_NULL)
+	  	{
+        data->sendresult = Mail->data.filedata_ack.result;
+	  	}
+			
 			break;
 	  }
 	 	case NET_MSGTYPE_PHONEADD:
@@ -729,7 +733,7 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 	 		//手机白名单添加
 	 		ProcessResult = net_phone_add_process(Mail);
 
-	 		result = (ProcessResult == RT_EOK)?1:0;
+	 		result = (ProcessResult == RT_EOK)?0:1;
 	 		msg_mail_phoneadd_ack(Mail,result);
 			break;
 	 	}
@@ -738,7 +742,7 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 	 		//手机白名单删除
 	 		ProcessResult = net_phone_del_process(Mail);
 
-			result = (ProcessResult == RT_EOK)?1:0;
+			result = (ProcessResult == RT_EOK)?0:1;
 			msg_mail_phonedel_ack(Mail,result);
 			break;
 	 	}
@@ -747,12 +751,14 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 	 		//钥匙添加
 	 		ProcessResult = net_key_add_process(Mail);
 
-	 		result = (ProcessResult == RT_EOK)?1:0;
+	 		result = (ProcessResult == RT_EOK)?0:1;
 	 		msg_mail_keyadd_ack(Mail,result);
 			break;
 	 	}
 	 	case NET_MSGTYPE_KEYADD_ACK:
 	 	{
+	 		//添加钥匙应答
+	 		result = (Mail->data.KeyAddAck.keyAck.result == 1)?0:1;
 			break;
 	 	}
 	 	case NET_MSGTYPE_KEYDELETE:
@@ -760,7 +766,7 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 	 		//钥匙删除
 	 		ProcessResult = net_key_del_process(Mail);
 
-	 		result = (ProcessResult == RT_EOK)?1:0;
+	 		result = (ProcessResult == RT_EOK)?0:1;
 	 		msg_mail_keydel_ack(Mail,result);
 			break;
 	 	}
@@ -772,7 +778,7 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 	 	{
 	 		ProcessResult = net_modify_alarm_arg(Mail);
 
-	 		result = (ProcessResult == RT_EOK)?1:0;
+	 		result = (ProcessResult == RT_EOK)?0:1;
 	 		msg_mail_resultack(Mail,result);
 			break;
 	 	}
@@ -783,7 +789,7 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 	 	case NET_MSGTYPE_MOTOR:
 	 	{
 	 		ProcessResult = net_motor_Control(Mail);
-	 		result = (ProcessResult == RT_EOK)?1:0;
+	 		result = (ProcessResult == RT_EOK)?0:1;
 	 		msg_mail_resultack(Mail,result);
 			break;
 	 	}
@@ -903,6 +909,7 @@ void TestAddKey(void)
 
   msg_mail_keyadd(KeyData);
 
+	rt_free(KeyData->data.data);
   rt_free(KeyData);
 }
 FINSH_FUNCTION_EXPORT(TestAddKey,"test key add message");

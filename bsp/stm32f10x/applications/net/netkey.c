@@ -48,16 +48,16 @@ static rt_bool_t check_net_key_data(rt_uint16_t keypos,rt_uint8_t KeyType)
 rt_err_t net_key_add_process(net_recvmsg_p mail)
 {
 	KEY_TYPEDEF *key = RT_NULL;
-	net_keyadd  *remote;
+	net_recv_keyadd *remote;
 	rt_uint16_t keypos;
 	
 	key = (KEY_TYPEDEF*)rt_calloc(1,sizeof(KEY_TYPEDEF));
 	RT_ASSERT(key != RT_NULL);
 	
-	remote = &(mail->data.keyadd.key);
+	remote = &(mail->data.keyadd);
 
 	net_string_copy_uint16(&keypos,remote->col);
-	
+
 	if(check_net_key_data(keypos,remote->type) == RT_FALSE)
 	{
 		RT_DEBUG_LOG(SHOW_NETKEY_INFO,("Remote key information error!!!\n"));
@@ -77,7 +77,7 @@ rt_err_t net_key_add_process(net_recvmsg_p mail)
 	net_string_copy_uint32((rt_uint32_t *)&key->created_time,remote->createt);
 	net_string_copy_uint32((rt_uint32_t *)&key->start_time,remote->start_t);
 	net_string_copy_uint32((rt_uint32_t *)&key->end_time,remote->stop_t);
-	
+
 	if(device_config.param.key[keypos].created_time < key->created_time)
 	{
 	  key->flag = 1;
@@ -89,7 +89,7 @@ rt_err_t net_key_add_process(net_recvmsg_p mail)
 	  device_config.param.key[keypos] = *key;
 
 	  rt_mutex_release(device_config.mutex);
-	  device_config_key_operate(keypos,remote->data,1);
+	  device_config_key_operate(keypos, key->key_type,remote->data,1);
 		device_config_file_operate(&device_config,1);   
 		fprint_module_init();
 		RT_DEBUG_LOG(SHOW_NETKEY_INFO,("Remote add keys to success!!!\n"));

@@ -12,9 +12,9 @@
 #define FILE_RECV_MAX_TIME    10    //文件接收最长时间
 #define SYS_APP_BIN_FILE_NAME "/app.bin"
 
-void (*file_complete_callback)(void);
+void (*file_complete_callback)(void *user);
 
-void net_upload_complete_Callback(void (*Callback)(void))
+void net_upload_complete_Callback(void (*Callback)(void *user))
 {
 	if(Callback != RT_NULL)
 	{
@@ -406,6 +406,9 @@ static rt_int8_t send_file_process(rt_uint8_t Type,rt_uint32_t Time,char *FileNa
 		{
 			RT_DEBUG_LOG(SHOW_NFILE_SEND,("RecvResult:%d\n",RecvResult));
 			RT_DEBUG_LOG(SHOW_NFILE_SEND,("Send File Outtime\n"));
+			
+			//文件处理完之后 窗口中的数据必须清掉
+			clear_wnd_cmd_all(NET_MSGTYPE_FILEDATA);
 			//释放资源
 			destroy_net_msgmail(mail,FILE_PACKNUM_MAX);
 			rt_sem_delete(SendSem);
@@ -427,15 +430,18 @@ static rt_int8_t send_file_process(rt_uint8_t Type,rt_uint32_t Time,char *FileNa
 */
 void net_file_entry(void *arg)
 {
-	if(arg != RT_NULL)
+	rt_int8_t result;
+	rt_int8_t *filename = (rt_int8_t *)arg;
+	
+	if(filename != RT_NULL)
 	{
 		//处理文件
-		send_file_process(1,1,(char *)arg);
-		//文件处理完之后 窗口中的数据必须清掉
-		clear_wnd_cmd_all(NET_MSGTYPE_FILEDATA);
+		result = send_file_process(1,1,(char *)filename);
+		
+		rt_free(arg);
 	}
-	rt_free(arg);
-	file_complete_callback();
+
+	file_complete_callback((void *)&result);
 }
 
 /**
@@ -773,7 +779,7 @@ rt_uint8_t net_file_packdata_process(net_recvmsg_p mail)
 rt_err_t net_upload_file(char *FileName)
 {
   rt_thread_t thread_id;
-  char *name;
+  rt_uint8_t 	*name = RT_NULL;
 
 	name = rt_calloc(1,RT_NAME_MAX);
 	RT_ASSERT(name != RT_NULL);
@@ -782,6 +788,7 @@ rt_err_t net_upload_file(char *FileName)
 	thread_id = rt_thread_find("Upload");
   if(thread_id != RT_NULL)
   {
+  	rt_free(name);
 		return RT_ERROR;
   }
   
@@ -803,13 +810,7 @@ rt_err_t net_upload_file(char *FileName)
 
 void send_file(char *FileName)
 {
-	rt_thread_t thread_id;
-
-	thread_id = rt_thread_create("Upload",
-															net_file_entry,(void *)FileName,
-                         			1024,111, 20);
-  RT_ASSERT(thread_id != RT_NULL);
-  rt_thread_startup(thread_id);
+	net_upload_file(FileName);
 }
 FINSH_FUNCTION_EXPORT(send_file,"(FileBName) send test file");
 

@@ -12,7 +12,7 @@
 #include <dfs_posix.h>
 #endif
 
-#define NET_WND_MAX_NUM             16  //窗口大小
+#define NET_WND_MAX_NUM             8  //窗口大小
 #define NET_FILE_BUF_SIZE           512 //文件buffer
 
 
@@ -459,7 +459,13 @@ typedef struct
 //钥匙添加
 typedef struct 
 {
-	net_keyadd key;
+	rt_uint8_t col[2];			//序号
+	rt_uint8_t type;				//类型
+	rt_uint8_t createt[4];  //创建时间
+	rt_uint8_t accredit;		//授权
+	rt_uint8_t start_t[4];	//开始使用时间
+	rt_uint8_t stop_t[4];		//停止使用时间
+	rt_uint8_t data[512];   //钥匙数据
 	rt_uint8_t crc16[2];
 }net_recv_keyadd;
 
@@ -638,6 +644,7 @@ typedef struct
 	net_send_result result;
 	net_keyadd data;
 	rt_uint16_t DataLen;
+	rt_uint8_t sendresult;
 }net_keyadd_user;
 
 //钥匙删除
