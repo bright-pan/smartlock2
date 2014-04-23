@@ -18,6 +18,7 @@
 #include <rtthread.h>
 #include <stm32f10x.h>
 
+__INLINE
 void kb_detect(void);
 
 #endif /* _KEYBOARD_H_ */

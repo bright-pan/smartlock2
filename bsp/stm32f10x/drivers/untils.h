@@ -89,6 +89,7 @@ typedef struct {
 	uint8_t key0[8];
 	uint8_t key1[8];
 	uint8_t device_status;       //device activated state
+    uint8_t password[6];
 
 }DEVICE_PARAMETERS_TYPEDEF;
 
@@ -119,9 +120,13 @@ int
 device_config_file_operate(DEVICE_CONFIG_TYPEDEF *config, uint8_t flag);
 int
 device_config_key_operate(uint16_t key_id, KEY_TYPE key_type, uint8_t *buf, uint8_t flag);
+int
+device_config_key_verify(KEY_TYPE type, const uint8_t *buf);
 
 void
 print_hex(uint8_t *buf, uint16_t length);
+void
+print_char(uint8_t *buf, uint16_t length);
 void
 delay_us(uint32_t time);
 

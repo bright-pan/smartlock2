@@ -631,7 +631,9 @@ sms_thread_entry(void *parameter)
 							100);
 		if (result == RT_EOK)
 		{
+#if (defined RT_USING_FINSH) && (defined SMS_DEBUG)
 			rt_kprintf("\nreceive sms mail < time: %d alarm_type: %s >\n", sms_mail_buf.time, alarm_help_map[sms_mail_buf.alarm_type]);
+#endif
 			// sms content process
 			sms_ucs_length = 0;
 			sms_ucs = (uint16_t *)rt_malloc(sizeof(uint16_t) * 256);
@@ -663,9 +665,11 @@ sms_thread_entry(void *parameter)
 			{
 				if (device_config.param.telephone_address[alarm_telephone_counts].flag)
 				{
+#if (defined RT_USING_FINSH) && (defined SMS_DEBUG)
 					rt_kprintf("\nsend sms to ");
 					rt_kprintf((char *)(device_config.param.telephone_address[alarm_telephone_counts].address));
 					rt_kprintf("\n");
+#endif
 					sms_pdu_ucs_send(device_config.param.telephone_address[alarm_telephone_counts].address, smsc, sms_ucs, sms_ucs_length);
 				}
 				alarm_telephone_counts++;
@@ -723,12 +727,16 @@ send_sms_mail(ALARM_TYPEDEF alarm_type, time_t time)
 		result = rt_mq_send(sms_mq, &buf, sizeof(SMS_MAIL_TYPEDEF));
 		if (result == -RT_EFULL)
 		{
+#if (defined RT_USING_FINSH) && (defined SMS_DEBUG)
 			rt_kprintf("sms_mq is full!!!\n");
+#endif
 		}
 	}
 	else
 	{
+#if (defined RT_USING_FINSH) && (defined SMS_DEBUG)
 		rt_kprintf("sms_mq is RT_NULL!!!\n");
+#endif
 	}
 }
 

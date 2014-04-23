@@ -80,7 +80,7 @@ void alarm_thread_entry(void *parameter)
 
     if (device_config_init(&device_config) < 0)
 	{
-#ifdef RT_USING_FINSH
+#if (defined RT_USING_FINSH) && (defined ALARM_DEBUG)
 		rt_kprintf("device config init failure");
 #endif // RT_USING_FINSH
 	}
@@ -88,7 +88,7 @@ void alarm_thread_entry(void *parameter)
 	rtc_device = rt_device_find("rtc");
 	if (rtc_device == RT_NULL)
 	{
-#ifdef RT_USING_FINSH
+#if (defined RT_USING_FINSH) && (defined ALARM_DEBUG)
 		rt_kprintf("rtc_device is not exist!!!");
 #endif // RT_USING_FINSH
 	}
@@ -103,8 +103,10 @@ void alarm_thread_entry(void *parameter)
 
 		if (result == RT_EOK)
 		{
+#if (defined RT_USING_FINSH) && (defined ALARM_DEBUG)
 			rt_kprintf("receive alarm mail < time: %d alarm_type: %s >\n",
 					   alarm_mail_buf.time, alarm_help_map[alarm_mail_buf.alarm_type]);
+#endif
 			/* this is mail is not need
 			   if(alarm_mail_filer(alarm_mail_buf.alarm_type) == RT_FALSE)
 			   {
@@ -158,12 +160,16 @@ void send_alarm_mail(ALARM_TYPEDEF alarm_type, ALARM_PROCESS_FLAG_TYPEDEF alarm_
 		result = rt_mq_send(alarm_mq, &buf, sizeof(ALARM_MAIL_TYPEDEF));
 		if (result == -RT_EFULL)
 		{
+#if (defined RT_USING_FINSH) && (defined ALARM_DEBUG)
 			rt_kprintf("alarm_mq is full!!!\n");
+#endif
 		}
 	}
 	else
 	{
+#if (defined RT_USING_FINSH) && (defined ALARM_DEBUG)
 		rt_kprintf("alarm_mq is RT_NULL!!!\n");
+#endif
 	}
 }
 

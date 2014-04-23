@@ -75,6 +75,7 @@ DEVICE_CONFIG_TYPEDEF device_config = {
 		{0x00,0x00,0xCB,0x17,0x62,0x2F,0x7A,0xC5},
 		//
 		0,
+        "123456",
 	},
 };
 
@@ -82,7 +83,7 @@ int
 device_config_key_operate(uint16_t key_id, KEY_TYPE key_type, uint8_t *buf, uint8_t flag)
 {
 	int fd;
-	int result = 0;
+	int result = -1;
 	uint16_t len;
 
 	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
@@ -91,8 +92,7 @@ device_config_key_operate(uint16_t key_id, KEY_TYPE key_type, uint8_t *buf, uint
 #if (defined RT_USING_FINSH) && (defined UNTILS_DEBUG)
 		rt_kprintf("the key id is invalid\n");
 #endif // MACRO
-  	result = -1;
-    goto __exit;
+		goto __exit;
 	}
 
 	switch (key_type)
@@ -117,7 +117,6 @@ device_config_key_operate(uint16_t key_id, KEY_TYPE key_type, uint8_t *buf, uint
 #if (defined RT_USING_FINSH) && (defined UNTILS_DEBUG)
 				rt_kprintf("the key type is invalid\n");
 #endif // MACRO
-				result = -1;
                 goto __exit;
 			}
 	}
@@ -127,17 +126,96 @@ device_config_key_operate(uint16_t key_id, KEY_TYPE key_type, uint8_t *buf, uint
 	{
 		lseek(fd, DEVICE_CONFIG_FILE_KEY_OFFSET(key_id), SEEK_SET);
 		if (flag) {
-			if (write(fd, buf, len) != len)
-				result = -1;
+			if (write(fd, buf, len) == len)
+				result = len;
 		} else {
-			if (read(fd, buf, len) != len)
-				result = -1;
+			if (read(fd, buf, len) == len)
+				result = len;
 		}
 		close(fd);
 	}
 __exit:
 	rt_mutex_release(device_config.mutex);
 	return result;
+}
+
+int
+device_config_key_verify(KEY_TYPE type, const uint8_t *buf)
+{
+    int result = -1;
+    uint16_t i;
+	KEY_TYPEDEF key;
+#if KEY_TYPE_KBOARD > KEY_TYPE_RFID
+    uint8_t temp[KEY_KBOARD_CODE_SIZE];
+#else
+	uint8_t temp[KEY_RFID_CODE_SIZE];
+#endif
+    uint16_t len;
+    rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+    switch (type)
+    {
+        case KEY_TYPE_RFID:
+            {
+                len = KEY_RFID_CODE_SIZE;
+                break;
+            }
+        case KEY_TYPE_KBOARD:
+            {
+                len = KEY_KBOARD_CODE_SIZE;
+                break;
+            }
+        default :
+            {
+#if (defined RT_USING_FINSH) && (defined UNTILS_DEBUG)
+                rt_kprintf("the key type is invalid\n");
+#endif // MACRO
+                goto __exit;
+            }
+    }
+	for (i = 0; i < KEY_NUMBERS; i++) {
+		key = device_config.param.key[i];
+
+		if (key.flag && key.key_type == type) {
+			rt_memset(temp, 0, sizeof(temp));
+			device_config_key_operate(i, type, temp, 0);
+            if (!rt_memcmp(temp, buf, len)) {
+                result = i;
+				break;
+            }
+		}
+	}
+__exit:
+	rt_mutex_release(device_config.mutex);
+    return result;
+}
+int
+device_config_key_insert(KEY_TYPE type, uint8_t *buf)
+{
+    int result = -1;
+    uint16_t i;
+	KEY_TYPEDEF *key;
+
+    rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+
+	for (i = 0; i < KEY_NUMBERS; i++) {
+		key = &device_config.param.key[i];
+
+		if (!key->flag) {
+			if (device_config_key_operate(i, type, buf, 1) < 0)
+                goto __exit;
+			
+            rt_memset(key, 0, sizeof(*key));
+			key->key_type = type;
+			key->is_updated = 1;
+			key->operation_type = OPERATION_TYPE_FOREVER;
+			key->created_time = sys_cur_date();
+			key->flag = 1;
+			break;
+		}
+	}
+__exit:
+	rt_mutex_release(device_config.mutex);
+    return result;
 }
 
 int
@@ -232,6 +310,19 @@ print_hex(uint8_t *buf, uint16_t length)
 	}
 	rt_kprintf("\n");
 }
+
+void
+print_char(uint8_t *buf, uint16_t length)
+{
+	uint32_t i;
+	RT_ASSERT(buf != RT_NULL);
+
+	for (i = 0; i < length; i++) {
+		rt_kprintf("%c", buf[i]);
+	}
+	rt_kprintf("\n");
+}
+
 
 #ifndef __GNUC__
 void *

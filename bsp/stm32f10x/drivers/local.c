@@ -46,14 +46,17 @@ local_thread_entry(void *parameter)
 		if (result == RT_EOK)
 		{
 			// process mail
+#if (defined RT_USING_FINSH) && (defined LOCAL_DEBUG)
 			rt_kprintf("receive local mail < time: %d alarm_type: %s >\n",\
 					   local_mail_buf.time, alarm_help_map[local_mail_buf.alarm_type]);
-
+#endif
 			switch (local_mail_buf.alarm_type)
 			{
 				case ALARM_TYPE_SWITCH1:
 					{
+#if (defined RT_USING_FINSH) && (defined LOCAL_DEBUG)
 						rt_kprintf("process alarm switch...\n");
+#endif
 						break;
 					}
 				case ALARM_TYPE_CAMERA_IRDASENSOR:
@@ -73,10 +76,12 @@ local_thread_entry(void *parameter)
 					break;
 				}
 				default :
-					{
-						rt_kprintf("this alarm is not process...\n");
-						break;
-					};
+                {
+#if (defined RT_USING_FINSH) && (defined LOCAL_DEBUG)
+                    rt_kprintf("this alarm is not process...\n");
+#endif
+                    break;
+                };
 			}
 		}
 	}
@@ -104,12 +109,16 @@ send_local_mail(ALARM_TYPEDEF alarm_type, time_t time)
 		result = rt_mq_send(local_mq, &buf, sizeof(LOCAL_MAIL_TYPEDEF));
 		if (result == -RT_EFULL)
 		{
+#if (defined RT_USING_FINSH) && (defined LOCAL_DEBUG)
 			rt_kprintf("local_mq is full!!!\n");
+#endif
 		}
 	}
 	else
 	{
+#if (defined RT_USING_FINSH) && (defined LOCAL_DEBUG)
 		rt_kprintf("local_mq is RT_NULL!!!\n");
+#endif
 	}
 }
 
