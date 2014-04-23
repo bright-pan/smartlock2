@@ -254,7 +254,6 @@ void voice_thread_entry(void *arg)
   while(1)
   {
     voice_recv_mail_process();
-    rt_thread_delay(1);
   }
 }
 
@@ -268,7 +267,7 @@ int voice_thread_init(void)
 	
   thread_id = rt_thread_create("voice",
 		                           voice_thread_entry, 
-		                           RT_NULL,1024,21, 20);//优先级不能太高
+		                           RT_NULL,1024,80, 20);//优先级不能太高
   if(thread_id != RT_NULL)
   {
     rt_thread_startup(thread_id);
