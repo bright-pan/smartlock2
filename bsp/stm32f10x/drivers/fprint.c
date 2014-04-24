@@ -1060,6 +1060,7 @@ fprint_thread_entry(void *parameters)
 		{
             static uint16_t s_detect = 0;
             static uint16_t f_detect = 0;
+            static uint16_t r_detect = 0;
             static uint16_t template_id = 0;
             error = fprint_verify(&frame_data);
             
@@ -1120,7 +1121,19 @@ fprint_thread_entry(void *parameters)
             } else {
                 f_detect = 0;
             }
+            if (error == FPRINT_ERESPONSE) {
 
+                if (r_detect++ > 1000) {
+
+#if (defined RT_USING_FINSH)
+                    rt_kprintf("fprint has no response , may be fault!\n");
+#endif // RT_USING_FINSH
+                    fprint_init(&frame_data);
+					r_detect = 0;
+                }
+            } else {
+                r_detect = 0;
+            }
 		}
 	}
 }
