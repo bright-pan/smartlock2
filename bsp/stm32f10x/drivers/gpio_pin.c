@@ -293,15 +293,15 @@ void rt_hw_voice_switch_register(void)
   rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR), gpio_user_data);
 }
 */
-/* voice amp device
+/* voice amp device */
 struct gpio_pin_user_data voice_amp_user_data =
 {
   DEVICE_NAME_VOICE_AMP,
-  GPIOC,
-  GPIO_Pin_6,
+  GPIOA,
+  GPIO_Pin_12,
   GPIO_Mode_Out_PP,
   GPIO_Speed_50MHz,
-  RCC_APB2Periph_GPIOC,
+  RCC_APB2Periph_GPIOA,
   0,
 };
 gpio_device voice_amp_device;
@@ -314,7 +314,7 @@ void rt_hw_voice_amp_register(void)
   gpio_device->ops = &gpio_pin_user_ops;
   rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR), gpio_user_data);
 }
-*/
+
 /* gsm led device
 struct gpio_pin_user_data test_user_data =
 {
@@ -670,7 +670,7 @@ uint8_t gpio_pin_input(char *str)
 INIT_DEVICE_EXPORT(rt_hw_led1_register);
 INIT_DEVICE_EXPORT(rt_hw_led2_register);
 INIT_DEVICE_EXPORT(rt_hw_led_logo_register);
-//INIT_DEVICE_EXPORT(rt_hw_camera_led_register);
+INIT_DEVICE_EXPORT(rt_hw_voice_amp_register);
 INIT_DEVICE_EXPORT(rt_hw_camera_power_register);
 INIT_DEVICE_EXPORT(rt_hw_motor_status1_register);
 INIT_DEVICE_EXPORT(rt_hw_motor_status2_register);

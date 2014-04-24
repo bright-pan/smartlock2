@@ -60,8 +60,8 @@ DEVICE_CONFIG_TYPEDEF device_config = {
 		{
 			"iyuet.com",
 			6800
-      //"115.29.235.194",
-      //6868
+			//"115.29.235.194",
+			//6868
 		},
 		//lock gate alarm time
 		30,
@@ -145,11 +145,12 @@ device_config_key_verify(KEY_TYPE type, const uint8_t *buf)
     int result = -1;
     uint16_t i;
 	KEY_TYPEDEF key;
-#if KEY_TYPE_KBOARD > KEY_TYPE_RFID
+#if (KEY_KBOARD_CODE_SIZE >= KEY_RFID_CODE_SIZE)
     uint8_t temp[KEY_KBOARD_CODE_SIZE];
 #else
-	uint8_t temp[KEY_RFID_CODE_SIZE];
+    uint8_t temp[KEY_RFID_CODE_SIZE];
 #endif
+
     uint16_t len;
     rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
     switch (type)
@@ -162,6 +163,11 @@ device_config_key_verify(KEY_TYPE type, const uint8_t *buf)
         case KEY_TYPE_KBOARD:
             {
                 len = KEY_KBOARD_CODE_SIZE;
+                break;
+            }
+        case KEY_TYPE_FPRINT:
+            {
+                len = KEY_FPRINT_CODE_SIZE;
                 break;
             }
         default :
@@ -188,8 +194,9 @@ __exit:
 	rt_mutex_release(device_config.mutex);
     return result;
 }
+
 int
-device_config_key_insert(KEY_TYPE type, uint8_t *buf)
+device_config_key_create(KEY_TYPE type, uint8_t *buf)
 {
     int result = -1;
     uint16_t i;
@@ -203,13 +210,15 @@ device_config_key_insert(KEY_TYPE type, uint8_t *buf)
 		if (!key->flag) {
 			if (device_config_key_operate(i, type, buf, 1) < 0)
                 goto __exit;
-			
             rt_memset(key, 0, sizeof(*key));
 			key->key_type = type;
 			key->is_updated = 1;
 			key->operation_type = OPERATION_TYPE_FOREVER;
 			key->created_time = sys_cur_date();
 			key->flag = 1;
+			if (device_config_file_operate(&device_config, 1) < 0)
+				goto __exit;
+			result = i;
 			break;
 		}
 	}
@@ -233,19 +242,19 @@ device_config_init(DEVICE_CONFIG_TYPEDEF *config)
 }
 
 /*******************************************************************************
-* Function Name  : system_file_operate
-* Description    :  system config file operate
-*
-* Input				: flag :1>>write ; 0>>read
-* Output			: None
-* Return		: None
-*******************************************************************************/
+ * Function Name  : system_file_operate
+ * Description    :  system config file operate
+ *
+ * Input				: flag :1>>write ; 0>>read
+ * Output			: None
+ * Return		: None
+ *******************************************************************************/
 int
 device_config_file_operate(DEVICE_CONFIG_TYPEDEF *config, uint8_t flag)
 {
 	int fd;
 	int cnts;
-	int result = 0;
+	int result = -1;
 
 	RT_ASSERT(config!=RT_NULL);
 	RT_ASSERT(config->mutex!=RT_NULL);
@@ -261,14 +270,15 @@ device_config_file_operate(DEVICE_CONFIG_TYPEDEF *config, uint8_t flag)
 #if (defined RT_USING_FINSH) && (defined UNTILS_DEBUG)
 			rt_kprintf("Creat Config File failure\n");
 #endif // MACRO
-			rt_mutex_release(config->mutex);
-			return -1;
+			goto __exit;
 		} else {
 #if (defined RT_USING_FINSH) && (defined UNTILS_DEBUG)
 			rt_kprintf("Creat Config File success\n");
             cnts = write(fd, &(config->param), sizeof(config->param));
-			if (cnts != sizeof(config->param))
-				result = -1;
+			if (cnts != sizeof(config->param)) {
+				close(fd);
+				goto __exit;
+			}
 			lseek(fd, 0, SEEK_SET);
 #endif // MACRO
 		}
@@ -277,13 +287,14 @@ device_config_file_operate(DEVICE_CONFIG_TYPEDEF *config, uint8_t flag)
 	if (flag) {
         cnts = write(fd, &(config->param), sizeof(config->param));
 		if (cnts != sizeof(config->param))
-			result = -1;
+			result = cnts;
 	} else {
         cnts = read(fd, &(config->param), sizeof(config->param));
 		if (cnts != sizeof(config->param))
-			result = -1;
+			result = cnts;
 	}
 	close(fd);
+__exit:
 	rt_mutex_release(config->mutex);
 
 	return result;
@@ -403,7 +414,8 @@ INIT_BOARD_EXPORT(print_rcc);
 void sysconfig(void)
 {
 	rt_uint8_t i;
-
+    uint8_t temp[512];
+    
 	rt_kprintf("\n******************************* System config file ********************************\n");
 	for(i = 0 ; i < TELEPHONE_NUMBERS;i++)
 	{
@@ -411,26 +423,33 @@ void sysconfig(void)
 		{
 			continue;
 		}
-    rt_kprintf("Telephone[%d]:%d:%s\n",i,
-                device_config.param.telephone_address[i].flag,
-                device_config.param.telephone_address[i].address);
+		rt_kprintf("Telephone[%d]:%d:%s\n",i,
+				   device_config.param.telephone_address[i].flag,
+				   device_config.param.telephone_address[i].address);
 	}
-	
-	for(i = 0 ; i < TELEPHONE_NUMBERS;i++)
+	for(i = 0 ; i < KEY_NUMBERS;i++)
 	{
+		rt_memset(temp, '\0', sizeof(temp));
 		if(device_config.param.key[i].flag == 0)
 		{
 			continue;
 		}
 		rt_kprintf("Key[%d] update:%02x type:%d authority:%d create:%08x start:%08x end:%08x\n",i,
-								device_config.param.key[i].is_updated,
-								device_config.param.key[i].key_type,
-								device_config.param.key[i].operation_type,
-								device_config.param.key[i].created_time,
-								device_config.param.key[i].start_time,
-								device_config.param.key[i].end_time);
+				   device_config.param.key[i].is_updated,
+				   device_config.param.key[i].key_type,
+				   device_config.param.key[i].operation_type,
+				   device_config.param.key[i].created_time,
+				   device_config.param.key[i].start_time,
+				   device_config.param.key[i].end_time);
+        device_config_key_operate(i, device_config.param.key[i].key_type, temp, 0);
+        rt_kprintf("key : %s\n", temp);
 	}
-
+    /*
+	  rt_memcpy(temp, "123456", 6);
+	  device_config_key_operate(1, KEY_TYPE_KBOARD, temp, 1);
+	  device_config_key_operate(1, KEY_TYPE_KBOARD, temp, 0);
+	  rt_kprintf("%s\n", temp);
+    */
 	rt_kprintf("******************************* System config file ********************************\n\n");
 }
 FINSH_FUNCTION_EXPORT(sysconfig,"show system config file");

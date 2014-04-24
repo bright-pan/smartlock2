@@ -20,7 +20,7 @@
 #define KB_DEBUG
 #define KB_TIMEOUT 10
 #define KB_VERIFY_TIMES 3
-#define KBUF_MAX_SIZE 6
+#define KBUF_MAX_SIZE KEY_KBOARD_CODE_SIZE
 
 static rt_sem_t kb_sem;
 
@@ -327,19 +327,19 @@ kb_thread_entry(void *parameters)
 								break;
 							}
 							case KB_EVERIFY_SUCCESS: {
-                                kbuf_init(&kb_data.normal_auth);
-                                kb_data.normal_auth_times = 0;
 								rt_kprintf("normal verify success!, key_id = %d\n", key_id);
+                                kb_data.normal_auth_times = 0;
+                                kbuf_init(&kb_data.normal_auth);
 								break;
 							}
 							case KB_EVERIFY_FAILURE: {
-								kbuf_init(&kb_data.normal_auth);
 								rt_kprintf("normal verify failure, %d\n", kb_data.normal_auth_times);
 								if (kb_data.normal_auth_times++ >= KB_VERIFY_TIMES) {
 									/* TODO:  alarm */
 									kb_data.normal_auth_times = 0;
 									rt_kprintf("normal auth alarm\n");
 								}
+								kbuf_init(&kb_data.normal_auth);
 								break;
 							}
 							case KB_EEXIT: {
@@ -364,19 +364,19 @@ kb_thread_entry(void *parameters)
 								break;
 							}
 							case KB_EVERIFY_SUCCESS: {
-                                kbuf_init(&kb_data.setting_auth);
-                                kb_data.setting_auth_times = 0;
 								rt_kprintf("setting verify success!");
+                                kb_data.setting_auth_times = 0;
+                                kbuf_init(&kb_data.setting_auth);
 								break;
 							}
 							case KB_EVERIFY_FAILURE: {
-								kbuf_init(&kb_data.setting_auth);
 								rt_kprintf("setting verify failure, %d\n", kb_data.setting_auth_times);
 								if (kb_data.setting_auth_times++ >= KB_VERIFY_TIMES) {
 									/* TODO:  alarm */
 									kb_data.setting_auth_times = 0;
 									rt_kprintf("setting auth alarm\n");
 								}
+								kbuf_init(&kb_data.setting_auth);
 								break;
 							}
 							case KB_EEXIT: {
@@ -433,8 +433,9 @@ kb_thread_entry(void *parameters)
 								break;
 							}
 							case KB_EVERIFY_SUCCESS: {
+								rt_kprintf("add password success : %s\n", kb_data.password.data);
+								device_config_key_create(KEY_TYPE_KBOARD, kb_data.password.data);
                                 kbuf_init(&kb_data.password);
-								rt_kprintf("add password success!\n");
 								break;
 							}
 							case KB_EVERIFY_FAILURE: {
@@ -487,7 +488,7 @@ rt_keyboard_init(void)
 
 	//key board thread
 	kb_thread = rt_thread_create("kboard", kb_thread_entry,
-									   RT_NULL, 512, 99, 5);
+									   RT_NULL, 1024, 99, 5);
 	if (kb_thread == RT_NULL)
 		return -1;
 

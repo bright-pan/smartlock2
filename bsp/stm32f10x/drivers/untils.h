@@ -122,7 +122,8 @@ int
 device_config_key_operate(uint16_t key_id, KEY_TYPE key_type, uint8_t *buf, uint8_t flag);
 int
 device_config_key_verify(KEY_TYPE type, const uint8_t *buf);
-
+int
+device_config_key_create(KEY_TYPE type, uint8_t *buf);
 void
 print_hex(uint8_t *buf, uint16_t length);
 void
