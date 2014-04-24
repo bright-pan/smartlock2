@@ -102,7 +102,10 @@ ctw_list_new(COMM_TWINDOW_NODE **node, COMM_TWINDOW_LIST *ctw_list, COMM_TWINDOW
 		*node = rt_malloc(sizeof(**node));
 		if (*node != RT_NULL)
 		{
+            if (!data->delay)
+                data->delay = CTW_TIMER_SEND_DELAY;
 			(*node)->data = *data;
+            
 #if (defined RT_USING_FINSH) && (defined COMM_DEBUG)
 			rt_kprintf("add cmd: 0x%02X, order: 0x%02X, length: %d\n",
 					   ((*node)->data.mail).comm_type, (*node)->data.order, ((*node)->data.mail).len);
@@ -193,8 +196,8 @@ crw_list_new(COMM_RWINDOW_NODE **node, COMM_RWINDOW_LIST *crw_list, COMM_RWINDOW
 		*node = rt_malloc(sizeof(**node));
 		if (*node != RT_NULL)
 		{
+            (*node)->data = *data;
 			rt_mutex_take(crw_list->mutex, RT_WAITING_FOREVER);
-			(*node)->data = *data;
 			list_add(&(*node)->list, &crw_list->list);
 			crw_list->size++;
 			rt_mutex_release(crw_list->mutex);

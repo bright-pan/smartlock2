@@ -184,7 +184,7 @@ process_request(uint8_t cmd, uint8_t order, uint8_t *rep_frame, uint16_t length)
 			}
 		default :
 			{
-#ifdef RT_USING_FINSH
+#if (defined RT_USING_FINSH) && (defined COMM_DEBUG)
 				rt_kprintf("the request cmd %02x is invalid!\n", cmd);
 #endif // RT_USING_FINSH
 				break;
@@ -364,7 +364,7 @@ comm_tx_thread_entry(void *parameters)
 
 
             } else {
-                
+                rt_memset(&data, 0, sizeof(data));
                 data.mail = comm_tmail_buf;
                 if (comm_tmail_buf.order)
                 {
@@ -377,10 +377,7 @@ comm_tx_thread_entry(void *parameters)
                     else
                         data.order = 1;
                 }
-                if (comm_tmail_buf.delay)
-                {
-                    data.delay = comm_tmail_buf.delay;
-                }
+                data.delay = comm_tmail_buf.delay;
 
                 ctw_status = ctw_list_new(&ctw_node, &comm_twindow_list, &data);
                 if (ctw_status == CTW_STATUS_OK)
@@ -466,10 +463,8 @@ send_ctx_mail(COMM_TYPE_TYPEDEF comm_type, uint8_t order, uint16_t delay, uint8_
 		comm_tmail_buf.order = order;
 		comm_tmail_buf.buf = buf_bk;
 		comm_tmail_buf.len = len;
-		if (delay)
-		{
-			comm_tmail_buf.delay = delay;
-		}
+		comm_tmail_buf.delay = delay;
+
 		if (!(comm_type & 0x80))
 			result = rt_mq_send(comm_tx_mq, &comm_tmail_buf, sizeof(comm_tmail_buf));
 		else
