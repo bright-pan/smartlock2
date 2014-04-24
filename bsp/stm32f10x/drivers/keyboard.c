@@ -293,6 +293,7 @@ kb_thread_entry(void *parameters)
 	KB_DATA_TYPEDEF kb_data;
 	KB_ERROR_TYPEDEF kb_error;
 	uint16_t key_id;
+    uint8_t error_detect = 0;
 
 	kb_data_init(&kb_data);
 
@@ -305,6 +306,7 @@ kb_thread_entry(void *parameters)
             data = 0;
             size = rt_device_read(device, 0, &data, 2);
             if (size == 2) {
+                error_detect = 0;
 				// filter keyboard input
 				if (data != 0x0100) {
 					data &= 0xfeff;
@@ -461,6 +463,13 @@ kb_thread_entry(void *parameters)
 #if (defined RT_USING_FINSH) && (defined KB_DEBUG)
 				rt_kprintf("read key board failure!!!\n");
 #endif
+                if (error_detect++ > 2)
+                {
+                    rt_device_control(device, RT_DEVICE_CTRL_CONFIGURE, RT_NULL);
+                    error_detect = 0;
+                    
+                }
+
 			}
 
 		} else { //time out
