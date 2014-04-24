@@ -161,9 +161,25 @@ static rt_size_t rt_kb_write(rt_device_t dev, rt_off_t pos,const void* buffer, r
 static rt_err_t rt_kb_control(rt_device_t dev, rt_uint8_t cmd, void *args)
 {
     struct kb_device* kb = (struct kb_device*)dev;
-
+    rt_err_t result;
     RT_ASSERT(kb != RT_NULL);
+    switch (cmd)
+    {
+		case RT_DEVICE_CTRL_CONFIGURE:
+			/* disable rx irq */
+            if (kb->i2c_device.bus != RT_NULL)
+            {
+                result = rt_mutex_take(&(kb->i2c_device.bus->lock), RT_WAITING_FOREVER);
+                if (result == RT_EOK)
+                {
+                    kb->i2c_device.bus->ops->configure(&kb->i2c_device, &kb->i2c_device.config);
 
+                    /* release lock */
+                    rt_mutex_release(&(kb->i2c_device.bus->lock));
+                }
+            }
+			break;
+    }
     return RT_EOK;
 }
 

@@ -19,6 +19,8 @@
 #include <rtthread.h>
 #include <stm32f10x.h>
 
+#define RT_DEVICE_CTRL_CONFIGURE 0x15
+
 #define DEVICE_NAME_KEYBOARD "kboard"
 
 #endif /* _KB_DEV_H_ */
