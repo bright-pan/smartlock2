@@ -22,6 +22,8 @@ typedef struct
 static GSM_Module GSMModule;//gsmÄ£¿é¶ÔÏó
 static rt_mutex_t GSMMutex = RT_NULL;
 
+
+
 /** 
 @brief 	close gsm module
 @param 	void
@@ -175,6 +177,7 @@ void mail_gprs_process(GSM_Mail_p Mail)
   {
     RT_DEBUG_LOG(SHOW_GSM_OP_INFO,("COM send Data Fail\n"));
     GSMModule.LinkStatus = 0;
+    GSMModule.WorkMode = 0;
   }
   rt_free(buf);
 }
@@ -213,31 +216,35 @@ void mail_sms_process(GSM_Mail_p Mail)
 void gsm_entry_init(void)
 {
   rt_uint8_t retry; 
-    
-	//open gsm 
-	retry = 3;
-	while((!GSMModule.WorkStatus) & retry)
-	{
-	  if(gsm_setup(&GSMModule) == RT_TRUE)
-	  {
-	    break;
-	  }
-	  retry--;
-	  if(retry == 0)
-	  {
-	    rt_thread_delay(1000);
-	    retry = 3;
-	  }
-	}
+  rt_uint8_t linkcnt;
 
-	retry = 3;
-	while((!GSMModule.LinkStatus) & retry)
+  linkcnt = 5;
+	while(linkcnt--)
 	{
-	  if(gsm_link(&GSMModule) == RT_TRUE)
-	  {
-	    break;
-	  }
-	  retry--;
+		retry = 3;
+		while((!GSMModule.WorkStatus) & retry)
+		{
+		  if(gsm_setup(&GSMModule) == RT_TRUE)
+		  {
+		    break;
+		  }
+		  retry--;
+		  if(retry == 0)
+		  {
+		    rt_thread_delay(1000);
+		    retry = 3;
+		  }
+		}
+
+		retry = 3;
+		while((!GSMModule.LinkStatus) & retry)
+		{
+		  if(gsm_link(&GSMModule) == RT_TRUE)
+		  {
+		    return;
+		  }
+		  retry--;
+		}
 	}
 }
 
@@ -303,8 +310,6 @@ void GSM_manage_thread_entry(void *arg)
 			gsm_mail_process(GsmMail);
 			rt_sem_release(GsmMail->ResultSem);
 		}
-		
-		rt_thread_delay(1);
 	}
 }
 
@@ -365,6 +370,10 @@ void gsm_mail_send(GSM_Mail_p mail)
 	{
 		rt_kprintf("GSM_Mail_mb is RT_NULL\n");
 		return ;
+	}
+	if(mail->type == GSM_MAIL_LINK)
+	{
+		GSMModule.LinkStatus = 0;
 	}
 	rt_mb_send(GSM_Mail_mb,(rt_uint32_t)mail);
 }
