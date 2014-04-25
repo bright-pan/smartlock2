@@ -399,7 +399,7 @@ static rt_int8_t send_file_process(rt_uint8_t Type,rt_uint32_t Time,char *FileNa
       SendOk += RecvResult;
       if(RecvResult > 0)
       {
-				rt_kprintf("sendok = %d",SendOk);
+				rt_kprintf("Send ok number:%d\n",SendOk);
       }
 		}
 		else
