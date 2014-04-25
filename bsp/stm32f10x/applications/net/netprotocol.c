@@ -17,7 +17,7 @@ rt_mailbox_t net_datrecv_mb = RT_NULL;//接收邮箱
 rt_event_t net_event = RT_NULL;       //网络协议层的事件
 
 //发送窗口
-net_sendwnd sendwnd_node[NET_WND_MAX_NUM];
+net_sendwnd sendwnd_node[NET_WND_MAX_NUM+1];
 rt_timer_t  sendwnd_timer = RT_NULL;//发送窗口的定时器
 
 //序号
@@ -25,9 +25,18 @@ net_col net_order;
 
 
 void message_ASYN(rt_uint8_t type);
+
 //邮件接收处理函数
-rt_uint8_t (*NetMsg_Recv_handle)(net_recvmsg_p Mail,void *UserData);
-void (*NetMsg_Recv_CallBack_Fun)(void);
+////////////////////////////////////////////////////////////////////////////////////////
+typedef rt_uint8_t 
+				(*msg_callback_type1)(net_recvmsg_p Mail,void *UserData);
+
+typedef void 
+				(*msg_callback_type2)(void);
+
+msg_callback_type1	NetMsg_Recv_handle = RT_NULL;
+msg_callback_type2	NetMsg_Recv_CallBack_Fun = RT_NULL;
+msg_callback_type2	Net_Mail_Heart = RT_NULL;
 
 /*
 设置:报文接收的回调函数
@@ -48,6 +57,15 @@ void Net_NetMsg_thread_callback(void (*Callback)(void))
 	}
 }
 
+void Net_Mail_Heart_callback(void (*Callback)(void))
+{
+	if(Callback != RT_NULL)
+	{
+		Net_Mail_Heart = Callback;
+	}
+}
+////////////////////////////////////////////////////////////////////////////////////////
+
 /*
 功能:协议接收到报文的回调函数
 */
@@ -67,8 +85,10 @@ static rt_int8_t Net_MsgRecv_handle(net_recvmsg_p Mail,void *UserData)
 	return result;
 }
 
-/*
-功能:协议处理线程回调函数
+/** 
+@brief 协议处理线程回调函数
+@param void
+@retval void
 */
 static void Net_Msg_thread_callback(void)
 {
@@ -1043,7 +1063,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
 */
 static void clear_wnd_mail_pos(rt_int8_t pos,rt_int8_t result)
 {
-	if(pos >= 0 && pos < NET_WND_MAX_NUM)
+	if(pos >= 0 && pos <= NET_WND_MAX_NUM)
 	{
 		//如果是异步
 		if(sendwnd_node[pos].mail.sendmode == ASYN_MODE)
@@ -1224,10 +1244,17 @@ static rt_int8_t get_wnd_mail_resend_pos(void)
 /*
 功能:将新报文添加到窗口中
 */ 
-static void sendwnd_add_new_mail(net_msgmail_p msg)
+static rt_err_t sendwnd_add_new_mail(net_msgmail_p msg)
 {
 	rt_int8_t pos;
-	
+	rt_err_t  result = RT_EOK;
+
+	if(msg == RT_NULL)
+	{
+    RT_DEBUG_LOG(SHOW_WND_INFO,("Window add a mail is NULL\n"));
+
+    return RT_ERROR;
+	}
   pos = get_wnd_space_pos();
   if(pos != -1)
   {
@@ -1243,11 +1270,14 @@ static void sendwnd_add_new_mail(net_msgmail_p msg)
     //net_msg_send_mail(msg);
     if(msg->user != RT_NULL)
     {
-      rt_free(msg->user);
-      msg->user = RT_NULL;
+      sendwnd_node[NET_WND_MAX_NUM].mail = *msg;
+      clear_wnd_mail_pos(NET_WND_MAX_NUM,SEND_FAIL);
     }
+    rt_kprintf("\n\nNet window is Full!!!!!\n\n\n");
+    result = RT_ERROR;
   }
 
+	return result;
 }
 
 /*
@@ -1298,19 +1328,25 @@ static void net_msg_user_delete(net_msgmail_p msg)
 		sendwnd_node[pos].permission =  permission;
   }
 }*/
-/*
-功能:报文窗口处理 
+
+/** 
+@brief 发送报文窗口处理函数
+@param msg :发送的报文邮件
+@retval RT_EOK   :处理成功
+@retval RT_ERROR :处理失败
 */
-static void net_send_wnd_process(net_msgmail_p msg)
+static rt_err_t net_send_wnd_process(net_msgmail_p msg)
 {
   rt_int8_t pos;
+  rt_err_t  result = RT_EOK;
 
 	if(msg->type & 0x80)
 	{
 		//不需要添加到窗口的报文释放资源
 		RT_DEBUG_LOG(SHOW_WND_INFO,("This ACK Message\n"));
 		net_msg_user_delete(msg);
-		return ;
+		
+		return RT_TRUE;
 	}
   pos = get_wnd_mail_pos(msg->type);
   if(pos != -1)//have this type mail
@@ -1318,7 +1354,7 @@ static void net_send_wnd_process(net_msgmail_p msg)
 		//同种类型的新邮件
 		if(get_wnd_order_pos(msg->col) == -1)
 		{
-		 sendwnd_add_new_mail(msg);
+		 result = sendwnd_add_new_mail(msg);
 		}
 		else
 		{
@@ -1328,10 +1364,10 @@ static void net_send_wnd_process(net_msgmail_p msg)
   }
   else //新类型的邮件
   {
-		sendwnd_add_new_mail(msg);
+		result = sendwnd_add_new_mail(msg);
   }
 
-  
+	return result;  
 }
 
 /*
@@ -1409,22 +1445,29 @@ static void net_send_message(net_msgmail_p msg,void *user)
 {
   net_message_p message = RT_NULL;
   net_encrypt data;
+  rt_uint8_t  run = 1;
 
   message = rt_calloc(1,sizeof(net_message));
   RT_ASSERT(message != RT_NULL);
   message->sendsem = rt_sem_create("netsend",0,RT_IPC_FLAG_FIFO);
 	RT_ASSERT(message->sendsem != RT_NULL);
-	
-  if(net_set_message(&data,msg) == RT_ERROR)//设置报文信息准备打包
-  {
-		return ;
-  }
 
-  net_pack_data(message,&data);//打包
+	while(run--)
+	{
+		//设置报文信息准备打包
+    if(net_set_message(&data,msg) == RT_ERROR){break;}
 
-  net_send_wnd_process(msg);//将数据添加到窗口
+    //打包
+		net_pack_data(message,&data);
+		
+    //将数据添加到窗口
+		if(net_send_wnd_process(msg) == RT_ERROR){break;}
 
-  net_send_hardware(message,0,user);//将一个包发送给物理接口
+		//将一个包发送给物理接口
+		net_send_hardware(message,0,user);
+
+		break;
+	}
 
   RT_DEBUG_LOG(SHOW_MEM_INFO,("release memory resource\n"));
   rt_sem_delete(message->sendsem);
@@ -1789,6 +1832,48 @@ static void net_recv_message(net_msgmail_p mail)
 	}
 }
 
+/** 
+@brief 窗口邮件在定时器中重发处理
+@param pos: 重发邮件在窗口中的位置
+@retval 0 没有可以重发邮件
+@retval 1 重发
+@retval 2 重发三次失败
+@retval 0xff 操作失败
+*/
+rt_uint8_t net_wnd_resend_mail(rt_int8_t pos)
+{
+	if((pos < 0) ||(pos >= NET_WND_MAX_NUM))
+	{
+		rt_kprintf("The position of the window found is illegal function:%s line:%d\n", 
+								__FUNCTION__, __LINE__);
+		return 0xff;
+	}
+  if(sendwnd_node[pos].curtime >= sendwnd_node[pos].mail.outtime)
+	{
+		RT_DEBUG_LOG(SHOW_WND_INFO,("Window Mail %d Out Time\n",pos));
+		sendwnd_node[pos].curtime = 0;
+		sendwnd_node[pos].mail.col.bit.resend++;
+		if(sendwnd_node[pos].mail.col.bit.resend < sendwnd_node[pos].mail.resend)
+		{
+		  //小于重发次数
+		  net_msg_send_mail(&sendwnd_node[pos].mail);
+		  
+		  return 1;
+		}        
+		else
+		{
+		  //清除窗口的邮件信息不再重发
+		  clear_wnd_mail_pos(pos,SEND_FAIL);
+		  //标志断线 申请重新登陆
+		  net_event_process(2,NET_ENVET_ONLINE);
+		  net_event_process(0,NET_ENVET_RELINK);
+		  set_wnd_allmail_permission(-1);
+		  return 2;
+		}	
+	}
+	
+	return 0;
+}
 
 /*
 功能:定时器处理函数
@@ -1796,6 +1881,7 @@ static void net_recv_message(net_msgmail_p mail)
 static void net_wnd_timer_process(void)
 {
   rt_int8_t pos;
+  rt_int8_t result;
   
   if(net_event_process(1,NET_ENVET_CONNECT) == 0)
   {
@@ -1805,28 +1891,12 @@ static void net_wnd_timer_process(void)
 	pos = get_wnd_mail_pos(NET_MSGTYPE_LANDED);
 	if(pos != -1)
 	{
-		//如果有登陆邮件
-		if(sendwnd_node[pos].curtime >= sendwnd_node[pos].mail.outtime)
+		result = net_wnd_resend_mail(pos);
+		if(result == 2)
 		{
-		  sendwnd_node[pos].curtime = 0;
-		  sendwnd_node[pos].mail.col.bit.resend++;
-			if(sendwnd_node[pos].mail.col.bit.resend < sendwnd_node[pos].mail.resend)
-			{
-				//小于重发次数
-				net_msg_send_mail(&sendwnd_node[pos].mail);
-			}        
-			else
-			{
-				//清除窗口的邮件信息不再重发
-				clear_wnd_mail_pos(pos,SEND_FAIL);
-				//标志断线 申请重新登陆
-				net_event_process(2,NET_ENVET_ONLINE);
-				net_event_process(0,NET_ENVET_RELINK);
-				set_wnd_allmail_permission(-1);
-			}
 			RT_DEBUG_LOG(SHOW_WND_INFO,("Try Connection Again Server\n"));
 		}
-		
+
 		return;
 	}
 	//如果是断线状态
@@ -1834,31 +1904,29 @@ static void net_wnd_timer_process(void)
 	{
 		return ;
 	}
+	//有心跳包
+	pos = get_wnd_mail_pos(NET_MSGTYPE_HEART);
+	if(pos != -1)
+	{
+    net_wnd_resend_mail(pos);
+    
+		return ;
+	}
   for(pos = 0 ;pos < NET_WND_MAX_NUM; pos++)
   {
     if(sendwnd_node[pos].permission != -1)
     {
-      if(sendwnd_node[pos].curtime >= sendwnd_node[pos].mail.outtime)
+      result = net_wnd_resend_mail(pos);
+      if(result == 1)
       {
-        RT_DEBUG_LOG(SHOW_WND_INFO,("Window Mail %d Out Time\n",pos));
-        sendwnd_node[pos].curtime = 0;
-        sendwnd_node[pos].mail.col.bit.resend++;
-        if(sendwnd_node[pos].mail.col.bit.resend < sendwnd_node[pos].mail.resend)
-        {
-        	//小于重发次数
-          net_msg_send_mail(&sendwnd_node[pos].mail);
-          break;
-        }        
-        else
-        {
-        	//发送失败
-					clear_wnd_mail_pos(pos,SEND_FAIL);
-					set_wnd_allmail_permission(-1);
-					//标志断线 申请重新登陆
-					net_event_process(2,NET_ENVET_ONLINE);
-					net_event_process(0,NET_ENVET_RELINK);
-					break;
-        }
+				if(Net_Mail_Heart != RT_NULL)
+				{
+					Net_Mail_Heart();
+				}
+      }
+      if(result != 0)
+      {
+				break;
       }
     }
   }
@@ -1925,6 +1993,11 @@ static void net_sendwnd_timer(void *parameters)
 	if(pos != -1)
 	{
 	  //登陆报文优先发送
+		net_wnd_curconut_process(pos);
+	}
+	else if(get_wnd_mail_pos(NET_MSGTYPE_HEART) != -1)
+	{
+		pos = get_wnd_mail_pos(NET_MSGTYPE_HEART);
 		net_wnd_curconut_process(pos);
 	}
 	else if(get_wnd_mail_resend_pos() != -1)
