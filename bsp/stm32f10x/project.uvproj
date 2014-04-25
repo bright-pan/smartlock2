@@ -548,11 +548,6 @@
               <FilePath>.\drivers\pt8211.c</FilePath>
             </File>
             <File>
-              <FileName>keyboard.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\drivers\keyboard.c</FilePath>
-            </File>
-            <File>
               <FileName>kb_dev.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\drivers\kb_dev.c</FilePath>
@@ -571,6 +566,16 @@
               <FileName>i2c_core.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\drivers\i2c_core.c</FilePath>
+            </File>
+            <File>
+              <FileName>keyboard.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\keyboard.c</FilePath>
+            </File>
+            <File>
+              <FileName>iwdg.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\iwdg.c</FilePath>
             </File>
           </Files>
         </Group>

@@ -1,15 +1,8 @@
----- set_fprint_update_flag 匹配 (14 in 4 文件) ----
-apppubulic.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications):void set_fprint_update_flag(rt_uint16_t pos,rt_uint8_t new_status)
-apppubulic.h (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications):set_fprint_update_flag(rt_uint16_t pos,rt_uint8_t new_status);
-gprs.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications):		set_fprint_update_flag(key->KeyMapPos,0);
-rtthread-stm32.htm (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\build):<P><STRONG><a name="[193]"></a>set_fprint_update_flag</STRONG> (Thumb, 94 bytes, Stack size 16 bytes, apppubulic.o(.text))
-rtthread-stm32.htm (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\build):<BR><BR>[Stack]<UL><LI>Max Depth = 536<LI>Call Chain = set_fprint_update_flag &rArr; device_config_file_operate &rArr; unlink &rArr; dfs_file_unlink &rArr; fd_is_open &rArr; dfs_normalize_path &rArr; rt_strdup &rArr; rt_malloc &rArr; rt_sem_take &rArr; rt_timer_start &rArr; rt_schedule &rArr; _rt_scheduler_stack_check &rArr; list_thread &rArr; _list_thread &rArr; rt_kprintf &rArr; rt_vsnprintf &rArr; print_number
-rtthread-stm32.htm (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\build):<BR><BR>[Stack]<UL><LI>Max Depth = 608<LI>Call Chain = update_key_lib_remote &rArr; fprint_upload_process &rArr; set_fprint_update_flag &rArr; device_config_file_operate &rArr; unlink &rArr; dfs_file_unlink &rArr; fd_is_open &rArr; dfs_normalize_path &rArr; rt_strdup &rArr; rt_malloc &rArr; rt_sem_take &rArr; rt_timer_start &rArr; rt_schedule &rArr; _rt_scheduler_stack_check &rArr; list_thread &rArr; _list_thread &rArr; rt_kprintf &rArr; rt_vsnprintf &rArr; print_number
-rtthread-stm32.htm (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\build):<BR><BR>[Stack]<UL><LI>Max Depth = 624<LI>Call Chain = gprs_mail_manage_entry &rArr; update_key_lib_remote &rArr; fprint_upload_process &rArr; set_fprint_update_flag &rArr; device_config_file_operate &rArr; unlink &rArr; dfs_file_unlink &rArr; fd_is_open &rArr; dfs_normalize_path &rArr; rt_strdup &rArr; rt_malloc &rArr; rt_sem_take &rArr; rt_timer_start &rArr; rt_schedule &rArr; _rt_scheduler_stack_check &rArr; list_thread &rArr; _list_thread &rArr; rt_kprintf &rArr; rt_vsnprintf &rArr; print_number
-rtthread-stm32.htm (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\build):<LI><a href="#[193]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;set_fprint_update_flag
-rtthread-stm32.htm (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\build):<LI><a href="#[193]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;set_fprint_update_flag
-rtthread-stm32.htm (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\build):<LI><a href="#[193]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;set_fprint_update_flag
-rtthread-stm32.htm (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\build):<LI><a href="#[193]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;set_fprint_update_flag
-rtthread-stm32.htm (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\build):<BR><BR>[Stack]<UL><LI>Max Depth = 568<LI>Call Chain = fprint_upload_process &rArr; set_fprint_update_flag &rArr; device_config_file_operate &rArr; unlink &rArr; dfs_file_unlink &rArr; fd_is_open &rArr; dfs_normalize_path &rArr; rt_strdup &rArr; rt_malloc &rArr; rt_sem_take &rArr; rt_timer_start &rArr; rt_schedule &rArr; _rt_scheduler_stack_check &rArr; list_thread &rArr; _list_thread &rArr; rt_kprintf &rArr; rt_vsnprintf &rArr; print_number
-rtthread-stm32.htm (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\build):<LI><a href="#[193]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;set_fprint_update_flag
-rtthread-stm32.htm (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\build):<BR><BR>[Stack]<UL><LI>Max Depth = 584<LI>Call Chain = gprs_mail_process &rArr; fprint_upload_process &rArr; set_fprint_update_flag &rArr; device_config_file_operate &rArr; unlink &rArr; dfs_file_unlink &rArr; fd_is_open &rArr; dfs_normalize_path &rArr; rt_strdup &rArr; rt_malloc &rArr; rt_sem_take &rArr; rt_timer_start &rArr; rt_schedule &rArr; _rt_scheduler_stack_check &rArr; list_thread &rArr; _list_thread &rArr; rt_kprintf &rArr; rt_vsnprintf &rArr; print_number
+---- NET_ENVET_CONNECT 匹配 (4 in 3 文件) ----
+netphysics.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):		net_event_process(0,NET_ENVET_CONNECT);
+netphysics.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):    net_event_process(2,NET_ENVET_CONNECT);
+netprotocol.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):  if(net_event_process(1,NET_ENVET_CONNECT) == 0)
+netprotocol.h (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):#define  NET_ENVET_CONNECT             0X01<<3 //正在连接
+---- NET_ENVET_CONNECT 搜索遇到错误 (1) ----
+以下1个文件不能被处理：
+E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\JLinkLog.txt : 文件打不开。

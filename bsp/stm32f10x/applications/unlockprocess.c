@@ -23,7 +23,7 @@
 
 #define PRINTF_FPRINT_INFO  1
 
-#define AUTO_LOCK_TIME			20 		//自动上锁时间
+#define AUTO_LOCK_TIME			10 		//自动上锁时间
 
 #define MOTOR_PWM_COUNT     50		//电机pwm个数
 #define READ_FPRINT_COUNT   20		//指纹采集次数
@@ -31,7 +31,8 @@
 #define FP_ERR_ALARM_CNT    3     //最大允许指纹错误的次数
 
 //fingerprint data transfer mail
-static rt_mq_t fprint_mq = RT_NULL;
+static rt_mq_t FPdata_mq = RT_NULL;
+static rt_mutex_t keymanage_mutex = RT_NULL;
 
 typedef struct 
 {
@@ -142,10 +143,10 @@ INIT_APP_EXPORT(fprint_cb_init);
 */
 int fprint_mail_init(void)
 {
-	if(fprint_mq == RT_NULL)
+	if(FPdata_mq == RT_NULL)
 	{
-		fprint_mq = rt_mq_create("fprint",sizeof(FPrintData),3,RT_IPC_FLAG_FIFO);
-		RT_ASSERT(fprint_mq != RT_NULL);
+		FPdata_mq = rt_mq_create("fprint",sizeof(FPrintData),3,RT_IPC_FLAG_FIFO);
+		RT_ASSERT(FPdata_mq != RT_NULL);
 	}
 
 	return 0;
@@ -230,16 +231,21 @@ rt_bool_t motor_rotate(rt_bool_t direction)
 
 /** 
 @brief  motor auto lock
-@param  vonew_statusid
+@param  flag: RT_TRUE clear counter
+							RT_FALSE summary counter 
 @retval void
 */
-void motor_auto_lock(void)
+void motor_auto_lock(rt_bool_t clear)
 {
 	rt_uint8_t flag = 0;
   rt_base_t leave;
   
   leave = rt_hw_interrupt_disable();
 
+	if(clear == RT_TRUE)
+	{
+		LockStatus.cnt = 0;
+	}
 	LockStatus.cnt++;
 	//rt_kprintf("%d",LockStatus.cnt);
 	if(LockStatus.cnt > AUTO_LOCK_TIME)
@@ -278,7 +284,7 @@ void send_fprint_dat_mail(FPrintData *data)
 {
 	if(data != RT_NULL)
 	{
-    rt_mq_send(fprint_mq,(void *)data,sizeof(*data));
+    rt_mq_send(FPdata_mq,(void *)data,sizeof(*data));
 	}
 	else
 	{
@@ -310,7 +316,7 @@ static void fprint_error_clear(void)
 																		RT_NULL,
 																		RF_ERR_OUTTIME_T,
 																		RT_TIMER_FLAG_ONE_SHOT);
-	RT_ASSERT(fp_error.timer  != RT_NULL)
+		RT_ASSERT(fp_error.timer  != RT_NULL)
 	}
 	rt_timer_stop(fp_error.timer);
 	fp_error.ErrCnt = 0;
@@ -375,7 +381,7 @@ void fprint_unlock_process(LOCAL_MAIL_TYPEDEF *mail)
 	{
 		return ;
 	}
-	result = rt_mq_recv(fprint_mq,(void*)&data,sizeof(FPrintData),10);
+	result = rt_mq_recv(FPdata_mq,(void*)&data,sizeof(FPrintData),10);
 	if(result == RT_EOK)
 	{
 		if(data.KeyMapPos == 0XFFFF)
@@ -386,6 +392,7 @@ void fprint_unlock_process(LOCAL_MAIL_TYPEDEF *mail)
 		{
 			rt_uint16_t *keypos;
 
+			motor_auto_lock(RT_TRUE);
 			fprint_error_clear();
 			keypos = (rt_uint16_t *)rt_calloc(1,2);
 			RT_ASSERT(keypos != RT_NULL);
@@ -407,7 +414,7 @@ void fprint_unlock_process(LOCAL_MAIL_TYPEDEF *mail)
 @param  void
 @retval void
 */
-void fprint_key_add(LOCAL_MAIL_TYPEDEF *mail)
+static void fprint_key_add(LOCAL_MAIL_TYPEDEF *mail)
 {
 	rt_err_t result;
 	FPrintData data;
@@ -429,14 +436,14 @@ void fprint_key_add(LOCAL_MAIL_TYPEDEF *mail)
 			rt_uint16_t keypos;
 			
 			keypos = get_new_key_pos();
-      fprint_result = send_fp_mail(FPRINT_CMD_ENROLL,keypos,1);
-      if(fprint_result == FPRINT_EOK)
-      {
+		fprint_result = send_fp_mail(FPRINT_CMD_ENROLL,keypos,1);
+		if(fprint_result == FPRINT_EOK)
+		{
 				break;
       }
       else
       {
-      	result = rt_mq_recv(fprint_mq,(void*)&data,sizeof(FPrintData),10);
+      	result = rt_mq_recv(FPdata_mq,(void*)&data,sizeof(FPrintData),10);
       }
 		}
     if(fprint_result != FPRINT_EOK)
@@ -461,7 +468,7 @@ void fprint_key_add(LOCAL_MAIL_TYPEDEF *mail)
 	}
 	
 	//如果是已经注册的指纹
-	result = rt_mq_recv(fprint_mq,(void*)&data,sizeof(FPrintData),1000);
+	result = rt_mq_recv(FPdata_mq,(void*)&data,sizeof(FPrintData),1000);
 	if(result == RT_EOK)
 	{
 		//是否为管理员指纹
@@ -489,7 +496,7 @@ void fprint_key_add(LOCAL_MAIL_TYPEDEF *mail)
           fprint_result = send_fp_mail(FPRINT_CMD_ENROLL,keypos,1);
 					if(fprint_result == FPRINT_EOK)
 					{
-						result = rt_mq_recv(fprint_mq,(void*)&data,sizeof(FPrintData),50);
+						result = rt_mq_recv(FPdata_mq,(void*)&data,sizeof(FPrintData),50);
 						if(result == RT_EOK)
 						{
 							if(check_fprint_pos_inof(data.KeyMapPos) == RT_TRUE)
@@ -504,7 +511,7 @@ void fprint_key_add(LOCAL_MAIL_TYPEDEF *mail)
 					}
 					else
 					{
-						result = rt_mq_recv(fprint_mq,(void*)&data,sizeof(FPrintData),2);
+						result = rt_mq_recv(FPdata_mq,(void*)&data,sizeof(FPrintData),2);
 					}
 	      }
 					
@@ -566,6 +573,66 @@ void fprint_key_add(LOCAL_MAIL_TYPEDEF *mail)
   //fprint_module_init();
 	system_event_process(2,SYS_FPRINT_REGISTER);
 }
+
+
+void fprint_key_add_porcess(LOCAL_MAIL_TYPEDEF *mail)
+{
+	rt_err_t result;
+	
+  result = keylib_mutex_op(RT_TRUE,RT_WAITING_NO);
+	if(result == RT_EOK)
+	{
+	  fprint_key_add(mail);
+	  keylib_mutex_op(RT_FALSE,RT_WAITING_NO);
+	}
+	else
+	{
+ 		RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("Can't add keys at the same time!!!\n"));
+    send_voice_mail(VOICE_TYPE_REGISTER_FIAL);
+	}
+}
+
+/** 
+@brief  init key library mutex
+@param  void
+@retval 1:ok 
+@retval 0:fail
+*/
+int init_keylib_mutex(void)
+{
+	keymanage_mutex = rt_mutex_create("keylib",RT_IPC_FLAG_FIFO);
+	RT_ASSERT(keymanage_mutex != RT_NULL);
+
+	return 0;
+}
+INIT_APP_EXPORT(init_keylib_mutex);
+
+
+/** 
+@brief  init key library mutex
+@param  way:RT_TRUE take;RT_FALSE release
+@param  wait mutex wait time
+@retval 1:ok 
+@retval 0:fail
+*/
+rt_err_t keylib_mutex_op(rt_bool_t way,rt_int32_t wait)
+{
+	rt_err_t result = RT_EOK;
+	
+	if(way == RT_TRUE)
+	{
+		result = rt_mutex_take(keymanage_mutex,wait);
+	}
+	else
+	{
+		rt_mutex_release(keymanage_mutex);
+	}
+
+	return result;
+}
+
+
+
 
 #ifdef RT_USING_FINSH
 #include <finsh.h>
