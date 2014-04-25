@@ -264,9 +264,9 @@ typedef union {
 static rt_mq_t fprint_mq;
 
 //fprint output data API
-static fprint_call_back 	fprintf_ok_fun;
-static fprint_call_back 	fprintf_error_fun;
-static fprint_call_back 	fprintf_null_fun;
+static fprint_call_back 	fprintf_ok_fun = RT_NULL;
+static fprint_call_back 	fprintf_error_fun = RT_NULL;
+static fprint_call_back 	fprintf_null_fun = RT_NULL;
 
 void fp_ok_callback(fprint_call_back fun)
 {
