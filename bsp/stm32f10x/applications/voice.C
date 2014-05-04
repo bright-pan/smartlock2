@@ -9,7 +9,11 @@
 #include <dfs.h>
 #include <dfs_posix.h>
 
+#include "gpio_pin.h"
+
 #define SHOW_PRINTF_INFO     0
+
+#define VOICE_AMP_WAY_OP		 1
 
 const char VoiceFileMap[][16] = 
 {
@@ -69,15 +73,55 @@ typedef struct
   rt_uint8_t  ReadyBuf2;  //准备播放的Buff
 }VoicePlayData;
 
+#ifdef VOICE_AMP_WAY_OP
+static void amp_operation(rt_bool_t flag)
+{
+	rt_device_t dev;
+	rt_uint8_t  data;
+
+	dev = rt_device_find(DEVICE_NAME_VOICE_AMP);
+	RT_ASSERT(dev != RT_NULL);
+	if(!(dev->open_flag & RT_DEVICE_OFLAG_OPEN))
+	{
+		rt_device_open(dev,RT_DEVICE_FLAG_RDWR);
+	}
+	if(flag == RT_TRUE)
+	{
+		//开功放
+		data = 1;
+		rt_device_write(dev,0,&data,1);
+	}
+	else
+	{
+		//关功放		
+    data = 0;
+    rt_device_write(dev,0,&data,1);
+	}
+}
+#else
+static void amp_operation(rt_bool_t flag)
+{
+	if(flag == RT_TRUE)
+	{
+		//开功放
+		send_ctx_mail(COMM_TYPE_VOICE_AMP,0,10,"\x01",1);	
+	}
+	else
+	{
+		//关功放
+		send_ctx_mail(COMM_TYPE_VOICE_AMP,0,10,"\x00",1); 
+	}
+}
+#endif
 
 static void voice_open_amp(void)
 {
-	send_ctx_mail(COMM_TYPE_VOICE_AMP,0,10,"\x01",1);	
+	amp_operation(RT_TRUE);
 }
 
 static void voice_close_amp(void)
 {
-  send_ctx_mail(COMM_TYPE_VOICE_AMP,0,10,"\x00",1);  
+	amp_operation(RT_FALSE);   
 }
 
 static rt_err_t wav_data_send(rt_device_t dev, void *buffer)

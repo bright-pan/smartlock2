@@ -306,13 +306,15 @@ struct gpio_pin_user_data voice_amp_user_data =
 };
 gpio_device voice_amp_device;
 
-void rt_hw_voice_amp_register(void)
+int rt_hw_voice_amp_register(void)
 {
   gpio_device *gpio_device = &voice_amp_device;
   struct gpio_pin_user_data *gpio_user_data = &voice_amp_user_data;
 
   gpio_device->ops = &gpio_pin_user_ops;
   rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR), gpio_user_data);
+
+  return 0;
 }
 
 /* gsm led device
