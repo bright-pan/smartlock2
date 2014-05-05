@@ -6,6 +6,7 @@
 #include "netprotocol.h"
 #include "crc16.h"
 #include "des.h"
+#include "untils.h"
 
 //发送结果
 #define SEND_OK            0
@@ -301,8 +302,9 @@ void net_des_pack(rt_uint8_t *buffer,rt_size_t size,net_encrypt *data)
   des_context ctx_key0_enc, ctx_key1_enc;
   
   //设置k0 k1
-  des_setkey_enc(&ctx_key0_enc, "\x01\x02\x03\x04\x05\x06\x07\x08");
-  des_setkey_enc(&ctx_key1_enc, "\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa");
+  des_setkey_enc(&ctx_key0_enc, device_config.param.key0);
+  des_setkey_enc(&ctx_key1_enc, device_config.param.key1);
+
   if(data->cmd == NET_MSGTYPE_LANDED)
   {
  
@@ -1490,7 +1492,7 @@ static rt_int8_t net_des_decode(net_recvmsg_p msg)
   buffer = (rt_uint8_t *)msg+2;
 
   //设置解密钥匙K1
-  des_setkey_dec(&ctx_key1_enc, "\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa");
+  des_setkey_dec(&ctx_key1_enc, device_config.param.key1);
 
   //小端转换
   msg->length = net_rev16(msg->length);

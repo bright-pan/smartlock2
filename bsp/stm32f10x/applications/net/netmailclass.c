@@ -69,8 +69,21 @@ void send_net_landed_mail(void)
 	rt_memcpy((char *)UserData->id,
 	        (const char *)device_config.param.device_id,8);
 	rt_memcpy((char *)UserData->k1,
-	        (const char *)device_config.param.key0,8);
+	        (const char *)device_config.param.key1,8);
 	UserData->version = 0x01;
+
+#if(SHWO_PRINTF_INFO == 1)
+	{
+		rt_uint8_t i;
+
+		rt_kprintf("K0:\n");
+		for(i=0;i<8; i++)
+		{
+			rt_kprintf("%x,",UserData->k1[i]);
+		}
+		rt_kprintf("\n");
+	}
+#endif
 
 	mail->user = UserData;
   
