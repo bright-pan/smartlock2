@@ -252,6 +252,169 @@ rt_bool_t check_fprint_pos_inof(rt_uint16_t pos)
 	return RT_FALSE;	
 }
 
+
+/** 
+@brief  Testing the key at this time of the open access
+@param  pos :key position
+@retval RT_TRUE :  have 
+@retval RT_FALSE : none
+*/
+rt_bool_t check_open_access(rt_uint16_t pos)
+{
+	rt_bool_t 	result = RT_FALSE;
+	rt_uint16_t start_h;
+	rt_uint16_t start_m;
+	rt_uint16_t end_h;
+	rt_uint16_t end_m;
+	struct tm   *timep;
+	rt_uint32_t time;
+	
+	if(pos >= KEY_NUMBERS)
+	{
+		return RT_FALSE;
+	}
+	//获取时间数据
+	start_h = (device_config.param.key[pos].start_time & 0xffff0000)>>16;
+	start_m = (device_config.param.key[pos].start_time & 0x0000ffff);
+
+	end_h = (device_config.param.key[pos].end_time & 0xffff0000)>>16;
+	end_m = (device_config.param.key[pos].end_time & 0x0000ffff);
+
+	time = sys_cur_date();
+	timep = localtime((const time_t *)&time);
+
+	RT_DEBUG_LOG(SHOW_APP_DEBUG_INFO
+								,("start_h:%d start_m:%d end_h:%d end_m:%d\n"
+								,start_h
+								,start_m
+								,end_h
+								,end_m));
+								
+	RT_DEBUG_LOG(SHOW_APP_DEBUG_INFO,("%d:%d:%d\n"
+								,timep->tm_hour
+								,timep->tm_min
+								,timep->tm_wday));
+	
+
+  config_file_mutex_op(RT_TRUE);
+
+	switch(device_config.param.key[pos].operation_type)
+	{
+		case OPERATION_TYPE_FOREVER:
+		{
+			result = RT_TRUE;
+			
+			break;
+		}
+		case OPERATION_TYPE_EVERYDAY:
+		{
+			if((timep->tm_hour >= start_h) && (timep->tm_hour <= end_h))
+			{
+				if(timep->tm_hour == start_h)
+				{
+					if(timep->tm_min >= start_m)
+					{
+						result =  RT_TRUE;
+					}
+					else
+					{
+						result = RT_FALSE;
+					}
+				}
+				else if(timep->tm_hour == end_h)
+				{
+          if(timep->tm_min <= end_m)
+	        {
+	          result =  RT_TRUE;
+	        }
+	        else
+	        {
+	          result = RT_FALSE;
+	        }
+				}
+				else
+				{
+					result = RT_TRUE;
+				}
+			}
+			else
+			{
+				result = RT_FALSE;
+			}
+			
+			break;
+		}
+		case OPERATION_TYPE_WORKDAY:
+		{
+			if((timep->tm_wday > 0) && (timep->tm_wday < 6))
+			{
+				if((timep->tm_hour >= start_h) && (timep->tm_hour <= end_h))
+				{
+					if(timep->tm_hour == start_h)
+					{
+						if(timep->tm_min >= start_m)
+						{
+							result =  RT_TRUE;
+						}
+						else
+						{
+							result = RT_FALSE;
+						}
+					}
+					else if(timep->tm_hour == end_h)
+					{
+	          if(timep->tm_min <= end_m)
+		        {
+		          result =  RT_TRUE;
+		        }
+		        else
+		        {
+		          result = RT_FALSE;
+		        }
+					}
+					else
+					{
+						result = RT_TRUE;
+					}
+				}
+				else
+				{
+					result = RT_FALSE;
+				}
+			}
+			else
+			{
+				result = RT_FALSE;
+			}
+			
+			break;
+		}
+		case OPERATION_TYPE_ONCE:
+		{
+			if((time >= device_config.param.key[pos].start_time) 
+					&& (time <= device_config.param.key[pos].end_time))
+			{
+				result = RT_TRUE;
+			}
+			else
+			{
+				result = RT_FALSE;
+			}
+			
+			break;
+		}
+		default:
+		{
+			break;
+		}
+	}
+
+	config_file_mutex_op(RT_FALSE);
+	
+	return result;
+}
+
+
 /*
 功能:操作网络协议中的各种事件
 参数:mode 模式  type 事件类型
@@ -379,6 +542,25 @@ void syskey(void)
 	rt_kprintf("cur key num :%d\n",get_fprint_key_num());
 }
 FINSH_FUNCTION_EXPORT(syskey,"show system key lib information");
+
+void testu32(void)
+{
+	rt_uint32_t time;
+	struct tm   *p;
+
+	time = sys_cur_date();
+
+	p = localtime((const time_t *)&time);
+	rt_kprintf("%d :",p->tm_sec);
+	rt_kprintf("%d :",p->tm_min);
+	rt_kprintf("%d :",p->tm_hour);
+	rt_kprintf("%d ",p->tm_mday);
+	rt_kprintf("%d ",p->tm_mon);
+	rt_kprintf("%d ",p->tm_year);
+	rt_kprintf("%d ",p->tm_wday);
+	rt_kprintf("%d ",p->tm_yday);
+}
+FINSH_FUNCTION_EXPORT(testu32,"test data");
 
 #endif
 

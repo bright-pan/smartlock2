@@ -18,6 +18,7 @@
 #include "netfile.h"
 #include "untils.h"
 #include "fprint.h"
+#include "keyboard.h"
 #include "apppubulic.h"
 
 #define UPDATE_KEY_CNT    60 //钥匙同步周期
@@ -30,30 +31,26 @@ static rt_mq_t gprs_mq = RT_NULL;//gprs data mail
 @param  keytype :key of type
 @retval void
 */
-static void fprint_upload_process(GPRS_MAIL_TYPEDEF *mail,rt_uint8_t keytype)
+static void key_upload_process(rt_uint8_t keytype,rt_uint16_t UpdatePos)
 {
-	FPrintData *key; 
 	net_keyadd_user *data;
 	rt_uint16_t keypos;
 	rt_bool_t result;
 
-	RT_ASSERT(mail != RT_NULL);
-	key = (FPrintData *)mail->user;
-
 	data = rt_calloc(1,sizeof(*data));
 	RT_ASSERT(data != RT_NULL);
 
-	keypos = key->KeyMapPos;
+	keypos = UpdatePos;
   keypos = net_rev16(keypos);
   rt_memcpy(data->data.col,&keypos,2);
 
 	data->data.type = keytype;
-  net_uint32_copy_string(data->data.createt,device_config.param.key[key->KeyMapPos].created_time);
+  net_uint32_copy_string(data->data.createt,device_config.param.key[UpdatePos].created_time);
 	data->data.accredit = 0;
 
-  net_uint32_copy_string(data->data.start_t,device_config.param.key[key->KeyMapPos].start_time);
+  net_uint32_copy_string(data->data.start_t,device_config.param.key[UpdatePos].start_time);
   
-  net_uint32_copy_string(data->data.stop_t,device_config.param.key[key->KeyMapPos].end_time);
+  net_uint32_copy_string(data->data.stop_t,device_config.param.key[UpdatePos].end_time);
 
 	switch(keytype)
 	{
@@ -74,8 +71,10 @@ static void fprint_upload_process(GPRS_MAIL_TYPEDEF *mail,rt_uint8_t keytype)
 		}
 		default:
 		{
-			rt_free(data);
+			
 			rt_kprintf("Upload key type is error !!!\nfunction:%s line:%d\n",__FUNCTION__, __LINE__);
+			rt_free(data);
+			
 			return ;
 		}
 	}
@@ -84,12 +83,12 @@ static void fprint_upload_process(GPRS_MAIL_TYPEDEF *mail,rt_uint8_t keytype)
 	
 	RT_ASSERT(data->data.data != RT_NULL);
 
-	device_config_key_operate(key->KeyMapPos, KEY_TYPE_FPRINT, data->data.data,0);
+	device_config_key_operate(UpdatePos, keytype, data->data.data,0);
 	
 	result = msg_mail_keyadd(data);
 	if(result == RT_TRUE)
 	{
-		set_key_update_flag(key->KeyMapPos,0);
+		set_key_update_flag(UpdatePos,0);
 	}
 
 	rt_free(data->data.data);
@@ -113,20 +112,10 @@ void update_key_lib_remote(void)
 		
 		pos = get_key_update_pos();
 		if(pos < KEY_NUMBERS)
-		{
-			FPrintData *key = RT_NULL;
-  		GPRS_MAIL_TYPEDEF mail;   
-  		
-      key = rt_calloc(1,sizeof(*key));
-  		RT_ASSERT(key != RT_NULL);
-			key->KeyMapPos = pos;
-      mail.user = key;
-
+		{  		
       KeyType = get_key_type(pos);
-      fprint_upload_process(&mail,KeyType);
-      
-      rt_free(key);
-		}
+      key_upload_process(KeyType,pos);
+ 		}
 	}
 }
 
@@ -171,9 +160,27 @@ static void gprs_mail_process(GPRS_MAIL_TYPEDEF *mail)
 		}
 		case ALARM_TYPE_FPRINT_KEY_ADD:
 		{
-			fprint_upload_process(mail,KEY_TYPE_FPRINT);
+			FPrintData *data = RT_NULL;
+			
+			data = mail->user;
+			RT_ASSERT(RT_NULL != RT_NULL);
+			key_upload_process(KEY_TYPE_FPRINT,data->KeyMapPos);
 			
 			break;
+		}
+		case ALARM_TYPE_CODE_KEY_ADD:
+		{
+			KEYBOARD_USER_P data = RT_NULL;
+
+			RT_ASSERT(RT_NULL != RT_NULL);
+			data = mail->user;
+			key_upload_process(KEY_TYPE_KBOARD,data->KeyPos);
+			
+			break;
+		}
+		case ALARM_TYPE_GPRS_SYS_TIME_UPDATE:
+		{
+			msg_mail_adjust_time();
 		}
 		default:
 		{
@@ -204,6 +211,7 @@ void gprs_mail_delete(GPRS_MAIL_TYPEDEF *mail)
 void gprs_mail_manage_entry(void* arg)
 {
 	rt_err_t mq_result;
+	rt_uint8_t flag = 0;
 	GPRS_MAIL_TYPEDEF mail;
 	rt_uint32_t count = UPDATE_KEY_CNT - 1;
 	
@@ -214,7 +222,17 @@ void gprs_mail_manage_entry(void* arg)
 		if(net_event_process(1,NET_ENVET_ONLINE) == 1)
 		{
 			rt_thread_delay(10);
+			flag = 0;
+			
 			continue;
+		}
+		else
+		{
+			if(flag == 0)
+			{
+        send_gprs_mail(ALARM_TYPE_GPRS_SYS_TIME_UPDATE,0,RT_NULL);
+        flag = 1;
+			}
 		}
 
 		//更新钥匙 手机号 

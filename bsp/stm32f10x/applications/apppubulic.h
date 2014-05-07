@@ -38,6 +38,10 @@ set_key_update_flag(rt_uint16_t pos,rt_uint8_t new_status);
 rt_uint16_t 
 get_key_update_pos(void);
 
+//检测开门时的权限
+rt_bool_t 
+check_open_access(rt_uint16_t pos);
+
 //系统当前时间
 rt_uint32_t 
 sys_cur_date(void);
@@ -49,6 +53,7 @@ system_event_process(rt_uint8_t mode,rt_uint32_t type);
 //获得一个位置的钥匙类型
 KEY_TYPE 
 get_key_type(rt_uint16_t pos);
+
 
 #endif
 
