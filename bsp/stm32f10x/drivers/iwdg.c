@@ -1,6 +1,6 @@
 #include "iwdg.h"
 
-#define USE_SYS_IWDG
+//#define USE_SYS_IWDG
 
 #ifdef USE_SYS_IWDG
 static void IWDG_Init(rt_uint8_t prer,rt_uint16_t rlr) 
@@ -30,7 +30,7 @@ int IWDG_Init_Process(void)
 {
 	rt_timer_t timer = RT_NULL;
 
-	IWDG_Init(IWDG_Prescaler_64,625);//40k/64 = 625hz 1s÷”
+	IWDG_Init(IWDG_Prescaler_64,625*2);//40k/64 = 625hz 1s÷”
 	
 	timer = rt_timer_create("IWDG",
 													IWDG_Timer_OutTime,
@@ -48,6 +48,6 @@ int IWDG_Init_Process(void)
 	return 0;
 }
 
-//INIT_DEVICE_EXPORT(IWDG_Init_Process);
+INIT_DEVICE_EXPORT(IWDG_Init_Process);
 #endif
 
