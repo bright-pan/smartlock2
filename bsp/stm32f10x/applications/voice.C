@@ -1,8 +1,16 @@
 /**
-功能:语音播放 
-版本:
+  ******************************************************************************
+  * @file    voice.c
+  * @author  wangzw <wangzw@yuettak.com>
+  * @version v0.1
+  * @date    2014-5-1
+  * @brief   The file management voice broadcast function.
+  ******************************************************************************
+  * @attention
+  *
+  ******************************************************************************
+  */
 
-*/
 #include "voice.h"
 #include "comm.h"
 
@@ -11,9 +19,9 @@
 
 #include "gpio_pin.h"
 
-#define SHOW_PRINTF_INFO     0
+#define SHOW_PRINTF_INFO    		 0
 
-#define VOICE_AMP_WAY_OP		 1
+#define VOICE_AMP_IN_MAINBORAD	 1 //功放在主板上
 
 const char VoiceFileMap[][16] = 
 {
@@ -30,6 +38,12 @@ const char VoiceFileMap[][16] =
 	{"/10.WAV"},
 	{"/11.WAV"},
 	{"/12.WAV"},
+	{"/13.WAV"},
+	{"/14.WAV"},
+	{"/15.WAV"},
+	{"/16.WAV"},
+	{"/17.WAV"},
+	{"/18.WAV"},
 };
 
 
@@ -73,7 +87,7 @@ typedef struct
   rt_uint8_t  ReadyBuf2;  //准备播放的Buff
 }VoicePlayData;
 
-#ifdef VOICE_AMP_WAY_OP
+#if(VOICE_AMP_IN_MAINBORAD == 1) 
 static void amp_operation(rt_bool_t flag)
 {
 	rt_device_t dev;
@@ -90,12 +104,16 @@ static void amp_operation(rt_bool_t flag)
 		//开功放
 		data = 1;
 		rt_device_write(dev,0,&data,1);
+		
+    RT_DEBUG_LOG(SHOW_PRINTF_INFO,("Open AMP\n"));
 	}
 	else
 	{
 		//关功放		
     data = 0;
     rt_device_write(dev,0,&data,1);
+    
+    RT_DEBUG_LOG(SHOW_PRINTF_INFO,("Close AMP\n"));
 	}
 }
 #else
@@ -111,6 +129,7 @@ static void amp_operation(rt_bool_t flag)
 		//关功放
 		send_ctx_mail(COMM_TYPE_VOICE_AMP,0,10,"\x00",1); 
 	}
+	RT_DEBUG_LOG(SHOW_PRINTF_INFO,("AMP set %X\n",flag));
 }
 #endif
 
