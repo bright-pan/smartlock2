@@ -18,7 +18,34 @@
 #include <rtthread.h>
 #include <stm32f10x.h>
 
+typedef enum
+{
+	KEY_NOTIFYSOUND,		//提示声音
+	KEY_UNLOCK_OK,			//解锁成功
+	KEY_CODE_ERROR,			//密码错误
+	KEY_UNLOCK_FAIL,		//开门失败
+	KEY_SET_MODE,				//密码设置模式
+	KEY_NORMAL_MODE,    //普通模式
+	KEY_INPUT_NEW_CODE, //提示输入新密码
+	KEY_REINPUT_NEW_CODE,//提示重新输入
+	KEY_CHOOSE_MODE,     //选择模式
+	KEY_MODE_INPUT_ERROR,//模式选择错误
+	KEY_REGISTER_OK,     //注册成功
+	KEY_REGISTER_FAIL,   //注册失败
+	KEY_LIB_FULL,    //钥匙库已满
+}KEYBOARD_EVENT_TYPE;
+
+typedef  rt_err_t (*keyboard_call_back)(void *user);
+
+typedef struct
+{
+	rt_uint16_t KeyPos;
+	KEYBOARD_EVENT_TYPE event;
+}KEYBOARD_USER,*KEYBOARD_USER_P;
+
 __INLINE
 void kb_detect(void);
+
+void key_api_port_callback(keyboard_call_back fun);
 
 #endif /* _KEYBOARD_H_ */
