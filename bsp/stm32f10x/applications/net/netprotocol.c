@@ -1721,6 +1721,7 @@ static void net_recv_message(net_msgmail_p mail)
 			case NET_MSGTYPE_TIME_ACK:
 			{
 				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_TIME_ACK\n"));
+				Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
 			case NET_MSGTYPE_SETK0:

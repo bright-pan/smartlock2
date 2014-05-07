@@ -66,16 +66,19 @@ DEVICE_CONFIG_TYPEDEF device_config = {
 		//lock gate alarm time
 		30,
 		//device id
-		{0x12,0x34,0x56,0x78,0x9a,0xbc,0xde,0xf0},
+		//{0x12,0x34,0x56,0x78,0x9a,0xbc,0xde,0xf0},
+		{0x99,0x99,0x15,0x10,0x90,0x00,0x01,0x50},
 		//CDKEY
 		{0x9C,0x9E,0x11,0x36,0xD3,0x64,0xAF,0xA9},
 		//key0
-		{0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa},
+		//{0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa},
+		{0x01,0x02,0x03,0x04,0x05,0x06,0x99,0x99},
 		//key1
-		{0x00,0x00,0xCB,0x17,0x62,0x2F,0x7A,0xC5},
+		//{0x00,0x00,0xCB,0x17,0x62,0x2F,0x7A,0xC5},
+		{0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa},
 		//
 		0,
-        "123456",
+    "123456",
 	},
 };
 
@@ -286,11 +289,11 @@ device_config_file_operate(DEVICE_CONFIG_TYPEDEF *config, uint8_t flag)
 
 	if (flag) {
         cnts = write(fd, &(config->param), sizeof(config->param));
-		if (cnts != sizeof(config->param))
+		if (cnts == sizeof(config->param))
 			result = cnts;
 	} else {
         cnts = read(fd, &(config->param), sizeof(config->param));
-		if (cnts != sizeof(config->param))
+		if (cnts == sizeof(config->param))
 			result = cnts;
 	}
 	close(fd);
@@ -441,8 +444,8 @@ void sysconfig(void)
 				   device_config.param.key[i].created_time,
 				   device_config.param.key[i].start_time,
 				   device_config.param.key[i].end_time);
-        device_config_key_operate(i, device_config.param.key[i].key_type, temp, 0);
-        rt_kprintf("key : %s\n", temp);
+        //device_config_key_operate(i, device_config.param.key[i].key_type, temp, 0);
+        //rt_kprintf("key : %s\n", temp);
 	}
     /*
 	  rt_memcpy(temp, "123456", 6);

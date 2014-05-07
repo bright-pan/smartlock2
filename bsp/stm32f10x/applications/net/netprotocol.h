@@ -497,6 +497,13 @@ typedef struct
 	rt_uint8_t crc16[2];
 }net_recv_motor;
 
+//较时
+typedef struct 
+{
+	rt_uint8_t result;
+	rt_uint8_t time[4];
+}net_recv_time;
+
 //接收报文的数据域
 typedef union 
 {
@@ -519,6 +526,7 @@ typedef union
   net_recv_keydel     keydel;       //钥匙删除
   net_recv_keyadd_ack KeyDelAck;    //钥匙删除应答
 	net_recv_motor      motor;        //电机控制
+	net_recv_time       timing;       //网络对时
 }net_recv_data;
 
 //接收报文的描述结构体

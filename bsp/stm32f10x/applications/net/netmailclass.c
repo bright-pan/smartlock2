@@ -110,7 +110,7 @@ void net_mail_heart(void)
   mail->sendmode = ASYN_MODE;
   mail->col.byte = get_msg_new_order(RT_TRUE);
 
-	UserData->door_status = motor_status();
+	UserData->door_status = (motor_status() == RT_TRUE)?0:1;
 
 	mail->user = UserData;
   
@@ -854,7 +854,8 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 	 	}
 	 	case NET_MSGTYPE_TIME_ACK:
 	 	{
-	 		net_motor_Control(Mail);
+	 		ProcessResult = net_set_system_time(Mail);
+	 		result = (ProcessResult == RT_EOK)?1:0;
 			break;
 	 	}
 	  default:

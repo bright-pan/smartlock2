@@ -97,6 +97,10 @@ rt_err_t net_key_add_process(net_recvmsg_p mail)
 	else
 	{
 		RT_DEBUG_LOG(SHOW_NETKEY_INFO,("Remote key information is too old!!!\n"));
+		RT_DEBUG_LOG(SHOW_NETKEY_INFO
+									,("Update Time:%s\nOld Time:%s\n"
+									,ctime((time_t*)&key->created_time)
+									,ctime((time_t*)&device_config.param.key[keypos].created_time))); 
 	}
 	
 	rt_free(key);

@@ -20,6 +20,7 @@
 #include "gpio_pwm.h"
 #include "camera.h"
 #include "sms.h"
+#include "keyboard.h"
 
 #define PRINTF_FPRINT_INFO  1
 
@@ -135,6 +136,160 @@ int fprint_cb_init(void)
 	return 0;
 }
 INIT_APP_EXPORT(fprint_cb_init);
+
+/** 
+@brief  keyboard API process function
+@param  user:keyboard process data
+@retval 0 :succeed 1:fail
+*/
+rt_err_t keyboard_event_process(void *user)
+{
+	rt_uint32_t AlarmTime;
+	KEYBOARD_USER_P data = (KEYBOARD_USER_P)user;
+
+	RT_ASSERT(data != RT_NULL);
+	AlarmTime = sys_cur_date();
+	/*
+	KEY_NOTIFYSOUND,		
+	KEY_UNLOCK_OK,			//解锁成功
+	KEY_CODE_ERROR,			//密码错误
+	KEY_UNLOCK_FAIL,		//开门失败
+	KEY_SET_MODE,				//密码设置模式
+	KEY_NORMAL_MODE,    //普通模式
+	KEY_INPUT_NEW_CODE, //提示输入新密码
+	*/
+	switch(data->event)
+	{
+		case KEY_NOTIFYSOUND:
+		{
+			//提示声音
+			RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("滴\n"));
+
+			send_voice_mail(VOICE_TYPE_KEY2_HINT);
+			break;
+		}
+		case KEY_UNLOCK_OK:
+		{
+			//解锁成功
+			RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("解锁成功\n"));
+
+			send_voice_mail(VOICE_TYPE_KEY1_OK);
+			break;
+		}
+		case KEY_CODE_ERROR:
+		{
+			//密码错误
+			RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("密码错误\n"));
+			
+			send_voice_mail(VOICE_TYPE_KEY1_ERRPR);
+			break;
+		}
+		case KEY_UNLOCK_FAIL:
+		{
+			//开门失败
+			RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("开门失败\n"));
+
+			send_voice_mail(VOICE_TYPE_ALARM);
+			send_gprs_mail(ALARM_TYPE_RFID_KEY_ERROR,AlarmTime,RT_NULL);
+			break;
+		}
+		case KEY_SET_MODE:
+		{
+			//密码设置模式
+			RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("密码设置模式\n"));
+
+			send_voice_mail(VOICE_TYPE_KEY2_SET_MODE);
+			break;
+		}
+		case KEY_NORMAL_MODE:
+		{
+			//普通模式
+			RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("普通模式\n"));
+
+			send_voice_mail(VOICE_TYPE_KEY2_NORMAL_MODE);
+			break;
+		}
+		case KEY_INPUT_NEW_CODE:
+		{
+			//提示输入新密码
+			RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("提示输入新密码\n"));
+
+			send_voice_mail(VOICE_TYPE_KEY2_INPUT);
+			break;
+		}
+		case KEY_REINPUT_NEW_CODE:
+		{
+			//提示重新输入密码
+			RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("提示重新输入密码\n"));
+
+			send_voice_mail(VOICE_TYPE_KEY2_RRINPUT);
+			break;
+		}
+		case KEY_CHOOSE_MODE:
+		{
+			//请选择设置模式
+			RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("请选择设置模式\n"));
+
+			send_voice_mail(VOICE_TYPE_KEY2_CHOOSE_MODE);
+			break;
+		}
+		case KEY_MODE_INPUT_ERROR:
+		{
+			//模式错误
+			RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("模式错误\n"));
+
+			send_voice_mail(VOICE_TYPE_KEY2_MODE_ERROR);
+			break;
+		}
+		case KEY_REGISTER_OK:
+		{
+			//注册成功 
+			KEYBOARD_USER_P KeyData;
+
+			KeyData = rt_calloc(1,sizeof(KEYBOARD_USER));
+			RT_ASSERT(KeyData != RT_NULL);
+			KeyData->KeyPos = data->KeyPos;
+			
+			RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("注册成功\n"));
+			send_voice_mail(VOICE_TYPE_REGISTER_OK);
+			send_gprs_mail(ALARM_TYPE_CODE_KEY_ADD,AlarmTime,KeyData);
+			break;
+		}
+		case KEY_REGISTER_FAIL:
+		{
+			//注册失败
+			RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("注册失败\n"));
+			send_voice_mail(VOICE_TYPE_REGISTER_FIAL);
+			break;
+		}
+		case KEY_LIB_FULL:
+		{
+			//钥匙库已满
+			RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("钥匙库已满\n"));
+			send_voice_mail(VOICE_TYPE_KEY_FULL);
+			break;
+		}
+		default:
+		{
+			break;
+		}
+	}
+
+	return RT_EOK;
+}
+
+/** 
+@brief  initialization keyboard API port
+@param  void
+@retval 0 :succeed 1:fail
+*/
+int keyboard_cb_init(void)
+{
+	key_api_port_callback(keyboard_event_process);
+	
+	return 0;
+}
+INIT_APP_EXPORT(keyboard_cb_init);
 
 /** 
 @brief  initialization fingerprint data mail 
@@ -392,15 +547,23 @@ void fprint_unlock_process(LOCAL_MAIL_TYPEDEF *mail)
 		{
 			rt_uint16_t *keypos;
 
-			motor_auto_lock(RT_TRUE);
-			fprint_error_clear();
-			keypos = (rt_uint16_t *)rt_calloc(1,2);
-			RT_ASSERT(keypos != RT_NULL);
-
-			*keypos = data.KeyMapPos;
-			motor_rotate(RT_TRUE);
-			send_voice_mail(VOICE_TYPE_KEY1_OK);
-			send_gprs_mail(ALARM_TYPE_FPRINT_KEY_RIGHT,mail->time,(void *)keypos);
+			result = check_open_access(data.KeyMapPos);
+			if(result == RT_TRUE)
+			{
+        motor_auto_lock(RT_TRUE);
+	      fprint_error_clear();
+	      keypos = (rt_uint16_t *)rt_calloc(1,2);
+	      RT_ASSERT(keypos != RT_NULL);
+	      *keypos = data.KeyMapPos;
+	      motor_rotate(RT_TRUE);
+	      send_voice_mail(VOICE_TYPE_KEY1_OK);
+	      send_gprs_mail(ALARM_TYPE_FPRINT_KEY_RIGHT,mail->time,(void *)keypos);
+			}
+			else
+			{
+				//没有权限
+        fprint_error_process(mail);
+			}
 		}
 	}
 	else
