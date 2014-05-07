@@ -1,8 +1,20 @@
----- NET_ENVET_CONNECT 匹配 (4 in 3 文件) ----
-netphysics.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):		net_event_process(0,NET_ENVET_CONNECT);
-netphysics.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):    net_event_process(2,NET_ENVET_CONNECT);
-netprotocol.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):  if(net_event_process(1,NET_ENVET_CONNECT) == 0)
-netprotocol.h (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications\net):#define  NET_ENVET_CONNECT             0X01<<3 //正在连接
----- NET_ENVET_CONNECT 搜索遇到错误 (1) ----
-以下1个文件不能被处理：
-E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\JLinkLog.txt : 文件打不开。
+---- key 匹配 (23 in 0 文件) ----
+gprs.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications):  *          sending and The key synchronization, and other functions.
+gprs.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications):@brief  key upload process
+gprs.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications):@param  keytype :key of type
+gprs.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications):	FPrintData *key; 
+gprs.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications):	key = (FPrintData *)mail->user;
+gprs.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications):	keypos = key->KeyMapPos;
+gprs.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications):  net_uint32_copy_string(data->data.createt,device_config.param.key[key->KeyMapPos].created_time);
+gprs.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications):  net_uint32_copy_string(data->data.start_t,device_config.param.key[key->KeyMapPos].start_time);
+gprs.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications):  net_uint32_copy_string(data->data.stop_t,device_config.param.key[key->KeyMapPos].end_time);
+gprs.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications):			rt_kprintf("Upload key type is error !!!\nfunction:%s line:%d\n",__FUNCTION__, __LINE__);
+gprs.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications):	device_config_key_operate(key->KeyMapPos, KEY_TYPE_FPRINT, data->data.data,0);
+gprs.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications):		set_key_update_flag(key->KeyMapPos,0);
+gprs.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications):@brief  update key lib remote
+gprs.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications):			FPrintData *key = RT_NULL;
+gprs.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications):      key = rt_calloc(1,sizeof(*key));
+gprs.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications):  		RT_ASSERT(key != RT_NULL);
+gprs.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications):			key->KeyMapPos = pos;
+gprs.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications):      mail.user = key;
+gprs.c (E:\code\SmartLock_V4\smartlock2\bsp\stm32f10x\applications):      rt_free(key);
