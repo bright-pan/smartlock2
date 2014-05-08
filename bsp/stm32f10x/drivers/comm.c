@@ -182,6 +182,38 @@ process_request(uint8_t cmd, uint8_t order, uint8_t *rep_frame, uint16_t length)
 				/* process data */
 				break;
 			}
+		case COMM_TYPE_SWITCH:
+			{
+
+					//gpio_pin_output(DEVICE_NAME_VOICE_AMP, 1);
+#if (defined RT_USING_FINSH) && (defined COMM_DEBUG)
+				rt_kprintf("the comm swtich push %d\n", *rep_frame);
+#endif // RT_USING_FINSH
+                switch (*rep_frame) {
+                    case 1: {
+                        // key1
+                        break;
+                    }
+                    case 2: {
+                        // key2
+                        break;
+                    }
+                    case 3: {
+                        // key3
+                        break;
+                    }
+                    case 4: {
+                        //VIN
+                        break;
+                    }
+                    default :{
+                        break;
+                    }
+                }
+				result = CTW_STATUS_OK;
+				send_ctx_mail(rep_cmd, order, 0, &result, 1);
+				break;
+			}
 		default :
 			{
 #if (defined RT_USING_FINSH) && (defined COMM_DEBUG)
