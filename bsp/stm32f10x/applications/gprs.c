@@ -83,7 +83,7 @@ static void key_upload_process(rt_uint8_t keytype,rt_uint16_t UpdatePos)
 	
 	RT_ASSERT(data->data.data != RT_NULL);
 
-	device_config_key_operate(UpdatePos, keytype, data->data.data,0);
+	device_config_key_operate(UpdatePos,(KEY_TYPE)keytype, data->data.data,0);
 	
 	result = msg_mail_keyadd(data);
 	if(result == RT_TRUE)
@@ -172,7 +172,7 @@ static void gprs_mail_process(GPRS_MAIL_TYPEDEF *mail)
 		{
 			KEYBOARD_USER_P data = RT_NULL;
 
-			RT_ASSERT(RT_NULL != RT_NULL);
+			RT_ASSERT(mail != RT_NULL);
 			data = mail->user;
 			key_upload_process(KEY_TYPE_KBOARD,data->KeyPos);
 			
