@@ -334,7 +334,7 @@ int voice_thread_init(void)
 	
   thread_id = rt_thread_create("voice",
 		                           voice_thread_entry, 
-		                           RT_NULL,1024,90, 20);//优先级不能太高
+		                           RT_NULL,1024,103, 20);//优先级不能太高
   if(thread_id != RT_NULL)
   {
     rt_thread_startup(thread_id);
