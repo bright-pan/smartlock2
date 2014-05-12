@@ -24,9 +24,13 @@ rt_mutex_t comm_tx_mutex = RT_NULL;
 extern char smsc[20];
 extern char phone_call[20];
 
+//receive data
 static struct rt_ringbuffer gprsringbuffer;
 static rt_uint8_t buffer[BUF_SIZE];
 static rt_mutex_t gprs_mutex = RT_NULL;
+
+//receive event
+static comm_call_back sub_event_api = RT_NULL;
 
 typedef enum {
 
@@ -35,6 +39,14 @@ typedef enum {
 	FRAME_STATUS_OK = 2,
 
 }FRAME_STATUS;
+
+void sub_event_callback(comm_call_back fun)
+{
+	if(fun != RT_NULL)
+	{	
+		sub_event_api = fun;
+	}
+}
 
 FRAME_STATUS
 check_frame(uint8_t *str)
@@ -191,6 +203,8 @@ process_request(uint8_t cmd, uint8_t order, uint8_t *rep_frame, uint16_t length)
 			}
 		case COMM_TYPE_SWITCH:
 			{
+        result = CTW_STATUS_OK;
+        send_ctx_mail(rep_cmd, order, 0, &result, 1);
 
 					//gpio_pin_output(DEVICE_NAME_VOICE_AMP, 1);
 #if (defined RT_USING_FINSH) && (defined COMM_DEBUG)
@@ -199,10 +213,24 @@ process_request(uint8_t cmd, uint8_t order, uint8_t *rep_frame, uint16_t length)
                 switch (*rep_frame) {
                     case 1: {
                         // key1
+                        if(sub_event_api != RT_NULL)
+                        {
+                        	COMM_SUB_USER data;
+
+                        	data.event = SUB_ENT_KEY1;
+													sub_event_api((void *)&data);
+                        }
                         break;
                     }
                     case 2: {
                         // key2
+                        if(sub_event_api != RT_NULL)
+                        {
+                        	COMM_SUB_USER data;
+
+                        	data.event = SUB_ENT_KEY2;
+													sub_event_api((void *)&data);
+                        }
                         break;
                     }
                     case 3: {
@@ -217,8 +245,6 @@ process_request(uint8_t cmd, uint8_t order, uint8_t *rep_frame, uint16_t length)
                         break;
                     }
                 }
-				result = CTW_STATUS_OK;
-				send_ctx_mail(rep_cmd, order, 0, &result, 1);
 				break;
 			}
 		default :

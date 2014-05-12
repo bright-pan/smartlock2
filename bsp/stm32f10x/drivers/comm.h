@@ -50,6 +50,25 @@ typedef enum {
 extern rt_mq_t comm_tx_mq;
 extern rt_mutex_t comm_mutex;
 
+//subplate receive event
+typedef enum
+{
+	SUB_ENT_KEY1,
+	SUB_ENT_KEY2,
+	SUB_ENT_KEY3,
+	SUB_ENT_KEY4,
+}COMM_SUB_EVENTDEF;
+
+typedef struct
+{
+	COMM_SUB_EVENTDEF event;
+}COMM_SUB_USER,*COMM_SUB_USER_P;
+
+
+typedef  
+rt_err_t (*comm_call_back)(void *user);
+
+
 void
 comm_tx_thread_entry(void *parameters);
 void
@@ -63,5 +82,9 @@ send_frame(rt_device_t device, COMM_TMAIL_TYPEDEF *mail, uint8_t order);
 
 rt_size_t 
 comm_recv_gprs_data(rt_uint8_t *buffer,rt_size_t size);
+
+void 
+sub_event_callback(comm_call_back fun);
+
 
 #endif /* _COMM_H_ */
