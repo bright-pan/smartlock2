@@ -86,6 +86,13 @@ process_response(uint8_t cmd, uint8_t *rep_frame, uint16_t length)
 				result = *rep_frame;
 				break;
 			}
+        case COMM_TYPE_ADC:
+            {
+#if (defined RT_USING_FINSH) && (defined COMM_DEBUG)
+				rt_kprintf("the response cmd %02x, adc value is %02X!\n", cmd, *((uint16_t *)rep_frame)));
+#endif // RT_USING_FINSH
+                break;
+            }
 		default :
 			{
 #if (defined RT_USING_FINSH) && (defined COMM_DEBUG)
