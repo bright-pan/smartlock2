@@ -16,6 +16,8 @@
 #include <dfs_elm.h>
 #include <dfs_fs.h>
 #include "dfs_posix.h"
+#include "apppubulic.h"
+
 //#include "eeprom.h"
 //#include "funtable.h"
 #define UNTILS_DEBUG
@@ -32,7 +34,7 @@ DEVICE_CONFIG_TYPEDEF device_config = {
 				"8613316975697"
 			},
 			{
-				1,
+				0,
 				"8618675557185"
 			},
 		},
