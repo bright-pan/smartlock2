@@ -14,6 +14,7 @@
 #include "gpio_exti.h"
 #include "gpio_pin.h"
 #include "keyboard.h"
+#include "untils.h"
 
 extern rt_device_t rtc_device;
 
@@ -1345,9 +1346,19 @@ void EXTI15_10_IRQHandler(void)
 	rt_interrupt_leave();
 }
 
+static int rt_hw_gpio_exti_enable(void)
+{
+    device_enable(DEVICE_NAME_SWITCH1);
+    device_enable(DEVICE_NAME_SWITCH2);
+    device_enable(DEVICE_NAME_SWITCH3);
+    device_enable(DEVICE_NAME_KEY);
+    return 0;
+}
+
 INIT_DEVICE_EXPORT(rt_hw_switch1_register);
 INIT_DEVICE_EXPORT(rt_hw_switch2_register);
 INIT_DEVICE_EXPORT(rt_hw_switch3_register);
 
 INIT_DEVICE_EXPORT(rt_hw_key_register);
 
+INIT_APP_EXPORT(rt_hw_gpio_exti_enable);

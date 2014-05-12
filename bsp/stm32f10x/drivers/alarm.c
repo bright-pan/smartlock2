@@ -96,10 +96,6 @@ void alarm_thread_entry(void *parameter)
 		rt_kprintf("rtc_device is not exist!!!");
 #endif // RT_USING_FINSH
 	}
-	// open device
-	device_enable(DEVICE_NAME_SWITCH1);
-	device_enable(DEVICE_NAME_SWITCH2);
-    	device_enable(DEVICE_NAME_SWITCH3);
 	while (1)
 	{
 		rt_memset(&alarm_mail_buf, 0, sizeof(alarm_mail_buf));
