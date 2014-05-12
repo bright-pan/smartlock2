@@ -21,7 +21,7 @@ typedef struct
 
 void camera_send_mail(ALARM_TYPEDEF alarm_type,rt_uint32_t time);
 
-void pic_file_sem_operate(rt_bool_t arg);
+rt_err_t pic_file_sem_operate(rt_bool_t arg);
 
 //void get_pic_file_name(char *name);
 

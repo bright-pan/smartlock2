@@ -78,16 +78,25 @@ rt_uint8_t CM_ReadBuf[16] = {0x56,0x00,0x32,0x0C,0x00,0x0a,0x00,0x00,0x00,0x00,0
 	rt_sprintf(name,"/%d.jpg",Camera_sem->value);
 }*/
 
-void pic_file_sem_operate(rt_bool_t arg)
+/** 
+@brief  图片文件信号量操作
+@param  RT_TRUE :释放信号量
+@retval RT_EOK  :超时/错误
+*/
+rt_err_t pic_file_sem_operate(rt_bool_t arg)
 {
+	rt_err_t result;
+	
 	if(arg == RT_TRUE)
 	{
-		rt_sem_take(Camera_sem,RT_WAITING_FOREVER);
+		result = rt_sem_take(Camera_sem,100);
 	}
 	else
 	{
-		rt_sem_release(Camera_sem);
+		result = rt_sem_release(Camera_sem);
 	}
+
+	return result;
 }
 
 void printf_data(rt_uint8_t data[],rt_size_t size)
@@ -101,9 +110,12 @@ void printf_data(rt_uint8_t data[],rt_size_t size)
 	}
 	rt_kprintf("\n");
 }
-
-/*
-功能:摄像头电源控制
+ 
+/** 
+@brief  摄像头电源控制
+@param  camera :摄像头对象
+@param  status :新状态
+@retval void
 */
 static void camera_power_control(CameraObj_p camera,rt_uint8_t status)
 {
@@ -121,8 +133,10 @@ static void camera_power_control(CameraObj_p camera,rt_uint8_t status)
 	rt_device_write(camera->Power,0,&status,1);
 }
 
-/*
-功能:获取ADC设备的adc值
+/** 
+@brief  获取ADC设备的adc值
+@param  dev :ADC设备
+@retval ADC的值
 */
 static rt_uint16_t get_adc_devce_value(rt_device_t dev)
 {
@@ -141,6 +155,12 @@ static rt_uint16_t get_adc_devce_value(rt_device_t dev)
   return ADC_Value;
 }
 
+/** 
+@brief  补光灯调光
+@param  camera :摄像头对象
+@param  value  :发光强度
+@retval void
+*/
 static void camera_light_led_work(CameraObj_p camera,rt_uint16_t value)
 {
 	rt_uint16_t counts;
@@ -176,8 +196,12 @@ static void camera_light_led_work(CameraObj_p camera,rt_uint16_t value)
 	rt_device_control(camera->LightLED, RT_DEVICE_CTRL_SET_PULSE_COUNTS, (void *)&counts);
 	rt_device_control(camera->LightLED, RT_DEVICE_CTRL_SEND_PULSE, (void *)0);
 }
-/*
-功能:补光控制
+
+/** 
+@brief  根据光敏控制补光灯
+@param  camera :摄像头对象
+@param  status :新状态
+@retval void
 */
 static void camera_light_control(CameraObj_p camera,rt_uint8_t status)
 {
@@ -203,8 +227,10 @@ static void camera_light_control(CameraObj_p camera,rt_uint8_t status)
 	}
 }
 
-/*
-功能:摄像头复位
+/** 
+@brief  复位摄像头
+@param  camera :摄像头对象
+@retval void
 */
 /*static void camera_reset(CameraObj_p camera)
 {
@@ -212,6 +238,12 @@ static void camera_light_control(CameraObj_p camera,rt_uint8_t status)
 	rt_thread_delay(1);
 	rt_device_read(camera->Uart,0,camera->data,CAMERA_BUF_SIZE);
 }
+*/
+
+/** 
+@brief  更新帧
+@param  camera :摄像头对象
+@retval void
 */
 void camera_update_frame(CameraObj_p camera)
 {
@@ -225,6 +257,11 @@ void camera_update_frame(CameraObj_p camera)
 	printf_data(camera->data,length);
 }
 
+/** 
+@brief  停止当前帧
+@param  camera :摄像头对象
+@retval void
+*/
 void camera_stop_cur_frame(CameraObj_p camera)
 {
 	rt_size_t length;
@@ -237,7 +274,11 @@ void camera_stop_cur_frame(CameraObj_p camera)
 	printf_data(camera->data,length);
 }
 
-
+/** 
+@brief  停止下一帧
+@param  camera :摄像头对象
+@retval void
+*/
 void camera_stop_next_frame(CameraObj_p camera)
 {
 	rt_size_t length;
@@ -250,7 +291,11 @@ void camera_stop_next_frame(CameraObj_p camera)
 	printf_data(camera->data,length);
 }
 
-
+/** 
+@brief  切换帧
+@param  camera :摄像头对象
+@retval void
+*/
 void camera_switch_frame(CameraObj_p camera)
 {
 	rt_size_t length;
@@ -263,7 +308,12 @@ void camera_switch_frame(CameraObj_p camera)
 	printf_data(camera->data,length);
 }
 
-
+/** 
+@brief  获取照片大小
+@param  camera :摄像头对象
+@retval -1 :获取数据错误
+@retval 0  :获取成功
+*/
 rt_int8_t camera_get_cur_size(CameraObj_p camera)
 {
 	volatile rt_size_t length;
@@ -296,6 +346,12 @@ rt_int8_t camera_get_cur_size(CameraObj_p camera)
 	return 0;
 }
 
+/** 
+@brief  将32位数据转换到数据组
+@param  array :数据地址
+@param  data  :要转换的数据
+@retval void
+*/
 static void uint32_to_array(rt_uint8_t *array,rt_uint32_t data)
 {
 	*array = (data>>24) & 0x000000ff;	
@@ -307,8 +363,12 @@ static void uint32_to_array(rt_uint8_t *array,rt_uint32_t data)
 	*array = (data>>0) & 0x000000ff;
 }
 
-/*
-功能:获取当前帧的某个包数据
+/** 
+@brief  从缓冲区中获得数据
+@param  camera :摄像头对象
+@param  pack :包序号
+@param  PackSize :包大小
+@retval void
 */
 void camera_get_cur_pack(CameraObj_p camera,rt_size_t pack,rt_size_t PackSize)
 {
@@ -325,6 +385,14 @@ void camera_get_cur_pack(CameraObj_p camera,rt_size_t pack,rt_size_t PackSize)
 	rt_device_write(camera->Uart,0,CM_ReadBuf,sizeof(CM_ReadBuf));
 }
 
+/** 
+@brief  从串口中读取数据
+@param  dev :串口设备
+@param  data :保存的地址
+@param  size :读取数据大小
+@retval -1 :超时
+@retval  0 :成功
+*/
 rt_int8_t uart_buf_read_data(rt_device_t dev,rt_uint8_t *data,rt_size_t size)
 {
 	volatile rt_size_t ReadResult = 0;
@@ -353,6 +421,14 @@ rt_int8_t uart_buf_read_data(rt_device_t dev,rt_uint8_t *data,rt_size_t size)
 	//rt_kprintf("cur outime %d\n",outtime);
 	return 0;
 }
+
+/** 
+@brief  把缓冲区中的数据保存到文件
+@param  FileID :文件索引
+@param  camera :摄像头对象
+@retval 0 :成功
+@retval -1:失败
+*/
 rt_int8_t camera_get_buf_data(int FileID,CameraObj_p camera)
 {
 	rt_size_t PackNum;
@@ -418,7 +494,11 @@ rt_int8_t camera_get_buf_data(int FileID,CameraObj_p camera)
 	return 0;
 }
 
-
+/** 
+@brief 创建摄像头所获取的资源
+@param  camera :摄像头对象
+@retval 对象地址
+*/
 static CameraObj_p camera_obj_create(void)
 {
 	CameraObj_p camera = RT_NULL;
@@ -467,6 +547,11 @@ static CameraObj_p camera_obj_create(void)
 	return camera;
 }
 
+/** 
+@brief  删除摄像头所获取的资源
+@param  camera :摄像头对象
+@retval void
+*/
 void camera_obj_delete(CameraObj_p camera)
 {
 	rt_free(camera);
@@ -479,7 +564,13 @@ void camera_timer(void *parameter)
 	(*UseTime)++;
 }
 
-
+/** 
+@brief  摄像头数据处理
+@param  camera :摄像头参数结构
+@param  mail :报警邮件参数结构
+@param  FileName :目标文件名字
+@retval void
+*/
 void camera_data_process(CameraObj_p camera,CameraMail_p mail,char *FileName)
 {
 	int FileID;
@@ -513,6 +604,46 @@ void camera_data_process(CameraObj_p camera,CameraMail_p mail,char *FileName)
 	rt_timer_delete(timer);
 }
 
+/** 
+@brief  获得报警事件在报文中对应的类型
+@param  alarm :报警类型
+@retval 报文中的数据
+*/
+rt_uint8_t get_file_alarm_type(ALARM_TYPEDEF alarm)
+{
+	rt_uint8_t result = 0;
+
+	switch(alarm)
+	{
+		case ALARM_TYPE_CAMERA_IRDASENSOR:
+		{
+			result = 0;
+			break;
+		}
+		case ALARM_TYPE_RFID_KEY_ERROR:
+		{
+			result = 2;
+			break;
+		}
+		case ALARM_TYPE_GPRS_CAMERA_OP:
+		{
+			result = 11; 
+			break;
+		}
+		default:
+		{
+			break;
+		}
+	}
+
+	return result;
+}
+
+/** 
+@brief  摄像头处理线程
+@param  arg :私有数据
+@retval void
+*/
 void camera_thread_entry(void *arg)
 {
 	rt_err_t    result;
@@ -525,9 +656,9 @@ void camera_thread_entry(void *arg)
 	camera_obj_delete(CameraDat);
 	while(1)
 	{
-		pic_file_sem_operate(RT_TRUE);
-		
 		result =  rt_mq_recv(CameraMail_mq,&CameraMail,sizeof(CameraMail),24*360000);
+
+		result = pic_file_sem_operate(RT_TRUE);		
 		if(RT_EOK == result)		
 		{
 			CameraDat = camera_obj_create();
@@ -540,25 +671,29 @@ void camera_thread_entry(void *arg)
 			
 			camera_light_control(CameraDat,CM_LIGHTLED_CLOSE);
 			camera_power_control(CameraDat,CM_POWER_CLOSE);
-			camera_obj_delete(CameraDat);
-			
-			//send_alarm_mail(ALARM_TYPE_CAMERA_IRDASENSOR,ALARM_PROCESS_FLAG_GPRS,0,CameraMail.time);
-			//send_gprs_mail(ALARM_TYPE_CAMERA_IRDASENSOR,CameraMail.time,RT_NULL);
+
+			//发送报警信息
 			FileInfo = rt_calloc(1,sizeof(*FileInfo));
 			RT_ASSERT(FileInfo != RT_NULL);
 			rt_memcpy(FileInfo->name,CM_MAKE_PIC_NAME,rt_strlen(CM_MAKE_PIC_NAME));
-			FileInfo->AlarmType = 0;//报警类型有待有修改
+			FileInfo->AlarmType = get_file_alarm_type(CameraMail.AlarmType);//报警类型有待有修改
 			FileInfo->FileType = 1;
 			FileInfo->time = CameraMail.time;
 			send_gprs_mail(ALARM_TYPE_GPRS_UPLOAD_PIC,CameraMail.time,FileInfo);
-			rt_thread_delay(100);
+			
+			camera_obj_delete(CameraDat);
 		}
 	}
 }
 
 void mq(rt_uint32_t time);
 
-static void pic_file_send_complete(void *user)
+/** 
+@brief  本次图片文件处理完成
+@param  user :私有数据
+@retval void
+*/
+static void pic_file_process_complete(void *user)
 {
 	rt_int8_t SendResult;
 
@@ -566,11 +701,11 @@ static void pic_file_send_complete(void *user)
 
 	if(SendResult == -1)
 	{
-		rt_kprintf("Picture sent failure\n");
+		rt_kprintf("Picture send failure\n");
 	}
 	else
 	{
-		rt_kprintf("Picture sent succeed\n");
+		rt_kprintf("Picture send succeed\n");
 	}
 	pic_file_sem_operate(RT_FALSE);
 	{
@@ -579,11 +714,17 @@ static void pic_file_send_complete(void *user)
 	
 }
 
+/** 
+@brief  初始化摄像头任务
+@param  void
+@retval 0	:初始化成功
+@retval 1 :初始化失败
+*/
 int camera_thread_init(void)
 {
 	rt_thread_t id;
 	
-  net_upload_complete_Callback(pic_file_send_complete);
+  net_upload_complete_Callback(pic_file_process_complete);
 
 	//camrea in anytime only make a photo
 	CameraMail_mq = rt_mq_create("CMMail",
@@ -611,6 +752,12 @@ int camera_thread_init(void)
 }
 INIT_APP_EXPORT(camera_thread_init);
 
+/** 
+@brief  摄像头对外邮件接口
+@param  alarm_type :报警事件
+@param  time :报警事件
+@retval void
+*/
 void camera_send_mail(ALARM_TYPEDEF alarm_type,rt_uint32_t time)
 {
 	CameraMail mail;
