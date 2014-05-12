@@ -98,6 +98,7 @@ extern "C"{
 	{
 		rt_err_t (*configure)(struct rt_i2c_device *device, struct rt_i2c_configuration *configuration);
 		rt_int32_t (*xfer)(struct rt_i2c_device *device, struct rt_i2c_message *message);
+        rt_err_t (*reset)(struct rt_i2c_device *device);
 	};
 	/* register a I2C bus */
 	rt_err_t rt_i2c_bus_register(struct rt_i2c_bus       *bus,

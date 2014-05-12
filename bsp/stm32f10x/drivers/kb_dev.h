@@ -20,6 +20,7 @@
 #include <stm32f10x.h>
 
 #define RT_DEVICE_CTRL_CONFIGURE 0x15
+#define RT_DEVICE_CTRL_RESET 0x16
 
 #define DEVICE_NAME_KEYBOARD "kboard"
 

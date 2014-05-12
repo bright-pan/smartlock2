@@ -34,10 +34,14 @@ configure(struct rt_i2c_device *device, struct rt_i2c_configuration* configurati
 static rt_int32_t
 xfer(struct rt_i2c_device* device, struct rt_i2c_message* message);
 
+static rt_err_t
+reset(struct rt_i2c_device *device);
+
 static struct rt_i2c_ops stm32_i2c_ops = {
 
 	configure,
 	xfer,
+    reset,
 };
 
 static rt_err_t
@@ -47,6 +51,7 @@ configure(struct rt_i2c_device *device, struct rt_i2c_configuration* configurati
 	struct stm32_i2c_bus *i2c_bus = (struct stm32_i2c_bus *)device->bus;
 
 	I2C_Cmd(i2c_bus->I2C, DISABLE);
+    I2C_DeInit(i2c_bus->I2C);
 	I2C_StructInit(&I2C_InitStructure);
 	I2C_InitStructure.I2C_Mode = I2C_Mode_I2C;
 	I2C_InitStructure.I2C_DutyCycle = I2C_DutyCycle_2;
@@ -59,6 +64,19 @@ configure(struct rt_i2c_device *device, struct rt_i2c_configuration* configurati
 
     I2C_Cmd(i2c_bus->I2C, ENABLE);
 	I2C_Init(i2c_bus->I2C, &I2C_InitStructure);
+
+    return 0;
+}
+
+static rt_err_t
+reset(struct rt_i2c_device *device)
+{
+	I2C_InitTypeDef I2C_InitStructure;
+	struct stm32_i2c_bus *i2c_bus = (struct stm32_i2c_bus *)device->bus;
+
+	I2C_SoftwareResetCmd(i2c_bus->I2C, ENABLE);
+    delay_us(200);
+    I2C_SoftwareResetCmd(i2c_bus->I2C, DISABLE);
 
     return 0;
 }

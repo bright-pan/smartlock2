@@ -179,6 +179,20 @@ static rt_err_t rt_kb_control(rt_device_t dev, rt_uint8_t cmd, void *args)
                 }
             }
 			break;
+		case RT_DEVICE_CTRL_RESET:
+			/* disable rx irq */
+            if (kb->i2c_device.bus != RT_NULL)
+            {
+                result = rt_mutex_take(&(kb->i2c_device.bus->lock), RT_WAITING_FOREVER);
+                if (result == RT_EOK)
+                {
+                    kb->i2c_device.bus->ops->reset(&kb->i2c_device);
+                    /* release lock */
+                    rt_mutex_release(&(kb->i2c_device.bus->lock));
+                }
+            }
+			break;
+        
     }
     return RT_EOK;
 }
