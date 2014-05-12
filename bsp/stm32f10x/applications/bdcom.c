@@ -263,7 +263,7 @@ void gsm_mail_process(GSM_Mail_p Mail)
 		case GSM_MAIL_SMS:
 		{
 			gsm_switch_mode(&GSMModule,0);
-			//mail_sms_process(Mail);
+			mail_sms_process(Mail);
 			break;
 		}
 		case GSM_MAIL_MMS:
