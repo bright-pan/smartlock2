@@ -171,16 +171,27 @@ rt_err_t keyboard_event_process(void *user)
 		case KEY_UNLOCK_OK:
 		{
 			//解锁成功
+			rt_uint16_t *keypos;
+			
 			RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("解锁成功\n"));
 
+			keypos = (rt_uint16_t *)rt_calloc(1,2);
+			RT_ASSERT(keypos != RT_NULL);
+			*keypos = data->KeyPos;
+			motor_auto_lock(RT_TRUE);
+			motor_rotate(RT_TRUE);
+			
 			send_voice_mail(VOICE_TYPE_KEY1_OK);
+      send_gprs_mail(ALARM_TYPE_FPRINT_KEY_RIGHT,AlarmTime,(void *)keypos);
+			
 			break;
 		}
 		case KEY_CODE_ERROR:
 		{
 			//密码错误
 			RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("密码错误\n"));
-			
+
+			motor_rotate(RT_FALSE);
 			send_voice_mail(VOICE_TYPE_KEY1_ERRPR);
 			break;
 		}
@@ -191,6 +202,9 @@ rt_err_t keyboard_event_process(void *user)
 
 			send_voice_mail(VOICE_TYPE_ALARM);
 			send_gprs_mail(ALARM_TYPE_RFID_KEY_ERROR,AlarmTime,RT_NULL);
+     	send_sms_mail(ALARM_TYPE_RFID_KEY_ERROR,AlarmTime);
+     	camera_send_mail(ALARM_TYPE_RFID_KEY_ERROR,AlarmTime);
+     	
 			break;
 		}
 		case KEY_SET_MODE:
@@ -290,6 +304,60 @@ int keyboard_cb_init(void)
 	return 0;
 }
 INIT_APP_EXPORT(keyboard_cb_init);
+
+/** 
+@brief  subplate event process
+@param  user: Received Data
+@retval RT_EOK:succeed RT_ERROR:fail
+*/
+rt_err_t comm_event_process(void *user)
+{
+	COMM_SUB_USER_P RecvData = RT_NULL;
+
+	RecvData = user;
+	RT_ASSERT(RecvData != RT_NULL);
+
+	switch(RecvData->event)
+	{
+		case SUB_ENT_KEY1:
+		{
+			RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("key1\n"));
+
+			if(system_event_process(1,SYS_FPRINT_REGISTER) == 1)
+			{
+        send_alarm_mail(ALARM_TYPE_FPRINT_KEY_ADD,ALARM_PROCESS_FLAG_LOCAL,0,0);
+			}
+			
+			break;
+		}
+		case SUB_ENT_KEY2:
+		{
+    	RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("key2\n"));
+    	
+			break;
+		}
+		default:
+		{
+      rt_kprintf("%s:%d COMM SUB none this event!!!\n", __FUNCTION__, __LINE__);
+			break;
+		}
+	}
+	
+	return RT_EOK;
+}
+
+/** 
+@brief  initialization subplate API port 
+@param  void
+@retval 0 :succeed 1:fail
+*/
+int comm_cb_init(void)
+{
+	sub_event_callback(comm_event_process);
+
+	return 0;
+}
+INIT_APP_EXPORT(comm_cb_init);
 
 /** 
 @brief  initialization fingerprint data mail 
@@ -502,10 +570,9 @@ static void fprint_error_process(LOCAL_MAIL_TYPEDEF *mail)
 		{
 			//拍照报警
 			send_voice_mail(VOICE_TYPE_ALARM);
-			
-			camera_send_mail(ALARM_TYPE_RFID_KEY_ERROR,mail->time);
-			
+		
      	send_sms_mail(ALARM_TYPE_RFID_KEY_ERROR,mail->time);
+     	camera_send_mail(ALARM_TYPE_RFID_KEY_ERROR,mail->time);
      	send_gprs_mail(ALARM_TYPE_RFID_KEY_ERROR,mail->time,RT_NULL);
      	fprint_error_clear();
 		}
@@ -625,7 +692,8 @@ static void fprint_key_add(LOCAL_MAIL_TYPEDEF *mail)
 	  	//对文件做处理
 			//send_fp_mail(FPRINT_CMD_DELETE,fprintnum,1);
 			//fprint_module_init();
-			
+
+      system_event_process(2,SYS_FPRINT_REGISTER);
 			return ;
     }
 	}

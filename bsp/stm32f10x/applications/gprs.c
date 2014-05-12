@@ -158,12 +158,22 @@ static void gprs_mail_process(GPRS_MAIL_TYPEDEF *mail)
 
 			break;
 		}
+		case ALARM_TYPE_CODE_KEY_RIGHT:
+		{
+			rt_uint16_t *KeyPos;
+			
+			RT_ASSERT(mail->user != RT_NULL);
+
+			KeyPos = (rt_uint16_t *)mail->user;
+			msg_mail_opendoor(2,*KeyPos,mail->time);
+			break;
+		}
 		case ALARM_TYPE_FPRINT_KEY_ADD:
 		{
 			FPrintData *data = RT_NULL;
 			
 			data = mail->user;
-			RT_ASSERT(RT_NULL != RT_NULL);
+			RT_ASSERT(mail != RT_NULL);
 			key_upload_process(KEY_TYPE_FPRINT,data->KeyMapPos);
 			
 			break;
