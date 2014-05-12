@@ -13,6 +13,9 @@
   */
 #include "netterminal.h"
 #include "unlockprocess.h"
+#include "camera.h"
+#include "apppubulic.h"
+
 
 #define SHOW_TM_DEBUG_IFNO     1
 #define RTC_DEVICE_NAME        "rtc"
@@ -82,4 +85,20 @@ rt_err_t net_set_system_time(net_recvmsg_p mail)
 	return RT_EOK;
 }
 
+/** 
+@brief Remote control camera
+@param mail: receive net message mail
+@retval RT_EOK	 :Successful operation
+@retval RT_ERROR :operation failure
+*/
+rt_err_t net_photograph(net_recvmsg_p mail)
+{
+	RT_ASSERT(mail != RT_NULL);
+	if(mail->data.camera.dat.operation == 0)
+	{
+		camera_send_mail(ALARM_TYPE_GPRS_CAMERA_OP,sys_cur_date());
+	}
+	
+	return RT_EOK;
+}
 

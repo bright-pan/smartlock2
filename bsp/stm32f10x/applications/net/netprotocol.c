@@ -1757,7 +1757,7 @@ static void net_recv_message(net_msgmail_p mail)
 			{
 				//‘∂≥Ã≈ƒ’’
 				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_CAMERA\n"));
-				message_ASYN(NET_MSGTYPE_CAMERA_ACK);
+				Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
 			case NET_MSGTYPE_TERMINAL:
@@ -1821,7 +1821,7 @@ static void net_recv_message(net_msgmail_p mail)
 			}
 			default:
 			{
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("Cannot identify the message!!!\n\n"));
+				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("Receive Cannot identify the message!!!\n\n"));
 				break;
 			}
 		}

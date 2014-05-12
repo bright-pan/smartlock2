@@ -39,10 +39,13 @@ rt_err_t net_phone_add_process(net_recvmsg_p mail)
 	rt_mutex_take(device_config.mutex,RT_WAITING_FOREVER);
 
 	device_config.param.telephone_address[remote->pos].flag = 1;
+
 	rt_memcpy(device_config.param.telephone_address[remote->pos].address,
+						"86",2);
+	rt_memcpy(&device_config.param.telephone_address[remote->pos].address[2],
 						remote->data,11);
 
-	device_config.param.telephone_address[remote->pos].address[11] = '\0';
+	device_config.param.telephone_address[remote->pos].address[13] = '\0';
 	
 	rt_mutex_release(device_config.mutex);
 

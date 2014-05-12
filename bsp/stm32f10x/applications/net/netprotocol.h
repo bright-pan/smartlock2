@@ -504,6 +504,10 @@ typedef struct
 	rt_uint8_t time[4];
 }net_recv_time;
 
+typedef struct 
+{
+	net_camera dat;
+}net_recv_camera;
 //接收报文的数据域
 typedef union 
 {
@@ -527,6 +531,7 @@ typedef union
   net_recv_keyadd_ack KeyDelAck;    //钥匙删除应答
 	net_recv_motor      motor;        //电机控制
 	net_recv_time       timing;       //网络对时
+	net_recv_camera     camera;       //远程摄像头控制
 }net_recv_data;
 
 //接收报文的描述结构体

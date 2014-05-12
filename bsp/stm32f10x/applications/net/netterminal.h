@@ -9,4 +9,7 @@ rt_err_t net_motor_Control(net_recvmsg_p mail);
 
 rt_err_t net_set_system_time(net_recvmsg_p mail);
 
+rt_err_t net_photograph(net_recvmsg_p mail);
+
+
 #endif

@@ -61,8 +61,8 @@ void send_net_landed_mail(void)
 	
   mail->time = 0;
   mail->type = NET_MSGTYPE_LANDED;
-  mail->resend = 3;
-  mail->outtime = 600;
+  mail->resend = 2;
+  mail->outtime = 1200;
   mail->sendmode = ASYN_MODE;
   mail->col.byte = get_msg_new_order(RT_TRUE);
 
@@ -856,6 +856,13 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 	 	{
 	 		ProcessResult = net_set_system_time(Mail);
 	 		result = (ProcessResult == RT_EOK)?1:0;
+			break;
+	 	}
+	 	case NET_MSGTYPE_CAMERA:
+	 	{
+	 		ProcessResult = net_photograph(Mail);
+	 		result = (ProcessResult == RT_EOK)?1:0;
+	 		msg_mail_resultack(Mail,result);
 			break;
 	 	}
 	  default:
