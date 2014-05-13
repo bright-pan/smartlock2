@@ -12,6 +12,19 @@
 #define FILE_RECV_MAX_TIME    10    //文件接收最长时间
 #define SYS_APP_BIN_FILE_NAME "/app.bin"
 
+typedef enum
+{
+	INIT_TIMER,
+	START_TIMER,
+	STOP_TIMER
+}FileEixtFlag;
+
+typedef struct 
+{
+	rt_timer_t Timer;
+	FileEixtFlag EixtFlag;
+}FileSendCtl,*FileSendCtl_p;
+
 void (*file_complete_callback)(void *user);
 
 void net_upload_complete_Callback(void (*Callback)(void *user))
@@ -111,6 +124,8 @@ static rt_int8_t send_file_pack(char *FileName,rt_uint32_t PackOrder,rt_uint16_t
 	if(FileID < 0)
 	{
 		//打开文件失败
+		rt_kprintf("%s OPEN FAIL\n\n",FileName);
+		rt_free(buffer);
 		return -1;
 	}
 
@@ -215,10 +230,16 @@ rt_uint8_t check_msgmail_succeed(net_msgmail_p mail[],rt_uint8_t size,rt_sem_t S
 			if(mail[i]->user != RT_NULL)
 			{
 				file = mail[i]->user;
-				result = rt_sem_take(file->result.complete,RT_WAITING_NO);
+				result = rt_sem_take(file->result.complete,2);
 				if(result == RT_EOK)
 				{	
-					RT_DEBUG_LOG(SHOW_NFILE_SRESULT,("File Pack Send Result: %d\n",file->result.result));     
+					RT_DEBUG_LOG(SHOW_NFILE_SRESULT,("File %X%X%X%X Pack Send Result: %d\n"
+																						,file->data.data[0]
+																						,file->data.data[1]
+																						,file->data.data[2]
+																						,file->data.data[3]
+																						,file->result.result));     
+																						
           if((file->result.result == NET_MAIL_OK) && (file->sendresult == 0))
           {
 						RunResult++;
@@ -320,7 +341,7 @@ static rt_int8_t send_file_request(UploadFile_p arg)
 参数:type 文件类型  time发送时间  file 文件名称
 */
 #define FILE_PACKNUM_MAX      (NET_RECV_MSG_MAX-2)
-static rt_int8_t send_file_process(UploadFile_p arg)
+static rt_int8_t send_file_process(UploadFile_p arg,FileSendCtl_p ctl)
 {
 	rt_uint32_t FileSize;			 //文件大小
 	rt_uint32_t CurPackOrder;	 //包序号
@@ -370,6 +391,7 @@ static rt_int8_t send_file_process(UploadFile_p arg)
 		rt_err_t result;
 		rt_int8_t NetMailPos = 0;
 		rt_uint8_t RecvResult = 0;
+		rt_int8_t SendPackResult = 0;
 
 		if(CurPackOrder < PackNum)
 		{
@@ -391,13 +413,37 @@ static rt_int8_t send_file_process(UploadFile_p arg)
 				}
 				mail[NetMailPos] = rt_calloc(1,sizeof(net_msgmail));
 				RT_ASSERT(mail[NetMailPos] != RT_NULL);
-				send_file_pack(FileName,CurPackOrder,ReadSize,mail[NetMailPos]);
+				SendPackResult = send_file_pack(FileName,CurPackOrder,ReadSize,mail[NetMailPos]);
+				if(SendPackResult == -1)
+				{
+					//当前包打包失败
+					CurPackOrder--;
+					delete_net_msgmail(mail,NetMailPos);
+					rt_sem_release(SendSem);
+				}
 				CurPackOrder++;
+				rt_kprintf("Send pack number:%d\n",CurPackOrder-1);
+			}
+		}
+		else
+		{
+			if(INIT_TIMER == ctl->EixtFlag)
+			{
+        if(ctl->Timer!= RT_NULL)
+	      {
+	      	rt_timer_stop(ctl->Timer);
+	        rt_timer_start(ctl->Timer);
+	      }
+	      ctl->EixtFlag = START_TIMER;
 			}
 		}
 		
 		//查询前三条是否成功
 		RecvResult = check_msgmail_succeed(mail,FILE_PACKNUM_MAX,SendSem);
+		if(STOP_TIMER == ctl->EixtFlag)
+		{
+			RecvResult = 0xff;
+		}
 		if(RecvResult != 0xff)
 		{
       SendOk += RecvResult;
@@ -427,20 +473,40 @@ static rt_int8_t send_file_process(UploadFile_p arg)
 	return 0;
 }
 
-
+static void net_file_process_outtime(void *arg)
+{
+  FileSendCtl_p FileCtl = (FileSendCtl_p)arg;
+	FileCtl->EixtFlag = STOP_TIMER;
+}
 
 /*
 功能:文件发送线程
 */
-void net_file_entry(void *arg)
+static void net_file_entry(void *arg)
 {
 	rt_int8_t result;
 	UploadFile_p file = (UploadFile_p)arg;
+  FileSendCtl_p FileCtl = RT_NULL;
+
+  FileCtl = rt_calloc(1,sizeof(FileSendCtl));
+  RT_ASSERT(FileCtl != RT_NULL);
+  FileCtl->Timer = RT_NULL;
+  FileCtl->EixtFlag = INIT_TIMER;
+
+	if(FileCtl->Timer == RT_NULL)
+	{
+		FileCtl->Timer = rt_timer_create("FileSout"
+																		,net_file_process_outtime
+																		,(void *)FileCtl
+																		,RT_TICK_PER_SECOND*90
+																		,RT_TIMER_FLAG_ONE_SHOT);
+		RT_ASSERT(FileCtl->Timer != RT_NULL);
+	}
 	
 	if(file != RT_NULL)
 	{
 		//处理文件
-		result = send_file_process(file);
+		result = send_file_process(file,FileCtl);
 
 		if(arg != RT_NULL)
 		{
@@ -448,6 +514,13 @@ void net_file_entry(void *arg)
 		}
 	}
 
+	if(FileCtl->Timer != RT_NULL)
+	{
+		rt_timer_delete(FileCtl->Timer);
+		FileCtl->Timer = RT_NULL;
+	}
+	rt_free(FileCtl);
+	FileCtl = RT_NULL;
 	file_complete_callback((void *)&result);
 }
 
