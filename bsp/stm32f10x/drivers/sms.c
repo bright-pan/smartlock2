@@ -13,9 +13,21 @@
 
 #include "sms.h"
 #include "bdcom.h"
+#include "appconfig.h"
+
+#define SMS_THREAD_PRI  				(SMS_THREAD_PRI_IS) 		//短信线程优先级
+#define SMS_RECV_MAIL_OUTTIME   ((RT_TICK_PER_SECOND)*1)//短信线程接收邮件超时
+
 
 char smsc[20] = {0,};
 char phone_call[20] = {0,};
+typedef struct 
+{
+	rt_list_t		  list;
+	ALARM_TYPEDEF alarm_type;
+	rt_uint32_t   counter;
+	rt_uint32_t   timeout;
+}SMSTimeLag,*SMSTimeLag_p;
 
 #define SMS_RESEND_NUM	3
 #define SMS_MAIL_MAX_MSGS 20
@@ -607,6 +619,12 @@ sms_pdu_ucs_send(char *dest_address, char *smsc_address, uint16_t *content, uint
 	return send_result;
 }
 
+#if(SMS_SEND_ASTRICT_IS == 1)			
+rt_bool_t check_sms_lag_timeout(void)
+{
+	return RT_TRUE;
+}
+#endif
 
 void
 sms_thread_entry(void *parameter)
@@ -618,6 +636,7 @@ sms_thread_entry(void *parameter)
 	const uint16_t *temp_ucs;
 	uint16_t temp_ucs_length;
 	SMS_MAIL_TYPEDEF sms_mail_buf;
+	//SMSTimeLag_p
 
 	// initial sms data
 	sms_data_init(sms_data);
@@ -627,10 +646,18 @@ sms_thread_entry(void *parameter)
 		// process mail
 		rt_memset(&sms_mail_buf, 0, sizeof(sms_mail_buf));
 		result = rt_mq_recv(sms_mq, &sms_mail_buf,
-							sizeof(sms_mail_buf),
-							100);
+												sizeof(sms_mail_buf),
+												SMS_RECV_MAIL_OUTTIME);
 		if (result == RT_EOK)
 		{
+			#if(SMS_SEND_ASTRICT_IS == 1)
+			if(check_sms_lag_timeout() == RT_FALSE)
+			{
+				continue;
+			}
+			
+			#endif
+			
 #if (defined RT_USING_FINSH) && (defined SMS_DEBUG)
 			rt_kprintf("\nreceive sms mail < time: %d alarm_type: %s >\n", sms_mail_buf.time, alarm_help_map[sms_mail_buf.alarm_type]);
 #endif
@@ -657,10 +684,7 @@ sms_thread_entry(void *parameter)
 						 sms_ucs_bk,
 						 &sms_ucs_length);
 			// send sms
-
-
 			alarm_telephone_counts = 0;
-			//			gsm_muntex_control(RT_TRUE,"SMS");
 			while (alarm_telephone_counts < TELEPHONE_NUMBERS)
 			{
 				if (device_config.param.telephone_address[alarm_telephone_counts].flag)
@@ -674,32 +698,15 @@ sms_thread_entry(void *parameter)
 				}
 				alarm_telephone_counts++;
 			}
-			//gsm_muntex_control(RT_FALSE,"SMS");
-			//      sms("8613544033975","",0);
+
 			rt_free(sms_ucs);
 			sms_ucs = RT_NULL;
 		}
 		else // receive timeout
 		{
-			/*
-#ifdef USE_SMS_SEND_TYPE2
-			rt_uint8_t i;
-
-			for(i=0;i<7;i++)
-			{
-				if(sms_send_time[i] != 0)
-				{
-					sms_send_time[i]++;
-					if(sms_send_time[i] >= 60*USE_NO_PIC_SMS_T)
-					{
-						sms_send_time[i] = 0;
-						sms_type_event_flag(2,sms_send_map[i]);
-					}
-					RT_DEBUG_LOG(PRINTF_SMS_COUNT_DOWN,("sms_send_time[%d] = %d\n",i,sms_send_time[i]));
-				}
-			}
-#endif
-			*/
+			#if(SMS_SEND_ASTRICT_IS == 1)			
+			
+			#endif
 		}
 	}
 }
@@ -753,7 +760,7 @@ rt_sms_init(void)
 	// initial sms thread
 	sms_thread = rt_thread_create("sms",
 								  sms_thread_entry, RT_NULL,
-								  1024, 103, 5);
+								  1024, SMS_THREAD_PRI, 5);
 	if (sms_thread == RT_NULL)
         return -1;
 
@@ -795,6 +802,147 @@ void sms(char *address, short *data, char length)
 		//rt_kprintf("device %s is not exist!\n", DEVICE_NAME_GSM_USART);
 	}
 }
-FINSH_FUNCTION_EXPORT(sms, sms[address data length])
-FINSH_FUNCTION_EXPORT(send_sms_mail, sms[address data length])
+FINSH_FUNCTION_EXPORT(sms, sms[address data length]);
+FINSH_FUNCTION_EXPORT(send_sms_mail, sms[address data length]);
+
+void list_add_new_data(SMSTimeLag_p head,SMSTimeLag_p data)
+{
+	rt_list_insert_before(&head->list,&data->list);
+}
+
+/** 
+@brief 创建短信间隔窗口链表头
+@param void
+@retval head:头结点地址
+*/
+static SMSTimeLag_p timelag_list_create()
+{
+	SMSTimeLag_p head;
+
+	head = rt_calloc(1,sizeof(SMSTimeLag));
+	RT_ASSERT(head != RT_NULL);
+	
+	rt_list_init(&head->list);
+	
+	return head;
+}
+
+static void timelag_list_delete (SMSTimeLag_p head)
+{
+
+}
+
+/** 
+@brief 向窗口中添加一个节点
+@param void
+@retval RT_EOK	 :Successful operation
+@retval RT_ERROR :operation failure
+*/
+static rt_err_t add_new_node(SMSTimeLag_p head
+														  ,ALARM_TYPEDEF type
+															,rt_uint32_t timeout)
+{
+	SMSTimeLag_p data;
+	data = rt_calloc(1,sizeof(SMSTimeLag));
+	if(data == RT_NULL)
+	{
+		return RT_ERROR;
+	}
+	
+	data->alarm_type = type;
+	data->timeout = timeout;
+
+	rt_list_insert_before(&head->list,&data->list);
+
+	return RT_EOK;
+}
+
+/** 
+@brief 删除窗口中超时的节点
+@param head:链表入口
+@retval void
+*/
+static void delete_outtime_node(SMSTimeLag_p head)
+{
+  rt_list_t *next;
+  SMSTimeLag_p data;
+
+  if(!rt_list_isempty(&head->list))
+  {
+  	//链表非空
+    for (next = head->list.next; next != &head->list; next = next->next)
+    {
+      data = rt_list_entry(next,SMSTimeLag,list);
+      rt_kprintf("counter		 %d\n",data->counter);
+      rt_kprintf("alarm_type %d\n",data->alarm_type);
+      rt_kprintf("timeout		 %d\n",data->timeout);
+
+      if(data->counter >= data->timeout)
+      {
+				rt_list_remove(&data->list);
+				rt_free(data);
+      }
+    }
+  }
+}
+
+/** 
+@brief 在窗口中查找该类型短信
+@param head:链表入口
+@retval void
+*/
+static find_sms_node(SMSTimeLag_p head,ALARM_TYPEDEF type)
+{
+	rt_list_t *next;
+  SMSTimeLag_p data;
+
+  if(!rt_list_isempty(&head->list))
+  {
+  	//链表非空
+    for (next = head->list.next; next != &head->list; next = next->next)
+    {
+      data = rt_list_entry(next,SMSTimeLag,list);
+      rt_kprintf("find  		 %d\n",type);
+      rt_kprintf("alarm_type %d\n",data->alarm_type);
+			if(data->alarm_type == type)
+			{
+				return RT_TRUE;
+			}
+    }
+  }
+
+  return RT_FALSE;
+}
+
+void testsms()
+{
+	SMSTimeLag_p head;
+  SMSTimeLag_p data;
+  rt_list_t *next;
+
+	head = rt_calloc(1,sizeof(SMSTimeLag));
+	head->alarm_type = 1;
+	
+	rt_list_init(&head->list);
+	
+  data = rt_calloc(1,sizeof(SMSTimeLag));
+	data->alarm_type = 2;
+	list_add_new_data(head,data);
+	
+	data = rt_calloc(1,sizeof(SMSTimeLag));
+	data->alarm_type = 3;
+	list_add_new_data(head,data);
+ data = rt_calloc(1,sizeof(SMSTimeLag));
+	data->alarm_type = 55;
+	
+	list_add_new_data(head,data);
+	
+ 	for (next = head->list.next; next != &head->list; next = next->next)
+	{
+		data = rt_list_entry(next,SMSTimeLag,list);
+		rt_kprintf("alarm type %d\n",data->alarm_type);
+	}
+}
+FINSH_FUNCTION_EXPORT(testsms,"sms test list");
+
 #endif
