@@ -644,165 +644,87 @@ void fprint_unlock_process(LOCAL_MAIL_TYPEDEF *mail)
 @param  void
 @retval void
 */
-static void fprint_key_add(LOCAL_MAIL_TYPEDEF *mail)
+static rt_err_t fprint_key_add(LOCAL_MAIL_TYPEDEF *mail)
 {
-	rt_err_t result;
+	rt_err_t result = RT_EOK;
 	FPrintData data;
-  rt_uint16_t fprintnum = 0;
-  FPRINT_ERROR_TYPEDEF fprint_result = FPRINT_EOK;
-
-	system_event_process(0,SYS_FPRINT_REGISTER);//entry register
-	send_voice_mail(VOICE_TYPE_MANAGE1KEY1);
-
-	//判断是否是第一个指纹
-	fprintnum = get_fprint_key_num();
-	if(fprintnum == 0)
-	{
-		rt_uint8_t Run = READ_FPRINT_COUNT;
-
-		RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("Please enter the administrator fingerprints:\n"));
-		while(--Run)
-		{
-			rt_uint16_t keypos;
-			
-			keypos = get_new_key_pos();
-		fprint_result = send_fp_mail(FPRINT_CMD_ENROLL,keypos,1);
-		if(fprint_result == FPRINT_EOK)
-		{
-				break;
-      }
-      else
-      {
-      	result = rt_mq_recv(FPdata_mq,(void*)&data,sizeof(FPrintData),10);
-      }
-		}
-    if(fprint_result != FPRINT_EOK)
-    {
-    	//注册失败
-    	RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("The fingerprint registration results:%d\n",fprint_result));
-    	
-    	if(Run == 0)
-	  	{
-	    	send_voice_mail(VOICE_TYPE_REGISTER_FIAL);
-	  	}
-	  	else
-	  	{
-	    	send_voice_mail(VOICE_TYPE_REGISTER_FIAL);
-	  	}
-	  	//对文件做处理
-			//send_fp_mail(FPRINT_CMD_DELETE,fprintnum,1);
-			//fprint_module_init();
-
-      system_event_process(2,SYS_FPRINT_REGISTER);
-			return ;
-    }
-	}
+	rt_uint16_t keypos = KEY_NUMBERS;
+	FPRINT_ERROR_TYPEDEF fprint_result = FPRINT_EOK;
 	
-	//如果是已经注册的指纹
-	result = rt_mq_recv(FPdata_mq,(void*)&data,sizeof(FPrintData),1000);
-	if(result == RT_EOK)
+	system_event_process(0,SYS_FPRINT_REGISTER);//entry register
+  
+	//如果钥匙库已满
+	keypos = get_new_key_pos();
+	if(keypos == KEY_NUMBERS)
 	{
-		//是否为管理员指纹
-		if(check_fprint_pos_inof(data.KeyMapPos) == RT_TRUE)
-		{
-			rt_uint16_t keypos;
-
-			//如果钥匙库已满
-			keypos = get_new_key_pos();
-			if(keypos == KEY_NUMBERS)
-			{
-				RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("Key library is full!!!\n"));
-	      send_voice_mail(VOICE_TYPE_REGISTER_FIAL);
-			}
-			else
-			{
-				rt_uint8_t run = READ_FPRINT_COUNT;
-				
-	      send_voice_mail(VOICE_TYPE_KEY1_INPUT);
-	      RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("To collect new fingerprint!!!\n"));
-
-				//采集新指纹
-	      while(--run)
-	      {
-          fprint_result = send_fp_mail(FPRINT_CMD_ENROLL,keypos,1);
-					if(fprint_result == FPRINT_EOK)
-					{
-						result = rt_mq_recv(FPdata_mq,(void*)&data,sizeof(FPrintData),50);
-						if(result == RT_EOK)
-						{
-							if(check_fprint_pos_inof(data.KeyMapPos) == RT_TRUE)
-							{
-								//这个位置已经有指纹了
-								RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("The fingerprint has been!!!\n"));
-								fprint_result = FPRINT_EERROR;								
-                //send_fp_mail(FPRINT_CMD_DELETE,fprintnum,1);
-							}
-              break;
-						}
-					}
-					else
-					{
-						result = rt_mq_recv(FPdata_mq,(void*)&data,sizeof(FPrintData),2);
-					}
-	      }
-					
-	      if((fprint_result == FPRINT_EOK) && (data.KeyMapPos < KEY_NUMBERS))
-	      {
-	        FPrintData *key;
-	      
-	        key = rt_calloc(1,sizeof(*key));
-	        RT_ASSERT(key != RT_NULL);
-	        key->KeyMapPos = data.KeyMapPos;
-	        set_key_using_status(key->KeyMapPos,KEY_TYPE_FPRINT,1);
-	        send_voice_mail(VOICE_TYPE_REGISTER_OK);
-	        send_gprs_mail(mail->alarm_type,mail->time,(void *)key);
-	      } 
-	      else
-	      {
-	      	RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("FPrint enroll error!!!\n"));
-	      	if(run == 0)
-	      	{
-            send_voice_mail(VOICE_TYPE_REGISTER_FIAL);
-	      	}
-	      	else
-	      	{
-            send_voice_mail(VOICE_TYPE_REGISTER_FIAL);
-	      	}
-	      }
-	      
-			}
-		}	
-		else
-		{
-			//如果是第一个录入的指纹
-			fprintnum  = get_fprint_key_num();
-			if((fprintnum == 0) && ((data.KeyMapPos < KEY_NUMBERS)))
-			{
-				//第一个指纹录入
-				FPrintData *key;
-				
-				key = rt_calloc(1,sizeof(*key));
-		    RT_ASSERT(key != RT_NULL);
-		    key->KeyMapPos = data.KeyMapPos;
-
-        set_key_using_status(key->KeyMapPos,KEY_TYPE_FPRINT,1);
-		    send_voice_mail(VOICE_TYPE_REGISTER_OK);
-		    send_gprs_mail(mail->alarm_type,mail->time,(void *)key);
-			}
-			else
-			{
-				//既不是已注册的指纹也不是第一注册的指纹
-				RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("FPrint enroll error!!!\n"));
-        send_voice_mail(VOICE_TYPE_REGISTER_FIAL);
-			}
-		}
+	  RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("Key library is full!!!\n"));
+	  send_voice_mail(VOICE_TYPE_REGISTER_FIAL);
 	}
 	else
 	{
-   	send_voice_mail(VOICE_TYPE_KEY1_OUTIME);
+	  rt_uint8_t run = READ_FPRINT_COUNT;
+	  
+	  send_voice_mail(VOICE_TYPE_KEY1_INPUT);
+	  RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("To collect new fingerprint!!!\n"));
+
+	  //采集新指纹
+	  while(--run)
+	  {
+	    fprint_result = send_fp_mail(FPRINT_CMD_ENROLL,keypos,1);
+	    if(fprint_result == FPRINT_EOK)
+	    {
+	      result = rt_mq_recv(FPdata_mq,(void*)&data,sizeof(FPrintData),50);
+	      if(result == RT_EOK)
+	      {
+	        if(check_fprint_pos_inof(data.KeyMapPos) == RT_TRUE)
+	        {
+	          //这个位置已经有指纹了
+	          RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("The fingerprint has been!!!\n"));
+	          fprint_result = FPRINT_EERROR;                
+	          //send_fp_mail(FPRINT_CMD_DELETE,fprintnum,1);
+	        }
+	        break;
+	      }
+	    }
+	    else
+	    {
+	      result = rt_mq_recv(FPdata_mq,(void*)&data,sizeof(FPrintData),2);
+	    }
+	  }
+	    
+	  if((fprint_result == FPRINT_EOK) && (data.KeyMapPos < KEY_NUMBERS))
+	  {
+	    FPrintData *key;
+	  
+	    key = rt_calloc(1,sizeof(*key));
+	    RT_ASSERT(key != RT_NULL);
+	    key->KeyMapPos = data.KeyMapPos;
+	    set_key_using_status(key->KeyMapPos,KEY_TYPE_FPRINT,1);
+	    send_voice_mail(VOICE_TYPE_REGISTER_OK);
+	    send_gprs_mail(mail->alarm_type,mail->time,(void *)key);
+
+	    result = RT_EOK;
+	  } 
+	  else
+	  {
+	    RT_DEBUG_LOG(PRINTF_FPRINT_INFO,("FPrint enroll error!!!\n"));
+	    if(run == 0)
+	    {
+	      send_voice_mail(VOICE_TYPE_REGISTER_FIAL);
+	    }
+	    else
+	    {
+	      send_voice_mail(VOICE_TYPE_REGISTER_FIAL);
+	    }
+
+	    result = RT_ERROR;
+	  }
+	  
 	}
-  //fprint_module_init();
-	system_event_process(2,SYS_FPRINT_REGISTER);
+
+	system_event_process(2,SYS_FPRINT_REGISTER);//eixt register
+	
+	return result;
 }
 
 
