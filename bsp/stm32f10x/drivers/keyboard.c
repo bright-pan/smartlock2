@@ -226,7 +226,6 @@ __STATIC_INLINE KB_ERROR_TYPEDEF
 kb_setting_process(KB_MODE_TYPEDEF *mode, KBUF_TYPEDEF *buf, uint8_t c)
 {
     KB_ERROR_TYPEDEF result = KB_EOK;
-    KEYBOARD_USER data;
 
     if (c == '#') {
         if (buf->size) {
@@ -235,8 +234,6 @@ kb_setting_process(KB_MODE_TYPEDEF *mode, KBUF_TYPEDEF *buf, uint8_t c)
 					case '1' : {
 						rt_kprintf("input password: \n");
 						send_kb_mail(KB_MAIL_TYPE_SETMODE, KB_MODE_ADD_PASSWORD, 0);
-						//提示输入新钥匙
-						data.event = KEY_INPUT_NEW_CODE;
 						break;
 					}
 					case '2' : {
@@ -247,20 +244,19 @@ kb_setting_process(KB_MODE_TYPEDEF *mode, KBUF_TYPEDEF *buf, uint8_t c)
 #if (defined RT_USING_FINSH) && (defined KB_DEBUG)
 						rt_kprintf("invalid setting, please reinput\n");
 #endif
+						//无效设置 
+						if(key_api_port != RT_NULL)
+						{
+							KEYBOARD_USER data;
+							
+							data.event = KEY_MODE_INPUT_ERROR;
+							key_api_port(&data);
+						}
 						result = KB_EVERIFY_FAILURE;
-
-						//输入模式错误
-						data.event = KEY_MODE_INPUT_ERROR;
-
+						
 						break;
 					}
 				}
-                /*
-				if(key_api_port != RT_NULL)
-				{
-					key_api_port(&data);
-				}
-                */
             } else {
 #if (defined RT_USING_FINSH) && (defined KB_DEBUG)
                 rt_kprintf("invalid setting, please reinput\n");
@@ -396,7 +392,7 @@ kb_thread_entry(void *parameters)
 					}
 					case KB_MODE_SETTING_AUTH: {
                         rt_kprintf("enter setting auth mode.\n");
-                        /*
+                        
 						//切换到设置模式
 						if(key_api_port != RT_NULL)
 						{
@@ -405,15 +401,33 @@ kb_thread_entry(void *parameters)
 							data.event = KEY_SET_MODE;
 							key_api_port(&data);
 						}
-                        */
+                        
 						break;
 					}
 					case KB_MODE_SETTING: {
                         rt_kprintf("enter setting mode.\n");
+												//请选择模式                 
+												if(key_api_port != RT_NULL)
+												{
+													KEYBOARD_USER data;
+
+													data.event = KEY_CHOOSE_MODE;
+													key_api_port(&data);
+												}
 						break;
 					}
 					case KB_MODE_ADD_PASSWORD: {
+         								
                         rt_kprintf("enter add password mode.\n");
+                        
+                        //提示输入新钥匙
+												if(key_api_port != RT_NULL)
+												{
+													KEYBOARD_USER data;
+													
+													data.event = KEY_INPUT_NEW_CODE;
+													key_api_port(&data);
+												}
 						break;
 					}
 					default :{
@@ -423,7 +437,7 @@ kb_thread_entry(void *parameters)
 			}
 			if (mail.type == KB_MAIL_TYPE_INPUT) {
                 c = mail.c;
-                /*
+                
 				//按键声音
 				if(key_api_port != RT_NULL)
 				{
@@ -432,7 +446,7 @@ kb_thread_entry(void *parameters)
 					data.event = KEY_NOTIFYSOUND;
 					key_api_port(&data);
 				}
-                */
+				
 				switch(kb_mode) {
 					case KB_MODE_NORMAL_AUTH: {
 						kb_error = kb_normal_auth_process(&kb_mode, &kb_data.normal_auth, c, &key_id);
@@ -443,7 +457,7 @@ kb_thread_entry(void *parameters)
 							case KB_EVERIFY_SUCCESS: {
 								rt_kprintf("normal verify success!, key_id = %d\n", key_id);
 								kb_normal_auth_reset();
-                                /*
+         
 								//密码解锁成功
 								if(key_api_port != RT_NULL)
 								{
@@ -453,12 +467,12 @@ kb_thread_entry(void *parameters)
 									data.KeyPos = key_id;
 									key_api_port(&data);
 								}
-                                */
+                               
 								break;
 							}
 							case KB_EVERIFY_FAILURE: {
 								if (kb_normal_auth_failure()) {
-                                    /*
+                                   
 									//开门失败
 									if(key_api_port != RT_NULL)
 									{
@@ -467,11 +481,11 @@ kb_thread_entry(void *parameters)
 										data.event = KEY_UNLOCK_FAIL;
 										key_api_port(&data);
 									}
-                                    */
+                                    
 								}
 								else
 								{
-                                    /*
+                                    
 									//密码错误
 									if(key_api_port != RT_NULL)
 									{
@@ -480,7 +494,7 @@ kb_thread_entry(void *parameters)
 										data.event = KEY_CODE_ERROR;
 										key_api_port(&data);
 									}
-                                    */
+                                    
 								}
 								break;
 							}
@@ -499,35 +513,23 @@ kb_thread_entry(void *parameters)
 							case KB_EVERIFY_SUCCESS: {
 								rt_kprintf("setting verify success!");
 								kb_setting_auth_reset();
-								//请选择模式
-                                /*
-								if(key_api_port != RT_NULL)
-								{
-									KEYBOARD_USER data;
-
-									data.event = KEY_CHOOSE_MODE;
-									key_api_port(&data);
-								}
-                                */
+                                
 								break;
 							}
 							case KB_EVERIFY_FAILURE: {
 								if (kb_setting_auth_failure()) {
                                     send_kb_mail(KB_MAIL_TYPE_TIMEOUT, KB_MODE_NORMAL_AUTH, 0);
 									//报警
-                                    /*
 									if(key_api_port != RT_NULL)
 									{
 										KEYBOARD_USER data;
 
 										data.event = KEY_UNLOCK_FAIL;
 										key_api_port(&data);
-									}
-                                    */
+									}                                   
 								}
 								else
 								{
-                                    /*
 									//超级密码错误
 									if(key_api_port != RT_NULL)
 									{
@@ -536,7 +538,7 @@ kb_thread_entry(void *parameters)
 										data.event = KEY_CODE_ERROR;
 										key_api_port(&data);
 									}
-                                    */
+                                  
 								}
 								break;
 							}
@@ -572,33 +574,31 @@ kb_thread_entry(void *parameters)
 								//注册成功
 								if((NewKeyPos >= 0) && (NewKeyPos < KEY_NUMBERS))
 								{
-                                    /*
 									if(key_api_port != RT_NULL)
 									{
 										KEYBOARD_USER data;
+										
 										data.event = KEY_REGISTER_OK;
 										data.KeyPos = NewKeyPos;
 										key_api_port(&data);
 									}
-                                    */
+                                   
 								}
 								else
 								{
-                                    /*
 									//钥匙库已满
 									if(key_api_port != RT_NULL)
 									{
 										KEYBOARD_USER data;
+										
 										data.event = KEY_LIB_FULL;
 										key_api_port(&data);
 									}
-                                    */
 								}
 								break;
 							}
 							case KB_EVERIFY_FAILURE: {
 								rt_kprintf("add password failure!\n");
-                                /*
 								//注册失败
 								if(key_api_port != RT_NULL)
 								{
@@ -607,7 +607,7 @@ kb_thread_entry(void *parameters)
 									data.event = KEY_REGISTER_FAIL;
 									key_api_port(&data);
 								}
-                                */
+               
 								break;
 							}
 							default : {

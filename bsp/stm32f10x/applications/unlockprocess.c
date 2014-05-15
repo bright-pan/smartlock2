@@ -182,7 +182,7 @@ rt_err_t keyboard_event_process(void *user)
 			motor_rotate(RT_TRUE);
 			
 			send_voice_mail(VOICE_TYPE_KEY1_OK);
-      send_gprs_mail(ALARM_TYPE_FPRINT_KEY_RIGHT,AlarmTime,(void *)keypos);
+      send_gprs_mail(ALARM_TYPE_CODE_KEY_RIGHT,AlarmTime,(void *)keypos);
 			
 			break;
 		}
