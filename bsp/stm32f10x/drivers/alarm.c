@@ -142,23 +142,23 @@ void alarm_thread_entry(void *parameter)
 void send_alarm_mail(ALARM_TYPEDEF alarm_type, ALARM_PROCESS_FLAG_TYPEDEF alarm_process_flag, rt_int8_t gpio_value, time_t time)
 {
 	extern rt_device_t rtc_device;
-	ALARM_MAIL_TYPEDEF buf;
+	ALARM_MAIL_TYPEDEF mail;
 	rt_err_t result;
 
-	buf.alarm_type = alarm_type;
+	mail.alarm_type = alarm_type;
 	if (!time)
 	{
-		rt_device_control(rtc_device, RT_DEVICE_CTRL_RTC_GET_TIME, &(buf.time));
+		rt_device_control(rtc_device, RT_DEVICE_CTRL_RTC_GET_TIME, &(mail.time));
 	}
 	else
 	{
-		buf.time = time;
+		mail.time = time;
 	}
-	buf.alarm_process_flag = alarm_process_flag;
-	buf.gpio_value = gpio_value;
+	mail.alarm_process_flag = alarm_process_flag;
+	mail.gpio_value = gpio_value;
 	if (alarm_mq != RT_NULL)
 	{
-		result = rt_mq_send(alarm_mq, &buf, sizeof(ALARM_MAIL_TYPEDEF));
+		result = rt_mq_send(alarm_mq, &mail, sizeof(mail));
 		if (result == -RT_EFULL)
 		{
 #if (defined RT_USING_FINSH) && (defined ALARM_DEBUG)

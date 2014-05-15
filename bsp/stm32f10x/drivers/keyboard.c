@@ -17,49 +17,18 @@
 #include "untils.h"
 #include "gpio_exti.h"
 
-#define KB_DEBUG
 #define KB_TIMEOUT 10
 #define KB_VERIFY_TIMES 3
 #define KBUF_MAX_SIZE KEY_KBOARD_CODE_SIZE
+#define KB_MAIL_MAX_MSGS 5
+#define VERIFY_STATUS_INPUT 0x01
+#define VERIFY_STATUS_EXIT 0x02
 
-static rt_sem_t kb_sem;
-
-static keyboard_call_back key_api_port = RT_NULL;
-
-void key_api_port_callback(keyboard_call_back fun)
-{
-	if(fun != RT_NULL)
-	{	
-		key_api_port = fun;
-	}
-}
-
-__STATIC_INLINE uint8_t bit_to_index(uint16_t data)
-{
-    uint8_t result = 0;
-    while (data)
-    {
-        result++;
-        data >>= 1;
-    }
-    return result;
-}
-
-static const uint8_t char_remap[16] = {
-    '?',
-    '*', '0', '#',
-    '7', '8', '9', 
-    '4', '5', '6', 
-    '1', '2', '3',
-    '?', '?', '?',
-};
-
-typedef enum {
-	KB_MODE_NORMAL_AUTH = 0,
-	KB_MODE_SETTING_AUTH,
-    KB_MODE_SETTING,
-	KB_MODE_ADD_PASSWORD,
-}KB_MODE_TYPEDEF;
+typedef struct {
+	uint16_t type;
+	KB_MODE_TYPEDEF mode;
+	uint8_t c;
+}KB_MAIL_TYPEDEF;
 
 typedef struct {
 	uint8_t data[KBUF_MAX_SIZE];
@@ -78,10 +47,23 @@ typedef struct {
     uint8_t setting_auth_times;
 }KB_DATA_TYPEDEF;
 
-__STATIC_INLINE void
-kb_data_init(KB_DATA_TYPEDEF *data)
+static rt_mq_t kb_mq;
+static KB_MODE_TYPEDEF kb_mode = KB_MODE_NORMAL_AUTH;
+static KB_DATA_TYPEDEF kb_data;
+static keyboard_call_back key_api_port = RT_NULL;
+
+void key_api_port_callback(keyboard_call_back fun)
 {
-	rt_memset(data, 0, sizeof(*data));
+	if(fun != RT_NULL)
+	{
+		key_api_port = fun;
+	}
+}
+
+__INLINE void
+kb_data_init(void)
+{
+	rt_memset(&kb_data, 0, sizeof(kb_data));
 }
 
 __STATIC_INLINE void
@@ -103,6 +85,62 @@ kbuf_add_verify(KBUF_TYPEDEF *buf, uint8_t c)
 		buf->data_verify[buf->size_verify++] = c;
 }
 
+__STATIC_INLINE void
+kb_normal_auth_reset(void)
+{
+	kb_data.normal_auth_times = 0;
+}
+
+__STATIC_INLINE uint8_t
+kb_normal_auth_size(void)
+{
+	return kb_data.normal_auth.size;
+}
+
+__STATIC_INLINE int8_t
+kb_normal_auth_failure(void)
+{
+	int8_t result = 0;
+
+	rt_kprintf("normal verify failure, %d\n", kb_data.normal_auth_times);
+	if (kb_data.normal_auth_times >= KB_VERIFY_TIMES) {
+		/* TODO:  alarm */
+		kb_normal_auth_reset();
+		rt_kprintf("normal auth alarm\n");
+		result = 1;
+	}
+	kb_data.normal_auth_times++;
+	return result;
+}
+
+__STATIC_INLINE void
+kb_setting_auth_reset(void)
+{
+	kb_data.setting_auth_times = 0;
+}
+
+__STATIC_INLINE uint8_t
+kb_setting_auth_size(void)
+{
+	return kb_data.setting_auth.size;
+}
+
+__STATIC_INLINE int8_t
+kb_setting_auth_failure(void)
+{
+	int8_t result = 0;
+
+	rt_kprintf("setting verify failure, %d\n", kb_data.setting_auth_times);
+	if (kb_data.setting_auth_times >= KB_VERIFY_TIMES) {
+		/* TODO:  alarm */
+		kb_setting_auth_reset();
+		rt_kprintf("setting auth alarm\n");
+		result = 1;
+	}
+	kb_data.setting_auth_times++;
+	return result;
+}
+
 typedef enum {
 	KB_EOK = 0,
 	KB_ECANCEL,
@@ -121,7 +159,7 @@ kb_normal_auth_process(KB_MODE_TYPEDEF *mode, KBUF_TYPEDEF *buf, uint8_t c, uint
 	int id;
 
     if (c == '#') {
-        if (buf->size) {
+		if (buf->size) {
 #if (defined RT_USING_FINSH) && (defined KB_DEBUG)
             rt_kprintf("kb_normal :");
             print_char(buf->data, buf->size);
@@ -134,14 +172,14 @@ kb_normal_auth_process(KB_MODE_TYPEDEF *mode, KBUF_TYPEDEF *buf, uint8_t c, uint
 			} else {
 				result = KB_EVERIFY_FAILURE;
 			}
-
         } else {
-			*mode = KB_MODE_SETTING_AUTH;
-            result = KB_ESWITCH;
+			//send_kb_mail(KB_MAIL_TYPE_SET_MODE, KB_MODE_SETTING_AUTH, 0);
         }
+		kbuf_init(buf);
     } else {
-        if (c == '*')
-			result = KB_ECANCEL;
+        if (c == '*') {
+			kbuf_init(buf);
+		}
         else
             kbuf_add(buf, c);
     }
@@ -164,20 +202,18 @@ kb_setting_auth_process(KB_MODE_TYPEDEF *mode, KBUF_TYPEDEF *buf, uint8_t c)
 				result = KB_EVERIFY_FAILURE;
 			} else {
 				/* TODO:  verify success */
-				*mode = KB_MODE_SETTING;
+				send_kb_mail(KB_MAIL_TYPE_SETMODE, KB_MODE_SETTING, 0);
 				result = KB_EVERIFY_SUCCESS;
 			}
-
         } else {
-			result = KB_EEMPTY;
+			/* TODO:  EMPTY*/
         }
+		kbuf_init(buf);
     } else {
         if (c == '*') {
+			kbuf_init(buf);
 			if (!buf->size) {
-				*mode = KB_MODE_NORMAL_AUTH;
-				result = KB_EEXIT;
-			} else {
-				result = KB_ECANCEL;
+				//send_kb_mail(KB_MAIL_TYPE_SET_MODE, KB_MODE_NORMAL_AUTH, 0);
 			}
 		} else {
             kbuf_add(buf, c);
@@ -189,24 +225,22 @@ kb_setting_auth_process(KB_MODE_TYPEDEF *mode, KBUF_TYPEDEF *buf, uint8_t c)
 __STATIC_INLINE KB_ERROR_TYPEDEF
 kb_setting_process(KB_MODE_TYPEDEF *mode, KBUF_TYPEDEF *buf, uint8_t c)
 {
-    KB_ERROR_TYPEDEF result = KB_EOK;  
+    KB_ERROR_TYPEDEF result = KB_EOK;
     KEYBOARD_USER data;
-    
+
     if (c == '#') {
         if (buf->size) {
             if (buf->size == 1) {
                 switch (buf->data[0]) {
 					case '1' : {
 						rt_kprintf("input password: \n");
-						*mode = KB_MODE_ADD_PASSWORD;
-						result = KB_EVERIFY_SUCCESS;
+						send_kb_mail(KB_MAIL_TYPE_SETMODE, KB_MODE_ADD_PASSWORD, 0);
 						//提示输入新钥匙
 						data.event = KEY_INPUT_NEW_CODE;
 						break;
 					}
 					case '2' : {
 						rt_kprintf("setting 2\n");
-						result = KB_EVERIFY_SUCCESS;
 						break;
 					}
 					default : {
@@ -217,31 +251,31 @@ kb_setting_process(KB_MODE_TYPEDEF *mode, KBUF_TYPEDEF *buf, uint8_t c)
 
 						//输入模式错误
 						data.event = KEY_MODE_INPUT_ERROR;
-						
+
 						break;
 					}
 				}
+                /*
 				if(key_api_port != RT_NULL)
 				{
 					key_api_port(&data);
 				}
+                */
             } else {
 #if (defined RT_USING_FINSH) && (defined KB_DEBUG)
                 rt_kprintf("invalid setting, please reinput\n");
 #endif
-				result = KB_EVERIFY_FAILURE;
             }
 
         } else {
-			result = KB_EEMPTY;
+			/* TODO:  EMPTY*/
         }
+		kbuf_init(buf);
     } else {
         if (c == '*') {
+			kbuf_init(buf);
 			if (!buf->size) {
-				*mode = KB_MODE_NORMAL_AUTH;
-				result = KB_EEXIT;
-			} else {
-				result = KB_ECANCEL;
+				//send_kb_mail(KB_MAIL_TYPE_SET_MODE, KB_MODE_NORMAL_AUTH, 0);
 			}
 		} else {
             kbuf_add(buf, c);
@@ -257,56 +291,67 @@ kb_add_password_process(KB_MODE_TYPEDEF *mode, KBUF_TYPEDEF *buf, uint8_t c)
     KB_ERROR_TYPEDEF result = KB_EOK;
 
     if (c == '#') {
-		if (buf->verify_status) {
+		if (!(buf->verify_status & VERIFY_STATUS_EXIT)) {
+			if (buf->verify_status & VERIFY_STATUS_INPUT) {
 #if (defined RT_USING_FINSH) && (defined KB_DEBUG)
-            rt_kprintf("kb_add_password verify:");
-            print_char(buf->data_verify, buf->size_verify);
+				rt_kprintf("kb_add_password verify:");
+				print_char(buf->data_verify, buf->size_verify);
 #endif
-			if (rt_memcmp(buf->data, buf->data_verify, 6)) {
-				/* TODO:  verify failure */
-				result = KB_EVERIFY_FAILURE;
-			} else {
-				/* TODO:  verify success */
-				*mode = KB_MODE_NORMAL_AUTH;
-				result = KB_EVERIFY_SUCCESS;
-			}
-		} else {
+				if (buf->size != 6 || rt_memcmp(buf->data, buf->data_verify, 6)) {
+					/* TODO:  verify failure */
+					result = KB_EVERIFY_FAILURE;
+				} else {
+					/* TODO:  verify success */
+					result = KB_EVERIFY_SUCCESS;
+				}
+				buf->verify_status |= VERIFY_STATUS_EXIT;
 #if (defined RT_USING_FINSH) && (defined KB_DEBUG)
-            rt_kprintf("kb_add_password :");
-            print_char(buf->data, buf->size);
+                rt_kprintf("* return setting mode, # input new pw once again.\n");
 #endif
-			//请再输入一遍
-			if(key_api_port != RT_NULL)
-			{
-				KEYBOARD_USER data;
+			} else { //VERIFY_STATUS_INPUT
+#if (defined RT_USING_FINSH) && (defined KB_DEBUG)
+				rt_kprintf("kb_add_password :");
+				print_char(buf->data, buf->size);
+#endif
+				//请再输入一遍
+				if(key_api_port != RT_NULL)
+				{
+					KEYBOARD_USER data;
 
-				data.event = KEY_REINPUT_NEW_CODE;
-				key_api_port(&data);
+					data.event = KEY_REINPUT_NEW_CODE;
+					key_api_port(&data);
+				}
+				buf->verify_status |= VERIFY_STATUS_INPUT;
 			}
-			buf->verify_status = 1;
+		} else { //VERIFY_STATUS_EXIT
+			// try add again
+			kbuf_init(buf);
 		}
     } else {
-		if (buf->verify_status) {
-			if (c == '*') {
-				if (!buf->size_verify) {
-					*mode = KB_MODE_NORMAL_AUTH;
-					result = KB_EEXIT;
+		if (!(buf->verify_status & VERIFY_STATUS_EXIT)) {
+			if (buf->verify_status & VERIFY_STATUS_INPUT) {
+				if (c == '*') {
+					buf->size_verify = 0;
+					if (!buf->size_verify) {
+
+					}
 				} else {
-					result = KB_ECANCEL;
+					kbuf_add_verify(buf, c);
 				}
-			} else {
-				kbuf_add_verify(buf, c);
+			} else { //VERIFY_STATUS_INPUT
+				if (c == '*') {
+					buf->size = 0;
+					if (!buf->size) {
+
+					}
+				} else {
+					kbuf_add(buf, c);
+				}
 			}
-		} else {
+		} else { //VERIFY_STATUS_EXIT
 			if (c == '*') {
-				if (!buf->size) {
-					*mode = KB_MODE_NORMAL_AUTH;
-					result = KB_EEXIT;
-				} else {
-					result = KB_ECANCEL;
-				}
-			} else {
-				kbuf_add(buf, c);
+				kbuf_init(buf);
+				send_kb_mail(KB_MAIL_TYPE_SETMODE, KB_MODE_SETTING, 0);
 			}
 		}
     }
@@ -317,37 +362,68 @@ void
 kb_thread_entry(void *parameters)
 {
 	rt_err_t result;
-    rt_size_t size;
-    uint16_t data;
-    uint8_t c;
-	KB_MODE_TYPEDEF mode = KB_MODE_NORMAL_AUTH;
-    rt_device_t device = RT_NULL;
-	KB_DATA_TYPEDEF kb_data;
 	KB_ERROR_TYPEDEF kb_error;
+	KB_MAIL_TYPEDEF mail;
+
+    uint8_t c;
 	uint16_t key_id;
-    uint8_t error_detect = 0;
 
-	kb_data_init(&kb_data);
-
-    device_enable(DEVICE_NAME_KEY);
-    device = device_enable(DEVICE_NAME_KEYBOARD);
+	kb_data_init();
 
 	while (1) {
-		result = rt_sem_take(kb_sem, KB_TIMEOUT*RT_TICK_PER_SECOND);
+		rt_memset(&mail, 0, sizeof(mail));
+		result = rt_mq_recv(kb_mq, &mail, sizeof(mail), KB_TIMEOUT*RT_TICK_PER_SECOND);
 		if (result == RT_EOK) {
-            data = 0;
-            size = rt_device_read(device, 0, &data, 2);
-            if (size == 2) {
-                error_detect = 0;
-				// filter keyboard input
-				if (data != 0x0100) {
-					data &= 0xfeff;
-                }
-				__REV16(data);
-                c = char_remap[bit_to_index(data&0x0fff)];
-#if (defined RT_USING_FINSH) && (defined KB_DEBUG)
-                rt_kprintf("keyboard value is %04X, %c\n", data, c);
-#endif
+			if (mail.type == KB_MAIL_TYPE_TIMEOUT) {
+				kb_mode = mail.mode;
+                rt_kprintf("input timeout, return normal auth mode.\n");
+			}
+			if (mail.type == KB_MAIL_TYPE_SETMODE) {
+				kb_mode = mail.mode;
+				switch (kb_mode) {
+					case KB_MODE_NORMAL_AUTH: {
+                        rt_kprintf("return normal auth mode.\n");
+                        /*
+						if(key_api_port != RT_NULL)
+						{
+							KEYBOARD_USER data;
+
+							data.event = KEY_NORMAL_MODE;
+							key_api_port(&data);
+						}
+                        */
+						break;
+					}
+					case KB_MODE_SETTING_AUTH: {
+                        rt_kprintf("enter setting auth mode.\n");
+                        /*
+						//切换到设置模式
+						if(key_api_port != RT_NULL)
+						{
+							KEYBOARD_USER data;
+
+							data.event = KEY_SET_MODE;
+							key_api_port(&data);
+						}
+                        */
+						break;
+					}
+					case KB_MODE_SETTING: {
+                        rt_kprintf("enter setting mode.\n");
+						break;
+					}
+					case KB_MODE_ADD_PASSWORD: {
+                        rt_kprintf("enter add password mode.\n");
+						break;
+					}
+					default :{
+						break;
+					}
+				}
+			}
+			if (mail.type == KB_MAIL_TYPE_INPUT) {
+                c = mail.c;
+                /*
 				//按键声音
 				if(key_api_port != RT_NULL)
 				{
@@ -356,24 +432,20 @@ kb_thread_entry(void *parameters)
 					data.event = KEY_NOTIFYSOUND;
 					key_api_port(&data);
 				}
-				switch(mode) {
+                */
+				switch(kb_mode) {
 					case KB_MODE_NORMAL_AUTH: {
-						kb_error = kb_normal_auth_process(&mode, &kb_data.normal_auth, c, &key_id);
+						kb_error = kb_normal_auth_process(&kb_mode, &kb_data.normal_auth, c, &key_id);
 						switch (kb_error) {
 							case KB_EOK: {
 								break;
 							}
-							case KB_ECANCEL:
-							case KB_EEMPTY: {
-								kbuf_init(&kb_data.normal_auth);
-								break;
-							}
 							case KB_EVERIFY_SUCCESS: {
 								rt_kprintf("normal verify success!, key_id = %d\n", key_id);
-                                kb_data.normal_auth_times = 0;
-                                kbuf_init(&kb_data.normal_auth);
-                //密码解锁成功
-                if(key_api_port != RT_NULL)
+								kb_normal_auth_reset();
+                                /*
+								//密码解锁成功
+								if(key_api_port != RT_NULL)
 								{
 									KEYBOARD_USER data;
 
@@ -381,14 +453,12 @@ kb_thread_entry(void *parameters)
 									data.KeyPos = key_id;
 									key_api_port(&data);
 								}
+                                */
 								break;
 							}
 							case KB_EVERIFY_FAILURE: {
-								rt_kprintf("normal verify failure, %d\n", kb_data.normal_auth_times);
-								if (kb_data.normal_auth_times++ >= KB_VERIFY_TIMES) {
-									/* TODO:  alarm */
-									kb_data.normal_auth_times = 0;
-									rt_kprintf("normal auth alarm\n");
+								if (kb_normal_auth_failure()) {
+                                    /*
 									//开门失败
 									if(key_api_port != RT_NULL)
 									{
@@ -397,34 +467,20 @@ kb_thread_entry(void *parameters)
 										data.event = KEY_UNLOCK_FAIL;
 										key_api_port(&data);
 									}
+                                    */
 								}
 								else
 								{
-                  //密码错误
-                  if(key_api_port != RT_NULL)
+                                    /*
+									//密码错误
+									if(key_api_port != RT_NULL)
 									{
 										KEYBOARD_USER data;
 
 										data.event = KEY_CODE_ERROR;
 										key_api_port(&data);
 									}
-								}
-								kbuf_init(&kb_data.normal_auth);
-								
-								break;
-							}
-							case KB_EEXIT: {
-                                kbuf_init(&kb_data.normal_auth);
-								break;
-							}
-							case KB_ESWITCH:{
-								//切换到设置模式
-								if(key_api_port != RT_NULL)
-								{
-									KEYBOARD_USER data;
-
-									data.event = KEY_SET_MODE;
-									key_api_port(&data);
+                                    */
 								}
 								break;
 							}
@@ -434,38 +490,32 @@ kb_thread_entry(void *parameters)
 						}
 						break;
 					}
-                    case KB_MODE_SETTING_AUTH: {
-						kb_error = kb_setting_auth_process(&mode, &kb_data.setting_auth, c);
+					case KB_MODE_SETTING_AUTH: {
+						kb_error = kb_setting_auth_process(&kb_mode, &kb_data.setting_auth, c);
 						switch (kb_error) {
 							case KB_EOK: {
 								break;
 							}
-							case KB_ECANCEL:
-							case KB_EEMPTY: {
-								kbuf_init(&kb_data.setting_auth);
-								break;
-							}
 							case KB_EVERIFY_SUCCESS: {
 								rt_kprintf("setting verify success!");
-                                kb_data.setting_auth_times = 0;
-                                kbuf_init(&kb_data.setting_auth);
-                //请选择模式
-                if(key_api_port != RT_NULL)
+								kb_setting_auth_reset();
+								//请选择模式
+                                /*
+								if(key_api_port != RT_NULL)
 								{
 									KEYBOARD_USER data;
 
 									data.event = KEY_CHOOSE_MODE;
 									key_api_port(&data);
 								}
+                                */
 								break;
 							}
 							case KB_EVERIFY_FAILURE: {
-								rt_kprintf("setting verify failure, %d\n", kb_data.setting_auth_times);
-								if (kb_data.setting_auth_times++ >= KB_VERIFY_TIMES) {
-									/* TODO:  alarm */
-									kb_data.setting_auth_times = 0;
-									rt_kprintf("setting auth alarm\n");
+								if (kb_setting_auth_failure()) {
+                                    send_kb_mail(KB_MAIL_TYPE_TIMEOUT, KB_MODE_NORMAL_AUTH, 0);
 									//报警
+                                    /*
 									if(key_api_port != RT_NULL)
 									{
 										KEYBOARD_USER data;
@@ -473,9 +523,11 @@ kb_thread_entry(void *parameters)
 										data.event = KEY_UNLOCK_FAIL;
 										key_api_port(&data);
 									}
+                                    */
 								}
 								else
 								{
+                                    /*
 									//超级密码错误
 									if(key_api_port != RT_NULL)
 									{
@@ -484,122 +536,8 @@ kb_thread_entry(void *parameters)
 										data.event = KEY_CODE_ERROR;
 										key_api_port(&data);
 									}
+                                    */
 								}
-								kbuf_init(&kb_data.setting_auth);
-								break;
-							}
-							case KB_EEXIT: {
-                                kbuf_init(&kb_data.setting_auth);
-								break;
-							}
-							case KB_ESWITCH:{
-								//切换到普通模式
-								if(key_api_port != RT_NULL)
-								{
-									KEYBOARD_USER data;
-
-									data.event = KEY_NORMAL_MODE;
-									key_api_port(&data);
-								}
-								break;
-							}
-							default : {
-								break;
-							}
-						}
-                        break;
-                    }
-                    case KB_MODE_SETTING: {
-						kb_error = kb_setting_process(&mode, &kb_data.setting, c);
-						switch (kb_error) {
-							case KB_EOK: {
-								break;
-							}
-							case KB_ECANCEL:
-							case KB_EEMPTY: {
-								kbuf_init(&kb_data.setting);
-								break;
-							}
-							case KB_EVERIFY_SUCCESS: {
-                                kbuf_init(&kb_data.setting);
-								break;
-							}
-							case KB_EVERIFY_FAILURE: {
-								kbuf_init(&kb_data.setting);
-								break;
-							}
-							case KB_EEXIT: {
-                                kbuf_init(&kb_data.setting);
-								break;
-							}
-							default : {
-								break;
-							}
-						}
-						break;
-                    }
-					case KB_MODE_ADD_PASSWORD: {
-						kb_error = kb_add_password_process(&mode, &kb_data.password, c);
-						switch (kb_error) {
-							case KB_EOK: {
-								break;
-							}
-							case KB_ECANCEL: {
-								if (kb_data.password.verify_status) {
-									kb_data.password.size_verify = 0;
-								} else {
-									kb_data.password.size = 0;
-								}
-								break;
-							}
-							case KB_EVERIFY_SUCCESS: {
-								int NewKeyPos;
-								
-								rt_kprintf("add password success : %s\n", kb_data.password.data);
-								NewKeyPos = device_config_key_create(KEY_TYPE_KBOARD, kb_data.password.data);
-                kbuf_init(&kb_data.password);
-                rt_kprintf("%d\n",NewKeyPos);
-                //注册成功
-                if((NewKeyPos >= 0) && (NewKeyPos < KEY_NUMBERS))
-                {
-                  if(key_api_port != RT_NULL)
-                  {
-                    KEYBOARD_USER data;
-  
-                    data.event = KEY_REGISTER_OK;
-                    data.KeyPos = NewKeyPos;
-                    key_api_port(&data);
-                  }
-                }
-                else
-                {
-									//钥匙库已满
-									if(key_api_port != RT_NULL)
-                  {
-                    KEYBOARD_USER data;
-  
-                    data.event = KEY_LIB_FULL;
-                    key_api_port(&data);
-                  }
-                }
-                
-								break;
-							}
-							case KB_EVERIFY_FAILURE: {
-                                kbuf_init(&kb_data.password);
-								rt_kprintf("add password failure!\n");
-								//注册失败
-								if(key_api_port != RT_NULL)
-								{
-									KEYBOARD_USER data;
-
-									data.event = KEY_REGISTER_FAIL;
-									key_api_port(&data);
-								}
-								break;
-							}
-							case KB_EEXIT: {
-                                kbuf_init(&kb_data.password);
 								break;
 							}
 							default : {
@@ -608,34 +546,116 @@ kb_thread_entry(void *parameters)
 						}
 						break;
 					}
-                    default : {
-                        break;
-                    }
+					case KB_MODE_SETTING: {
+						kb_error = kb_setting_process(&kb_mode, &kb_data.setting, c);
+						switch (kb_error) {
+							case KB_EOK: {
+								break;
+							}
+							default : {
+								break;
+							}
+						}
+						break;
+					}
+					case KB_MODE_ADD_PASSWORD: {
+						kb_error = kb_add_password_process(&kb_mode, &kb_data.password, c);
+						switch (kb_error) {
+							case KB_EOK: {
+								break;
+							}
+							case KB_EVERIFY_SUCCESS: {
+								int NewKeyPos;
+								rt_kprintf("add password success : %s\n", kb_data.password.data);
+								NewKeyPos = device_config_key_create(KEY_TYPE_KBOARD, kb_data.password.data);
+								rt_kprintf("%d\n",NewKeyPos);
+								//注册成功
+								if((NewKeyPos >= 0) && (NewKeyPos < KEY_NUMBERS))
+								{
+                                    /*
+									if(key_api_port != RT_NULL)
+									{
+										KEYBOARD_USER data;
+										data.event = KEY_REGISTER_OK;
+										data.KeyPos = NewKeyPos;
+										key_api_port(&data);
+									}
+                                    */
+								}
+								else
+								{
+                                    /*
+									//钥匙库已满
+									if(key_api_port != RT_NULL)
+									{
+										KEYBOARD_USER data;
+										data.event = KEY_LIB_FULL;
+										key_api_port(&data);
+									}
+                                    */
+								}
+								break;
+							}
+							case KB_EVERIFY_FAILURE: {
+								rt_kprintf("add password failure!\n");
+                                /*
+								//注册失败
+								if(key_api_port != RT_NULL)
+								{
+									KEYBOARD_USER data;
+
+									data.event = KEY_REGISTER_FAIL;
+									key_api_port(&data);
+								}
+                                */
+								break;
+							}
+							default : {
+								break;
+							}
+						}
+						break;
+					}
+					default : {
+						break;
+					}
 				}
-			} else {
-#if (defined RT_USING_FINSH) && (defined KB_DEBUG)
-				rt_kprintf("read key board failure!!!\n");
-#endif
-                if (error_detect++ > 2)
-                {
-                    rt_device_control(device, RT_DEVICE_CTRL_CONFIGURE, RT_NULL);
-                    error_detect = 0;
-                    
-                }
-
 			}
-
 		} else { //time out
-			mode = KB_MODE_NORMAL_AUTH;
-			kb_data_init(&kb_data);
+			if (kb_mode != KB_MODE_NORMAL_AUTH) {
+				send_kb_mail(KB_MAIL_TYPE_TIMEOUT, KB_MODE_NORMAL_AUTH, 0);
+				kb_data_init();
+			}
 		}
 	}
 }
 
-__INLINE
-void kb_detect(void)
+__INLINE rt_err_t
+send_kb_mail(uint16_t type, KB_MODE_TYPEDEF mode, uint8_t c)
 {
-    rt_sem_release(kb_sem);
+	rt_err_t result = -RT_EFULL;
+	KB_MAIL_TYPEDEF mail;
+
+	if (kb_mq != RT_NULL)
+	{
+		mail.type = type;
+		mail.mode = mode;
+		mail.c = c;
+		result = rt_mq_send(kb_mq, &mail, sizeof(mail));
+		if (result == -RT_EFULL)
+		{
+#if (defined RT_USING_FINSH) && (defined KB_DEBUG)
+			rt_kprintf("kb_mq is full!!!\n");
+#endif
+		}
+	}
+	else
+	{
+#if (defined RT_USING_FINSH) && (defined KB_DEBUG)
+		rt_kprintf("kb_mq is RT_NULL!!!!\n");
+#endif
+	}
+    return result;
 }
 
 int
@@ -643,14 +663,14 @@ rt_keyboard_init(void)
 {
 	rt_thread_t kb_thread;
 
-	//initial keyboard sem
-    kb_sem = rt_sem_create("kboard", 0, RT_IPC_FLAG_FIFO);
-	if (kb_sem == RT_NULL)
+	//initial keyboard mq
+    kb_mq = rt_mq_create("kboard", sizeof(KB_MAIL_TYPEDEF),
+						 KB_MAIL_MAX_MSGS, RT_IPC_FLAG_FIFO);
+	if (kb_mq == RT_NULL)
 		return -1;
-
 	//key board thread
 	kb_thread = rt_thread_create("kboard", kb_thread_entry,
-									   RT_NULL, 1024, 99, 5);
+								 RT_NULL, 1024, 99, 5);
 	if (kb_thread == RT_NULL)
 		return -1;
 
@@ -663,5 +683,5 @@ INIT_APP_EXPORT(rt_keyboard_init);
 #ifdef RT_USING_FINSH
 #include <finsh.h>
 
-FINSH_FUNCTION_EXPORT(kb_detect, kb_detect[]);
+FINSH_FUNCTION_EXPORT(send_kb_mail, send_kb_mail[type mode c]);
 #endif // RT_USING_FINSH

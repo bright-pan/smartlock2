@@ -13,8 +13,9 @@
 
 #include "gpio_exti.h"
 #include "gpio_pin.h"
-#include "keyboard.h"
 #include "untils.h"
+#include "keyboard.h"
+#include "kb_dev.h"
 
 extern rt_device_t rtc_device;
 
@@ -427,22 +428,68 @@ int rt_hw_switch3_register(void)
 gpio_device key_device;
 rt_timer_t key_exti_timer = RT_NULL;
 
+__STATIC_INLINE uint8_t bit_to_index(uint16_t data)
+{
+    uint8_t result = 0;
+    while (data)
+    {
+        result++;
+        data >>= 1;
+    }
+    return result;
+}
+
+static const uint8_t char_remap[16] = {
+    '?',
+    '*', '0', '#',
+    '7', '8', '9',
+    '4', '5', '6',
+    '1', '2', '3',
+    '?', '?', '?',
+};
+
 void key_exti_timeout(void *parameters)
 {
 	rt_device_t device = RT_NULL;
-	uint8_t data = 0;
+	rt_device_t i2c_device = RT_NULL;
+	uint16_t data = 0;
+    static uint8_t error_detect = 0;
+    rt_size_t size;
+    uint8_t c;
 
-	device = rt_device_find(DEVICE_NAME_KEY);
+	device = device_enable(DEVICE_NAME_KEY);
+    i2c_device = device_enable(DEVICE_NAME_KEYBOARD);
+
 	if (device != RT_NULL)
 	{
 		rt_device_read(device,0,&data,0);
 		if (data == KEY_STATUS) // rfid key is plugin
 		{
-            kb_detect();
-			// produce mail
-			//rt_device_control(rtc_device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
-
-			// send mail
+			data = 0;
+			size = rt_device_read(i2c_device, 0, &data, 2);
+			if (size == 2) {
+				error_detect = 0;
+				// filter keyboard input
+				if (data != 0x0100) {
+					data &= 0xfeff;
+				}
+				__REV16(data);
+				c = char_remap[bit_to_index(data&0x0fff)];
+#if (defined RT_USING_FINSH) && (defined KB_DEBUG)
+				rt_kprintf("keyboard value is %04X, %c\n", data, c);
+#endif
+				// send mail
+				send_kb_mail(KB_MAIL_TYPE_INPUT, KB_MODE_NORMAL_AUTH, c);
+            } else {
+#if (defined RT_USING_FINSH) && (defined KB_DEBUG)
+                rt_kprintf("read key board failure!!!\n");
+#endif
+                if (error_detect++ > 2)
+                {
+                    rt_device_control(i2c_device, RT_DEVICE_CTRL_CONFIGURE, RT_NULL);
+                    error_detect = 0;
+                }
+			}
 			//send_alarm_mail(ALARM_TYPE_RFID_key, ALARM_PROCESS_FLAG_LOCAL, RFID_key_STATUS, time);
 		}
 		rt_device_control(device, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0);

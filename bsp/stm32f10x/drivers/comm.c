@@ -15,6 +15,7 @@
 #include "comm.h"
 #include "comm_window.h"
 #include "usart.h"
+#include "keyboard.h"
 
 #define BUF_SIZE 768
 
@@ -43,7 +44,7 @@ typedef enum {
 void sub_event_callback(comm_call_back fun)
 {
 	if(fun != RT_NULL)
-	{	
+	{
 		sub_event_api = fun;
 	}
 }
@@ -103,43 +104,42 @@ process_response(uint8_t cmd, uint8_t *rep_frame, uint16_t length)
 #if (defined RT_USING_FINSH) && (defined COMM_DEBUG)
 				rt_kprintf("the response cmd %02x, adc value is %02X!\n", cmd, *((uint16_t *)rep_frame)));
 #endif // RT_USING_FINSH
-                break;
-            }
-		default :
-			{
-#if (defined RT_USING_FINSH) && (defined COMM_DEBUG)
-				rt_kprintf("the response cmd %02x is invalid!\n", cmd);
-#endif // RT_USING_FINSH
-				break;
-			}
+			break;
 	}
+	default :
+		{
+#if (defined RT_USING_FINSH) && (defined COMM_DEBUG)
+			rt_kprintf("the response cmd %02x is invalid!\n", cmd);
+#endif // RT_USING_FINSH
+			break;
+		}
+}
 
-	return result;
+return result;
 }
 
 rt_size_t comm_recv_gprs_data(rt_uint8_t *buffer,rt_size_t size)
 {
 	rt_uint8_t *ptr;
 
-  ptr = buffer;
+	ptr = buffer;
 
 	/* interrupt mode Rx */
 	while (size)
 	{
-    rt_uint8_t ch;
-    rt_size_t readsize;
+		rt_uint8_t ch;
+		rt_size_t readsize;
 
 		rt_mutex_take(gprs_mutex,RT_WAITING_FOREVER);
 		readsize = rt_ringbuffer_getchar(&gprsringbuffer,&ch);
 		rt_mutex_release(gprs_mutex);
-		
-    if(readsize == 0)
-    {
-    	break;
-    }
-    *ptr = ch;
-    ptr ++;
-    size --;
+		if(readsize == 0)
+		{
+			break;
+		}
+		*ptr = ch;
+		ptr ++;
+		size --;
 	}
 	size = (rt_uint32_t)ptr - (rt_uint32_t)buffer;
 	/* set error code */
@@ -179,23 +179,21 @@ process_request(uint8_t cmd, uint8_t order, uint8_t *rep_frame, uint16_t length)
 				//printf_data(rep_frame,length);
 				//rt_kprintf("COMM_TYPE_GPRS\n");
 				while (length-1)
-        {
-        	rt_size_t readsize;
-        	
-	    		rt_mutex_take(gprs_mutex,RT_WAITING_FOREVER);
-	    		readsize = rt_ringbuffer_putchar(&gprsringbuffer,*ptr);
-	    		rt_mutex_release(gprs_mutex);
-	        if (readsize != 0)
-	        {
-	            ptr ++;
-	            length --;
-	        }
-	        else
-	        {
-	          break;
-	        } 
-        }
-        
+				{
+					rt_size_t readsize;
+					rt_mutex_take(gprs_mutex,RT_WAITING_FOREVER);
+					readsize = rt_ringbuffer_putchar(&gprsringbuffer,*ptr);
+					rt_mutex_release(gprs_mutex);
+					if (readsize != 0)
+					{
+						ptr ++;
+						length --;
+					}
+					else
+					{
+						break;
+					}
+				}
 				result = CTW_STATUS_OK;
 				send_ctx_mail(rep_cmd, order, 0, &result, 1);
 				/* process data */
@@ -203,34 +201,42 @@ process_request(uint8_t cmd, uint8_t order, uint8_t *rep_frame, uint16_t length)
 			}
 		case COMM_TYPE_SWITCH:
 			{
-        result = CTW_STATUS_OK;
-        send_ctx_mail(rep_cmd, order, 0, &result, 1);
+				result = CTW_STATUS_OK;
+				send_ctx_mail(rep_cmd, order, 0, &result, 1);
 
-					//gpio_pin_output(DEVICE_NAME_VOICE_AMP, 1);
+				//gpio_pin_output(DEVICE_NAME_VOICE_AMP, 1);
 #if (defined RT_USING_FINSH) && (defined COMM_DEBUG)
 				rt_kprintf("the comm swtich push %d\n", *rep_frame);
 #endif // RT_USING_FINSH
                 switch (*rep_frame) {
                     case 1: {
+						kb_data_init();
+						send_kb_mail(KB_MAIL_TYPE_SETMODE, KB_MODE_SETTING_AUTH, 0);
                         // key1
-                        if(sub_event_api != RT_NULL)
-                        {
-                        	COMM_SUB_USER data;
+                        /*
+						  if(sub_event_api != RT_NULL)
+						  {
+						  COMM_SUB_USER data;
 
-                        	data.event = SUB_ENT_KEY1;
-													sub_event_api((void *)&data);
-                        }
+						  data.event = SUB_ENT_KEY1;
+						  sub_event_api((void *)&data);
+						  }
+                        */
+
                         break;
                     }
                     case 2: {
                         // key2
-                        if(sub_event_api != RT_NULL)
-                        {
-                        	COMM_SUB_USER data;
+                        /*
+						  if(sub_event_api != RT_NULL)
+						  {
 
-                        	data.event = SUB_ENT_KEY2;
-													sub_event_api((void *)&data);
-                        }
+						  COMM_SUB_USER data;
+
+						  data.event = SUB_ENT_KEY2;
+						  sub_event_api((void *)&data);
+						  }
+                        */
                         break;
                     }
                     case 3: {
@@ -423,7 +429,7 @@ comm_tx_thread_entry(void *parameters)
                     rt_kprintf("send response frame and delete cw node\n cmd: 0x%02X, order: 0x%02X, length: %d\n",
                                comm_tmail_buf.comm_type, comm_tmail_buf.order, comm_tmail_buf.len);
                     print_hex(comm_tmail_buf.buf, comm_tmail_buf.len);
-#endif // RT_USING_FINSH 
+#endif // RT_USING_FINSH
                     rt_free(comm_tmail_buf.buf);
                 }
 
@@ -591,8 +597,8 @@ rt_comm_init(void)
         return -1;
 	// initial comm thread
 	comm_tx_thread = rt_thread_create("comm_tx",
-							   comm_tx_thread_entry, RT_NULL,
-							   512, 102, 5);
+									  comm_tx_thread_entry, RT_NULL,
+									  512, 102, 5);
 	if (comm_tx_thread == RT_NULL)
         return -1;
 

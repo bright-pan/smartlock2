@@ -18,6 +18,11 @@
 #include <rtthread.h>
 #include <stm32f10x.h>
 
+#define KB_DEBUG
+#define KB_MAIL_TYPE_INPUT 1
+#define KB_MAIL_TYPE_SETMODE 2
+#define KB_MAIL_TYPE_TIMEOUT 3
+
 typedef enum
 {
 	KEY_NOTIFYSOUND,		//ÌáÊ¾ÉùÒô
@@ -35,6 +40,13 @@ typedef enum
 	KEY_LIB_FULL,    //Ô¿³×¿âÒÑÂú
 }KEYBOARD_EVENT_TYPE;
 
+typedef enum {
+	KB_MODE_NORMAL_AUTH = 0,
+	KB_MODE_SETTING_AUTH,
+    KB_MODE_SETTING,
+	KB_MODE_ADD_PASSWORD,
+}KB_MODE_TYPEDEF;
+
 typedef  rt_err_t (*keyboard_call_back)(void *user);
 
 typedef struct
@@ -43,9 +55,12 @@ typedef struct
 	KEYBOARD_EVENT_TYPE event;
 }KEYBOARD_USER,*KEYBOARD_USER_P;
 
-__INLINE
-void kb_detect(void);
-
 void key_api_port_callback(keyboard_call_back fun);
+
+__INLINE void
+kb_data_init(void);
+
+__INLINE rt_err_t
+send_kb_mail(uint16_t type, KB_MODE_TYPEDEF mode, uint8_t c);
 
 #endif /* _KEYBOARD_H_ */
