@@ -124,7 +124,7 @@ static rt_int8_t send_file_pack(char *FileName,rt_uint32_t PackOrder,rt_uint16_t
 	if(FileID < 0)
 	{
 		//打开文件失败
-		rt_kprintf("%s OPEN FAIL\n\n",FileName);
+		RT_DEBUG_LOG(SHOW_NFILE_SRESULT,("%s OPEN FAIL\n\n",FileName));
 		rt_free(buffer);
 		return -1;
 	}
@@ -367,7 +367,7 @@ static rt_int8_t send_file_process(UploadFile_p arg,FileSendCtl_p ctl)
 	SendSem = rt_sem_create("sendpic",FILE_PACKNUM_MAX,RT_IPC_FLAG_FIFO);
 	if(SendSem == RT_NULL)
 	{
-		rt_kprintf("Send Semaphore Create Fail\n");
+		rt_kprintf("sendpic:Send Semaphore Create Fail\n");
     rt_sem_delete(SendSem);//删除发送控制信号量
 		return -1;
 	}
@@ -408,7 +408,7 @@ static rt_int8_t send_file_process(UploadFile_p arg,FileSendCtl_p ctl)
 				NetMailPos = find_null_msgmail(mail,FILE_PACKNUM_MAX);
 				if(NetMailPos < 0)
 				{
-					rt_kprintf("NetMailPos = %d Value Error\n",NetMailPos);
+					RT_DEBUG_LOG(SHOW_NFILE_SEND,("NetMailPos = %d Value Error\n",NetMailPos));
 					break;
 				}
 				mail[NetMailPos] = rt_calloc(1,sizeof(net_msgmail));
@@ -422,7 +422,7 @@ static rt_int8_t send_file_process(UploadFile_p arg,FileSendCtl_p ctl)
 					rt_sem_release(SendSem);
 				}
 				CurPackOrder++;
-				rt_kprintf("Send pack number:%d\n",CurPackOrder-1);
+				RT_DEBUG_LOG(SHOW_NFILE_SEND,("Send pack number:%d\n",CurPackOrder-1));
 			}
 		}
 		else
@@ -449,7 +449,7 @@ static rt_int8_t send_file_process(UploadFile_p arg,FileSendCtl_p ctl)
       SendOk += RecvResult;
       if(RecvResult > 0)
       {
-				rt_kprintf("Send ok number:%d\n",SendOk);
+				RT_DEBUG_LOG(SHOW_NFILE_SEND,("Send ok number:%d\n",SendOk));
       }
 		}
 		else

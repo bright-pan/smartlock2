@@ -12,7 +12,7 @@
 #include <dfs_posix.h>
 #endif
 
-#define NET_WND_MAX_NUM             12  //窗口大小
+#define NET_WND_MAX_NUM             9  //窗口大小
 #define NET_FILE_BUF_SIZE           512 //文件buffer
 
 
@@ -21,7 +21,7 @@
 #define NET_DEVICE_ID_LEN       8
 #define NET_CHECK_LEN           2
 
-#define NET_RECV_MSG_MAX        10
+#define NET_RECV_MSG_MAX        6
 
 //报文命令
 typedef enum
