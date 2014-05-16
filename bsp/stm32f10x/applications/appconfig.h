@@ -20,8 +20,12 @@
 
 
 //Application Functionality
-#define SMS_SEND_ASTRICT_IS 		1
+#define SMS_SEND_ASTRICT_IS 		1   //¶ÌÐÅ·¢ËÍ¼ä¸ô
 #define SMS_SEND_TIME_LAG   		30	//30min
+
+#define PIC_CMAERA_MAKE         0
+#define PIC_UPLOAD_PIC          0
+
 //Thread Priority 
 #define SMS_THREAD_PRI_IS				103
 

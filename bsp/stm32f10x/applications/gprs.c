@@ -20,6 +20,7 @@
 #include "fprint.h"
 #include "keyboard.h"
 #include "apppubulic.h"
+#include "appconfig.h"
 
 #define UPDATE_KEY_CNT    60 //钥匙同步周期
 
@@ -137,6 +138,13 @@ static void gprs_mail_process(GPRS_MAIL_TYPEDEF *mail)
 		}
 		case ALARM_TYPE_GPRS_UPLOAD_PIC:
 		{
+			#ifdef PIC_UPLOAD_PIC
+			if(PIC_UPLOAD_PIC == 0)
+			{
+				rt_kprintf("System upload function is close\n");
+				break;
+			}
+			#endif
 			net_upload_file(mail->user);
 			
 			break;

@@ -3,7 +3,8 @@
 #include "rtthread.h"
 #include "untils.h"
 
-#define SYS_FPRINT_REGISTER  (0X01<<0)
+#define SYS_FPRINT_REGISTER  (0X01 << 0)
+#define SYS_CLEAR_SMS_CNT		 (0x01 << 1)
 #define SYS_EVENT_ALL        0xffffffff
 
 //计算平均数
@@ -54,6 +55,9 @@ system_event_process(rt_uint8_t mode,rt_uint32_t type);
 KEY_TYPE 
 get_key_type(rt_uint16_t pos);
 
+//配置文件结构体互斥量
+void 
+config_file_mutex_op(rt_bool_t way);
 
 #endif
 

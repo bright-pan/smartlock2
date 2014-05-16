@@ -9,6 +9,7 @@
 #include "gpio_pwm.h"
 #include "netfile.h"
 #include "gprs.h"
+#include "appconfig.h"
 
 #define CAMERA_BUF_SIZE       	 512    //»º³åÇø´óÐ¡
 #define PIC_DATA_MAX_SIZE			 	 70000	//70K
@@ -762,6 +763,14 @@ void camera_send_mail(ALARM_TYPEDEF alarm_type,rt_uint32_t time)
 {
 	CameraMail mail;
 	
+#ifdef PIC_CMAERA_MAKE
+	if(PIC_CMAERA_MAKE == 0)
+	{
+		rt_kprintf("System camera function is close\n");
+		return ;
+	}
+#endif
+
 	if(CameraMail_mq != RT_NULL)
 	{
 		mail.AlarmType = alarm_type;
