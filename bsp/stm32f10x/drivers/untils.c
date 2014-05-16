@@ -201,6 +201,33 @@ __exit:
 }
 
 int
+device_config_superpwd_save(uint8_t *buf)
+{
+	int fd;
+	int result = -1;
+	uint16_t len;
+
+	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+	rt_memcpy(device_config.param.password, buf, 6);
+	result = device_config_file_operate(&device_config, 1);
+	rt_mutex_release(device_config.mutex);
+	return result;
+}
+
+int
+device_config_superpwd_verify(const uint8_t *buf)
+{
+    int result = -1;
+
+    rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+	if (!rt_memcmp(device_config.param.password, buf, 6)) {
+		result = 0;
+	}
+	rt_mutex_release(device_config.mutex);
+    return result;
+}
+
+int
 device_config_key_create(KEY_TYPE type, uint8_t *buf)
 {
     int result = -1;

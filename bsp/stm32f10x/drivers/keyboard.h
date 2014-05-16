@@ -45,6 +45,8 @@ typedef enum {
 	KB_MODE_SETTING_AUTH,
     KB_MODE_SETTING,
 	KB_MODE_ADD_PASSWORD,
+	KB_MODE_MODIFY_SUPERPWD,
+	KB_MODE_ADD_FPRINT,
 }KB_MODE_TYPEDEF;
 
 typedef  rt_err_t (*keyboard_call_back)(void *user);

@@ -1072,7 +1072,6 @@ fprint_thread_entry(void *parameters)
                     }
                 } else {
                     template_id = frame_data.rep_search.template_id;
-                    gpio_pin_output(DEVICE_NAME_LOGO_LED,1);
 #if (defined RT_USING_FINSH)
                     rt_kprintf("fprint verify is exist, %d\n", frame_data.rep_search.template_id);
 #endif // RT_USING_FINSH
@@ -1088,7 +1087,6 @@ fprint_thread_entry(void *parameters)
 			} else {
 
                 s_detect = 0;
-                gpio_pin_output(DEVICE_NAME_LOGO_LED,0);
 
             }
             if (error == FPRINT_ENO_DETECTED) {

@@ -1161,7 +1161,7 @@ INIT_DEVICE_EXPORT(rt_hw_motor4_register);
 
 INIT_DEVICE_EXPORT(rt_hw_lcd_led_register);
 INIT_DEVICE_EXPORT(rt_hw_camera_led_register);
-INIT_DEVICE_EXPORT(rt_hw_logo_led_register);
+//INIT_DEVICE_EXPORT(rt_hw_logo_led_register);
 INIT_DEVICE_EXPORT(rt_hw_infra_pulse_register);
 
 #ifdef RT_USING_FINSH
