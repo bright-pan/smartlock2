@@ -39,8 +39,8 @@ rt_uint8_t ir_check_process(void)
 		rt_thread_delay(10);
 		pwm_ic_stop(DEVICE_NAME_INFRA_PULSE_PWM_IC);
 		rev_time = pwm_ic_time();
-		//rt_kprintf("rev_time = %d\n",rev_time);
-		if(rev_time > 10000 && rev_time < 20000)
+		rt_kprintf("rev_time = %d\n",rev_time);
+		if(rev_time > 1000 && rev_time < 20000)
 		{
 			rev_num++;
 			if(rev_num > 5)

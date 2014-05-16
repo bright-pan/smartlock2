@@ -708,7 +708,7 @@ struct gpio_pwm_user_data infra_pulse_user_data =
     /* timer oc */
     TIM_OCMode_PWM2,
     TIM_OutputState_Enable,
-    700,// pulse value 50%
+    1350,// pulse value 50%
     TIM_OCPolarity_High,
     TIM_Channel_4,
     TIM_IT_CC4 | TIM_IT_Update,
