@@ -14,10 +14,13 @@
 #include "sms.h"
 #include "bdcom.h"
 #include "appconfig.h"
+#if(SMS_SEND_ASTRICT_IS == 1)
+#include "apppubulic.h"
+
+#endif
 
 #define SMS_THREAD_PRI  				(SMS_THREAD_PRI_IS) 		//¶ÌÐÅÏß³ÌÓÅÏÈ¼¶
 #define SMS_RECV_MAIL_OUTTIME   ((RT_TICK_PER_SECOND)*1)//¶ÌÐÅÏß³Ì½ÓÊÕÓÊ¼þ³¬Ê±
-
 
 char smsc[20] = {0,};
 char phone_call[20] = {0,};
@@ -135,13 +138,17 @@ typedef struct {
 
 static rt_mq_t sms_mq = RT_NULL;
 
-#ifdef USE_SMS_SEND_TYPE2
-rt_uint32_t sms_send_time[7] = {0,};
-const rt_uint32_t sms_send_map[7]= {SMS_TYPE3,SMS_TYPE4,
-									SMS_TYPE6,SMS_TYPE8,
-									SMS_TYPE9,SMS_TYPE10,
-									SMS_TYPE11};
+#if(SMS_SEND_ASTRICT_IS == 1)
+const ALARM_TYPEDEF PictureSMS[] =
+{
+	4,													 //ÊýÁ¿
+	ALARM_TYPE_LOCK_SHELL,			 // lock shell alarm type
+	ALARM_TYPE_LOCK_TEMPERATURE, // lock temperatrue
+	ALARM_TYPE_CAMERA_IRDASENSOR, // camera irda sensor
+	ALARM_TYPE_FPRINT_KEY_ERROR,
+};
 #endif
+
 
 /*
   æ™ºèƒ½é”è‡ªåŠ¨æ–­ç”µï¼Œå°†è‡ªåŠ¨å¯åŠ¨ç”µæ± ä¾›ç”µ
@@ -351,6 +358,199 @@ typedef struct {
 }SMS_DATA_TYPEDEF;
 
 SMS_DATA_TYPEDEF sms_data[50];
+
+#if(SMS_SEND_ASTRICT_IS == 1)
+
+/** 
+@brief ´´½¨¶ÌÐÅ¼ä¸ô´°¿ÚÁ´±íÍ·
+@param void
+@retval head:Í·½áµãµØÖ·
+*/
+static SMSTimeLag_p timelag_list_create()
+{
+	SMSTimeLag_p head;
+
+	head = rt_calloc(1,sizeof(SMSTimeLag));
+	RT_ASSERT(head != RT_NULL);
+	
+	rt_list_init(&head->list);
+	
+	return head;
+}
+
+/** 
+@brief É¾³ýÁ´±í
+@param head:Í·½áµãµØÖ·
+@retval void
+*/
+static void timelag_list_delete (SMSTimeLag_p head)
+{
+	rt_list_t *next;
+  SMSTimeLag_p data;
+
+  if(!rt_list_isempty(&head->list))
+  {
+  	//Á´±í·Ç¿Õ
+    for (next = head->list.next; next != &head->list;)
+    {
+      data = rt_list_entry(next,SMSTimeLag,list);
+      next = next->next;
+
+			rt_list_remove(&data->list);
+			rt_free(data);
+			if(rt_list_isempty(&head->list))
+			{
+				break;
+			}
+    }
+  }
+}
+
+/** 
+@brief Ïò´°¿ÚÖÐÌí¼ÓÒ»¸ö½Úµã
+@param void
+@retval RT_EOK	 :Successful operation
+@retval RT_ERROR :operation failure
+*/
+static rt_err_t add_new_node(SMSTimeLag_p head
+														  ,ALARM_TYPEDEF type
+															,rt_uint32_t timeout)
+{
+	SMSTimeLag_p data;
+	data = rt_calloc(1,sizeof(SMSTimeLag));
+	if(data == RT_NULL)
+	{
+		return RT_ERROR;
+	}
+	data->alarm_type = type;
+	data->timeout = timeout;
+	data->counter = 0;
+	
+	rt_list_insert_after(&head->list,&data->list);
+
+	return RT_EOK;
+}
+
+/** 
+@brief É¾³ý´°¿ÚÖÐ³¬Ê±µÄ½Úµã
+@param head:Á´±íÈë¿Ú
+@retval void
+*/
+static void delete_outtime_node(SMSTimeLag_p head)
+{
+  rt_list_t *next;
+  SMSTimeLag_p data;
+
+  if(!rt_list_isempty(&head->list))
+  {
+  	//Á´±í·Ç¿Õ
+    for (next = head->list.next; next != &head->list;)
+    {
+      data = rt_list_entry(next,SMSTimeLag,list);
+      next = next->next;
+
+      if(data->counter >= data->timeout)
+      {
+				rt_list_remove(&data->list);
+				rt_free(data);
+				if(rt_list_isempty(&head->list))
+				{
+					break;
+				}
+      }
+    }
+  }
+}
+
+/** 
+@brief ÔÚ´°¿ÚÖÐ²éÕÒ¸ÃÀàÐÍ¶ÌÐÅ
+@param head:Á´±íÈë¿Ú
+@retval RT_TRUE :´°¿ÚÖÐÓÐÕâ¸öÊÂ¼þµÄ¶ÌÐÅ
+@retval RT_FALSE :´°¿ÚÖÐÃ»ÓÐÕâ¸öÊÂ¼þµÄ¶ÌÐÅ
+*/
+static rt_bool_t find_sms_node(SMSTimeLag_p head,ALARM_TYPEDEF type)
+{
+	rt_list_t *next;
+  SMSTimeLag_p data;
+
+  if(!rt_list_isempty(&head->list))
+  {
+  	//Á´±í·Ç¿Õ
+    for (next = head->list.next; next != &head->list; next = next->next)
+    {
+      data = rt_list_entry(next,SMSTimeLag,list);
+			if(data->alarm_type == type)
+			{
+				return RT_TRUE;
+			}
+    }
+  }
+
+  return RT_FALSE;
+}
+
+/** 
+@brief Ôö¼Ó´°¿ÚÖÐµÄ¼ÆÊ±Æ÷
+@param head:Á´±íÈë¿Ú
+@retval void
+*/
+static void update_list_counter(SMSTimeLag_p head)
+{
+  rt_list_t *next;
+  SMSTimeLag_p data;
+
+  if(!rt_list_isempty(&head->list))
+  {
+  	//Á´±í·Ç¿Õ
+    for (next = head->list.next; next != &head->list; next = next->next)
+    {
+      data = rt_list_entry(next,SMSTimeLag,list);
+			data->counter++;
+    }
+  }
+}
+
+/** 
+@brief ¶ÌÐÅ·¢ËÍ¼ä¸ô³¬Ê±Öµ»ñÈ¡
+@param head:Á´±íÈë¿Ú
+@retval void
+*/
+static rt_uint32_t sms_timeout_value_get(ALARM_TYPEDEF type)
+{
+	rt_uint32_t i;
+	rt_uint32_t TimeValue;
+	
+	config_file_mutex_op(RT_TRUE);
+	
+	//ÓÐÍ¼Æ¬¶ÌÐÅ
+	for(i=1; i < PictureSMS[0] ;i++)
+	{
+		if(type == PictureSMS[i])
+		{
+    	TimeValue = device_config.param.alarm_arg[3].timeout;
+		}
+	}
+	if(type == ALARM_TYPE_RFID_KEY_PLUGIN)
+	{
+		//Ô¿³×Ã»°Î
+    TimeValue = device_config.param.alarm_arg[0].timeout;
+	}
+	else if(type == ALARM_TYPE_LOCK_GATE)
+	{
+		//ÃÅÃ»ÓÐ¹ØºÃ
+    TimeValue = device_config.param.alarm_arg[1].timeout;
+	}
+	else
+	{
+		//Ã»ÓÐÍ¼Æ¬µÄ¶ÌÐÅ
+		TimeValue = device_config.param.alarm_arg[2].timeout;
+	}
+	config_file_mutex_op(RT_FALSE);
+
+	TimeValue *= 60;
+	return TimeValue;
+}
+#endif
 
 /*
  *  sms content table initialing
@@ -619,11 +819,9 @@ sms_pdu_ucs_send(char *dest_address, char *smsc_address, uint16_t *content, uint
 	return send_result;
 }
 
-#if(SMS_SEND_ASTRICT_IS == 1)			
-rt_bool_t check_sms_lag_timeout(void)
-{
-	return RT_TRUE;
-}
+#if(SMS_SEND_ASTRICT_IS == 1)
+SMSTimeLag_p TimeOutWindow = RT_NULL;
+
 #endif
 
 void
@@ -636,8 +834,11 @@ sms_thread_entry(void *parameter)
 	const uint16_t *temp_ucs;
 	uint16_t temp_ucs_length;
 	SMS_MAIL_TYPEDEF sms_mail_buf;
-	//SMSTimeLag_p
+#if(SMS_SEND_ASTRICT_IS == 1)
 
+	TimeOutWindow = timelag_list_create();
+	RT_ASSERT(TimeOutWindow != RT_NULL);
+#endif
 	// initial sms data
 	sms_data_init(sms_data);
 
@@ -651,11 +852,18 @@ sms_thread_entry(void *parameter)
 		if (result == RT_EOK)
 		{
 			#if(SMS_SEND_ASTRICT_IS == 1)
-			if(check_sms_lag_timeout() == RT_FALSE)
+			if(find_sms_node(TimeOutWindow,sms_mail_buf.alarm_type) == RT_TRUE)
 			{
+				rt_thread_delay(1);
 				continue;
 			}
-			
+			else
+			{
+				rt_uint32_t AlarmTimeOut;
+
+				AlarmTimeOut = sms_timeout_value_get(sms_mail_buf.alarm_type);
+				add_new_node(TimeOutWindow,sms_mail_buf.alarm_type,AlarmTimeOut);
+			}
 			#endif
 			
 #if (defined RT_USING_FINSH) && (defined SMS_DEBUG)
@@ -705,7 +913,12 @@ sms_thread_entry(void *parameter)
 		else // receive timeout
 		{
 			#if(SMS_SEND_ASTRICT_IS == 1)			
-			
+			if(system_event_process(2,SYS_CLEAR_SMS_CNT) == 0)
+			{
+				timelag_list_delete(TimeOutWindow);
+			}
+			update_list_counter(TimeOutWindow);
+			delete_outtime_node(TimeOutWindow);
 			#endif
 		}
 	}
@@ -805,144 +1018,30 @@ void sms(char *address, short *data, char length)
 FINSH_FUNCTION_EXPORT(sms, sms[address data length]);
 FINSH_FUNCTION_EXPORT(send_sms_mail, sms[address data length]);
 
-void list_add_new_data(SMSTimeLag_p head,SMSTimeLag_p data)
-{
-	rt_list_insert_before(&head->list,&data->list);
-}
-
-/** 
-@brief ´´½¨¶ÌÐÅ¼ä¸ô´°¿ÚÁ´±íÍ·
-@param void
-@retval head:Í·½áµãµØÖ·
-*/
-static SMSTimeLag_p timelag_list_create()
-{
-	SMSTimeLag_p head;
-
-	head = rt_calloc(1,sizeof(SMSTimeLag));
-	RT_ASSERT(head != RT_NULL);
-	
-	rt_list_init(&head->list);
-	
-	return head;
-}
-
-static void timelag_list_delete (SMSTimeLag_p head)
-{
-
-}
-
-/** 
-@brief Ïò´°¿ÚÖÐÌí¼ÓÒ»¸ö½Úµã
-@param void
-@retval RT_EOK	 :Successful operation
-@retval RT_ERROR :operation failure
-*/
-static rt_err_t add_new_node(SMSTimeLag_p head
-														  ,ALARM_TYPEDEF type
-															,rt_uint32_t timeout)
-{
-	SMSTimeLag_p data;
-	data = rt_calloc(1,sizeof(SMSTimeLag));
-	if(data == RT_NULL)
-	{
-		return RT_ERROR;
-	}
-	
-	data->alarm_type = type;
-	data->timeout = timeout;
-
-	rt_list_insert_before(&head->list,&data->list);
-
-	return RT_EOK;
-}
-
-/** 
-@brief É¾³ý´°¿ÚÖÐ³¬Ê±µÄ½Úµã
-@param head:Á´±íÈë¿Ú
-@retval void
-*/
-static void delete_outtime_node(SMSTimeLag_p head)
-{
-  rt_list_t *next;
-  SMSTimeLag_p data;
-
-  if(!rt_list_isempty(&head->list))
-  {
-  	//Á´±í·Ç¿Õ
-    for (next = head->list.next; next != &head->list; next = next->next)
-    {
-      data = rt_list_entry(next,SMSTimeLag,list);
-      rt_kprintf("counter		 %d\n",data->counter);
-      rt_kprintf("alarm_type %d\n",data->alarm_type);
-      rt_kprintf("timeout		 %d\n",data->timeout);
-
-      if(data->counter >= data->timeout)
-      {
-				rt_list_remove(&data->list);
-				rt_free(data);
-      }
-    }
-  }
-}
-
-/** 
-@brief ÔÚ´°¿ÚÖÐ²éÕÒ¸ÃÀàÐÍ¶ÌÐÅ
-@param head:Á´±íÈë¿Ú
-@retval void
-*/
-static find_sms_node(SMSTimeLag_p head,ALARM_TYPEDEF type)
+void sms_timeoutwin(void)
 {
 	rt_list_t *next;
   SMSTimeLag_p data;
 
-  if(!rt_list_isempty(&head->list))
+  rt_kprintf("---------------------------------------------------------------------------------\n");
+
+  if(!rt_list_isempty(&TimeOutWindow->list))
   {
   	//Á´±í·Ç¿Õ
-    for (next = head->list.next; next != &head->list; next = next->next)
+    for (next = TimeOutWindow->list.next; next != &TimeOutWindow->list; next = next->next)
     {
       data = rt_list_entry(next,SMSTimeLag,list);
-      rt_kprintf("find  		 %d\n",type);
-      rt_kprintf("alarm_type %d\n",data->alarm_type);
-			if(data->alarm_type == type)
-			{
-				return RT_TRUE;
-			}
+			rt_kprintf("prev[%08X]<-list[%08X]->netx[%08X] Type=%02d Counter=%03d Timeout=%03d\n"
+									,data->list.prev
+									,&data->list
+									,data->list.next
+									,data->alarm_type
+									,data->counter
+									,data->timeout);
     }
   }
-
-  return RT_FALSE;
+  rt_kprintf("---------------------------------------------------------------------------------\n");
 }
-
-void testsms()
-{
-	SMSTimeLag_p head;
-  SMSTimeLag_p data;
-  rt_list_t *next;
-
-	head = rt_calloc(1,sizeof(SMSTimeLag));
-	head->alarm_type = 1;
-	
-	rt_list_init(&head->list);
-	
-  data = rt_calloc(1,sizeof(SMSTimeLag));
-	data->alarm_type = 2;
-	list_add_new_data(head,data);
-	
-	data = rt_calloc(1,sizeof(SMSTimeLag));
-	data->alarm_type = 3;
-	list_add_new_data(head,data);
- data = rt_calloc(1,sizeof(SMSTimeLag));
-	data->alarm_type = 55;
-	
-	list_add_new_data(head,data);
-	
- 	for (next = head->list.next; next != &head->list; next = next->next)
-	{
-		data = rt_list_entry(next,SMSTimeLag,list);
-		rt_kprintf("alarm type %d\n",data->alarm_type);
-	}
-}
-FINSH_FUNCTION_EXPORT(testsms,"sms test list");
+FINSH_FUNCTION_EXPORT(sms_timeoutwin, "show sms timeout list");
 
 #endif

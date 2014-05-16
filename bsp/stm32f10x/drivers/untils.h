@@ -78,6 +78,11 @@ typedef struct {
 
 }TCP_DOMAIN_TYPEDEF;
 
+typedef struct 
+{
+	uint8_t timeout;
+}SYS_ALARM_ARG_TYPEDEF;
+
 typedef struct {
 
 	TELEPHONE_ADDRESS_TYPEDEF telephone_address[TELEPHONE_NUMBERS];
@@ -89,8 +94,8 @@ typedef struct {
 	uint8_t key0[8];
 	uint8_t key1[8];
 	uint8_t device_status;       //device activated state
-    uint8_t password[6];
-
+  uint8_t password[6];
+	SYS_ALARM_ARG_TYPEDEF alarm_arg[4];
 }DEVICE_PARAMETERS_TYPEDEF;
 
 #define DEVICE_CONFIG_FILE_KEY_BASE (((sizeof(DEVICE_PARAMETERS_TYPEDEF) / 1024) + 1) * 1024)

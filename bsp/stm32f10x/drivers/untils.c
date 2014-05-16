@@ -81,6 +81,13 @@ DEVICE_CONFIG_TYPEDEF device_config = {
 		//
 		0,
     "123456",
+    //Four kinds of alarm parameters
+  	{
+			{1},
+			{1},
+			{1},
+			{1},
+  	},
 	},
 };
 

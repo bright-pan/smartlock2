@@ -22,7 +22,7 @@
 #include "sms.h"
 #include "keyboard.h"
 
-#define PRINTF_FPRINT_INFO  1
+#define PRINTF_FPRINT_INFO  0
 
 #define AUTO_LOCK_TIME			10 		//自动上锁时间
 
@@ -442,6 +442,8 @@ rt_bool_t motor_rotate(rt_bool_t direction)
 	{
 		motor_pwm_operate(DEVICE_NAME_MOTOR2);
 		set_motor_status(RT_TRUE);
+		//清除短信计数器
+		system_event_process(0,SYS_CLEAR_SMS_CNT);
 	}
 	else if((direction == RT_FALSE) && (motor_status() != RT_FALSE))
 	{
