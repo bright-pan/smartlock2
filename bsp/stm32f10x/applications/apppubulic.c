@@ -414,6 +414,28 @@ rt_bool_t check_open_access(rt_uint16_t pos)
 	return result;
 }
 
+/** 
+@brief  operation system event mutex
+@param  way: RT_TRUE take;  RT_FALSE release;
+@retval void
+*/
+static void system_evt_mutex_op(rt_bool_t way)
+{
+	static rt_mutex_t system_evt = RT_NULL;
+	
+	if(system_evt == RT_NULL)
+	{
+		system_evt = rt_mutex_create("sysevt",RT_IPC_FLAG_FIFO);
+	}
+	if(way == RT_TRUE)
+	{
+    rt_mutex_take(system_evt,RT_WAITING_FOREVER);
+	}
+	else if(way == RT_FALSE)
+	{
+		rt_mutex_release(system_evt);
+	}
+}
 
 /*
 功能:操作网络协议中的各种事件
@@ -431,6 +453,8 @@ rt_uint8_t system_event_process(rt_uint8_t mode,rt_uint32_t type)
 	rt_uint32_t value;
 	rt_err_t    result;
 	rt_uint8_t  return_data = 1;
+
+  system_evt_mutex_op(RT_TRUE);
 
 	if(system_event == RT_NULL)
 	{
@@ -495,6 +519,8 @@ rt_uint8_t system_event_process(rt_uint8_t mode,rt_uint32_t type)
 			break;
     }
 	}
+
+  system_evt_mutex_op(RT_FALSE);
 
 	return return_data;
 }

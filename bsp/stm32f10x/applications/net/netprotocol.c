@@ -214,6 +214,24 @@ void show_lenmap(net_lenmap map)
     map.bit.data));
 }
 
+static void net_evt_mutex_op(rt_bool_t way)
+{
+	static rt_mutex_t system_evt = RT_NULL;
+	
+	if(system_evt == RT_NULL)
+	{
+		system_evt = rt_mutex_create("netevt",RT_IPC_FLAG_FIFO);
+	}
+	if(way == RT_TRUE)
+	{
+    rt_mutex_take(system_evt,RT_WAITING_FOREVER);
+	}
+	else if(way == RT_FALSE)
+	{
+		rt_mutex_release(system_evt);
+	}
+}
+
 
 /*
 功能:操作网络协议中的各种事件
@@ -231,6 +249,7 @@ rt_uint8_t net_event_process(rt_uint8_t mode,rt_uint32_t type)
 	rt_err_t    result;
 	rt_uint8_t  return_data = 1;
 	
+	net_evt_mutex_op(RT_TRUE);
 	switch(mode)
 	{
 		case 0:	//set event 
@@ -290,6 +309,7 @@ rt_uint8_t net_event_process(rt_uint8_t mode,rt_uint32_t type)
     }
 	}
 
+	net_evt_mutex_op(RT_FALSE);
 	return return_data;
 }
 
