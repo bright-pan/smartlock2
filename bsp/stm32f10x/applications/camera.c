@@ -761,22 +761,18 @@ INIT_APP_EXPORT(camera_thread_init);
 */
 void camera_send_mail(ALARM_TYPEDEF alarm_type,rt_uint32_t time)
 {
-	CameraMail mail;
-	
-#ifdef PIC_CMAERA_MAKE
-	if(PIC_CMAERA_MAKE == 0)
-	{
-		rt_kprintf("System camera function is close\n");
-		return ;
-	}
-#endif
-
+	#if(PIC_CMAERA_MAKE == 0)
+	rt_kprintf("System camera function is close\n");
+	#else
 	if(CameraMail_mq != RT_NULL)
 	{
+		CameraMail mail;
+		
 		mail.AlarmType = alarm_type;
 		mail.time = time;
 		rt_mq_send(CameraMail_mq,&mail,sizeof(CameraMail));
 	}
+	#endif
 }
 
 
