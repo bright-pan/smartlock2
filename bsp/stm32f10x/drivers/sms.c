@@ -1018,6 +1018,8 @@ void sms(char *address, short *data, char length)
 FINSH_FUNCTION_EXPORT(sms, sms[address data length]);
 FINSH_FUNCTION_EXPORT(send_sms_mail, sms[address data length]);
 
+#if(SMS_SEND_ASTRICT_IS == 1)
+
 void sms_timeoutwin(void)
 {
 	rt_list_t *next;
@@ -1044,4 +1046,5 @@ void sms_timeoutwin(void)
 }
 FINSH_FUNCTION_EXPORT(sms_timeoutwin, "show sms timeout list");
 
+#endif
 #endif
