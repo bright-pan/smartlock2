@@ -1,7 +1,15 @@
 #include "iwdg.h"
+
+#ifdef __APPCONFIG_H__
 #include "appconfig.h"
 
+#if(SYSTEM_IWDG_FUN == 1)
 #define USE_SYS_IWDG
+#endif
+
+#endif
+
+
 
 #ifdef USE_SYS_IWDG
 static void IWDG_Init(rt_uint8_t prer,rt_uint16_t rlr) 
