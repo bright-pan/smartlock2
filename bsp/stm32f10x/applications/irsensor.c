@@ -39,7 +39,7 @@ rt_uint8_t ir_check_process(void)
 		rt_thread_delay(10);
 		pwm_ic_stop(DEVICE_NAME_INFRA_PULSE_PWM_IC);
 		rev_time = pwm_ic_time();
-		rt_kprintf("rev_time = %d\n",rev_time);
+		//rt_kprintf("rev_time = %d\n",rev_time);
 		if(rev_time > 1000 && rev_time < 20000)
 		{
 			rev_num++;
@@ -94,10 +94,12 @@ void ir_cover_process(void)
 
 void ir_thread_entry(void *arg)
 {
+  rt_thread_delay(RT_TICK_PER_SECOND*10);
+
 	while(1)
 	{
+ 		rt_thread_delay(RT_TICK_PER_SECOND);
 		ir_cover_process();
-		rt_thread_delay(100);
 	}
 }
 
