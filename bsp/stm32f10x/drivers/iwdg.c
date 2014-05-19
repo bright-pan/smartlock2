@@ -1,6 +1,7 @@
 #include "iwdg.h"
+#include "appconfig.h"
 
-//#define USE_SYS_IWDG
+#define USE_SYS_IWDG
 
 #ifdef USE_SYS_IWDG
 static void IWDG_Init(rt_uint8_t prer,rt_uint16_t rlr) 
