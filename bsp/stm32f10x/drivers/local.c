@@ -37,7 +37,6 @@ local_thread_entry(void *parameter)
 	rt_err_t result;
 	LOCAL_MAIL_TYPEDEF local_mail_buf;
 
-	rt_thread_delay(200);
 	fprint_module_init();
 	while (1)
 	{
