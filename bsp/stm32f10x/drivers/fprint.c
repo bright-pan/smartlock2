@@ -484,9 +484,9 @@ fprint_frame_recv(FPRINT_FRAME_HEAD_TYPEDEF *frame_head,
 				goto error_process;
 			}
 		} else {
-	    error = FPRINT_EERROR;
+			error = FPRINT_EERROR;
 			break;
-	}
+		}
 	}
 
 	if (error == FPRINT_ERESPONSE)
@@ -767,7 +767,7 @@ fprint_frame_process(uint16_t cmd, uint16_t prefix, uint8_t sid,
 				{
 					if (frame_data->rep_generate.result == FPRINT_FRAME_ERR_SUCCESS)
 						error = FPRINT_EOK;
-					break;
+                    break;
 				}
 			case FPRINT_FRAME_CMD_MERGE:
 				{
@@ -865,7 +865,7 @@ fprint_init(FPRINT_FRAME_DATA_TYPEDEF *frame_data)
 	// set dup 0
 	rt_memset(frame_data, 0, sizeof(*frame_data));
 	frame_data->req_set_param.type = 2;
-	frame_data->req_set_param.data = 0;
+	frame_data->req_set_param.data = 1;
 	error = fprint_frame_process(FPRINT_FRAME_CMD_SET_PARAM, FPRINT_FRAME_PREFIX_REQUEST, 0, 0, frame_data);
 	if (error != FPRINT_EOK)
 		return error;
@@ -955,6 +955,9 @@ fprint_enroll(uint16_t template_id, FPRINT_FRAME_DATA_TYPEDEF *frame_data)
 	error = fprint_frame_process(FPRINT_FRAME_CMD_STORE_CHAR,
 								 FPRINT_FRAME_PREFIX_REQUEST,
 								 0, 0, frame_data);
+	if (error != FPRINT_EOK)
+		return error;
+
 	// get fprint template from rambuf0
 	rt_memset(frame_data, 0, sizeof(*frame_data));
 	frame_data->req_up_char.ram_buf_id = 0;
@@ -964,7 +967,7 @@ fprint_enroll(uint16_t template_id, FPRINT_FRAME_DATA_TYPEDEF *frame_data)
 	return error;
 }
 
-FPRINT_ERROR_TYPEDEF 
+FPRINT_ERROR_TYPEDEF
 fprint_verify(FPRINT_FRAME_DATA_TYPEDEF *frame_data)
 {
 	FPRINT_ERROR_TYPEDEF error = FPRINT_EERROR;
@@ -975,16 +978,24 @@ fprint_verify(FPRINT_FRAME_DATA_TYPEDEF *frame_data)
 								 FPRINT_FRAME_PREFIX_REQUEST,
 								 0, 0, frame_data);
 	if (error != FPRINT_EOK)
+    {
+        if (error != FPRINT_ENO_DETECTED) {
+            rt_kprintf("get image : %d\n", error);
+            error = FPRINT_EEXCEPTION;
+        }
 		return error;
-
+    }
 	// generate fprint template to rambuf0
 	rt_memset(frame_data, 0, sizeof(*frame_data));
 	frame_data->req_generate.ram_buf_id = 0;
 	error = fprint_frame_process(FPRINT_FRAME_CMD_GENERATE,
 								 FPRINT_FRAME_PREFIX_REQUEST,
 								 0, 0, frame_data);
-	if (error != FPRINT_EOK)
-		return error;
+	if (error != FPRINT_EOK) {
+        rt_kprintf("generate : %d\n", error);
+        error = FPRINT_EEXCEPTION;
+        return error;
+    }
 
 	// search fprint template to rambuf0
 	rt_memset(frame_data, 0, sizeof(*frame_data));
@@ -1025,13 +1036,19 @@ fprint_thread_entry(void *parameters)
 				case FPRINT_CMD_ENROLL:
 					{
 						error = fprint_enroll(fprint_mail.key_id + FPRINT_TEMPLATE_OFFSET, &frame_data);
-						if (error != FPRINT_EOK)
-							break;
-						if (device_config_key_operate(fprint_mail.key_id, KEY_TYPE_FPRINT, frame_data.drep_up_char.template, 1) < 0) {
+						if (error == FPRINT_EOK) {
+
+							if (device_config_key_operate(fprint_mail.key_id, KEY_TYPE_FPRINT, frame_data.drep_up_char.template, 1) < 0) {
 #if (defined RT_USING_FINSH)
-							rt_kprintf("the finger print key save failure!\n");
+								rt_kprintf("the finger print key save failure!\n");
 #endif // RT_USING_FINSH
-							error = FPRINT_EERROR;
+								error = FPRINT_EERROR;
+							}
+						}
+						if (error == FPRINT_EEXIST) {
+#if (defined RT_USING_FINSH)
+							rt_kprintf("the finger print has been existed, could not enroll!\n");
+#endif // RT_USING_FINSH
 						}
 						break;
 					}
@@ -1063,7 +1080,11 @@ fprint_thread_entry(void *parameters)
             static uint16_t r_detect = 0;
             static uint16_t template_id = 0;
             error = fprint_verify(&frame_data);
-            
+			if (error == FPRINT_EEXCEPTION) {
+#if (defined RT_USING_FINSH)
+				rt_kprintf("fprint verify is exception\n");
+#endif // RT_USING_FINSH
+			}
 			if (error == FPRINT_EOK) {
                 if (s_detect++) {
                     if (template_id != frame_data.rep_search.template_id) {
@@ -1075,13 +1096,14 @@ fprint_thread_entry(void *parameters)
 #if (defined RT_USING_FINSH)
                     rt_kprintf("fprint verify is exist, %d\n", frame_data.rep_search.template_id);
 #endif // RT_USING_FINSH
-										if(fprintf_ok_fun != RT_NULL)
-										{
-											FPINTF_USER key;
+					if(fprintf_ok_fun != RT_NULL)
+					{
+						FPINTF_USER key;
 
-											key.KeyPos = frame_data.rep_search.template_id - FPRINT_TEMPLATE_OFFSET;
-											fprintf_ok_fun((void *)&key);
-										}
+						key.KeyPos = frame_data.rep_search.template_id - FPRINT_TEMPLATE_OFFSET;
+						rt_kprintf("key pos : %d\n", key.KeyPos);
+						fprintf_ok_fun((void *)&key);
+					}
                 }
 
 			} else {
@@ -1093,9 +1115,9 @@ fprint_thread_entry(void *parameters)
 #if (defined RT_USING_FINSH) && (defined FPRINT_DEBUG)
                 rt_kprintf("fprint verify is no detected\n");
 #endif // RT_USING_FINSH
-            if(fprintf_null_fun != RT_NULL)
+				if(fprintf_null_fun != RT_NULL)
 		        {
-		          fprintf_null_fun(RT_NULL);
+					fprintf_null_fun(RT_NULL);
 		        }
             }
             if (error == FPRINT_EERROR) {
@@ -1108,13 +1130,13 @@ fprint_thread_entry(void *parameters)
 #if (defined RT_USING_FINSH)
                     rt_kprintf("fprint verify is error\n");
 #endif // RT_USING_FINSH
-								if(fprintf_error_fun != RT_NULL)
-				        {
-				        	FPINTF_USER key;
+					if(fprintf_error_fun != RT_NULL)
+					{
+						FPINTF_USER key;
 
-				        	key.KeyPos = 0xffff;
-				          fprintf_error_fun((void *)&key);
-				        }
+						key.KeyPos = 0xffff;
+						fprintf_error_fun((void *)&key);
+					}
                 }
             } else {
                 f_detect = 0;
