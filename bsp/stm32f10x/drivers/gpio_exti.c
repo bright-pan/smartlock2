@@ -276,7 +276,7 @@ void switch2_exti_timeout(void *parameters)
 		rt_device_read(device,0,&data,0);
 		if (data == SWITCH2_STATUS) // rfid key is plugin
 		{
-            rt_kprintf("it is key detect!\n");
+            rt_kprintf("it is key2 detect!\n");
 			// produce mail
 			//rt_device_control(rtc_device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
 
@@ -359,7 +359,7 @@ void switch3_exti_timeout(void *parameters)
 		rt_device_read(device,0,&data,0);
 		if (data == SWITCH3_STATUS) // rfid key is plugin
 		{
-            rt_kprintf("it is key detect!\n");
+            rt_kprintf("it is key3 detect!\n");
 			// produce mail
 			//rt_device_control(rtc_device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
 
