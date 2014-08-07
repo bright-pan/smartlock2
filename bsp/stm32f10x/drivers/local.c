@@ -37,7 +37,7 @@ local_thread_entry(void *parameter)
 	rt_err_t result;
 	LOCAL_MAIL_TYPEDEF local_mail_buf;
 
-	fprint_module_init();
+	//fprint_module_init();
 	while (1)
 	{
 		// receive mail
@@ -61,20 +61,20 @@ local_thread_entry(void *parameter)
 					}
 				case ALARM_TYPE_CAMERA_IRDASENSOR:
 				{
-					motor_rotate(RT_FALSE);
-					send_voice_mail(VOICE_TYPE_CCDIR);
+					//motor_rotate(RT_FALSE);
+					//send_voice_mail(VOICE_TYPE_CCDIR);
 					
 					break;
 				}
 				case ALARM_TYPE_FPRINT_INPUT:
 				{
-					fprint_unlock_process(&local_mail_buf);
+					//fprint_unlock_process(&local_mail_buf);
 					
 					break;
 				}
 				case ALARM_TYPE_FPRINT_KEY_ADD:
 				{
-					fprint_key_add_porcess(&local_mail_buf);
+					//fprint_key_add_porcess(&local_mail_buf);
 					
 					break;
 				}
@@ -87,7 +87,7 @@ local_thread_entry(void *parameter)
                 };
 			}
 		}
-		motor_auto_lock(RT_FALSE);
+		//motor_auto_lock(RT_FALSE);
 	}
 }
 
@@ -149,4 +149,4 @@ rt_local_init(void)
     return 0;
 }
 
-INIT_APP_EXPORT(rt_local_init);
+//INIT_APP_EXPORT(rt_local_init);

@@ -238,7 +238,7 @@ rt_hw_kb_init(void)
 	return result;
 }
 
-INIT_DEVICE_EXPORT(rt_hw_kb_init);
+//INIT_DEVICE_EXPORT(rt_hw_kb_init);
 
 #ifdef RT_USING_FINSH
 #include <finsh.h>

@@ -606,7 +606,7 @@ rt_comm_init(void)
     return 0;
 }
 
-INIT_APP_EXPORT(rt_comm_init);
+//INIT_APP_EXPORT(rt_comm_init);
 
 #ifdef RT_USING_FINSH
 #include <finsh.h>

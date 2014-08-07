@@ -139,7 +139,7 @@
             <RestoreTracepoints>0</RestoreTracepoints>
           </Target>
           <RunDebugAfterBuild>0</RunDebugAfterBuild>
-          <TargetSelection>7</TargetSelection>
+          <TargetSelection>13</TargetSelection>
           <SimDlls>
             <CpuDll></CpuDll>
             <CpuDllArguments></CpuDllArguments>
@@ -153,7 +153,7 @@
             <PeripheralDll></PeripheralDll>
             <PeripheralDllArguments></PeripheralDllArguments>
             <InitializationFile></InitializationFile>
-            <Driver>Segger\JL2CM3.dll</Driver>
+            <Driver>STLink\ST-LINKIII-KEIL_SWO.dll</Driver>
           </TargetDlls>
         </DebugOption>
         <Utilities>
@@ -398,44 +398,14 @@
               <FilePath>applications\application.c</FilePath>
             </File>
             <File>
-              <FileName>apppubulic.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>applications\apppubulic.c</FilePath>
-            </File>
-            <File>
-              <FileName>bdcom.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>applications\bdcom.c</FilePath>
-            </File>
-            <File>
-              <FileName>camera.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>applications\camera.c</FilePath>
-            </File>
-            <File>
-              <FileName>irsensor.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>applications\irsensor.c</FilePath>
-            </File>
-            <File>
               <FileName>startup.c</FileName>
               <FileType>1</FileType>
               <FilePath>applications\startup.c</FilePath>
             </File>
             <File>
-              <FileName>voice.C</FileName>
+              <FileName>apppubulic.c</FileName>
               <FileType>1</FileType>
-              <FilePath>applications\voice.C</FilePath>
-            </File>
-            <File>
-              <FileName>gprs.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\gprs.c</FilePath>
-            </File>
-            <File>
-              <FileName>unlockprocess.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\unlockprocess.c</FilePath>
+              <FilePath>.\applications\apppubulic.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -451,11 +421,6 @@
               <FileName>stm32f10x_it.c</FileName>
               <FileType>1</FileType>
               <FilePath>drivers\stm32f10x_it.c</FilePath>
-            </File>
-            <File>
-              <FileName>led.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>drivers\led.c</FilePath>
             </File>
             <File>
               <FileName>usart.c</FileName>
@@ -488,94 +453,14 @@
               <FilePath>drivers\gpio_exti.c</FilePath>
             </File>
             <File>
-              <FileName>gpio_pwm.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>drivers\gpio_pwm.c</FilePath>
-            </File>
-            <File>
-              <FileName>gpio_adc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>drivers\gpio_adc.c</FilePath>
-            </File>
-            <File>
-              <FileName>alarm.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>drivers\alarm.c</FilePath>
-            </File>
-            <File>
-              <FileName>local.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>drivers\local.c</FilePath>
-            </File>
-            <File>
-              <FileName>sms.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>drivers\sms.c</FilePath>
-            </File>
-            <File>
-              <FileName>comm.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>drivers\comm.c</FilePath>
-            </File>
-            <File>
-              <FileName>untils.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>drivers\untils.c</FilePath>
-            </File>
-            <File>
-              <FileName>comm_window.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>drivers\comm_window.c</FilePath>
-            </File>
-            <File>
-              <FileName>fprint.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>drivers\fprint.c</FilePath>
-            </File>
-            <File>
               <FileName>rtc.c</FileName>
               <FileType>1</FileType>
               <FilePath>drivers\rtc.c</FilePath>
             </File>
             <File>
-              <FileName>gpio_pwm_ic.c</FileName>
+              <FileName>untils.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\drivers\gpio_pwm_ic.c</FilePath>
-            </File>
-            <File>
-              <FileName>pt8211.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\drivers\pt8211.c</FilePath>
-            </File>
-            <File>
-              <FileName>kb_dev.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\drivers\kb_dev.c</FilePath>
-            </File>
-            <File>
-              <FileName>i2cbus.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\drivers\i2cbus.c</FilePath>
-            </File>
-            <File>
-              <FileName>i2c_dev.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\drivers\i2c_dev.c</FilePath>
-            </File>
-            <File>
-              <FileName>i2c_core.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\drivers\i2c_core.c</FilePath>
-            </File>
-            <File>
-              <FileName>keyboard.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\drivers\keyboard.c</FilePath>
-            </File>
-            <File>
-              <FileName>iwdg.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\drivers\iwdg.c</FilePath>
+              <FilePath>.\drivers\untils.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -996,66 +881,6 @@
               <FileName>zstart.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\components\utilities\zmodem\zstart.c</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
-          <GroupName>NetProtocol</GroupName>
-          <Files>
-            <File>
-              <FileName>crc16.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\net\crc16.c</FilePath>
-            </File>
-            <File>
-              <FileName>des.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\net\des.c</FilePath>
-            </File>
-            <File>
-              <FileName>netcomm.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\net\netcomm.c</FilePath>
-            </File>
-            <File>
-              <FileName>netfile.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\net\netfile.c</FilePath>
-            </File>
-            <File>
-              <FileName>netkey.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\net\netkey.c</FilePath>
-            </File>
-            <File>
-              <FileName>netmailclass.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\net\netmailclass.c</FilePath>
-            </File>
-            <File>
-              <FileName>netphone.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\net\netphone.c</FilePath>
-            </File>
-            <File>
-              <FileName>netprotocol.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\net\netprotocol.c</FilePath>
-            </File>
-            <File>
-              <FileName>netterminal.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\net\netterminal.c</FilePath>
-            </File>
-            <File>
-              <FileName>crc32.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\components\dfs\filesystems\jffs2\cyg\crc\crc32.c</FilePath>
-            </File>
-            <File>
-              <FileName>netphysics.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\applications\net\netphysics.c</FilePath>
             </File>
           </Files>
         </Group>

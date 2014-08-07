@@ -42,7 +42,8 @@ struct gpio_exti_user_data
  *  GPIO ops function interfaces
  *
  */
-static void __gpio_nvic_configure(gpio_device *gpio,FunctionalState new_status)
+static void 
+__gpio_nvic_configure(gpio_device *gpio,FunctionalState new_status)
 {
     NVIC_InitTypeDef nvic_init_structure;
     struct gpio_exti_user_data* user = (struct gpio_exti_user_data *)gpio->parent.user_data;
@@ -54,7 +55,8 @@ static void __gpio_nvic_configure(gpio_device *gpio,FunctionalState new_status)
     NVIC_Init(&nvic_init_structure);
 }
 
-static void __gpio_exti_configure(gpio_device *gpio,FunctionalState new_status)
+static void 
+__gpio_exti_configure(gpio_device *gpio,FunctionalState new_status)
 {
     EXTI_InitTypeDef exti_init_structure;
     struct gpio_exti_user_data* user = (struct gpio_exti_user_data *)gpio->parent.user_data;
@@ -66,7 +68,8 @@ static void __gpio_exti_configure(gpio_device *gpio,FunctionalState new_status)
     EXTI_Init(&exti_init_structure);
 }
 
-static void __gpio_pin_configure(gpio_device *gpio)
+static void 
+__gpio_pin_configure(gpio_device *gpio)
 {
     GPIO_InitTypeDef gpio_init_structure;
     struct gpio_exti_user_data *user = (struct gpio_exti_user_data*)gpio->parent.user_data;
@@ -81,7 +84,8 @@ static void __gpio_pin_configure(gpio_device *gpio)
 /*
  * gpio ops configure
  */
-rt_err_t gpio_exti_configure(gpio_device *gpio)
+rt_err_t 
+gpio_exti_configure(gpio_device *gpio)
 {
     __gpio_pin_configure(gpio);
     if(RT_DEVICE_FLAG_INT_RX & gpio->parent.flag)
@@ -92,7 +96,8 @@ rt_err_t gpio_exti_configure(gpio_device *gpio)
 
     return RT_EOK;
 }
-rt_err_t gpio_exti_control(gpio_device *gpio, rt_uint8_t cmd, void *arg)
+rt_err_t 
+gpio_exti_control(gpio_device *gpio, rt_uint8_t cmd, void *arg)
 {
 	struct gpio_exti_user_data *user = (struct gpio_exti_user_data*)gpio->parent.user_data;
 
@@ -127,7 +132,8 @@ rt_err_t gpio_exti_control(gpio_device *gpio, rt_uint8_t cmd, void *arg)
 	return RT_EOK;
 }
 
-void gpio_exti_out(gpio_device *gpio, rt_uint8_t data)
+void 
+gpio_exti_out(gpio_device *gpio, rt_uint8_t data)
 {
 	struct gpio_exti_user_data *user = (struct gpio_exti_user_data*)gpio->parent.user_data;
 
@@ -150,7 +156,8 @@ void gpio_exti_out(gpio_device *gpio, rt_uint8_t data)
 	}
 }
 
-rt_uint8_t gpio_exti_intput(gpio_device *gpio)
+rt_uint8_t 
+gpio_exti_intput(gpio_device *gpio)
 {
 	struct gpio_exti_user_data* user = (struct gpio_exti_user_data *)gpio->parent.user_data;
 
@@ -181,7 +188,7 @@ struct rt_gpio_ops gpio_exti_user_ops=
  *
  *******************************************************/
 
-/* switch1 device */
+/* switch1 device 
 gpio_device switch1_device;
 rt_timer_t switch1_exti_timer = RT_NULL;
 
@@ -257,8 +264,8 @@ int rt_hw_switch1_register(void)
 
     return 0;
 }
-
-/* switch2 device */
+*/
+/* switch2 device 
 gpio_device switch2_device;
 rt_timer_t switch2_exti_timer = RT_NULL;
 
@@ -340,8 +347,8 @@ int rt_hw_switch2_register(void)
 
     return 0;
 }
-
-/* switch3 device */
+*/
+/* switch3 device 
 gpio_device switch3_device;
 rt_timer_t switch3_exti_timer = RT_NULL;
 
@@ -423,12 +430,13 @@ int rt_hw_switch3_register(void)
 
     return 0;
 }
+*/
+/* kb_intr device */
+gpio_device kb_intr_device;
+rt_timer_t kb_intr_exti_timer = RT_NULL;
 
-/* key device */
-gpio_device key_device;
-rt_timer_t key_exti_timer = RT_NULL;
-
-__STATIC_INLINE uint8_t bit_to_index(uint16_t data)
+__STATIC_INLINE uint8_t 
+bit_to_index(uint16_t data)
 {
     uint8_t result = 0;
     while (data)
@@ -448,25 +456,158 @@ static const uint8_t char_remap[16] = {
     '?', '?', '?',
 };
 
-void key_exti_timeout(void *parameters)
+uint8_t
+kb_scan4(void)
 {
-	rt_device_t device = RT_NULL;
-	rt_device_t i2c_device = RT_NULL;
-	uint16_t data = 0;
+    uint8_t temp = 0;
+    uint16_t data = 0;
+    rt_device_t dev_sc1 = RT_NULL;
+    rt_device_t dev_sc2 = RT_NULL;
+    rt_device_t dev_sc3 = RT_NULL;
+
+    rt_device_t dev_in1 = RT_NULL;
+    rt_device_t dev_in2 = RT_NULL;
+    rt_device_t dev_in3 = RT_NULL;
+    
+    dev_sc1 = device_enable(DEVICE_NAME_KB_SC1);
+    dev_sc2 = device_enable(DEVICE_NAME_KB_SC2);
+    dev_sc3 = device_enable(DEVICE_NAME_KB_SC3);
+    
+    dev_in1 = device_enable(DEVICE_NAME_KB_IN1);
+    dev_in2 = device_enable(DEVICE_NAME_KB_IN2);
+    dev_in3 = device_enable(DEVICE_NAME_KB_IN3);
+
+    temp = 1;
+    rt_device_write(dev_sc1,0,&temp,1);
+    rt_device_write(dev_sc2,0,&temp,1);
+    rt_device_write(dev_sc3,0,&temp,1);
+
+
+}
+    
+uint16_t
+kb_read(void)
+{
+    uint16_t data = 0;
+    /*
+    rt_device_t dev_in1 = RT_NULL;
+    rt_device_t dev_in2 = RT_NULL;
+    rt_device_t dev_in3 = RT_NULL;
+    rt_device_t dev_sc1 = RT_NULL;
+    rt_device_t dev_sc2 = RT_NULL;
+    rt_device_t dev_sc3 = RT_NULL;
+
+    dev_sc1 = device_enable(DEVICE_NAME_KB_SC1);
+    dev_sc2 = device_enable(DEVICE_NAME_KB_SC2);
+    dev_sc3 = device_enable(DEVICE_NAME_KB_SC3);
+    
+    
+    dev_in1 = device_enable(DEVICE_NAME_KB_IN1);
+    dev_in2 = device_enable(DEVICE_NAME_KB_IN2);
+    dev_in3 = device_enable(DEVICE_NAME_KB_IN3);
+    */
+
+    if (!gpio_pin_input(DEVICE_NAME_KB_IN1))
+    {
+        gpio_pin_output(DEVICE_NAME_KB_SC1,1);
+        gpio_pin_output(DEVICE_NAME_KB_SC2,1);
+        gpio_pin_output(DEVICE_NAME_KB_SC3,1);
+        if (!gpio_pin_input(DEVICE_NAME_KB_IN1))
+            data |= 0x11;
+        gpio_pin_output(DEVICE_NAME_KB_SC1,1);
+        gpio_pin_output(DEVICE_NAME_KB_SC2,1);
+        gpio_pin_output(DEVICE_NAME_KB_SC3,0);
+        if (!gpio_pin_input(DEVICE_NAME_KB_IN1))
+            data |= 0x12;
+        gpio_pin_output(DEVICE_NAME_KB_SC1,1);
+        gpio_pin_output(DEVICE_NAME_KB_SC2,0);
+        gpio_pin_output(DEVICE_NAME_KB_SC3,1);
+        if (!gpio_pin_input(DEVICE_NAME_KB_IN1))
+            data |= 0x14;
+        gpio_pin_output(DEVICE_NAME_KB_SC1,0);
+        gpio_pin_output(DEVICE_NAME_KB_SC2,1);
+        gpio_pin_output(DEVICE_NAME_KB_SC3,1);
+        if (!gpio_pin_input(DEVICE_NAME_KB_IN1))
+            data |= 0x18;
+        
+        
+    }
+    if (!gpio_pin_input(DEVICE_NAME_KB_IN2))
+    {
+        gpio_pin_output(DEVICE_NAME_KB_SC1,1);
+        gpio_pin_output(DEVICE_NAME_KB_SC2,1);
+        gpio_pin_output(DEVICE_NAME_KB_SC3,1);
+        if (!gpio_pin_input(DEVICE_NAME_KB_IN2))
+            data |= 0x21;
+        gpio_pin_output(DEVICE_NAME_KB_SC1,1);
+        gpio_pin_output(DEVICE_NAME_KB_SC2,1);
+        gpio_pin_output(DEVICE_NAME_KB_SC3,0);
+        if (!gpio_pin_input(DEVICE_NAME_KB_IN2))
+            data |= 0x22;
+        gpio_pin_output(DEVICE_NAME_KB_SC1,1);
+        gpio_pin_output(DEVICE_NAME_KB_SC2,0);
+        gpio_pin_output(DEVICE_NAME_KB_SC3,1);
+        if (!gpio_pin_input(DEVICE_NAME_KB_IN2))
+            data |= 0x24;
+        gpio_pin_output(DEVICE_NAME_KB_SC1,0);
+        gpio_pin_output(DEVICE_NAME_KB_SC2,1);
+        gpio_pin_output(DEVICE_NAME_KB_SC3,1);
+        if (!gpio_pin_input(DEVICE_NAME_KB_IN2))
+            data |= 0x28;
+        
+        
+    }
+    if (!gpio_pin_input(DEVICE_NAME_KB_IN3))
+    {
+        gpio_pin_output(DEVICE_NAME_KB_SC1,1);
+        gpio_pin_output(DEVICE_NAME_KB_SC2,1);
+        gpio_pin_output(DEVICE_NAME_KB_SC3,1);
+        if (!gpio_pin_input(DEVICE_NAME_KB_IN3))
+            data |= 0x31;
+        gpio_pin_output(DEVICE_NAME_KB_SC1,1);
+        gpio_pin_output(DEVICE_NAME_KB_SC2,1);
+        gpio_pin_output(DEVICE_NAME_KB_SC3,0);
+        if (!gpio_pin_input(DEVICE_NAME_KB_IN3))
+            data |= 0x32;
+        gpio_pin_output(DEVICE_NAME_KB_SC1,1);
+        gpio_pin_output(DEVICE_NAME_KB_SC2,0);
+        gpio_pin_output(DEVICE_NAME_KB_SC3,1);
+        if (!gpio_pin_input(DEVICE_NAME_KB_IN3))
+            data |= 0x34;
+        gpio_pin_output(DEVICE_NAME_KB_SC1,0);
+        gpio_pin_output(DEVICE_NAME_KB_SC2,1);
+        gpio_pin_output(DEVICE_NAME_KB_SC3,1);
+        if (!gpio_pin_input(DEVICE_NAME_KB_IN3))
+            data |= 0x38;
+        
+        
+    }
+    //rt_device_read(dev_in2,0,&temp,1);
+    return data;
+
+}
+
+void 
+kb_intr_exti_timeout(void *parameters)
+{
+	rt_device_t dev_intr = RT_NULL;
+    
+    uint8_t data = 0;
     static uint8_t error_detect = 0;
     rt_size_t size;
     uint8_t c;
 
-	device = device_enable(DEVICE_NAME_KEY);
-    i2c_device = device_enable(DEVICE_NAME_KEYBOARD);
-
-	if (device != RT_NULL)
+	dev_intr = device_enable(DEVICE_NAME_KB_INTR);
+    
+	if (dev_intr != RT_NULL)
 	{
-		rt_device_read(device,0,&data,0);
-		if (data == KEY_STATUS) // rfid key is plugin
+		rt_device_read(dev_intr,0,&data,0);
+		if (data == KB_INTR_STATUS) // rfid key is plugin
 		{
-			data = 0;
-			size = rt_device_read(i2c_device, 0, &data, 2);
+			data = kb_read();
+            rt_kprintf("key value : %x\n", data);
+			//size = rt_device_read(i2c_device, 0, &data, 2);
+            /*
 			if (size == 2) {
 				error_detect = 0;
 				// filter keyboard input
@@ -475,9 +616,7 @@ void key_exti_timeout(void *parameters)
 				}
 				__REV16(data);
 				c = char_remap[bit_to_index(data&0x0fff)];
-#if (defined RT_USING_FINSH) && (defined KB_DEBUG)
-				rt_kprintf("keyboard value is %04X, %c\n", data, c);
-#endif
+
 				// send mail
 				send_kb_mail(KB_MAIL_TYPE_INPUT, KB_MODE_NORMAL_AUTH, c);
             } else {
@@ -486,64 +625,67 @@ void key_exti_timeout(void *parameters)
 #endif
                 if (error_detect++ > 2)
                 {
-                    rt_device_control(i2c_device, RT_DEVICE_CTRL_CONFIGURE, RT_NULL);
+                    //rt_device_control(i2c_device, RT_DEVICE_CTRL_CONFIGURE, RT_NULL);
                     error_detect = 0;
                 }
 			}
+            */
 			//send_alarm_mail(ALARM_TYPE_RFID_key, ALARM_PROCESS_FLAG_LOCAL, RFID_key_STATUS, time);
 		}
-		rt_device_control(device, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0);
+		rt_device_control(dev_intr, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0);
 	}
 
-	rt_timer_stop(key_exti_timer);
+	rt_timer_stop(kb_intr_exti_timer);
 }
 
 
-rt_err_t key_rx_ind(rt_device_t dev, rt_size_t size)
+rt_err_t 
+kb_intr_rx_ind(rt_device_t dev, rt_size_t size)
 {
 	//gpio_device *gpio = RT_NULL;
 	//gpio = (gpio_device *)dev;
 	rt_device_t device = RT_NULL;
 
-	device = rt_device_find(DEVICE_NAME_KEY);
+	device = rt_device_find(DEVICE_NAME_KB_INTR);
 	RT_ASSERT(device != RT_NULL);
 	rt_device_control(device, RT_DEVICE_CTRL_MASK_EXTI, (void *)0);
-	rt_timer_start(key_exti_timer);
+	rt_timer_start(kb_intr_exti_timer);
 
 	return RT_EOK;
 }
 
-struct gpio_exti_user_data key_user_data =
+struct gpio_exti_user_data kb_intr_user_data =
 {
-	DEVICE_NAME_KEY,
-	GPIOE,
-	GPIO_Pin_15,
+	DEVICE_NAME_KB_INTR,
+	GPIOD,
+	GPIO_Pin_9,
 	GPIO_Mode_IN_FLOATING,
 	GPIO_Speed_50MHz,
-	RCC_APB2Periph_GPIOE |RCC_APB2Periph_AFIO,
-	GPIO_PortSourceGPIOE,
-	GPIO_PinSource15,
-	EXTI_Line15,
+	RCC_APB2Periph_GPIOD |RCC_APB2Periph_AFIO,
+	GPIO_PortSourceGPIOD,
+	GPIO_PinSource9,
+	EXTI_Line9,
 	EXTI_Mode_Interrupt,
-	KEY_EXTI_TRIGGER_MODE,
-	EXTI15_10_IRQn,
+	KB_INTR_EXTI_TRIGGER_MODE,
+	EXTI9_5_IRQn,
 	1,
 	5,
-	key_rx_ind,
+	kb_intr_rx_ind,
 };
 
-int rt_hw_key_register(void)
+int 
+rt_hw_kb_intr_register(void)
 {
-    gpio_device *gpio_device = &key_device;
-    struct gpio_exti_user_data *gpio_user_data = &key_user_data;
+    gpio_device *gpio_device = &kb_intr_device;
+    struct gpio_exti_user_data *gpio_user_data = &kb_intr_user_data;
 
     gpio_device->ops = &gpio_exti_user_ops;
 
     rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX), gpio_user_data);
-    key_exti_timer = rt_timer_create("t_key",
-									 key_exti_timeout,
+    kb_intr_exti_timer = rt_timer_create("t_kintr",
+									 kb_intr_exti_timeout,
 									 RT_NULL,
-									 KEY_INT_INTERVAL,
+									 KB_INTR_INT_INTERVAL,
 									 RT_TIMER_FLAG_ONE_SHOT | RT_TIMER_FLAG_SOFT_TIMER);
     rt_device_set_rx_indicate((rt_device_t)gpio_device, gpio_user_data->gpio_exti_rx_indicate);
 
@@ -1351,13 +1493,14 @@ int rt_hw_key_register(void)
 //#endif
 
 
-void EXTI9_5_IRQHandler(void)
+void 
+EXTI9_5_IRQHandler(void)
 {
 	extern void rt_hw_gpio_isr(gpio_device *gpio);
 
 	/* enter interrupt */
 	rt_interrupt_enter();
-	/* lock_shell exti isr */
+	/* lock_shell exti isr 
 	if(EXTI_GetITStatus(EXTI_Line7) == SET)
 	{
 		rt_hw_gpio_isr(&switch1_device);
@@ -1373,39 +1516,43 @@ void EXTI9_5_IRQHandler(void)
 		rt_hw_gpio_isr(&switch3_device);
 		EXTI_ClearITPendingBit(EXTI_Line9);
 	}
-	/* leave interrupt */
-	rt_interrupt_leave();
-}
-
-void EXTI15_10_IRQHandler(void)
-{
-	extern void rt_hw_gpio_isr(gpio_device *gpio);
-
-	/* enter interrupt */
-	rt_interrupt_enter();
-    // key board int
-	if(EXTI_GetITStatus(EXTI_Line15) == SET)
+    */
+    // keyboard interrupt
+	if(EXTI_GetITStatus(EXTI_Line9) == SET)
 	{
-		rt_hw_gpio_isr(&key_device);
-		EXTI_ClearITPendingBit(EXTI_Line15);
+		rt_hw_gpio_isr(&kb_intr_device);
+		EXTI_ClearITPendingBit(EXTI_Line9);
 	}
 	/* leave interrupt */
 	rt_interrupt_leave();
 }
 
-static int rt_hw_gpio_exti_enable(void)
+void 
+EXTI15_10_IRQHandler(void)
 {
-    device_enable(DEVICE_NAME_SWITCH1);
-    device_enable(DEVICE_NAME_SWITCH2);
-    device_enable(DEVICE_NAME_SWITCH3);
-    device_enable(DEVICE_NAME_KEY);
+	extern void rt_hw_gpio_isr(gpio_device *gpio);
+
+	/* enter interrupt */
+	rt_interrupt_enter();
+
+	/* leave interrupt */
+	rt_interrupt_leave();
+}
+
+static int 
+rt_hw_gpio_exti_enable(void)
+{
+    //device_enable(DEVICE_NAME_SWITCH1);
+    //device_enable(DEVICE_NAME_SWITCH2);
+    //device_enable(DEVICE_NAME_SWITCH3);
+    device_enable(DEVICE_NAME_KB_INTR);
     return 0;
 }
 
-INIT_DEVICE_EXPORT(rt_hw_switch1_register);
-INIT_DEVICE_EXPORT(rt_hw_switch2_register);
-INIT_DEVICE_EXPORT(rt_hw_switch3_register);
+//INIT_DEVICE_EXPORT(rt_hw_switch1_register);
+//INIT_DEVICE_EXPORT(rt_hw_switch2_register);
+//INIT_DEVICE_EXPORT(rt_hw_switch3_register);
 
-INIT_DEVICE_EXPORT(rt_hw_key_register);
+INIT_DEVICE_EXPORT(rt_hw_kb_intr_register);
 
 INIT_APP_EXPORT(rt_hw_gpio_exti_enable);

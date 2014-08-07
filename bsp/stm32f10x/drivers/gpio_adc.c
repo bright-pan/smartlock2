@@ -274,7 +274,7 @@ int rt_hw_camera_light_register(void)
     return 0;
 }
 
-INIT_DEVICE_EXPORT(rt_hw_camera_light_register);
+//INIT_DEVICE_EXPORT(rt_hw_camera_light_register);
 
 uint16_t adc_get_value(const char* name)
 {

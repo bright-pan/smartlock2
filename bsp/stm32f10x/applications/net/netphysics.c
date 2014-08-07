@@ -219,7 +219,7 @@ int netprotocol_thread_init(void)
   rt_thread_startup(id);
   return 0;
 }
-INIT_APP_EXPORT(netprotocol_thread_init);
+//INIT_APP_EXPORT(netprotocol_thread_init);
 
 
 #ifdef RT_USING_FINSH

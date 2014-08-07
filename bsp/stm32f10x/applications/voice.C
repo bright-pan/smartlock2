@@ -93,7 +93,7 @@ static void amp_operation(rt_bool_t flag)
 	rt_device_t dev;
 	rt_uint8_t  data;
 
-	dev = rt_device_find(DEVICE_NAME_VOICE_AMP);
+//	dev = rt_device_find(DEVICE_NAME_VOICE_AMP);
 	RT_ASSERT(dev != RT_NULL);
 	if(!(dev->open_flag & RT_DEVICE_OFLAG_OPEN))
 	{
@@ -346,7 +346,7 @@ int voice_thread_init(void)
   
 	return 0;
 }
-INIT_APP_EXPORT(voice_thread_init);
+//INIT_APP_EXPORT(voice_thread_init);
 
 /*
 功能:发送语音播放邮件

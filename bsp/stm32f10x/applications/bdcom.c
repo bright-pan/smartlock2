@@ -341,7 +341,7 @@ int GSM_manage_thread_init(void)
 	
 	return 0;
 }
-INIT_APP_EXPORT(GSM_manage_thread_init);
+//INIT_APP_EXPORT(GSM_manage_thread_init);
 
 void gsm_set_link(rt_uint8_t status)
 {

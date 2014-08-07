@@ -983,7 +983,7 @@ rt_sms_init(void)
 
 }
 
-INIT_APP_EXPORT(rt_sms_init);
+//INIT_APP_EXPORT(rt_sms_init);
 
 #ifdef RT_USING_FINSH
 #include <finsh.h>

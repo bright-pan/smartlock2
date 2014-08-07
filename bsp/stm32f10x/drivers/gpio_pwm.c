@@ -1154,6 +1154,7 @@ void TIM4_IRQHandler(void)
     rt_interrupt_leave();
 
 }
+/*
 INIT_DEVICE_EXPORT(rt_hw_motor1_register);
 INIT_DEVICE_EXPORT(rt_hw_motor2_register);
 INIT_DEVICE_EXPORT(rt_hw_motor3_register);
@@ -1163,7 +1164,7 @@ INIT_DEVICE_EXPORT(rt_hw_lcd_led_register);
 INIT_DEVICE_EXPORT(rt_hw_camera_led_register);
 //INIT_DEVICE_EXPORT(rt_hw_logo_led_register);
 INIT_DEVICE_EXPORT(rt_hw_infra_pulse_register);
-
+*/
 #ifdef RT_USING_FINSH
 #include <finsh.h>
 void pwm_set_counts(char *str, rt_uint32_t counts)

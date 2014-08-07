@@ -252,7 +252,7 @@ int rt_hw_infra_pulse_pwm_ic_register(void)
 }
 
 
-INIT_DEVICE_EXPORT(rt_hw_infra_pulse_pwm_ic_register);
+//INIT_DEVICE_EXPORT(rt_hw_infra_pulse_pwm_ic_register);
 
 
 

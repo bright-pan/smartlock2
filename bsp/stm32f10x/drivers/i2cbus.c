@@ -214,4 +214,4 @@ stm32_i2c_bus_register(void)
     return 0;
 }
 
-INIT_BOARD_EXPORT(stm32_i2c_bus_register);
+//INIT_BOARD_EXPORT(stm32_i2c_bus_register);

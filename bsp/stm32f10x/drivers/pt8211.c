@@ -155,6 +155,6 @@ int rt_pt8211_init(void)
   return 0;
 }
 
-INIT_DEVICE_EXPORT(rt_pt8211_init);
+//INIT_DEVICE_EXPORT(rt_pt8211_init);
 
 

@@ -352,7 +352,7 @@ void USART3_IRQHandler(void)
 /* UART4 device driver structure */
 struct rt_mutex uart4_lock;
 struct serial_ringbuffer uart4_int_rx;
-#define UART4_POOL_SIZE 1048
+#define UART4_POOL_SIZE 64
 rt_uint8_t uart4_pool[UART4_POOL_SIZE];
 struct stm32_uart uart4 =
 {
@@ -612,7 +612,7 @@ rt_hw_usart_init(void)
 	uart3_int_rx.pool = uart3_pool;
 	uart3_int_rx.size = UART3_POOL_SIZE;
 
-	config.baud_rate = BAUD_RATE_115200;
+	config.baud_rate = 57600;
 
 	serial->ops    = &stm32_uart_ops;
 	serial->int_rx = &uart3_int_rx;
