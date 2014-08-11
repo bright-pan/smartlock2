@@ -105,7 +105,19 @@ typedef struct {
     uint8_t buf_id;
 
 }FPRINT_FRAME_REQ_UP_CHAR_TYPEDEF;
+typedef struct {
 
+    uint8_t cmd;
+    uint8_t buf_id;
+
+}FPRINT_FRAME_REQ_DOWN_CHAR_TYPEDEF;
+typedef struct {
+
+    uint8_t cmd;
+    uint8_t buf_id;
+    uint8_t template_id[2];
+
+}FPRINT_FRAME_REQ_STORE_CHAR_TYPEDEF;
 typedef union {
 
     FPRINT_FRAME_REQ_VERIFY_TYPEDEF req_verify;
@@ -116,6 +128,8 @@ typedef union {
     FPRINT_FRAME_REQ_GENERATE_TYPEDEF req_generate;
     FPRINT_FRAME_REQ_MERGE_TYPEDEF req_merge;
     FPRINT_FRAME_REQ_UP_CHAR_TYPEDEF req_up_char;
+    FPRINT_FRAME_REQ_DOWN_CHAR_TYPEDEF req_down_char;
+    FPRINT_FRAME_REQ_STORE_CHAR_TYPEDEF req_store_char;
 
 }FPRINT_FRAME_REQ_DATA_TYPEDEF;
 
@@ -130,7 +144,7 @@ typedef struct {
 
     uint8_t result;
     uint8_t cs[2];
-    
+
 }FPRINT_FRAME_REP_EMPTY_TYPEDEF;
 
 typedef struct {
@@ -170,19 +184,21 @@ typedef struct {
     uint8_t cs[2];
 
 }FPRINT_FRAME_REP_UP_CHAR_TYPEDEF;
-typedef struct {
-    uint8_t buf[256];
-    uint8_t cs[2];
-}FPRINT_FRAME_REP_DATA_UP_CHAR_TYPEDEF;
 
 typedef struct {
 
     uint8_t result;
     uint8_t cs[2];
-    FPRINT_FRAME_REP_DATA_UP_CHAR_TYPEDEF data1;
-    FPRINT_FRAME_REP_DATA_UP_CHAR_TYPEDEF data2;
     
 }FPRINT_FRAME_REP_DOWN_CHAR_TYPEDEF;
+
+
+typedef struct {
+
+    uint8_t result;
+    uint8_t cs[2];
+
+}FPRINT_FRAME_REP_STORE_CHAR_TYPEDEF;
 
 typedef union {
 
@@ -195,6 +211,7 @@ typedef union {
     FPRINT_FRAME_REP_MERGE_TYPEDEF rep_merge;
     FPRINT_FRAME_REP_UP_CHAR_TYPEDEF rep_up_char;
     FPRINT_FRAME_REP_DOWN_CHAR_TYPEDEF rep_down_char;
+    FPRINT_FRAME_REP_STORE_CHAR_TYPEDEF rep_store_char;
 
 }FPRINT_FRAME_REP_DATA_TYPEDEF;
 
@@ -340,18 +357,23 @@ fprint_frame_send(uint8_t cmd, FPRINT_FRAME_HEAD_TYPEDEF *frame_head,
             }
         case FPRINT_FRAME_CMD_UP_CHAR:
             {
-                if (frame_head->pid == FPRINT_FRAME_PID_CMD) {
-                    req_data->req_up_char.cmd = cmd;
-                    data_offset = 0;
-                    data_length = 2 + 2;
-                }
-                /*
-                if (frame_head->pid == FPRINT_FRAME_PID_DATA) {
-                    req_data->req_up_char.cmd = cmd;
-                    data_offset = 0;
-                    data_length = sizeof(req_data->req_merge) + 2;
-                }
-                */
+                req_data->req_up_char.cmd = cmd;
+                data_offset = 0;
+                data_length = sizeof(req_data->req_up_char) + 2;
+                break;
+            }
+        case FPRINT_FRAME_CMD_DOWN_CHAR:
+            {
+                req_data->req_up_char.cmd = cmd;
+                data_offset = 0;
+                data_length = sizeof(req_data->req_down_char) + 2;
+                break;
+            }
+        case FPRINT_FRAME_CMD_STORE_CHAR:
+            {
+                req_data->req_store_char.cmd = cmd;
+                data_offset = 0;
+                data_length = sizeof(req_data->req_store_char) + 2;
                 break;
             }
         default :
@@ -467,18 +489,20 @@ fprint_frame_recv_data(uint8_t *buf, uint16_t size)
         recv_cnts = rt_device_read(fprint_device, 0, (uint8_t *)&check, 2);
         if (recv_cnts < 2)
             goto error_process;
-        /*
-        if (rep_data->rep_verify.cs[0] == ((uint8_t *)&cs)[1] && rep_data->rep_verify.cs[1] == ((uint8_t *)&cs)[0])
-        {
-            error = FPRINT_EOK;
-        }
-        */
 #if (defined RT_USING_FINSH) && (defined FPRINT_DEBUG)
         rt_kprintf("\nfprint recv :---------------------\n");
         print_hex((uint8_t *)&head, sizeof(head));
         print_hex((uint8_t *)buf+data_offset, data_length);
+        print_hex((uint8_t *)&check, sizeof(check));
         rt_kprintf("------------------------------------\n");
 #endif // RT_USING_FINSH
+        //reverse((uint8_t *)&check, (uint8_t *)&check, sizeof(check));
+        __REV16(check);
+        if (cs==check)
+        {
+            error = FPRINT_EOK;
+        }
+
         data_offset += data_length;
     }
 error_process:
@@ -486,6 +510,74 @@ error_process:
 	return data_offset;
 
 }
+
+__STATIC_INLINE uint16_t
+fprint_frame_send_data(uint8_t *buf, uint16_t size)
+{
+	uint16_t cs;
+	rt_device_t fprint_device;
+	uint16_t data_length, data_offset;
+    uint16_t check = 0;
+	rt_size_t recv_cnts;
+	FPRINT_ERROR_TYPEDEF error;
+	uint8_t cnts;
+    FPRINT_FRAME_HEAD_TYPEDEF head;
+    uint16_t start = FPRINT_FRAME_START;
+    uint32_t addr = FPRINT_FRAME_ADDR;
+    data_length = 0;
+    data_offset = 0;
+    
+	error = FPRINT_EERROR;
+
+
+	fprint_device = device_enable(DEVICE_NAME_FPRINT);
+	if (fprint_device == RT_NULL)
+		goto error_process;
+    while (size > 0)
+    {
+        rt_memset(&head, 0, sizeof(head));
+
+        reverse(head.start, (uint8_t *)&start, sizeof(start));
+        reverse(head.addr, (uint8_t *)&addr, sizeof(addr));
+
+        if (size > 256) {
+            data_length = 256;
+            head.pid = FPRINT_FRAME_PID_DATA;
+        } else {
+            data_length = size;
+            head.pid = FPRINT_FRAME_PID_END;
+        }
+        size -= data_length;
+        
+        //reverse((uint8_t *)&data_length, head.len, sizeof(data_length));
+
+        if (data_length <= size)
+            goto error_process;
+        data_length += 2;
+        reverse(head.len, (uint8_t *)&data_length, sizeof(data_length));
+        data_length -= 2;
+        cs = check_sum((uint8_t *)&head+6, sizeof(head)-6) + check_sum(buf + data_offset, data_length);
+        error = FPRINT_EOK;
+        rt_device_write(fprint_device, 0, &head, sizeof(head));
+        rt_device_write(fprint_device, 0, buf + data_offset, data_length);
+        cs = __REV16(cs);
+        rt_device_write(fprint_device, 0, &cs, 2);
+
+#if (defined RT_USING_FINSH) && (defined FPRINT_DEBUG)
+        rt_kprintf("\nfprint send :---------------------\n");
+        print_hex((uint8_t *)&head, sizeof(head));
+        print_hex((uint8_t *)buf + data_offset, data_length);
+        print_hex((uint8_t *)&cs, sizeof(cs));
+        rt_kprintf("------------------------------------\n");
+#endif
+        data_offset += data_length;
+    }
+error_process:
+
+	return data_offset;
+
+}
+
 
 __STATIC_INLINE FPRINT_ERROR_TYPEDEF
 fprint_frame_recv(uint8_t cmd, FPRINT_FRAME_HEAD_TYPEDEF *frame_head,
@@ -553,7 +645,7 @@ __STATIC_INLINE FPRINT_ERROR_TYPEDEF
 fprint_frame_process(uint8_t cmd, FPRINT_FRAME_REQ_DATA_TYPEDEF *req_data, FPRINT_FRAME_REP_DATA_TYPEDEF *rep_data)
 {
 	FPRINT_ERROR_TYPEDEF error;
-	FPRINT_FRAME_HEAD_TYPEDEF *head;
+	FPRINT_FRAME_HEAD_TYPEDEF head;
 
     uint16_t start = FPRINT_FRAME_START;
     uint32_t addr = FPRINT_FRAME_ADDR;
@@ -568,6 +660,9 @@ fprint_frame_process(uint8_t cmd, FPRINT_FRAME_REQ_DATA_TYPEDEF *req_data, FPRIN
         case FPRINT_FRAME_CMD_GET_IMAGE:
         case FPRINT_FRAME_CMD_GENERATE:        
         case FPRINT_FRAME_CMD_MERGE:
+        case FPRINT_FRAME_CMD_UP_CHAR:
+        case FPRINT_FRAME_CMD_DOWN_CHAR:
+        case FPRINT_FRAME_CMD_STORE_CHAR:
             {
                 break;
             }
@@ -581,23 +676,20 @@ fprint_frame_process(uint8_t cmd, FPRINT_FRAME_REQ_DATA_TYPEDEF *req_data, FPRIN
     }
 
 	error = FPRINT_EERROR;
-	head = rt_malloc(sizeof(*head));
 
-	if (head == RT_NULL)
-		return error;
 
-	rt_memset(head, 0, sizeof(*head));
+	rt_memset(&head, 0, sizeof(head));
 
-	reverse(head->start, (uint8_t *)&start, sizeof(start));
-    reverse(head->addr, (uint8_t *)&addr, sizeof(addr));
+	reverse(head.start, (uint8_t *)&start, sizeof(start));
+    reverse(head.addr, (uint8_t *)&addr, sizeof(addr));
     
-    head->pid = FPRINT_FRAME_PID_CMD;
+    head.pid = FPRINT_FRAME_PID_CMD;
 
-	error = fprint_frame_send(cmd, head, req_data);
+	error = fprint_frame_send(cmd, &head, req_data);
 	if (error != FPRINT_EOK)
 		goto process_error;
     //rt_thread_delay(50);
-	error = fprint_frame_recv(cmd, head, rep_data);
+	error = fprint_frame_recv(cmd, &head, rep_data);
 	if (error != FPRINT_EOK)
 		goto process_error;
 
@@ -650,8 +742,26 @@ fprint_frame_process(uint8_t cmd, FPRINT_FRAME_REQ_DATA_TYPEDEF *req_data, FPRIN
             }
         case FPRINT_FRAME_CMD_UP_CHAR:
             {
-                if (rep_data->rep_up_char.result == FPRINT_FRAME_ERR_SUCCESS)
+                if (rep_data->rep_up_char.result == FPRINT_FRAME_ERR_SUCCESS) {
                     error  = FPRINT_EOK;
+                    
+                }
+                break;
+            }
+        case FPRINT_FRAME_CMD_DOWN_CHAR:
+            {
+                if (rep_data->rep_down_char.result == FPRINT_FRAME_ERR_SUCCESS) {
+                    error  = FPRINT_EOK;
+                    
+                }
+                break;
+            }
+        case FPRINT_FRAME_CMD_STORE_CHAR:
+            {
+                if (rep_data->rep_store_char.result == FPRINT_FRAME_ERR_SUCCESS) {
+                    error  = FPRINT_EOK;
+                    
+                }
                 break;
             }
         default :
@@ -661,8 +771,7 @@ fprint_frame_process(uint8_t cmd, FPRINT_FRAME_REQ_DATA_TYPEDEF *req_data, FPRIN
     }
 
 process_error:
-	rt_free(head);
-
+    
 	return error;
 }
 
@@ -735,7 +844,7 @@ fprint_init(FPRINT_FRAME_REQ_DATA_TYPEDEF *req_data, FPRINT_FRAME_REP_DATA_TYPED
 }
 
 FPRINT_ERROR_TYPEDEF
-fprint_enroll(uint16_t template_id, FPRINT_FRAME_REQ_DATA_TYPEDEF *req_data, FPRINT_FRAME_REP_DATA_TYPEDEF *rep_data)
+fprint_enroll(uint16_t template_id, uint8_t *buf, FPRINT_FRAME_REQ_DATA_TYPEDEF *req_data, FPRINT_FRAME_REP_DATA_TYPEDEF *rep_data)
 {
 
 	FPRINT_ERROR_TYPEDEF error = FPRINT_EERROR;
@@ -782,25 +891,24 @@ fprint_enroll(uint16_t template_id, FPRINT_FRAME_REQ_DATA_TYPEDEF *req_data, FPR
                                     req_data, rep_data);
 	if (error != FPRINT_EOK)
 		return error;
-    /*
+
 	// store fprint template to template_id
 	rt_memset(req_data, 0, sizeof(*req_data));
     rt_memset(rep_data, 0, sizeof(*rep_data));
-	frame_data->req_store_char.template_id = template_id;
-	frame_data->req_store_char.ram_buf_id = 0;
+    reverse(req_data->req_store_char.template_id, (uint8_t *)&template_id, sizeof(template_id));
+	req_data->req_store_char.buf_id = 1;
 	error = fprint_frame_process(FPRINT_FRAME_CMD_STORE_CHAR,
-								 FPRINT_FRAME_PREFIX_REQUEST,
-								 0, 0, frame_data);
+                                    req_data, rep_data);
 	if (error != FPRINT_EOK)
 		return error;
-    */
 
 	// get fprint template from rambuf0
 	rt_memset(req_data, 0, sizeof(*req_data));
     rt_memset(rep_data, 0, sizeof(*rep_data));
-    req_data->req_up_char.buf_id = 0;
+    req_data->req_up_char.buf_id = 1;
 	error = fprint_frame_process(FPRINT_FRAME_CMD_UP_CHAR,
                                     req_data, rep_data);
+    fprint_frame_recv_data(buf, 512);
 	return error;
 }
 /*
@@ -873,7 +981,8 @@ fprint_thread_entry(void *parameters)
 					}
 				case FPRINT_CMD_ENROLL:
 					{
-                        fprint_enroll(1, &req_data, &rep_data);
+                        uint8_t buf[512];
+                        fprint_enroll(1, buf,&req_data, &rep_data);
                         /*
 						error = fprint_enroll(fprint_mail.key_id + FPRINT_TEMPLATE_OFFSET, &frame_data);
 						if (error == FPRINT_EOK) {
