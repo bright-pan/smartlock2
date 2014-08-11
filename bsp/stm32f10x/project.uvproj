@@ -462,6 +462,31 @@
               <FileType>1</FileType>
               <FilePath>.\drivers\untils.c</FilePath>
             </File>
+            <File>
+              <FileName>keyboard.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\keyboard.c</FilePath>
+            </File>
+            <File>
+              <FileName>alarm.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\alarm.c</FilePath>
+            </File>
+            <File>
+              <FileName>local.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\local.c</FilePath>
+            </File>
+            <File>
+              <FileName>sms.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\sms.c</FilePath>
+            </File>
+            <File>
+              <FileName>fprint.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\drivers\fprint.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

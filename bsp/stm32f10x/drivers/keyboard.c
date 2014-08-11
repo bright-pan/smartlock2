@@ -574,7 +574,7 @@ kb_thread_entry(void *parameters)
 					data.event = KEY_NOTIFYSOUND;
 					key_api_port(&data);
 				}
-                gpio_pin_output(DEVICE_NAME_LOGO_LED, 1);
+//                gpio_pin_output(DEVICE_NAME_LOGO_LED, 1);
 				switch(kb_mode) {
 					case KB_MODE_NORMAL_AUTH: {
 						kb_error = kb_normal_auth_process(&kb_mode, &kb_data.normal_auth, c, &key_id);
@@ -800,7 +800,7 @@ kb_thread_entry(void *parameters)
 				}
 			}
 		} else { //time out
-            gpio_pin_output(DEVICE_NAME_LOGO_LED, 0);
+            //gpio_pin_output(DEVICE_NAME_LOGO_LED, 0);
 			if (kb_mode != KB_MODE_NORMAL_AUTH && kb_mode != KB_MODE_ADD_FPRINT) {
 				send_kb_mail(KB_MAIL_TYPE_TIMEOUT, KB_MODE_NORMAL_AUTH, 0);
 				kb_data_init();
@@ -857,7 +857,7 @@ rt_keyboard_init(void)
 	return 0;
 }
 
-//INIT_APP_EXPORT(rt_keyboard_init);
+INIT_APP_EXPORT(rt_keyboard_init);
 
 #ifdef RT_USING_FINSH
 #include <finsh.h>

@@ -106,7 +106,7 @@ rt_err_t  keyboard_init(rt_device_t dev)
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOD, ENABLE);
 
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_15 | GPIO_Pin_14 | GPIO_Pin_13 | GPIO_Pin_9;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_15 | GPIO_Pin_14 | GPIO_Pin_13;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
 	GPIO_Init(GPIOD,&GPIO_InitStructure);
 
@@ -204,4 +204,7 @@ int rt_hw_keyboard_register(void)
 		return 0;
 }
 
-//INIT_DEVICE_EXPORT(rt_hw_keyboard_register);
+INIT_DEVICE_EXPORT(rt_hw_keyboard_register);
+
+
+

@@ -770,7 +770,7 @@ sms_pdu_ucs_send(char *dest_address, char *smsc_address, uint16_t *content, uint
 		mail->BufSize = (sms_pdu_length << 1) + 2;
 		mail->SendMode = 1;
 		mail->type = GSM_MAIL_SMS;
-		gsm_mail_send(mail);
+		//gsm_mail_send(mail);
 		rt_sem_take(mail->ResultSem,RT_WAITING_FOREVER);
 		rt_sem_delete(mail->ResultSem);
 		rt_free(mail);

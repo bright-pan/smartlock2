@@ -65,7 +65,10 @@
 #define DEVICE_NAME_KB_SC3 "kb_sc3"
 #define DEVICE_NAME_KB_SC4 "kb_sc4"
 
-uint8_t gpio_pin_input(char *str);
-void gpio_pin_output(char *str, const rt_uint8_t dat);
+__INLINE uint8_t 
+gpio_pin_input(char *str, rt_uint8_t debug);
+
+__INLINE void 
+gpio_pin_output(char *str, const rt_uint8_t dat, rt_uint8_t debug);
 
 #endif

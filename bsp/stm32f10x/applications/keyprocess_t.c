@@ -34,5 +34,5 @@ int	keyprocess_thread_init(void)
 	
 	return 0;
 }
-//INIT_APP_EXPORT(keyprocess_thread_init);
+INIT_APP_EXPORT(keyprocess_thread_init);
 

@@ -710,10 +710,10 @@ struct gpio_pin_user_data kb_in1_user_data =
 {
     DEVICE_NAME_KB_IN1,
     GPIOD,
-    GPIO_Pin_15,
+    GPIO_Pin_14,
     GPIO_Mode_IPU,
     GPIO_Speed_50MHz,
-    RCC_APB2Periph_GPIOD|RCC_APB2Periph_AFIO,
+    RCC_APB2Periph_GPIOD,
 	0
 };
 
@@ -736,10 +736,10 @@ struct gpio_pin_user_data kb_in2_user_data =
 {
     DEVICE_NAME_KB_IN2,
     GPIOD,
-    GPIO_Pin_14,
+    GPIO_Pin_13,
     GPIO_Mode_IPU,
     GPIO_Speed_50MHz,
-    RCC_APB2Periph_GPIOD|RCC_APB2Periph_AFIO,
+    RCC_APB2Periph_GPIOD,
 	0
 };
 
@@ -762,11 +762,10 @@ struct gpio_pin_user_data kb_in3_user_data =
 {
     DEVICE_NAME_KB_IN3,
     GPIOD,
-    GPIO_Pin_13,
-    //GPIO_Mode_IPU,
-    GPIO_Mode_AF_PP,
+    GPIO_Pin_12,
+    GPIO_Mode_IPU,
     GPIO_Speed_50MHz,
-    RCC_APB2Periph_GPIOD|RCC_APB2Periph_AFIO,
+    RCC_APB2Periph_GPIOD,
 	1
 };
 
@@ -789,10 +788,10 @@ struct gpio_pin_user_data kb_scan1_user_data =
 {
     DEVICE_NAME_KB_SC1,
     GPIOD,
-    GPIO_Pin_12,
+    GPIO_Pin_11,
     GPIO_Mode_Out_PP,
     GPIO_Speed_50MHz,
-    RCC_APB2Periph_GPIOD|RCC_APB2Periph_AFIO,
+    RCC_APB2Periph_GPIOD,
 	0
 };
 
@@ -815,10 +814,10 @@ struct gpio_pin_user_data kb_scan2_user_data =
 {
     DEVICE_NAME_KB_SC2,
     GPIOD,
-    GPIO_Pin_11,
+    GPIO_Pin_10,
     GPIO_Mode_Out_PP,
     GPIO_Speed_50MHz,
-    RCC_APB2Periph_GPIOD|RCC_APB2Periph_AFIO,
+    RCC_APB2Periph_GPIOD,
 	0
 };
 
@@ -841,10 +840,10 @@ struct gpio_pin_user_data kb_scan3_user_data =
 {
     DEVICE_NAME_KB_SC3,
     GPIOD,
-    GPIO_Pin_10,
+    GPIO_Pin_9,
     GPIO_Mode_Out_PP,
     GPIO_Speed_50MHz,
-    RCC_APB2Periph_GPIOD|RCC_APB2Periph_AFIO,
+    RCC_APB2Periph_GPIOD,
 	0
 };
 
@@ -911,8 +910,8 @@ void rt_hw_camera_photosensor_register(void)
 
 */
 
-
-void gpio_pin_output(char *str, const rt_uint8_t dat)
+__INLINE void 
+gpio_pin_output(char *str, const rt_uint8_t dat, rt_uint8_t debug)
 {
     rt_device_t device = RT_NULL;
     device = rt_device_find(str);
@@ -927,12 +926,13 @@ void gpio_pin_output(char *str, const rt_uint8_t dat)
     else
     {
 #ifdef RT_USING_FINSH
-        rt_kprintf("the gpio device %s is not found!\n", str);
+        RT_DEBUG_LOG(debug, ("the gpio device %s is not found!\n", str));
 #endif
     }
 }
 
-uint8_t gpio_pin_input(char *str)
+__INLINE uint8_t 
+gpio_pin_input(char *str, rt_uint8_t debug)
 {
     rt_device_t device = RT_NULL;
     rt_uint8_t dat;
@@ -944,12 +944,14 @@ uint8_t gpio_pin_input(char *str)
             rt_device_open(device, RT_DEVICE_OFLAG_RDWR);
         }
         rt_device_read(device,0,&dat,0);
-        rt_kprintf("the gpio pin device <%s> value is %d\n", str, dat);
+#ifdef RT_USING_FINSH
+        RT_DEBUG_LOG(debug, ("the gpio pin device <%s> value is %d\n", str, dat));
+#endif
     }
     else
     {
 #ifdef RT_USING_FINSH
-        rt_kprintf("the gpio device %s is not found!\n", str);
+        RT_DEBUG_LOG(debug, ("the gpio device %s is not found!\n", str));
 #endif
     }
     return dat;
@@ -978,7 +980,6 @@ INIT_DEVICE_EXPORT(rt_hw_gsm_power_register);
 INIT_DEVICE_EXPORT(rt_hw_kb_in1_register);
 INIT_DEVICE_EXPORT(rt_hw_kb_in2_register);
 INIT_DEVICE_EXPORT(rt_hw_kb_in3_register);
-
 INIT_DEVICE_EXPORT(rt_hw_kb_scan1_register);
 INIT_DEVICE_EXPORT(rt_hw_kb_scan2_register);
 INIT_DEVICE_EXPORT(rt_hw_kb_scan3_register);

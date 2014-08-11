@@ -22,6 +22,8 @@
 //#include "funtable.h"
 #define UNTILS_DEBUG
 
+rt_device_t rtc_device;
+
 #define DEVICE_CONFIG_FILE_NAME	"/config"
 
 DEVICE_CONFIG_TYPEDEF device_config = {
@@ -409,7 +411,7 @@ memmem(const void *haystack, rt_size_t haystack_len,
 
 #endif
 
-rt_device_t
+__INLINE rt_device_t
 device_enable(const char *name)
 {
     rt_device_t device = RT_NULL;
@@ -428,6 +430,29 @@ device_enable(const char *name)
 #endif
     }
 	return device;
+}
+
+int 
+system_init(void)
+{
+    int result = 0;
+    if (device_config_init(&device_config) < 0)
+	{
+#if (defined RT_USING_FINSH) && (defined UNTILS_DEBUG)
+		rt_kprintf("device config init failure");
+#endif // RT_USING_FINSH
+        result = -1;	
+    }
+    // get rtc clock
+	rtc_device = rt_device_find("rtc");
+	if (rtc_device == RT_NULL)
+	{
+#if (defined RT_USING_FINSH) && (defined UNTILS_DEBUG)
+		rt_kprintf("rtc_device is not exist!!!");
+#endif // RT_USING_FINSH
+        result = -1;
+	}
+    return result;
 }
 
 #ifdef RT_USING_FINSH

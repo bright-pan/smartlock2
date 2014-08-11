@@ -348,7 +348,7 @@ int rt_hw_switch2_register(void)
     return 0;
 }
 */
-/* switch3 device 
+/* switch3 device */
 gpio_device switch3_device;
 rt_timer_t switch3_exti_timer = RT_NULL;
 
@@ -397,17 +397,17 @@ rt_err_t switch3_rx_ind(rt_device_t dev, rt_size_t size)
 struct gpio_exti_user_data switch3_user_data =
 {
 	DEVICE_NAME_SWITCH3,
-	GPIOE,
-	GPIO_Pin_9,
+	GPIOD,
+	GPIO_Pin_15,
 	GPIO_Mode_IPU,
 	GPIO_Speed_50MHz,
-	RCC_APB2Periph_GPIOE |RCC_APB2Periph_AFIO,
-	GPIO_PortSourceGPIOE,
-	GPIO_PinSource9,
-	EXTI_Line9,
+	RCC_APB2Periph_GPIOD |RCC_APB2Periph_AFIO,
+	GPIO_PortSourceGPIOD,
+	GPIO_PinSource15,
+	EXTI_Line15,
 	EXTI_Mode_Interrupt,
 	SWITCH3_EXTI_TRIGGER_MODE,
-	EXTI9_5_IRQn,
+	EXTI15_10_IRQn,
 	1,
 	5,
 	switch3_rx_ind,
@@ -430,7 +430,89 @@ int rt_hw_switch3_register(void)
 
     return 0;
 }
-*/
+/* fp_touch device */
+gpio_device fp_touch_device;
+rt_timer_t fp_touch_exti_timer = RT_NULL;
+
+void fp_touch_exti_timeout(void *parameters)
+{
+
+	//time_t time;
+
+	rt_device_t device = RT_NULL;
+	uint8_t data;
+
+	device = rt_device_find(DEVICE_NAME_FP_TOUCH);
+	if (device != RT_NULL)
+	{
+		rt_device_read(device,0,&data,0);
+		if (data == FP_TOUCH_STATUS) // rfid key is plugin
+		{
+            rt_kprintf("it is fprint touch!\n");
+			// produce mail
+			//rt_device_control(rtc_device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
+
+			// send mail
+			//send_alarm_mail(ALARM_TYPE_RFID_switch2, ALARM_PROCESS_FLAG_LOCAL, RFID_switch2_STATUS, time);
+		}
+		rt_device_control(device, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0);
+	}
+
+	rt_timer_stop(fp_touch_exti_timer);
+}
+
+
+rt_err_t fp_touch_rx_ind(rt_device_t dev, rt_size_t size)
+{
+	//gpio_device *gpio = RT_NULL;
+	//gpio = (gpio_device *)dev;
+	rt_device_t device = RT_NULL;
+
+	device = rt_device_find(DEVICE_NAME_FP_TOUCH);
+	RT_ASSERT(device != RT_NULL);
+	rt_device_control(device, RT_DEVICE_CTRL_MASK_EXTI, (void *)0);
+	rt_timer_start(fp_touch_exti_timer);
+
+	return RT_EOK;
+}
+
+struct gpio_exti_user_data fp_touch_user_data =
+{
+	DEVICE_NAME_FP_TOUCH,
+	GPIOA,
+	GPIO_Pin_1,
+	GPIO_Mode_IPD,
+	GPIO_Speed_50MHz,
+	RCC_APB2Periph_GPIOA |RCC_APB2Periph_AFIO,
+	GPIO_PortSourceGPIOA,
+	GPIO_PinSource1,
+	EXTI_Line1,
+	EXTI_Mode_Interrupt,
+	FP_TOUCH_EXTI_TRIGGER_MODE,
+	EXTI1_IRQn,
+	1,
+	5,
+	fp_touch_rx_ind,
+};
+
+int rt_hw_fp_touch_register(void)
+{
+    gpio_device *gpio_device = &fp_touch_device;
+    struct gpio_exti_user_data *gpio_user_data = &fp_touch_user_data;
+
+    gpio_device->ops = &gpio_exti_user_ops;
+
+    rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX), gpio_user_data);
+    fp_touch_exti_timer = rt_timer_create("t_fpt",
+										 fp_touch_exti_timeout,
+										 RT_NULL,
+										 FP_TOUCH_INT_INTERVAL,
+										 RT_TIMER_FLAG_ONE_SHOT | RT_TIMER_FLAG_SOFT_TIMER);
+    rt_device_set_rx_indicate((rt_device_t)gpio_device, gpio_user_data->gpio_exti_rx_indicate);
+
+    return 0;
+}
+
 /* kb_intr device */
 gpio_device kb_intr_device;
 rt_timer_t kb_intr_exti_timer = RT_NULL;
@@ -449,42 +531,13 @@ bit_to_index(uint16_t data)
 
 static const uint8_t char_remap[16] = {
     '?',
-    '*', '0', '#',
-    '7', '8', '9',
-    '4', '5', '6',
-    '1', '2', '3',
+    '3', '6', '9',
+    '#', '2', '5',
+    '8', '0', '1',
+    '4', '7', '*',
     '?', '?', '?',
 };
 
-uint8_t
-kb_scan4(void)
-{
-    uint8_t temp = 0;
-    uint16_t data = 0;
-    rt_device_t dev_sc1 = RT_NULL;
-    rt_device_t dev_sc2 = RT_NULL;
-    rt_device_t dev_sc3 = RT_NULL;
-
-    rt_device_t dev_in1 = RT_NULL;
-    rt_device_t dev_in2 = RT_NULL;
-    rt_device_t dev_in3 = RT_NULL;
-    
-    dev_sc1 = device_enable(DEVICE_NAME_KB_SC1);
-    dev_sc2 = device_enable(DEVICE_NAME_KB_SC2);
-    dev_sc3 = device_enable(DEVICE_NAME_KB_SC3);
-    
-    dev_in1 = device_enable(DEVICE_NAME_KB_IN1);
-    dev_in2 = device_enable(DEVICE_NAME_KB_IN2);
-    dev_in3 = device_enable(DEVICE_NAME_KB_IN3);
-
-    temp = 1;
-    rt_device_write(dev_sc1,0,&temp,1);
-    rt_device_write(dev_sc2,0,&temp,1);
-    rt_device_write(dev_sc3,0,&temp,1);
-
-
-}
-    
 uint16_t
 kb_read(void)
 {
@@ -507,82 +560,99 @@ kb_read(void)
     dev_in3 = device_enable(DEVICE_NAME_KB_IN3);
     */
 
-    if (!gpio_pin_input(DEVICE_NAME_KB_IN1))
+    if (!gpio_pin_input(DEVICE_NAME_KB_IN1, KB_DEBUG))
     {
-        gpio_pin_output(DEVICE_NAME_KB_SC1,1);
-        gpio_pin_output(DEVICE_NAME_KB_SC2,1);
-        gpio_pin_output(DEVICE_NAME_KB_SC3,1);
-        if (!gpio_pin_input(DEVICE_NAME_KB_IN1))
-            data |= 0x11;
-        gpio_pin_output(DEVICE_NAME_KB_SC1,1);
-        gpio_pin_output(DEVICE_NAME_KB_SC2,1);
-        gpio_pin_output(DEVICE_NAME_KB_SC3,0);
-        if (!gpio_pin_input(DEVICE_NAME_KB_IN1))
-            data |= 0x12;
-        gpio_pin_output(DEVICE_NAME_KB_SC1,1);
-        gpio_pin_output(DEVICE_NAME_KB_SC2,0);
-        gpio_pin_output(DEVICE_NAME_KB_SC3,1);
-        if (!gpio_pin_input(DEVICE_NAME_KB_IN1))
-            data |= 0x14;
-        gpio_pin_output(DEVICE_NAME_KB_SC1,0);
-        gpio_pin_output(DEVICE_NAME_KB_SC2,1);
-        gpio_pin_output(DEVICE_NAME_KB_SC3,1);
-        if (!gpio_pin_input(DEVICE_NAME_KB_IN1))
-            data |= 0x18;
-        
+        gpio_pin_output(DEVICE_NAME_KB_SC1,1, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC2,1, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC3,1, KB_DEBUG);
+        if (!gpio_pin_input(DEVICE_NAME_KB_IN1, KB_DEBUG)) {
+            data |= 0x01;
+            goto ERROR;
+        }
+        gpio_pin_output(DEVICE_NAME_KB_SC1,1, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC2,1, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC3,0, KB_DEBUG);
+        if (!gpio_pin_input(DEVICE_NAME_KB_IN1, KB_DEBUG))
+            data |= 0x02;
+        gpio_pin_output(DEVICE_NAME_KB_SC1,1, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC2,0, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC3,1, KB_DEBUG);
+        if (!gpio_pin_input(DEVICE_NAME_KB_IN1, KB_DEBUG))
+            data |= 0x04;
+        gpio_pin_output(DEVICE_NAME_KB_SC1,0, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC2,1, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC3,1, KB_DEBUG);
+        if (!gpio_pin_input(DEVICE_NAME_KB_IN1, KB_DEBUG))
+            data |= 0x08;
+        gpio_pin_output(DEVICE_NAME_KB_SC1,0, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC2,0, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC3,0, KB_DEBUG);
+
+    }
+    if (!gpio_pin_input(DEVICE_NAME_KB_IN2, KB_DEBUG))
+    {
+        gpio_pin_output(DEVICE_NAME_KB_SC1,1, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC2,1, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC3,1, KB_DEBUG);
+        if (!gpio_pin_input(DEVICE_NAME_KB_IN2, KB_DEBUG)) {
+            data |= 0x10;
+            goto ERROR;
+        }
+        gpio_pin_output(DEVICE_NAME_KB_SC1,1, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC2,1, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC3,0, KB_DEBUG);
+        if (!gpio_pin_input(DEVICE_NAME_KB_IN2, KB_DEBUG))
+            data |= 0x20;
+        gpio_pin_output(DEVICE_NAME_KB_SC1,1, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC2,0, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC3,1, KB_DEBUG);
+        if (!gpio_pin_input(DEVICE_NAME_KB_IN2, KB_DEBUG))
+            data |= 0x40;
+        gpio_pin_output(DEVICE_NAME_KB_SC1,0, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC2,1, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC3,1, KB_DEBUG);
+        if (!gpio_pin_input(DEVICE_NAME_KB_IN2, KB_DEBUG))
+            data |= 0x80;
+        gpio_pin_output(DEVICE_NAME_KB_SC1,0, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC2,0, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC3,0, KB_DEBUG);
         
     }
-    if (!gpio_pin_input(DEVICE_NAME_KB_IN2))
+    if (!gpio_pin_input(DEVICE_NAME_KB_IN3, KB_DEBUG))
     {
-        gpio_pin_output(DEVICE_NAME_KB_SC1,1);
-        gpio_pin_output(DEVICE_NAME_KB_SC2,1);
-        gpio_pin_output(DEVICE_NAME_KB_SC3,1);
-        if (!gpio_pin_input(DEVICE_NAME_KB_IN2))
-            data |= 0x21;
-        gpio_pin_output(DEVICE_NAME_KB_SC1,1);
-        gpio_pin_output(DEVICE_NAME_KB_SC2,1);
-        gpio_pin_output(DEVICE_NAME_KB_SC3,0);
-        if (!gpio_pin_input(DEVICE_NAME_KB_IN2))
-            data |= 0x22;
-        gpio_pin_output(DEVICE_NAME_KB_SC1,1);
-        gpio_pin_output(DEVICE_NAME_KB_SC2,0);
-        gpio_pin_output(DEVICE_NAME_KB_SC3,1);
-        if (!gpio_pin_input(DEVICE_NAME_KB_IN2))
-            data |= 0x24;
-        gpio_pin_output(DEVICE_NAME_KB_SC1,0);
-        gpio_pin_output(DEVICE_NAME_KB_SC2,1);
-        gpio_pin_output(DEVICE_NAME_KB_SC3,1);
-        if (!gpio_pin_input(DEVICE_NAME_KB_IN2))
-            data |= 0x28;
-        
-        
-    }
-    if (!gpio_pin_input(DEVICE_NAME_KB_IN3))
-    {
-        gpio_pin_output(DEVICE_NAME_KB_SC1,1);
-        gpio_pin_output(DEVICE_NAME_KB_SC2,1);
-        gpio_pin_output(DEVICE_NAME_KB_SC3,1);
-        if (!gpio_pin_input(DEVICE_NAME_KB_IN3))
-            data |= 0x31;
-        gpio_pin_output(DEVICE_NAME_KB_SC1,1);
-        gpio_pin_output(DEVICE_NAME_KB_SC2,1);
-        gpio_pin_output(DEVICE_NAME_KB_SC3,0);
-        if (!gpio_pin_input(DEVICE_NAME_KB_IN3))
-            data |= 0x32;
-        gpio_pin_output(DEVICE_NAME_KB_SC1,1);
-        gpio_pin_output(DEVICE_NAME_KB_SC2,0);
-        gpio_pin_output(DEVICE_NAME_KB_SC3,1);
-        if (!gpio_pin_input(DEVICE_NAME_KB_IN3))
-            data |= 0x34;
-        gpio_pin_output(DEVICE_NAME_KB_SC1,0);
-        gpio_pin_output(DEVICE_NAME_KB_SC2,1);
-        gpio_pin_output(DEVICE_NAME_KB_SC3,1);
-        if (!gpio_pin_input(DEVICE_NAME_KB_IN3))
-            data |= 0x38;
-        
+        gpio_pin_output(DEVICE_NAME_KB_SC1,1, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC2,1, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC3,1, KB_DEBUG);
+        if (!gpio_pin_input(DEVICE_NAME_KB_IN3, KB_DEBUG)) {
+            data |= 0x0100;
+            goto ERROR;
+        }
+        gpio_pin_output(DEVICE_NAME_KB_SC1,1, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC2,1, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC3,0, KB_DEBUG);
+        if (!gpio_pin_input(DEVICE_NAME_KB_IN3, KB_DEBUG))
+            data |= 0x0200;
+        gpio_pin_output(DEVICE_NAME_KB_SC1,1, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC2,0, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC3,1, KB_DEBUG);
+        if (!gpio_pin_input(DEVICE_NAME_KB_IN3, KB_DEBUG))
+            data |= 0x0400;
+        gpio_pin_output(DEVICE_NAME_KB_SC1,0, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC2,1, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC3,1, KB_DEBUG);
+        if (!gpio_pin_input(DEVICE_NAME_KB_IN3, KB_DEBUG))
+            data |= 0x0800;
+        gpio_pin_output(DEVICE_NAME_KB_SC1,0, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC2,0, KB_DEBUG);
+        gpio_pin_output(DEVICE_NAME_KB_SC3,0, KB_DEBUG);
         
     }
     //rt_device_read(dev_in2,0,&temp,1);
+
+ERROR:
+    gpio_pin_output(DEVICE_NAME_KB_SC1,0, KB_DEBUG);
+    gpio_pin_output(DEVICE_NAME_KB_SC2,0, KB_DEBUG);
+    gpio_pin_output(DEVICE_NAME_KB_SC3,0, KB_DEBUG);
     return data;
 
 }
@@ -592,7 +662,7 @@ kb_intr_exti_timeout(void *parameters)
 {
 	rt_device_t dev_intr = RT_NULL;
     
-    uint8_t data = 0;
+    uint16_t data = 0;
     static uint8_t error_detect = 0;
     rt_size_t size;
     uint8_t c;
@@ -606,31 +676,11 @@ kb_intr_exti_timeout(void *parameters)
 		{
 			data = kb_read();
             rt_kprintf("key value : %x\n", data);
-			//size = rt_device_read(i2c_device, 0, &data, 2);
-            /*
-			if (size == 2) {
-				error_detect = 0;
-				// filter keyboard input
-				if (data != 0x0100) {
-					data &= 0xfeff;
-				}
-				__REV16(data);
-				c = char_remap[bit_to_index(data&0x0fff)];
-
-				// send mail
-				send_kb_mail(KB_MAIL_TYPE_INPUT, KB_MODE_NORMAL_AUTH, c);
-            } else {
+            c = char_remap[bit_to_index(data&0x0fff)];
+            send_kb_mail(KB_MAIL_TYPE_INPUT, KB_MODE_NORMAL_AUTH, c);
 #if (defined RT_USING_FINSH) && (defined KB_DEBUG)
-                rt_kprintf("read key board failure!!!\n");
+                rt_kprintf("key value : 0x%x, index :%d, char :%c\n", data, bit_to_index(data&0x0fff), c);
 #endif
-                if (error_detect++ > 2)
-                {
-                    //rt_device_control(i2c_device, RT_DEVICE_CTRL_CONFIGURE, RT_NULL);
-                    error_detect = 0;
-                }
-			}
-            */
-			//send_alarm_mail(ALARM_TYPE_RFID_key, ALARM_PROCESS_FLAG_LOCAL, RFID_key_STATUS, time);
 		}
 		rt_device_control(dev_intr, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0);
 	}
@@ -658,13 +708,13 @@ struct gpio_exti_user_data kb_intr_user_data =
 {
 	DEVICE_NAME_KB_INTR,
 	GPIOD,
-	GPIO_Pin_9,
-	GPIO_Mode_IN_FLOATING,
+	GPIO_Pin_8,
+	GPIO_Mode_IPU,
 	GPIO_Speed_50MHz,
 	RCC_APB2Periph_GPIOD |RCC_APB2Periph_AFIO,
 	GPIO_PortSourceGPIOD,
-	GPIO_PinSource9,
-	EXTI_Line9,
+	GPIO_PinSource8,
+	EXTI_Line8,
 	EXTI_Mode_Interrupt,
 	KB_INTR_EXTI_TRIGGER_MODE,
 	EXTI9_5_IRQn,
@@ -1492,6 +1542,21 @@ rt_hw_kb_intr_register(void)
 //FINSH_FUNCTION_EXPORT(key, key[1 2] = x)
 //#endif
 
+void
+EXTI1_IRQHandler(void)
+{
+	extern void rt_hw_gpio_isr(gpio_device *gpio);
+
+	/* enter interrupt */
+	rt_interrupt_enter();
+	if(EXTI_GetITStatus(EXTI_Line1) == SET)
+	{
+		rt_hw_gpio_isr(&fp_touch_device);
+		EXTI_ClearITPendingBit(EXTI_Line1);
+	}
+	/* leave interrupt */
+	rt_interrupt_leave();
+}
 
 void 
 EXTI9_5_IRQHandler(void)
@@ -1518,10 +1583,10 @@ EXTI9_5_IRQHandler(void)
 	}
     */
     // keyboard interrupt
-	if(EXTI_GetITStatus(EXTI_Line9) == SET)
+	if(EXTI_GetITStatus(EXTI_Line8) == SET)
 	{
 		rt_hw_gpio_isr(&kb_intr_device);
-		EXTI_ClearITPendingBit(EXTI_Line9);
+		EXTI_ClearITPendingBit(EXTI_Line8);
 	}
 	/* leave interrupt */
 	rt_interrupt_leave();
@@ -1534,7 +1599,11 @@ EXTI15_10_IRQHandler(void)
 
 	/* enter interrupt */
 	rt_interrupt_enter();
-
+	if(EXTI_GetITStatus(EXTI_Line15) == SET)
+	{
+		rt_hw_gpio_isr(&switch3_device);
+		EXTI_ClearITPendingBit(EXTI_Line15);
+	}
 	/* leave interrupt */
 	rt_interrupt_leave();
 }
@@ -1544,15 +1613,16 @@ rt_hw_gpio_exti_enable(void)
 {
     //device_enable(DEVICE_NAME_SWITCH1);
     //device_enable(DEVICE_NAME_SWITCH2);
-    //device_enable(DEVICE_NAME_SWITCH3);
+    device_enable(DEVICE_NAME_SWITCH3);
     device_enable(DEVICE_NAME_KB_INTR);
+    device_enable(DEVICE_NAME_FP_TOUCH);
     return 0;
 }
 
 //INIT_DEVICE_EXPORT(rt_hw_switch1_register);
 //INIT_DEVICE_EXPORT(rt_hw_switch2_register);
-//INIT_DEVICE_EXPORT(rt_hw_switch3_register);
-
+INIT_DEVICE_EXPORT(rt_hw_switch3_register);
 INIT_DEVICE_EXPORT(rt_hw_kb_intr_register);
+INIT_DEVICE_EXPORT(rt_hw_fp_touch_register);
 
 INIT_APP_EXPORT(rt_hw_gpio_exti_enable);

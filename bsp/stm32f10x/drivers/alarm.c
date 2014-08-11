@@ -21,7 +21,6 @@
 
 #define ALARM_MAIL_MAX_MSGS 20
 static rt_mq_t alarm_mq = RT_NULL;
-rt_device_t rtc_device;
 
 const char *alarm_help_map[] = {
 	"ALARM_TYPE_LOCK_SHELL",// lock shell alarm type
@@ -83,20 +82,7 @@ void alarm_thread_entry(void *parameter)
 	rt_err_t result;
 	ALARM_MAIL_TYPEDEF alarm_mail_buf;
 
-    if (device_config_init(&device_config) < 0)
-	{
-#if (defined RT_USING_FINSH) && (defined ALARM_DEBUG)
-		rt_kprintf("device config init failure");
-#endif // RT_USING_FINSH
-	}
-    // get rtc clock
-	rtc_device = rt_device_find("rtc");
-	if (rtc_device == RT_NULL)
-	{
-#if (defined RT_USING_FINSH) && (defined ALARM_DEBUG)
-		rt_kprintf("rtc_device is not exist!!!");
-#endif // RT_USING_FINSH
-	}
+    system_init();
 	while (1)
 	{
 		rt_memset(&alarm_mail_buf, 0, sizeof(alarm_mail_buf));
@@ -196,4 +182,4 @@ rt_alarm_init(void)
     return 0;
 }
 
-//INIT_APP_EXPORT(rt_alarm_init);
+INIT_APP_EXPORT(rt_alarm_init);

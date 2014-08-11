@@ -139,9 +139,12 @@ void
 print_char(uint8_t *buf, uint16_t length);
 void
 delay_us(uint32_t time);
+int 
+system_init(void);
 
-rt_device_t
+__INLINE rt_device_t
 device_enable(const char *name);
+
 #ifndef __GNUC__
 void *
 memmem(const void *haystack,

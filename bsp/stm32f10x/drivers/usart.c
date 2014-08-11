@@ -587,7 +587,7 @@ rt_hw_usart_init(void)
 	uart2_int_rx.pool = uart2_pool;
 	uart2_int_rx.size = UART2_POOL_SIZE;
 
-	config.baud_rate = BAUD_RATE_115200;
+	config.baud_rate = 57600;
 
 	serial->ops    = &stm32_uart_ops;
 	serial->int_rx = &uart2_int_rx;
@@ -719,8 +719,8 @@ uart_rw(const char *name, rt_int8_t cmd, const char *str)
         }
         else if (cmd == 2)
         {
-            char *temp = "\x55\xAA\x00\x00\x03\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x01";
-            rt_device_write(uart,0,temp,26);
+            char *temp = "\xEF\x01\xFF\xFF\xFF\xFF\x01\x00\x07\x13\x00\x00\x00\x00\x00\x1B";
+            rt_device_write(uart,0,temp,16);
         }
         else
         {

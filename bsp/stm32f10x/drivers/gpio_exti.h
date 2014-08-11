@@ -34,9 +34,11 @@
 
 //#define DEVICE_NAME_SWITCH1 "sw1"
 //#define DEVICE_NAME_SWITCH2 "sw2"
-//#define DEVICE_NAME_SWITCH3 "sw3"
+#define DEVICE_NAME_SWITCH3 "sw3"
 
 #define DEVICE_NAME_KB_INTR "kb_intr"
+
+#define DEVICE_NAME_FP_TOUCH "fp_t"
 
 //#define DEVICE_NAME_BATTERY_SWITCH "bat_sw" /* BATTERY DEVICE NAME */
 
@@ -52,15 +54,18 @@
 #define SWITCH2_EXTI_TRIGGER_MODE EXTI_Trigger_Rising
 #define SWITCH2_STATUS 1
 #define SWITCH2_INT_INTERVAL 100
-
+*/
 #define SWITCH3_EXTI_TRIGGER_MODE EXTI_Trigger_Rising
 #define SWITCH3_STATUS 1
 #define SWITCH3_INT_INTERVAL 100
-*/
+
 #define KB_INTR_EXTI_TRIGGER_MODE EXTI_Trigger_Falling
 #define KB_INTR_STATUS 0
 #define KB_INTR_INT_INTERVAL 10
 
+#define FP_TOUCH_EXTI_TRIGGER_MODE EXTI_Trigger_Rising
+#define FP_TOUCH_STATUS 1
+#define FP_TOUCH_INT_INTERVAL 10
 //#define GSM_RING_EXTI_TRIGGER_MODE EXTI_Trigger_Rising
 //#define GSM_RING_DETECT_STATUS 1
 //#define GSM_RING_INT_INTERVAL 1
