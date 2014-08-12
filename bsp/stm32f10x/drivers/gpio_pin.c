@@ -906,6 +906,31 @@ int rt_hw_bluetooth_led_register(void)
 }
 INIT_DEVICE_EXPORT(rt_hw_bluetooth_led_register);
 
+struct gpio_pin_user_data  bluetooth_rst=
+{
+	DEVICE_NAME_BT_RST,
+	GPIOC,
+	GPIO_Pin_8,
+	GPIO_Mode_Out_PP,
+	GPIO_Speed_50MHz,
+	RCC_APB2Periph_GPIOC,
+	1,
+};
+gpio_device bluetooth_rst_device;
+
+int rt_hw_bluetooth_rst_register(void)
+{
+	gpio_device *device = &bluetooth_rst_device;
+	struct gpio_pin_user_data *user_data = (struct gpio_pin_user_data *)&bluetooth_rst;
+
+	device->ops = &gpio_pin_user_ops;
+	rt_hw_gpio_register(device,user_data->name, (RT_DEVICE_OFLAG_RDWR), user_data);
+	return 0;
+}
+INIT_DEVICE_EXPORT(rt_hw_bluetooth_rst_register);
+
+
+
 
 /* camera usart tx pin input */
 /*gpio_device camera_TX_device;

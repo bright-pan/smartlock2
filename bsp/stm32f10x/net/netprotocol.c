@@ -6,7 +6,8 @@
 #include "netprotocol.h"
 #include "crc16.h"
 #include "des.h"
-#include "untils.h"
+//#include "untils.h"
+//#include "appconfig.h"
 
 //发送结果
 #define SEND_OK            0
@@ -24,6 +25,14 @@ rt_timer_t  sendwnd_timer = RT_NULL;//发送窗口的定时器
 //序号
 net_col net_order;
 
+//ID key0 key1
+net_parameter NetParameterConfig = 
+{
+  {0x99,0x99,0x15,0x10,0x90,0x00,0x01,0x50},
+  {0x12,0x34,0x56,0x78,0x90,0x12,0x34,0x56},
+  {0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa}
+};
+
 
 void message_ASYN(rt_uint8_t type);
 
@@ -38,6 +47,34 @@ typedef void
 msg_callback_type1	NetMsg_Recv_handle = RT_NULL;
 msg_callback_type2	NetMsg_Recv_CallBack_Fun = RT_NULL;
 msg_callback_type2	Net_Mail_Heart = RT_NULL;
+
+void net_config_parameter_set(rt_uint8_t type,rt_uint8_t *data)
+{
+	RT_ASSERT(data != RT_NULL);
+	switch(type)
+	{
+		case 1:
+		{
+			rt_memcpy(NetParameterConfig.id,(const void*)data,8);
+			break;
+		}
+		case 2:
+		{
+			rt_memcpy(NetParameterConfig.key0,(const void*)data,8);
+			break;
+		}
+		case 3:
+		{
+			rt_memcpy(NetParameterConfig.key1,(const void*)data,8);
+			break;
+		}
+		default:
+		{
+			rt_kprintf("Net parameter type error\n");
+			break;
+		}
+	}
+}
 
 /*
 设置:报文接收的回调函数
@@ -250,6 +287,12 @@ rt_uint8_t net_event_process(rt_uint8_t mode,rt_uint32_t type)
 	rt_uint8_t  return_data = 1;
 	
 	net_evt_mutex_op(RT_TRUE);
+
+	if(net_event == RT_NULL)
+	{
+    net_event = rt_event_create("netevent",RT_IPC_FLAG_FIFO);
+    RT_ASSERT(net_event != RT_NULL);
+	}
 	switch(mode)
 	{
 		case 0:	//set event 
@@ -322,9 +365,9 @@ void net_des_pack(rt_uint8_t *buffer,rt_size_t size,net_encrypt *data)
   des_context ctx_key0_enc, ctx_key1_enc;
   
   //设置k0 k1
-  des_setkey_enc(&ctx_key0_enc, device_config.param.key0);
-  des_setkey_enc(&ctx_key1_enc, device_config.param.key1);
-
+  des_setkey_enc(&ctx_key0_enc, NetParameterConfig.key0);
+  des_setkey_enc(&ctx_key1_enc, NetParameterConfig.key1);
+ 
   if(data->cmd == NET_MSGTYPE_LANDED)
   {
  
@@ -1073,6 +1116,20 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
   return RT_EOK;
 }
 
+static void clear_wnd_resend_all(void)
+{
+	rt_uint8_t i;
+
+	for(i = 0 ;i < NET_WND_MAX_NUM;i++)
+	{
+		if(sendwnd_node[i].mail.type == NET_MSGTYPE_NULL)
+		{
+      sendwnd_node[i].mail.col.bit.resend = 0;
+		}
+	}
+
+
+}
 /*static void net_mail_result_process(void)
 {
 
@@ -1094,6 +1151,8 @@ static void clear_wnd_mail_pos(rt_int8_t pos,rt_int8_t result)
       if(sendwnd_node[pos].mail.user != RT_NULL)
       {
         RT_DEBUG_LOG(SHOW_MEM_INFO,("free user memroy\n"));
+        
+        RT_ASSERT(sendwnd_node[pos].mail.user != RT_NULL);
         rt_free(sendwnd_node[pos].mail.user);
         sendwnd_node[pos].mail.user = RT_NULL;
       }
@@ -1335,6 +1394,7 @@ static void net_msg_user_delete(net_msgmail_p msg)
 {
 	if(msg->user != RT_NULL)
 	{
+		RT_ASSERT(msg->user != RT_NULL);
 		rt_free(msg->user);
 	}
 }
@@ -1493,7 +1553,11 @@ static void net_send_message(net_msgmail_p msg,void *user)
 
   RT_DEBUG_LOG(SHOW_MEM_INFO,("release memory resource\n"));
   rt_sem_delete(message->sendsem);
+  
+  RT_ASSERT(message->buffer != RT_NULL);
   rt_free(message->buffer);
+  
+  RT_ASSERT(message != RT_NULL);
   rt_free(message);
 }
 
@@ -1512,8 +1576,8 @@ static rt_int8_t net_des_decode(net_recvmsg_p msg)
   buffer = (rt_uint8_t *)msg+2;
 
   //设置解密钥匙K1
-  des_setkey_dec(&ctx_key1_enc, device_config.param.key1);
-
+  des_setkey_dec(&ctx_key1_enc, NetParameterConfig.key1);
+  
   //小端转换
   msg->length = net_rev16(msg->length);
   RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("Receive data length = %X \n",msg->length));
@@ -1566,6 +1630,8 @@ static void net_recv_alagn_process(net_recvmsg_p msg)
 	
 	rt_memcpy((void *)tmp,(void *)msg,sizeof(net_recvmsg));
 	rt_memcpy((void *)&msg->data,(void *)&tmp->reserve,sizeof(net_recvmsg)-8);
+
+  RT_ASSERT(tmp != RT_NULL);
 	rt_free(tmp);
 	tmp = RT_NULL;
 	RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("Receive alagn process ok\n"));
@@ -1595,6 +1661,7 @@ static void net_recv_message(net_msgmail_p mail)
       {
         //解密失败
         RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("Message decryption failure\n"));
+        RT_ASSERT(msg != RT_NULL);
         rt_free(msg);
         return ;
       }
@@ -1612,6 +1679,7 @@ static void net_recv_message(net_msgmail_p mail)
       pos = get_wnd_order_pos(msg->col);
       if(pos < 0)
       {
+      	RT_ASSERT(msg != RT_NULL);
         rt_free(msg);
         return ;
       }
@@ -1625,6 +1693,8 @@ static void net_recv_message(net_msgmail_p mail)
       if(CRC16Result == RT_FALSE)
       {
         RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("Message CRC16 verify Fial\n"));
+        
+      	RT_ASSERT(msg != RT_NULL);
         rt_free(msg);
         rt_timer_start(sendwnd_timer);
         return ;
@@ -1735,7 +1805,9 @@ static void net_recv_message(net_msgmail_p mail)
 			{
 				//远程更新
 				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_UPDATE\n"));
-				message_ASYN(NET_MSGTYPE_UPDATE_ACK);
+				//message_ASYN(NET_MSGTYPE_UPDATE_ACK);
+				Net_MsgRecv_handle(msg,RT_NULL);
+				
 				break;
 			}
 			case NET_MSGTYPE_TIME_ACK:
@@ -1748,7 +1820,8 @@ static void net_recv_message(net_msgmail_p mail)
 			{
 				//K0设置
 				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_SETK0\n"));
-				message_ASYN(NET_MSGTYPE_SETK0_ACK);
+				//message_ASYN(NET_MSGTYPE_SETK0_ACK);
+				Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
 			case NET_MSGTYPE_HTTPUPDATE:
@@ -1791,7 +1864,8 @@ static void net_recv_message(net_msgmail_p mail)
 			{
 				//域名设置
 				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_DOMAIN\n"));
-				message_ASYN(NET_MSGTYPE_DOMAIN_ACK);
+				//message_ASYN(NET_MSGTYPE_DOMAIN_ACK);
+				Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
 			case NET_MSGTYPE_PHONEADD:
@@ -1849,6 +1923,7 @@ static void net_recv_message(net_msgmail_p mail)
 		{
       /* 接收时对窗口的处理 */
       net_recv_wnd_process(msg,SendResult);
+      clear_wnd_resend_all();
 		}
 		rt_free(msg);
 		rt_timer_start(sendwnd_timer);
@@ -1970,6 +2045,8 @@ void netmsg_thread_entry(void *arg)
     result = rt_mq_recv(net_msgmail_mq,(void *)&msg_mail,sizeof(net_msgmail),1);
     if(result == RT_EOK)
     {
+    	HearTime =  0;
+    	
       RT_DEBUG_LOG(SHOW_MSG_THREAD,("MSG Thread recv net_msgmail mail\n"));
 
       net_send_message(&msg_mail,RT_NULL);//发送数据
@@ -1984,7 +2061,7 @@ void netmsg_thread_entry(void *arg)
     //发送心跳
     HearTime++;
     //rt_kprintf("HearTime = %d\n",HearTime);
-    if(HearTime >= 100*60)
+    if(HearTime >= 1000*60)
     {
 			HearTime = 0;
 			//如果已经登陆
@@ -2087,16 +2164,14 @@ int netmsg_thread_init(void)
   sendwnd_timer = rt_timer_create("sendwnd",
                                    net_sendwnd_timer,
                                    RT_NULL,
-                                   1,
-                                   RT_TIMER_FLAG_PERIODIC);
-  net_event = rt_event_create("netevent",RT_IPC_FLAG_FIFO);
-  
+                                   10,
+                                   RT_TIMER_FLAG_PERIODIC);  
   rt_timer_start(sendwnd_timer);
   rt_hw_interrupt_enable(level);
 
-  id = rt_thread_create("msg",
+  id = rt_thread_create("message",
                          netmsg_thread_entry, RT_NULL,
-                         1024,110, 20);
+                         1024,MSG_THREAD_PRI_IS, 20);
 
   if(id == RT_NULL)
   {
@@ -2109,8 +2184,6 @@ int netmsg_thread_init(void)
   return 0;
 }
 INIT_APP_EXPORT(netmsg_thread_init);
-
-
 
 
 
@@ -2137,6 +2210,8 @@ void message_SYNC(rt_uint8_t type)
   rt_mq_send(net_msgmail_mq,(void*)&mail,sizeof(net_msgmail));
   rt_sem_take(result->complete,300);
   rt_sem_delete(result->complete);
+  
+  RT_ASSERT(result != RT_NULL);
   rt_free(result);
 }
 void message_ASYN(rt_uint8_t type)
@@ -2210,7 +2285,12 @@ void file_net(void)
   rt_sem_take(file->result.complete,RT_WAITING_FOREVER);
   rt_sem_delete(file->result.complete);
   rt_kprintf("send result = %d\n",file->result.result);
+
+  
+  RT_ASSERT(file->data.data != RT_NULL);
   rt_free(file->data.data);
+  
+  RT_ASSERT(file != RT_NULL);
   rt_free(file);
 }
 FINSH_FUNCTION_EXPORT(file_net,"send file test cmd");

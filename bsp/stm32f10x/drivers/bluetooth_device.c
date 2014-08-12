@@ -3,7 +3,7 @@
 #include "rtdevice.h"
 
 #ifndef BTM_THREAD_PRIORITY
-#define BTM_THREAD_PRIORITY   			9
+#define BTM_THREAD_PRIORITY   			RT_THREAD_PRIORITY_MAX/2+2
 #endif
 
 #define RT_DRIVE_NAME         "Blooth"
@@ -11,6 +11,7 @@
 #define BT_USEING_UARTX_NAME	"uart1"
 #define BT_USEING_WK_NAME			"BT_WK"
 #define BT_USEING_LED_NAME		"BT_LED"
+#define BT_USEING_RST_NAME		"BT_RST"
 
 #define BT_SYSTEM_ERROR_INFO	"The bluetooth module systematic errors function:%s line:%d"
 
@@ -49,6 +50,7 @@ typedef struct
 	rt_device_t uart_dev;
 	rt_device_t	wk_dev;
 	rt_device_t led_dev;
+	rt_device_t rst_dev;
 	rt_uint8_t  work_status;
 	rt_uint32_t sleep_cnt;
 }bluetooth_module,*bluetooth_module_p;
@@ -151,7 +153,7 @@ static rt_err_t bt_uart_read_ack(rt_device_t uart
 					&& (at_ack[1] == '\n')
 					|| (at_ack[0] == 0))
 	{
-		RT_DEBUG_LOG(RT_USEING_DEBUG,("AT Result 1\n"));
+		RT_DEBUG_LOG(RT_USEING_DEBUG,("AT Result EOK\n"));
 		result = RT_EOK;
 		if(rcv_buf != RT_NULL)
 		{
@@ -162,7 +164,7 @@ static rt_err_t bt_uart_read_ack(rt_device_t uart
 	{
 		if(rt_strstr((const char *)uart_buffer,(const char *)at_ack) != RT_NULL)
 		{
-			RT_DEBUG_LOG(RT_USEING_DEBUG,("AT Result 2\n"));
+			RT_DEBUG_LOG(RT_USEING_DEBUG,("AT Result Ack EOK\n"));
       result = RT_EOK;
       if(rcv_buf != RT_NULL)
       {
@@ -171,7 +173,7 @@ static rt_err_t bt_uart_read_ack(rt_device_t uart
 		}
 		else
 		{
-			RT_DEBUG_LOG(RT_USEING_DEBUG,("AT Result 3\n"));
+			RT_DEBUG_LOG(RT_USEING_DEBUG,("AT Result ERROR\n"));
 			result = RT_ERROR;
 		}
 	}
@@ -236,6 +238,7 @@ static rt_err_t bt_module_create(bluetooth_module_p *module)
 	device_init_processor(&(*module)->uart_dev,BT_USEING_UARTX_NAME);
 	device_init_processor(&(*module)->led_dev,BT_USEING_LED_NAME);
 	device_init_processor(&(*module)->wk_dev,BT_USEING_WK_NAME);
+	device_init_processor(&(*module)->rst_dev,BT_USEING_RST_NAME);
 	(*module)->work_status = BT_MODULE_CMD_MODE;
 	(*module)->sleep_cnt = 0;
 	
@@ -247,6 +250,7 @@ static void bt_module_detele(bluetooth_module_p module)
 	device_close_processor(module->uart_dev);
 	device_close_processor(module->led_dev);
 	device_close_processor(module->wk_dev);
+	device_close_processor(module->rst_dev);
 	rt_free(module);
 }
 
@@ -286,10 +290,25 @@ static rt_err_t bluetooth_mac_manage(bluetooth_module_p module,rt_bool_t mode)
 	return result;
 }
 
+static rt_err_t bluetooth_module_reset(bluetooth_module_p module)
+{
+	rt_uint8_t gpio_status;
+
+	gpio_status = 0;
+	rt_device_write(module->rst_dev,0,&gpio_status,1);
+	rt_thread_delay(10);
+	
+  gpio_status = 1;
+  rt_device_write(module->rst_dev,0,&gpio_status,1);
+  bt_at_cmd_analysis(module->uart_dev,RT_NULL,"SYS START",RT_NULL,50);
+  
+	return bt_at_cmd_analysis(module->uart_dev,"AT+","OK+",RT_NULL,50);
+}
 static rt_err_t bluetooth_initiate(bluetooth_module_p module)
 {
 	rt_uint8_t gpio_status;
-	
+
+	bluetooth_module_reset(module);
 	//wk = 1
 	gpio_status = 1;
 	rt_device_write(module->wk_dev,0,&gpio_status,1);
@@ -716,7 +735,7 @@ rt_size_t bluetooth_module_read(rt_uint8_t *buf,rt_size_t size)
 	return rt_ringbuffer_get(&bt_ringbuf_rcv,buf,size);
 }
 
-void bluetooth_device_thread_entry(void *arg)
+void bluetooth_thread_entry(void *arg)
 {
 	bluetooth_module_p bluetooth;
 	rt_kprintf("bluetooth thread statrt\n");
@@ -856,7 +875,7 @@ LINK_OFF_AT_CMD_ABNORMAL:
 	bt_module_detele(bluetooth);
 }
 
-int bluetooth_device_thread_init(void)
+int bluetooth_thread_init(void)
 {
 	rt_thread_t thread;
 
@@ -868,13 +887,16 @@ int bluetooth_device_thread_init(void)
 													,RT_IPC_FLAG_FIFO);
 
 	thread = rt_thread_create("BT_M",
-	                           bluetooth_device_thread_entry, RT_NULL,
+	                           bluetooth_thread_entry, RT_NULL,
 	                           1024,BTM_THREAD_PRIORITY,10);
-	rt_thread_startup(thread);
+	if(thread != RT_NULL)
+	{
+    rt_thread_startup(thread);
+	}
 	
 	return 0;
 }
-INIT_APP_EXPORT(bluetooth_device_thread_init);
+INIT_APP_EXPORT(bluetooth_thread_init);
 
 
 static rt_size_t rt_bluetooth_read(rt_device_t dev, rt_off_t pos, void *buffer, rt_size_t size)

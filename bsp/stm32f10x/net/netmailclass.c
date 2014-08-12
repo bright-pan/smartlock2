@@ -9,13 +9,31 @@
 #include "netkey.h"
 #include "netphone.h"
 #include "netterminal.h"
-#include "untils.h"
-#include "unlockprocess.h"
+#include "stdlib.h"
+#include "netprotocol.h"
+
+//#include "untils.h"
+//#include "unlockprocess.h"
+//#include "apppubulic.h"
+//#include "file_update.h"
 
 #define MAIL_FAULT_RESEND     3
 #define MAIL_FAULT_OUTTIME    1000
 
 #define SHWO_PRINTF_INFO      1
+
+#ifndef SYSTEM_SOFTWARE_VER   
+#define SYSTEM_SOFTWARE_VER   0x01
+#endif
+
+//#define USEING_MOTOR_API 
+//#define USEING_KEY_API
+//#define USEING_SYS_UPDATE
+//#define USEING_SYSCONFIG_API
+//#define USEING_SYS_TIME_API
+//#define USEING_CAMERA_API
+//#define USEING_FILE_API
+//#define USEING_PHONE_API
 /**
 网络协议发送接口
 */
@@ -52,6 +70,7 @@ void send_net_landed_mail(void)
 {
   net_msgmail_p mail;
   net_landed    *UserData = RT_NULL;
+  rt_uint32_t   srand_value;
 
 	mail = (net_msgmail_p)rt_calloc(1,sizeof(net_msgmail));
 	RT_ASSERT(mail != RT_NULL);
@@ -67,10 +86,18 @@ void send_net_landed_mail(void)
   mail->col.byte = get_msg_new_order(RT_TRUE);
 
 	rt_memcpy((char *)UserData->id,
-	        (const char *)device_config.param.device_id,8);
+	        (const char *)NetParameterConfig.id,8);
+	//k1随机数        
+	srand(net_get_date());
+	srand_value = rand();
+	net_uint32_copy_string(NetParameterConfig.key1,srand_value);
+	srand(net_get_date());
+	srand_value = rand();
+	net_uint32_copy_string(&NetParameterConfig.key1[4],srand_value);
+	
 	rt_memcpy((char *)UserData->k1,
-	        (const char *)device_config.param.key1,8);
-	UserData->version = 0x01;
+	        (const char *)NetParameterConfig.key1,8);
+	UserData->version = SYSTEM_SOFTWARE_VER;
 
 #if(SHWO_PRINTF_INFO == 1)
 	{
@@ -89,6 +116,7 @@ void send_net_landed_mail(void)
   
   net_msg_send_mail(mail);
 
+	RT_ASSERT(mail != RT_NULL);
   rt_free(mail);
 }
 
@@ -97,6 +125,13 @@ void net_mail_heart(void)
 	net_msgmail_p mail;
   net_heart    *UserData = RT_NULL;
 
+	/*if(net_event_process(1,NET_ENVET_FILERQ) == 0)
+	{
+		rt_kprintf("Is dealing with the file\n");
+		
+		return ;
+	}*/
+	
 	mail = (net_msgmail_p)rt_calloc(1,sizeof(*mail));
 	RT_ASSERT(mail != RT_NULL);
 
@@ -110,12 +145,15 @@ void net_mail_heart(void)
   mail->sendmode = ASYN_MODE;
   mail->col.byte = get_msg_new_order(RT_TRUE);
 
+	#ifdef USEING_MOTOR_API
 	UserData->door_status = (motor_status() == RT_TRUE)?0:1;
-
+	#endif
+	
 	mail->user = UserData;
   
   net_msg_send_mail(mail);
 
+  RT_ASSERT(mail != RT_NULL);
   rt_free(mail);
 }
 
@@ -164,7 +202,9 @@ rt_uint8_t msg_mail_alarm(rt_uint8_t alarm,rt_uint8_t LockStatus,rt_uint32_t tim
   result = UserData->result.result;
   
   //释放资源
+  RT_ASSERT(UserData != RT_NULL);
 	rt_free(UserData);
+	RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 
 	return result;
@@ -205,7 +245,9 @@ rt_uint8_t msg_mail_fault(rt_uint8_t fault,rt_uint32_t time)
   result = UserData->result.result;
   
   //释放资源
+  RT_ASSERT(UserData != RT_NULL);
 	rt_free(UserData);
+	RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 
 	return result;
@@ -247,7 +289,9 @@ rt_uint8_t msg_mail_opendoor(rt_uint8_t type,rt_uint16_t key,rt_uint32_t time)
   result = UserData->result.result;
   
   //释放资源
+  RT_ASSERT(UserData != RT_NULL);
 	rt_free(UserData);
+	RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 
 	return result;
@@ -290,7 +334,9 @@ rt_uint8_t msg_mail_battery(rt_uint8_t status,rt_uint8_t capacity,rt_uint32_t ti
   result = UserData->result.result;
   
   //释放资源
+  RT_ASSERT(UserData != RT_NULL);
 	rt_free(UserData);
+	RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 
 	return result;
@@ -330,7 +376,9 @@ rt_uint8_t msg_mail_adjust_time(void)
 	result = UserData->result.result;
 
 	//释放资源
+	RT_ASSERT(UserData != RT_NULL);
 	rt_free(UserData);
+	RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 
 	return result;
@@ -371,7 +419,9 @@ rt_uint8_t msg_mail_alarmarg(rt_uint8_t Type,rt_uint8_t arg)
   result = UserData->result.result;
   
   //释放资源
+  RT_ASSERT(UserData != RT_NULL);
 	rt_free(UserData);
+	RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 
 	return result;
@@ -406,6 +456,7 @@ void msg_mail_phoneadd_ack(net_recvmsg_p RMail,rt_uint8_t result)
   net_msg_send_mail(mail);
   
   //释放资源
+  RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 }
 
@@ -439,6 +490,7 @@ void msg_mail_phonedel_ack(net_recvmsg_p RMail,rt_uint8_t result)
   net_msg_send_mail(mail);
   
   //释放资源
+  RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 }
 
@@ -478,6 +530,7 @@ rt_bool_t msg_mail_keyadd(net_keyadd_user *KeyData)
   
   //释放资源
 	//rt_free(UserData);
+	RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 
 	return (result == 0)?RT_TRUE:RT_FALSE;
@@ -513,6 +566,7 @@ void msg_mail_keyadd_ack(net_recvmsg_p RMail,rt_uint8_t result)
   net_msg_send_mail(mail);
 
   //释放资源
+  RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 }
 
@@ -551,7 +605,9 @@ rt_uint8_t msg_mail_keydelete(rt_uint16_t pos)
   result = UserData->result.result;
   
   //释放资源
+  RT_ASSERT(UserData != RT_NULL);
 	rt_free(UserData);
+	RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 
 	return result;
@@ -588,6 +644,7 @@ void msg_mail_keydel_ack(net_recvmsg_p RMail,rt_uint8_t result)
   net_msg_send_mail(mail);
 
   //释放资源
+  RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 }
 
@@ -623,6 +680,7 @@ void msg_mail_resultack(net_recvmsg_p RMail,rt_uint8_t result)
 	net_msg_send_mail(mail);
 
 	//释放资源
+	RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 
 }
@@ -650,6 +708,7 @@ void msg_mail_nullack(net_recvmsg_p RMail)
   net_msg_send_mail(mail);
   
   //释放资源
+  RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 }
 
@@ -682,6 +741,7 @@ void msg_mail_filereq_ack(net_recvmsg_p RMail,rt_uint8_t result)
 	net_msg_send_mail(mail);
 
 	//释放资源
+	RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 }
 
@@ -715,6 +775,7 @@ void msg_mail_fileack(net_recvmsg_p RMail,rt_uint8_t Fresult)
 	net_msg_send_mail(mail);
 
 	//释放资源
+	RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 }
 
@@ -749,7 +810,9 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 	  case NET_MSGTYPE_FILEREQUEST:
 	  {
 	  	//文件请求
+	  	#ifdef USEING_FILE_API
 			result = net_recv_filerq_process(Mail);
+			#endif
 			msg_mail_filereq_ack(Mail,result);
 	  	
 	    break;
@@ -759,8 +822,10 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 	  	//文件数据
 	  	rt_size_t PackOrder;
 
+			#ifdef USEING_FILE_API
 			result = net_file_packdata_process(Mail);
 			net_string_copy_uint32(&PackOrder,Mail->data.filedata.pos);
+			#endif
 			msg_mail_fileack(Mail,result);
 				
 			break;
@@ -780,24 +845,27 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 	 	case NET_MSGTYPE_PHONEADD:
 	 	{
 	 		//手机白名单添加
+	 		#ifdef USEING_PHONE_API
 	 		ProcessResult = net_phone_add_process(Mail);
-
 	 		result = (ProcessResult == RT_EOK)?1:0;
+	 		#endif
 	 		msg_mail_phoneadd_ack(Mail,result);
 			break;
 	 	}
 	 	case NET_MSGTYPE_PHONEDELETE:
 	 	{
 	 		//手机白名单删除
+	 		#ifdef USEING_PHONE_API
 	 		ProcessResult = net_phone_del_process(Mail);
-
 			result = (ProcessResult == RT_EOK)?1:0;
+			#endif
 			msg_mail_phonedel_ack(Mail,result);
 			break;
 	 	}
 	 	case NET_MSGTYPE_KEYADD:
 	 	{
 	 		//钥匙添加
+	 		#ifdef USEING_KEY_API
 	 		result = keylib_mutex_op(RT_TRUE,RT_WAITING_NO);
 			if(result == RT_EOK)
 			{
@@ -810,7 +878,7 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 			{
 				result = 0;
 			}
-	 		
+	 		#endif
 	 		msg_mail_keyadd_ack(Mail,result);
 			break;
 	 	}
@@ -823,9 +891,10 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 	 	case NET_MSGTYPE_KEYDELETE:
 	 	{
 	 		//钥匙删除
+	 		#ifdef USEING_KEY_API
 	 		ProcessResult = net_key_del_process(Mail);
-
 	 		result = (ProcessResult == RT_EOK)?1:0;
+	 		#endif
 	 		msg_mail_keydel_ack(Mail,result);
 			break;
 	 	}
@@ -835,33 +904,91 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 	 	}
 	 	case NET_MSGTYPE_ALARMARG:
 	 	{
+	 		//报警参数设置
+	 		#ifdef USEING_SYSCONFIG_API
 	 		ProcessResult = net_modify_alarm_arg(Mail);
-
 	 		result = (ProcessResult == RT_EOK)?1:0;
+	 		#endif
 	 		msg_mail_resultack(Mail,result);
 			break;
 	 	}
 	 	case NET_MSGTYPE_ALARMARG_ACK:
 	 	{
+	 		//报警参数应答
 			break;
 	 	}
 	 	case NET_MSGTYPE_MOTOR:
 	 	{
+	 		//电机
+      #ifdef USEING_MOTOR_API
 	 		ProcessResult = net_motor_Control(Mail);
 	 		result = (ProcessResult == RT_EOK)?1:0;
+      #endif
 	 		msg_mail_resultack(Mail,result);
 			break;
 	 	}
 	 	case NET_MSGTYPE_TIME_ACK:
 	 	{
+	 		//对时应答
+      #ifdef USEING_SYS_TIME_API
 	 		ProcessResult = net_set_system_time(Mail);
+      #endif
 	 		result = (ProcessResult == RT_EOK)?1:0;
 			break;
 	 	}
 	 	case NET_MSGTYPE_CAMERA:
 	 	{
+	 		//远程拍照
+      #ifdef USEING_CAMERA_API
 	 		ProcessResult = net_photograph(Mail);
 	 		result = (ProcessResult == RT_EOK)?1:0;
+      #endif
+	 		msg_mail_resultack(Mail,result);
+			break;
+	 	}
+		case NET_MSGTYPE_UPDATE:
+	 	{
+	 		//系统更新
+      #ifdef USEING_SYS_UPDATE
+	 		ProcessResult = application_update("/app.bin");
+	 		result = (ProcessResult == RT_EOK)?1:0;
+      #endif
+	 		msg_mail_resultack(Mail,result);
+	 		rt_kprintf("NET_MSGTYPE_UPDATE\n");
+			break;
+	 	}
+	 	case NET_MSGTYPE_SETK0:
+	 	{
+	 		//设置k0
+      #ifdef USEING_SYSCONFIG_API
+	 		ProcessResult = net_set_key0(Mail);
+	 		result = (ProcessResult == RT_EOK)?1:0;
+      #endif
+	 		msg_mail_resultack(Mail,result);
+			break;
+	 	}
+	 	case NET_MSGTYPE_TERMINAL:
+	 	{
+	 		
+			break;
+	 	}
+	 	case NET_MSGTYPE_DOMAIN:
+	 	{
+      //设置ulr
+      #ifdef USEING_SYSCONFIG_API
+	 		ProcessResult = net_set_domain(Mail);
+	 		result = (ProcessResult == RT_EOK)?1:0;
+      #endif
+	 		msg_mail_resultack(Mail,result);
+			break;
+	 	}
+	 	case NET_MSGTYPE_DOORMODE:
+	 	{
+      //设置ulr
+      #ifdef USEING_SYSCONFIG_API
+	 		ProcessResult = net_set_domain(Mail);
+	 		result = (ProcessResult == RT_EOK)?1:0;
+      #endif
 	 		msg_mail_resultack(Mail,result);
 			break;
 	 	}
@@ -891,7 +1018,9 @@ void fileSendT(void)
 
 static void net_msg_thread_process(void)
 {
+	#ifdef USEING_FILE_API
 	net_file_timer_process();
+	#endif
 	#ifdef FILE_UPLOAD_TEST
 	fileSendT();
 	#endif
@@ -975,8 +1104,10 @@ void TestAddKey(void)
 	}*/
 
   msg_mail_keyadd(KeyData);
-
+  
+  RT_ASSERT(KeyData->data.data != RT_NULL);
 	rt_free(KeyData->data.data);
+	RT_ASSERT(KeyData != RT_NULL);
   rt_free(KeyData);
 }
 FINSH_FUNCTION_EXPORT(TestAddKey,"test key add message");

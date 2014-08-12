@@ -14,7 +14,7 @@
 
 //网络文件
 #define SHOW_NFILE_CRC32            0 //显示文件的crc32校验值
-#define SHOW_NFILE_SEND             0 //显示文件发送过程
+#define SHOW_NFILE_SEND             1 //显示文件发送过程
 #define SHOW_NFILE_SRESULT          1 //显示文件包发送的结果
 
 #define SHOW_CRC16_INIF             0

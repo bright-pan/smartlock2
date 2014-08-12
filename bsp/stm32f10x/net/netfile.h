@@ -2,6 +2,14 @@
 #define __NET_FILE_H__
 #include "netprotocol.h"
 
+#define USEING_FILE_API
+
+typedef enum 
+{
+	NET_FILE_BIN = 0,
+	NET_FILE_PIC = 1,
+}NET_FILE_TYPE;
+
 typedef struct 
 {
 	char name[RT_NAME_MAX];

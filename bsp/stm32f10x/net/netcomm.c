@@ -4,7 +4,7 @@
 作者:wangzw <wangzw@yuettak.com>
 */
 #include "netcomm.h"
-#include <cyg/crc/crc.h>
+//#include <cyg/crc/crc.h>
 
 /*
 功能:换位操作

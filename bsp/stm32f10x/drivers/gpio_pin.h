@@ -67,6 +67,7 @@
 
 #define DEVICE_NAME_BT_WK	 "BT_WK"
 #define DEVICE_NAME_BT_LED "BT_LED"
+#define DEVICE_NAME_BT_RST "BT_RST"
 
 __INLINE uint8_t 
 gpio_pin_input(char *str, rt_uint8_t debug);

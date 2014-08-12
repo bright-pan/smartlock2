@@ -1,8 +1,11 @@
 #ifndef __NETCOMM_H__
 #define __NETCOMM_H__
 #include "rtthread.h"
+
+#ifdef RT_USING_DFS
 #include <dfs.h>
 #include <dfs_posix.h>
+#endif
 
 rt_uint16_t net_rev16(rt_uint16_t data);
 

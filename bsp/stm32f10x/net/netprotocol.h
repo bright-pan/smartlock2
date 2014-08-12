@@ -12,7 +12,11 @@
 #include <dfs_posix.h>
 #endif
 
-#define NET_WND_MAX_NUM             9  //窗口大小
+#ifndef MSG_THREAD_PRI_IS
+#define MSG_THREAD_PRI_IS       RT_THREAD_PRIORITY_MAX/2+2
+#endif
+
+#define NET_WND_MAX_NUM             8  //窗口大小
 #define NET_FILE_BUF_SIZE           512 //文件buffer
 
 
@@ -21,7 +25,16 @@
 #define NET_DEVICE_ID_LEN       8
 #define NET_CHECK_LEN           2
 
-#define NET_RECV_MSG_MAX        6
+#define NET_RECV_MSG_MAX        5
+
+typedef struct 
+{
+	rt_uint8_t id[8];
+	rt_uint8_t key0[8];
+	rt_uint8_t key1[8];
+}net_parameter;
+
+extern net_parameter NetParameterConfig;
 
 //报文命令
 typedef enum
@@ -508,6 +521,22 @@ typedef struct
 {
 	net_camera dat;
 }net_recv_camera;
+
+typedef struct
+{
+	net_update verify;
+}net_recv_update;
+
+typedef struct 
+{
+	rt_uint8_t pos;
+	rt_uint8_t data[64];
+}net_recv_domain;
+
+typedef struct 
+{
+	net_setk0 data;
+}net_recv_setk0;
 //接收报文的数据域
 typedef union 
 {
@@ -532,6 +561,9 @@ typedef union
 	net_recv_motor      motor;        //电机控制
 	net_recv_time       timing;       //网络对时
 	net_recv_camera     camera;       //远程摄像头控制
+	net_recv_update			update;				//远程更新
+	net_recv_domain			domain;				//域名设置	
+	net_recv_setk0			setk0;				//设置k0
 }net_recv_data;
 
 //接收报文的描述结构体
@@ -701,9 +733,14 @@ rt_uint8_t net_event_process(rt_uint8_t mode,rt_uint32_t type);
 rt_uint8_t get_msg_new_order(rt_bool_t flag);//获得报文的新序号
 rt_bool_t net_mail_crc16_check(net_recvmsg_p Mail);
 
+//获得窗口中邮件的私有变量地址
 rt_uint32_t net_get_wnd_user(net_recvmsg_p msg);
 
+//清除处理窗口
 void clear_wnd_cmd_all(rt_uint8_t cmd);
+
+//设置网络参数
+void net_config_parameter_set(rt_uint8_t type,rt_uint8_t *data);
 
 #endif
 

@@ -4,8 +4,13 @@
 作者:wangzw <wangzw@yuettak.com>
 */
 #include "netfile.h"
-#include <cyg/crc/crc.h>
+//#include <cyg/crc/crc.h>
 #include "crc16.h"
+//#include "appconfig.h"
+
+#ifndef UPLOAD_THREAD_PRI_IS
+#define UPLOAD_THREAD_PRI_IS  RT_THREAD_PRIORITY_MAX/2+2
+#endif
 
 #define NET_MAIL_OK  0
 
@@ -125,6 +130,8 @@ static rt_int8_t send_file_pack(char *FileName,rt_uint32_t PackOrder,rt_uint16_t
 	{
 		//打开文件失败
 		RT_DEBUG_LOG(SHOW_NFILE_SRESULT,("%s OPEN FAIL\n\n",FileName));
+		
+    RT_ASSERT(buffer != RT_NULL);
 		rt_free(buffer);
 		return -1;
 	}
@@ -166,6 +173,7 @@ void delete_net_msgmail(net_msgmail_p mail[],rt_uint8_t pos)
 			file = mail[pos]->user;
 			if(file->data.data != RT_NULL)
 			{
+        RT_ASSERT(file->data.data != RT_NULL);
         rt_free(file->data.data);
         file->data.data = RT_NULL;
 			}
@@ -174,9 +182,11 @@ void delete_net_msgmail(net_msgmail_p mail[],rt_uint8_t pos)
 				rt_sem_delete(file->result.complete);
 				file->result.complete = RT_NULL;
 			}
+			RT_ASSERT(mail[pos]->user != RT_NULL);
 			rt_free(mail[pos]->user);
 			mail[pos]->user = RT_NULL;
 		}
+		RT_ASSERT(mail[pos] != RT_NULL);
 		rt_free(mail[pos]);
 		mail[pos] = RT_NULL;
 	}
@@ -230,7 +240,7 @@ rt_uint8_t check_msgmail_succeed(net_msgmail_p mail[],rt_uint8_t size,rt_sem_t S
 			if(mail[i]->user != RT_NULL)
 			{
 				file = mail[i]->user;
-				result = rt_sem_take(file->result.complete,2);
+				result = rt_sem_take(file->result.complete,RT_WAITING_NO);
 				if(result == RT_EOK)
 				{	
 					RT_DEBUG_LOG(SHOW_NFILE_SRESULT,("File %X%X%X%X Pack Send Result: %d\n"
@@ -240,9 +250,9 @@ rt_uint8_t check_msgmail_succeed(net_msgmail_p mail[],rt_uint8_t size,rt_sem_t S
 																						,file->data.data[3]
 																						,file->result.result));     
 																						
-          if((file->result.result == NET_MAIL_OK) && (file->sendresult == 0))
+          if((file->result.result == NET_MAIL_OK)&&(file->sendresult == 0))
           {
-						RunResult++;
+            RunResult++;
           }
           else //发送失败
           {
@@ -288,7 +298,10 @@ static rt_int8_t send_file_request(UploadFile_p arg)
 	if(Result < 0)
 	{
 		//释放内存资源
+		RT_ASSERT(RequestInfo != RT_NULL);
 		rt_free(RequestInfo);
+		
+		RT_ASSERT(mail != RT_NULL);
 		rt_free(mail);
 		return -1;
 	}
@@ -331,7 +344,11 @@ static rt_int8_t send_file_request(UploadFile_p arg)
 		Result = -1;
   }
   //释放内存资源
+  
+  RT_ASSERT(RequestInfo != RT_NULL);
   rt_free(RequestInfo);
+  
+  RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 	return Result;
 }
@@ -414,6 +431,7 @@ static rt_int8_t send_file_process(UploadFile_p arg,FileSendCtl_p ctl)
 				mail[NetMailPos] = rt_calloc(1,sizeof(net_msgmail));
 				RT_ASSERT(mail[NetMailPos] != RT_NULL);
 				SendPackResult = send_file_pack(FileName,CurPackOrder,ReadSize,mail[NetMailPos]);
+				//rt_thread_delay(100);
 				if(SendPackResult == -1)
 				{
 					//当前包打包失败
@@ -442,6 +460,7 @@ static rt_int8_t send_file_process(UploadFile_p arg,FileSendCtl_p ctl)
 		RecvResult = check_msgmail_succeed(mail,FILE_PACKNUM_MAX,SendSem);
 		if(STOP_TIMER == ctl->EixtFlag)
 		{
+			rt_kprintf("File send Timer outtime,Please check the time!!!\n");
 			RecvResult = 0xff;
 		}
 		if(RecvResult != 0xff)
@@ -510,6 +529,7 @@ static void net_file_entry(void *arg)
 
 		if(arg != RT_NULL)
 		{
+      RT_ASSERT(arg != RT_NULL);
 			rt_free(arg);
 		}
 	}
@@ -519,9 +539,15 @@ static void net_file_entry(void *arg)
 		rt_timer_delete(FileCtl->Timer);
 		FileCtl->Timer = RT_NULL;
 	}
+	
+  RT_ASSERT(FileCtl != RT_NULL);
 	rt_free(FileCtl);
 	FileCtl = RT_NULL;
-	file_complete_callback((void *)&result);
+	if(file_complete_callback != RT_NULL)
+	{
+    file_complete_callback((void *)&result);
+	}
+	
 }
 
 /**
@@ -544,6 +570,7 @@ typedef struct
 	rt_uint8_t     PackSize;   //包大小
 	rt_size_t      PackNum;    //包数量
 	rt_uint32_t    CRC32;      //crc32
+	int            FileID;
 }NetFileInfo,*NetFileInfo_p;
 
 //接收文件时使用的定时器描述
@@ -598,7 +625,10 @@ FilePackPosMap * file_pack_pos_create(rt_size_t PackNum)
 
 void file_pack_pos_delete(FilePackPosMap *map)
 {
+	RT_ASSERT(map->buf != RT_NULL);
 	rt_free(map->buf);
+	
+	RT_ASSERT(map != RT_NULL);
 	rt_free(map);
 }
 
@@ -697,6 +727,8 @@ static NetFileInfo_p net_fileinfo_create(rt_size_t PackNum)
 static void net_fileinfo_delete(NetFileInfo_p FileInfo)
 {
 	file_pack_pos_delete(FileInfo->PackMap);
+	
+	RT_ASSERT(FileInfo != RT_NULL);
 	rt_free(FileInfo);
 }
 
@@ -768,7 +800,7 @@ rt_uint8_t net_recv_filerq_process(net_recvmsg_p mail)
 		}
 		else
 		{
-      close(FileID);
+      //close(FileID);
       //标志在接收文件状态
       net_event_process(0,NET_ENVET_FILERQ);
       if(NetRecvFileInfo != RT_NULL)
@@ -780,10 +812,11 @@ rt_uint8_t net_recv_filerq_process(net_recvmsg_p mail)
       net_string_copy_uint32(&PackNum,mail->data.filerq.request.packnum);
       NetRecvFileInfo = net_fileinfo_create(PackNum);
       net_fileinfo_set(NetRecvFileInfo,mail);
+      NetRecvFileInfo->FileID = FileID;
       //创建定时器
 			FileRecvTimer.timer = rt_timer_create("filerecv",
 																						net_file_timer_handler,
-																						RT_NULL,6000,
+																						RT_NULL,1000,
 																						RT_TIMER_FLAG_PERIODIC);
 			RT_ASSERT(FileRecvTimer.timer != RT_NULL);
 			rt_timer_start(FileRecvTimer.timer);
@@ -801,23 +834,24 @@ rt_uint8_t net_file_packdata_process(net_recvmsg_p mail)
 	rt_uint8_t result = 1;
 	int fileid ;
 	rt_uint16_t PackSizeRmap[6] = {64,128,256,0,512,1024};
-	
+
 	//如果是文件包接收状态
 	if(net_event_process(1,NET_ENVET_FILERQ) == 0)
 	{
 		rt_uint32_t CurWritePos;
-		
-		fileid = open(SYS_APP_BIN_FILE_NAME,O_RDWR,0x777);
+
+		fileid = NetRecvFileInfo->FileID;
+		/*fileid = open(SYS_APP_BIN_FILE_NAME,O_RDWR,0x777);
 		if(fileid < 0)
 		{
 			//接收数据异常
 			rt_kprintf("Receive data anomalies\n");
 			result = 2;
-		}
+		}*/
 		net_string_copy_uint32(&CurWritePos,mail->data.filedata.pos);
 		lseek(fileid,CurWritePos*PackSizeRmap[NetRecvFileInfo->PackSize],DFS_SEEK_SET);
 		rt_kprintf("write size %d\n",write(fileid,mail->data.filedata.data,mail->lenmap.bit.data-4));
-		close(fileid);
+		//close(fileid);
 		net_file_timer_clear();
 		/*rt_memcpy(filebuffer+CurWritePos*PackSizeRmap[NetRecvFileInfo->PackSize],
 							mail->data.filedata.data,mail->lenmap.bit.data-4);*/
@@ -829,6 +863,7 @@ rt_uint8_t net_file_packdata_process(net_recvmsg_p mail)
 		{
 			rt_uint32_t crc32;
 
+			close(fileid);
 			//rt_kprintf("RAM FILE crc32:%x\n",cyg_ether_crc32(filebuffer,NetRecvFileInfo->FileSize));
 			file_get_crc32(SYS_APP_BIN_FILE_NAME,&crc32);
 			if(crc32 != NetRecvFileInfo->CRC32)
@@ -838,7 +873,7 @@ rt_uint8_t net_file_packdata_process(net_recvmsg_p mail)
 			}
 			else
 			{	
-				rt_kprintf("File Recv Succeed\n");
+				rt_kprintf("File Recv Succeed############################################################\nn");
 				result = 0;
 			}
 			net_file_timer_del();
@@ -877,6 +912,7 @@ rt_err_t net_upload_file(UploadFile_p File)
 	thread_id = rt_thread_find("Upload");
   if(thread_id != RT_NULL)
   {
+    RT_ASSERT(FileInfo != RT_NULL);
   	rt_free(FileInfo);
 		return RT_ERROR;
   }
@@ -885,7 +921,7 @@ rt_err_t net_upload_file(UploadFile_p File)
 	                            net_file_entry,
 	                            (void *)FileInfo,
 	                            1024,
-	                            111, 
+	                            UPLOAD_THREAD_PRI_IS, 
 	                            20);
 	                            
 	RT_ASSERT(thread_id != RT_NULL);
@@ -901,6 +937,7 @@ void send_file(char *FileName)
 {
 	UploadFile file;
 
+	file.FileType = 1;
 	rt_memcpy(file.name,FileName,12);
 	net_upload_file(&file);
 }

@@ -5,8 +5,9 @@
 */
 #include "netphysics.h"
 #include "netmailclass.h"
-#include "bdcom.h"
-#include "comm.h"
+//#include "bdcom.h"
+//#include "comm.h"
+//#include "appconfig.h"
 
 #define SHOW_PRINTF_INFO   0    //打印调试信息
 
@@ -27,6 +28,7 @@ rt_size_t find_package_end(rt_uint8_t *buffer,rt_size_t size)
 
 	if(length >= TCP_BUF_SIZE)//长度大于缓冲区长度
 	{
+		rt_kprintf("recv size error1\n");
 		return size;
 	}
 	
@@ -37,13 +39,18 @@ rt_size_t find_package_end(rt_uint8_t *buffer,rt_size_t size)
     if((FlagStr[0] == 0x0d) && (FlagStr[1] == 0x0a))
     {
     	if(length < i+1)
-      return i+1;
+    	{
+    		//rt_kprintf("recv size ok %d\n",size);
+        return i+1;
+    	}
     }
   }
-  if(i > length)//长度错误
+  if(i > length+4)//长度错误
   {
+  	rt_kprintf("recv size error2\n");
 		return size;
   }
+  
   return 0;
 }
 
@@ -58,43 +65,31 @@ void netprotocol_thread_entry(void *arg)
   //rt_size_t bytenum = 0;   //收到字节数总和
   rt_size_t MsgEndPos = 0; //一条报文结束的位置
   rt_size_t bytes_received;
+  rt_uint32_t ClearBufTime = 0;
+  rt_device_t hw_dev = RT_NULL;
+   
   while(1)
   {
+  	if(hw_dev == RT_NULL)
+  	{
+			hw_dev = rt_device_find("Blooth");
+			if(hw_dev == RT_NULL)
+			{
+				rt_kprintf("net hw_dev is RT_NULL\n");
+			  return ;
+			}
+			if(!(hw_dev->open_flag & RT_DEVICE_OFLAG_OPEN))
+			{
+			  rt_kprintf("open %s device\n",hw_dev->parent.name);
+			  rt_device_open(hw_dev,RT_DEVICE_OFLAG_RDWR);
+			}
+  	}
     recv_data = rt_calloc(1,TCP_BUF_SIZE);
 
 		RT_ASSERT(recv_data != RT_NULL);
 
 		net_event_process(0,NET_ENVET_CONNECT);
-    while(!gsm_is_link())
-    {
-    	GSM_Mail_p mail;
-
-			mail = (GSM_Mail_p)rt_calloc(1,sizeof(GSM_Mail));
-			mail->ResultSem = rt_sem_create("gsmmail",0,RT_IPC_FLAG_FIFO);
-			RT_ASSERT(mail->ResultSem != RT_NULL);
-			mail->buf = RT_NULL;
-			mail->BufSize = 0;
-			mail->SendMode = 1;
-			mail->type = GSM_MAIL_LINK;
-			gsm_mail_send(mail);
-			rt_sem_take(mail->ResultSem,RT_WAITING_FOREVER);
-			rt_sem_delete(mail->ResultSem);
-			rt_free(mail);
-			rt_thread_delay(100);
-			{
-	      int  i;
-	    	
-	    	bytes_received = comm_recv_gprs_data(recv_data,TCP_BUF_SIZE);
-	    	
-		   	RT_DEBUG_LOG(SHOW_PRINTF_INFO,("Invalid data is received gprs:\n"));
-	    	for(i = 0;i < bytes_received;i++)
-		    {
-		      RT_DEBUG_LOG(SHOW_PRINTF_INFO,("%c",recv_data[i]));
-		    }
-		   	RT_DEBUG_LOG(SHOW_PRINTF_INFO,("\n"));
-				rt_thread_delay(100);
-    	}
-    }
+    //连接
     net_event_process(2,NET_ENVET_CONNECT);
     #if 0
     while(1)
@@ -121,15 +116,19 @@ void netprotocol_thread_entry(void *arg)
     	if(net_event_process(2,NET_ENVET_RELINK) == 0)
     	{
 				RT_DEBUG_LOG(SHOW_PRINTF_INFO,("relink TCP/IP !!!!\n"));
-				gsm_set_link(0);
+        //gsm_set_link(0);
+				//断开连接
+        RT_ASSERT(recv_data != RT_NULL);
 				rt_free(recv_data);
 				break;
     	}
     	
     	//接收数据
-      bytes_received = comm_recv_gprs_data(recv_data+SavePos,TCP_BUF_SIZE - (1+SavePos));
+      bytes_received = rt_device_read(hw_dev,0,recv_data+SavePos,TCP_BUF_SIZE - (1+SavePos));
+      //分析数据有效性
       if(bytes_received > 0)
       {
+      	ClearBufTime = 0;
       	SavePos += bytes_received;
         while(1)
         {
@@ -151,6 +150,8 @@ void netprotocol_thread_entry(void *arg)
           	  RT_DEBUG_LOG(SHOW_PRINTF_INFO,
 						          	  ("%s mail full send fail !!!\n",
 						          	  net_datrecv_mb->parent.parent.name));
+						          	  
+              RT_ASSERT(recvmail != RT_NULL);
               rt_free(recvmail);
           	}
 
@@ -173,25 +174,40 @@ void netprotocol_thread_entry(void *arg)
           }
         }
       }
+      else
+      {
+				/*ClearBufTime++;
+				
+				if(ClearBufTime > 3000)
+				{
+          //清空时间
+          rt_device_read(hw_dev,0,recv_data,TCP_BUF_SIZE);
+					SavePos = 0;
+					MsgEndPos = 0;
+				}*/
+      }
       
       mq_result = rt_mq_recv(net_datsend_mq,(void *)&message,sizeof(net_message),1);
       if(mq_result == RT_EOK)
       {
         if(message.buffer != RT_NULL)
         {
-          GSM_Mail_p mail;
+        	if(SHOW_PRINTF_INFO == 1)
+        	{
+            rt_size_t i;
+	          rt_uint8_t *buf = RT_NULL;
 
-					mail = (GSM_Mail_p)rt_calloc(1,sizeof(GSM_Mail));
-          mail->ResultSem = rt_sem_create("gsmmail",0,RT_IPC_FLAG_FIFO);
-          RT_ASSERT(mail->ResultSem != RT_NULL);
-          mail->buf = message.buffer;
-          mail->BufSize = message.length+4;
-          mail->SendMode = 1;
-          mail->type = GSM_MAIL_GPRS;
-          gsm_mail_send(mail);
-          rt_sem_take(mail->ResultSem,RT_WAITING_FOREVER);
-          rt_sem_delete(mail->ResultSem);
-          rt_free(mail);
+	          rt_kprintf("\n>>>>>>>>>");
+	          buf = message.buffer;
+
+	          for(i=0;i<message.length+4;i++)
+	          {
+	            rt_kprintf("%X",*(buf++));
+	          }
+        	}
+        	
+          //发送
+          rt_device_write(hw_dev,0,message.buffer,message.length+4);
         }
         rt_sem_release(message.sendsem);
       }
@@ -207,7 +223,7 @@ int netprotocol_thread_init(void)
 
   id = rt_thread_create("NPDU",
                          netprotocol_thread_entry, RT_NULL,
-                         512,109, 20);
+                         512,NPDU_THREAD_PRI_IS, 20);
 
   if(id == RT_NULL)
   {
@@ -219,7 +235,7 @@ int netprotocol_thread_init(void)
   rt_thread_startup(id);
   return 0;
 }
-//INIT_APP_EXPORT(netprotocol_thread_init);
+INIT_APP_EXPORT(netprotocol_thread_init);
 
 
 #ifdef RT_USING_FINSH
