@@ -16,6 +16,7 @@
 #include "untils.h"
 #include "keyboard.h"
 #include "kb_dev.h"
+#include "fprint.h"
 
 extern rt_device_t rtc_device;
 
@@ -449,6 +450,7 @@ void fp_touch_exti_timeout(void *parameters)
 		if (data == FP_TOUCH_STATUS) // rfid key is plugin
 		{
             rt_kprintf("it is fprint touch!\n");
+            fp_inform();
 			// produce mail
 			//rt_device_control(rtc_device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
 
@@ -538,7 +540,7 @@ static const uint8_t char_remap[16] = {
     '?', '?', '?',
 };
 
-uint16_t
+__STATIC_INLINE uint16_t
 kb_read(void)
 {
     uint16_t data = 0;
@@ -663,8 +665,8 @@ kb_intr_exti_timeout(void *parameters)
 	rt_device_t dev_intr = RT_NULL;
     
     uint16_t data = 0;
-    static uint8_t error_detect = 0;
-    rt_size_t size;
+    //static uint8_t error_detect = 0;
+//    rt_size_t size;
     uint8_t c;
 
 	dev_intr = device_enable(DEVICE_NAME_KB_INTR);
