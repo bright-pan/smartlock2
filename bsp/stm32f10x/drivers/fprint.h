@@ -18,38 +18,6 @@
 #include <rthw.h>
 #include <rtthread.h>
 #include <stm32f10x.h>
-#include "untils.h"
-#include "board.h"
-
-typedef enum {
-
-	FPRINT_CMD_INIT,
-	FPRINT_CMD_ENROLL,
-	FPRINT_CMD_DELETE,
-	FPRINT_CMD_RESET,
-
-}FPRINT_CMD_TYPEDEF;
-
-typedef enum {
-
-	FPRINT_EOK,
-	FPRINT_EERROR,
-	FPRINT_ERESPONSE,
-	FPRINT_EEXIST,
-    FPRINT_ENO_DETECTED,
-	FPRINT_EINVALID,
-    FPRINT_EEXCEPTION,
-
-}FPRINT_ERROR_TYPEDEF;
-
-typedef struct {
-
-	FPRINT_CMD_TYPEDEF cmd;
-	uint16_t key_id;
-	rt_sem_t result_sem;
-	FPRINT_ERROR_TYPEDEF *result;
-
-}FPRINT_MAIL_TYPEDEF;
 
 typedef  rt_err_t (*fprint_call_back)(void *user);
 
@@ -57,12 +25,6 @@ typedef struct
 {
 	rt_uint16_t KeyPos;
 }FPINTF_USER;
-
-void
-fprint_thread_entry(void *parameters);
-
-FPRINT_ERROR_TYPEDEF
-send_fp_mail(FPRINT_CMD_TYPEDEF cmd, uint16_t key_id, uint8_t flag);
 
 void
 fp_ok_callback(fprint_call_back fun);
@@ -73,6 +35,16 @@ fp_error_callback(fprint_call_back fun);
 void
 fp_null_callback(fprint_call_back fun);
 
+int 
+fp_init(void);
 
+int
+fp_enroll(uint16_t *, uint8_t *, uint32_t);
+
+int
+fp_delete(const uint16_t, const uint16_t);
+
+void
+fp_inform(void);
 
 #endif /* _FPRINT_H_ */

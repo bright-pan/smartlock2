@@ -505,7 +505,27 @@ rt_err_t rt_sem_control(rt_sem_t sem, rt_uint8_t cmd, void *arg)
 
         return RT_EOK;
     }
+    if (cmd == RT_IPC_CMD_GET_VALUE)
+    {
+        rt_uint16_t *value;
 
+        value = (rt_uint16_t *)arg;
+        /* disable interrupt */
+        level = rt_hw_interrupt_disable();
+
+        /* resume all waiting thread */
+        rt_ipc_list_resume_all(&sem->parent.suspend_thread);
+
+        /* get new value */
+        *value = sem->value;
+
+        /* enable interrupt */
+        rt_hw_interrupt_enable(level);
+
+        rt_schedule();
+
+        return RT_EOK;
+    }
     return -RT_ERROR;
 }
 RTM_EXPORT(rt_sem_control);

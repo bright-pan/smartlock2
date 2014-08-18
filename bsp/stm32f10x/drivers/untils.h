@@ -42,7 +42,7 @@ typedef enum {
 	KEY_TYPE_FPRINT = 0,
 	KEY_TYPE_RFID = 1,
 	KEY_TYPE_KBOARD = 2,
-	KEY_TYPE_ERROR = 0XFF,
+	KEY_TYPE_INVALID = 0XFF,
 }KEY_TYPE;
 
 typedef enum {
@@ -120,30 +120,32 @@ typedef struct
 extern DEVICE_CONFIG_TYPEDEF device_config;
 
 int
-device_config_init(DEVICE_CONFIG_TYPEDEF *config);
+device_config_init(DEVICE_CONFIG_TYPEDEF *);
 int
-device_config_file_operate(DEVICE_CONFIG_TYPEDEF *config, uint8_t flag);
+device_config_file_operate(DEVICE_CONFIG_TYPEDEF *, uint8_t);
 int
-device_config_superpwd_verify(const uint8_t *buf);
+device_config_superpwd_verify(const uint8_t *);
 int
-device_config_superpwd_save(uint8_t *buf);
+device_config_superpwd_save(uint8_t *);
 int
-device_config_key_operate(uint16_t key_id, KEY_TYPE key_type, uint8_t *buf, uint8_t flag);
+device_config_key_operate(uint16_t, KEY_TYPE, uint8_t *, uint8_t);
 int
-device_config_key_verify(KEY_TYPE type, const uint8_t *buf);
+device_config_key_verify(KEY_TYPE, const uint8_t *);
 int
-device_config_key_create(KEY_TYPE type, uint8_t *buf);
+device_config_key_create(KEY_TYPE, uint8_t *);
+int
+device_config_key_delete(uint16_t);
 void
-print_hex(uint8_t *buf, uint16_t length);
+print_hex(uint8_t *, uint16_t);
 void
-print_char(uint8_t *buf, uint16_t length);
+print_char(uint8_t *, uint16_t);
 void
-delay_us(uint32_t time);
+delay_us(uint32_t);
 int 
 system_init(void);
 
 __INLINE rt_device_t
-device_enable(const char *name);
+device_enable(const char *);
 
 #ifndef __GNUC__
 void *

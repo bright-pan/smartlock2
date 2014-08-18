@@ -20,7 +20,7 @@
 
 //#include "eeprom.h"
 //#include "funtable.h"
-#define UNTILS_DEBUG
+#define UNTILS_DEBUG 1
 
 rt_device_t rtc_device;
 
@@ -100,14 +100,8 @@ device_config_key_operate(uint16_t key_id, KEY_TYPE key_type, uint8_t *buf, uint
 	int result = -1;
 	uint16_t len;
 
+    RT_ASSERT(key_id < KEY_NUMBERS);
 	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
-	if (key_id >= KEY_NUMBERS)
-	{
-#if (defined RT_USING_FINSH) && (defined UNTILS_DEBUG)
-		rt_kprintf("the key id is invalid\n");
-#endif // MACRO
-		goto __exit;
-	}
 
 	switch (key_type)
 	{
@@ -128,9 +122,7 @@ device_config_key_operate(uint16_t key_id, KEY_TYPE key_type, uint8_t *buf, uint
 			}
 		default :
 			{
-#if (defined RT_USING_FINSH) && (defined UNTILS_DEBUG)
-				rt_kprintf("the key type is invalid\n");
-#endif // MACRO
+                RT_DEBUG_LOG(UNTILS_DEBUG, ("the key type is invalid\n"));
                 goto __exit;
 			}
 	}
@@ -186,9 +178,7 @@ device_config_key_verify(KEY_TYPE type, const uint8_t *buf)
             }
         default :
             {
-#if (defined RT_USING_FINSH) && (defined UNTILS_DEBUG)
-                rt_kprintf("the key type is invalid\n");
-#endif // MACRO
+                RT_DEBUG_LOG(UNTILS_DEBUG, ("the key type is invalid\n"));
                 goto __exit;
             }
     }
@@ -212,9 +202,7 @@ __exit:
 int
 device_config_superpwd_save(uint8_t *buf)
 {
-	int fd;
 	int result = -1;
-	uint16_t len;
 
 	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 	rt_memcpy(device_config.param.password, buf, 6);
@@ -269,6 +257,34 @@ __exit:
 }
 
 int
+device_config_key_delete(uint16_t key_id)
+{
+    int result = -1;
+	KEY_TYPEDEF *key;
+    RT_ASSERT(key_id < KEY_NUMBERS);
+    rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+
+    key = &device_config.param.key[key_id];
+
+    if (key->flag) {
+        rt_memset(key, 0, sizeof(*key));
+        if (device_config_file_operate(&device_config, 1) < 0)
+            goto __exit;
+/*        
+        if (key->key_type == KEY_TYPE_FPRINT)
+            fp_delete(key_id);
+*/
+        result = key_id;
+
+    } else {
+        result = 0;
+    }
+__exit:
+	rt_mutex_release(device_config.mutex);
+    return result;
+}
+
+int
 device_config_init(DEVICE_CONFIG_TYPEDEF *config)
 {
 	int result;
@@ -308,20 +324,16 @@ device_config_file_operate(DEVICE_CONFIG_TYPEDEF *config, uint8_t flag)
 		//system_file_key_init(arg);
 		fd = open(DEVICE_CONFIG_FILE_NAME,O_CREAT | O_RDWR,0x777);
 		if (fd < 0) {
-#if (defined RT_USING_FINSH) && (defined UNTILS_DEBUG)
-			rt_kprintf("Creat Config File failure\n");
-#endif // MACRO
+            RT_DEBUG_LOG(UNTILS_DEBUG, ("Creat Config File failure\n"));
 			goto __exit;
 		} else {
-#if (defined RT_USING_FINSH) && (defined UNTILS_DEBUG)
-			rt_kprintf("Creat Config File success\n");
+            RT_DEBUG_LOG(UNTILS_DEBUG, ("Creat Config File success\n"));
             cnts = write(fd, &(config->param), sizeof(config->param));
 			if (cnts != sizeof(config->param)) {
 				close(fd);
 				goto __exit;
 			}
 			lseek(fd, 0, SEEK_SET);
-#endif // MACRO
 		}
 	}
 

@@ -115,7 +115,7 @@ KEY_TYPE get_key_type(rt_uint16_t pos)
 	}
 	
 	RT_DEBUG_LOG(SHOW_APP_DEBUG_INFO,("Key Position serious error!!!\n"));
-	return KEY_TYPE_ERROR;
+	return KEY_TYPE_INVALID;
 }
 
 /** 
