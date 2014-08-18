@@ -15,11 +15,12 @@ gpio.c
 gpio_pin.c
 gpio_exti.c
 untils.c
-keyboard.c
 alarm.c
 local.c
 sms.c
 fprint.c
+bluetooth_device.c
+
 """)
 
 # add Ethernet drvers.

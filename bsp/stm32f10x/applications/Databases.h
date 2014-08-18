@@ -5,7 +5,7 @@
 #include <dfs_fs.h>
 #include <dfs.h>
 #include <dfs_posix.h>
-
+	
 #define ACCOUNT_MAX_NUM				64
 
 #define KEY_MAX_NUM						8
@@ -60,8 +60,8 @@ typedef struct
 	rt_uint32_t Useing:1;								//使用标志
 	rt_uint32_t Save:1;			  					//保存标志用于更新检测
 	rt_uint8_t	SelfPos;								//账号自己所在的位置
-	KeyInofDef	Key[KEY_MAX_NUM];				//账号的钥匙位置最大10把钥匙
-	PhoneTypeDef Phone[TELEPHONE_MAX_NUM];
+	rt_uint32_t KeyPos[KEY_MAX_NUM];				//账号的钥匙位置最大10把钥匙
+	rt_uint32_t PhonePos[TELEPHONE_MAX_NUM];
 }AccountType,*AccountType_p;
 
 //密码数据结构
@@ -80,6 +80,7 @@ typedef struct
 	rt_uint8_t	Useing;											//使用标志
 	rt_uint8_t 	AccountPos;									//账号位置
 	rt_uint32_t	SelfPos;										//自己所在的位置
+	AccountType	KeyHead;										
 	rt_uint8_t 	Fprint[FPRINT_MAX_LEN];			//指纹
 	rt_uint16_t CRC16Value;		
 }FprintType,*FprintType_p;
@@ -91,7 +92,7 @@ typedef struct
 	rt_uint8_t 	AccountPos;									//账号位置
 	rt_uint32_t	SelfPos;										//自己所在的位置
   rt_uint8_t  Phone[PHONE_MAX_LEN];       //手机号码
-  rt_uint16_t CRC16Value;		
+  rt_uint16_t CRC16Value;									
 }PhoneType,*PhoneType_p;
 //锁设备类型
 typedef struct 

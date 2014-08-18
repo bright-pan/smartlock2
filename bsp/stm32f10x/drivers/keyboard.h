@@ -18,7 +18,7 @@
 #include <rtthread.h>
 #include <stm32f10x.h>
 
-#define KB_DEBUG 1
+#define KB_DEBUG 0
 #define KB_MAIL_TYPE_INPUT 1
 #define KB_MAIL_TYPE_SETMODE 2
 #define KB_MAIL_TYPE_TIMEOUT 3

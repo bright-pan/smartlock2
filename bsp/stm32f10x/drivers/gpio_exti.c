@@ -14,11 +14,12 @@
 #include "gpio_exti.h"
 #include "gpio_pin.h"
 #include "untils.h"
-#include "keyboard.h"
-#include "kb_dev.h"
 #include "fprint.h"
+#include "menu.h"
 
 extern rt_device_t rtc_device;
+
+#define KB_DEBUG 0
 
 struct gpio_exti_user_data
 {
@@ -677,11 +678,12 @@ kb_intr_exti_timeout(void *parameters)
 		if (data == KB_INTR_STATUS) // rfid key is plugin
 		{
 			data = kb_read();
-            rt_kprintf("key value : %x\n", data);
+            //rt_kprintf("key value : %x\n", data);
             c = char_remap[bit_to_index(data&0x0fff)];
-            send_kb_mail(KB_MAIL_TYPE_INPUT, KB_MODE_NORMAL_AUTH, c);
+            send_key_value_mail(KB_MAIL_TYPE_INPUT, KB_MODE_NORMAL_AUTH, c);
+            //send_kb_mail(KB_MAIL_TYPE_INPUT, KB_MODE_NORMAL_AUTH, c);
 #if (defined RT_USING_FINSH) && (defined KB_DEBUG)
-                rt_kprintf("key value : 0x%x, index :%d, char :%c\n", data, bit_to_index(data&0x0fff), c);
+                //rt_kprintf("key value : 0x%x, index :%d, char :%c\n", data, bit_to_index(data&0x0fff), c);
 #endif
 		}
 		rt_device_control(dev_intr, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0);

@@ -1,24 +1,21 @@
 #include "keyprocess_t.h"
 #include "keyboard_t.h"
+#include "menu.h"
+
 #define KEYPROCESS_DEBUG_INFO				1
 
 #ifndef KEYB_THREAD_PRIORITY
-#define KEYB_THREAD_PRIORITY				13
+#define KEYB_THREAD_PRIORITY				RT_THREAD_PRIORITY_MAX/2
 #endif
 
 void keyprocess_thread_entry(void *arg)
 {
 	rt_device_t dev;
 
-	rt_device_init_processor(&dev,KEYBOARD_DEVICE_NAME);
 	while(1)
 	{
-		rt_uint8_t data;
-		
-		if(rt_device_read(dev,0,&data,1) == 1)
-		{
-			rt_kprintf("key data = %X\n",data);
-		}
+    key_input_processing();
+
 		rt_thread_delay(10);
 	}
 }

@@ -2,10 +2,21 @@ Import('RTT_ROOT')
 Import('rtconfig')
 from building import *
 
-cwd     = os.path.join(str(Dir('#')), 'applications/net')
-src	= Glob('*.c')
-CPPPATH = [cwd, str(Dir('#'))]
+cwd     = os.path.join(str(Dir('#')), 'net')
 
-group = DefineGroup('NetWork', src, depend = [''], CPPPATH = CPPPATH)
+# add the general drvers.
+src = Split("""
+crc16.c
+crc32.c
+des.c
+netcomm.c
+netfile.c
+netmailclass.c
+netphysics.c
+netprotocol.c
+""")
+
+CPPPATH = [cwd, str(Dir('#'))]
+group = DefineGroup('Net', src, depend = [''], CPPPATH = CPPPATH)
 
 Return('group')

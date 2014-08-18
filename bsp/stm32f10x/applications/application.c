@@ -48,6 +48,8 @@
 #include "comm.h"
 #include "fprint.h"
 #include "gpio_pin.h"
+#include "Databases.h"
+
 
 #ifdef RT_USING_RTGUI
 rt_bool_t cali_setup(void)
@@ -118,6 +120,7 @@ void rt_init_thread_entry(void* parameter)
 #if defined(RT_USING_DFS) && defined(RT_USING_DFS_ELMFAT)
     /* mount sd card fat partition 1 as root directory */
     dfs_mount_processing();
+    //databases_init();
 #endif  /* RT_USING_DFS */
 
 #ifdef RT_USING_RTGUI

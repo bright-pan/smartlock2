@@ -105,7 +105,7 @@ void netprotocol_thread_entry(void *arg)
     }
     #endif
 		//连接成功开始登陆 
-		send_net_landed_mail();
+		//send_net_landed_mail();
     while(1)
     {
       int mq_result;

@@ -9,6 +9,8 @@ src = Split("""
 application.c
 startup.c
 apppubulic.c
+menu.c
+keyprocess_t.c
 """)
 
 CPPPATH = [cwd, str(Dir('#'))]
