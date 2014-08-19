@@ -1,7 +1,7 @@
 #include"menu.h"
-
+#include"menu_1.h"
 static rt_uint8_t KeyFuncIndex = 0;
-void(*current_operation_index)();
+void(*current_operation_index)(void);
 
 
 #define KEY_MAX_MENU_NUM					50
@@ -13,12 +13,14 @@ typedef struct
 	rt_uint8_t UpState;							//按下“向上”键时转向的状态索引号
 	rt_uint8_t SureState;						//按下“回车”键时转向的状态索引号
 	rt_uint8_t BackState;						//按下“退回”键时转向的状态索引号
-	void(*CurrentOperate)();				//当前状态应该执行的能操作
+	void(*CurrentOperate)(void);		//当前状态应该执行的能操作
 }KbdTabStruct;
 
+
+//菜单列表
 static KbdTabStruct	KeyTab[KEY_MAX_MENU_NUM] = 
 {
-	{0,0,0,0,RT_NULL},
+	{0,0,0,0,0,menu_1_processing},
 };
 
 static rt_mq_t key_mq;
@@ -110,6 +112,6 @@ void key_input_processing(void)
 			}
 		}
 		current_operation_index = KeyTab[KeyFuncIndex].CurrentOperate;
-		//current_operation_index();
+		current_operation_index();
 	}
 }

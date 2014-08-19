@@ -1,7 +1,7 @@
 #ifndef __MENU_H__
 #define __MENU_H__
 #include "rtthread.h"
-#include "commfun_t.h"
+#include "commfun.h"
 #include "board.h"
 
 #define KB_MAIL_TYPE_INPUT 1
