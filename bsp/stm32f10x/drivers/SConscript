@@ -20,7 +20,9 @@ local.c
 sms.c
 fprint.c
 bluetooth_device.c
-
+oled.c
+sh1106.c
+font.c
 """)
 
 # add Ethernet drvers.
