@@ -28,3 +28,4 @@ project.eww
 /bsp/stm32f10x/project.uvproj
 /bsp/stm32f10x/project.uvgui.lenovo
 project.uvgui.Administrator
+/bsp/stm32f10x/cmd-gcc.bat
