@@ -8,21 +8,17 @@ cwd     = os.path.join(str(Dir('#')), 'drivers')
 src = Split("""
 board.c
 stm32f10x_it.c
-led.c
 usart.c
 spibus.c
 spiflash.c
 gpio.c
 gpio_pin.c
 gpio_exti.c
-gpio_pwm.c
-gpio_adc.c
+untils.c
+keyboard.c
 alarm.c
 local.c
 sms.c
-comm.c
-untils.c
-comm_window.c
 fprint.c
 """)
 

@@ -3,9 +3,15 @@ Import('rtconfig')
 from building import *
 
 cwd     = os.path.join(str(Dir('#')), 'applications')
-src	= Glob('*.c')
-CPPPATH = [cwd, str(Dir('#'))]
 
+# add the general drvers.
+src = Split("""
+application.c
+startup.c
+apppubulic.c
+""")
+
+CPPPATH = [cwd, str(Dir('#'))]
 group = DefineGroup('Applications', src, depend = [''], CPPPATH = CPPPATH)
 
 Return('group')
