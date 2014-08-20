@@ -265,10 +265,12 @@ sh1106_display_chinese(struct oled_device *oled, u8 x, u8 y, u8 *buf, u8 buf_siz
 	for(index = 0; index < buf_size; index++)
 	{
 		if(*(buf + index) < 0x80)
+        {
 			sh1106_write_cache(oled, x + index * 7, y, 7, 16, chinese_font_search((u32)*(buf + index)));
-		else
+        }
+        else
 		{
-			sh1106_write_cache(oled, x + index * 7, y, 14, 16, chinese_font_search(((u32)*(buf + index)<< 8) | (u32)*(buf + index+ 1)));
+			sh1106_write_cache(oled, x + index * 7, y, 14, 16, chinese_font_search(((u32)*(buf + index + 1)<< 8) | (u32)*(buf + index)));
 			index++;
 		}
 	}
