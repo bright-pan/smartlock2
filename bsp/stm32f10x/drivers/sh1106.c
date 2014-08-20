@@ -61,7 +61,8 @@
 #define bits_mask(x) (1<<(x))
 #define pixel_set(x, y, cache)	(cache[(x)][(y) >> 3] |= bits_mask((y) - (((y) >> 3) << 3)))// y - ((y >> 4) << 4) <==> y % 16;
 #define pixel_inverse(x, y) (cache[(x)][(y) >> 3] = (cache[(x)][(y) >> 3] & ~(bits_mask((y) - (((y) >> 3) << 3)))) | (~cache[(x)][(y) >> 4] & bits_mask((y) - (((y) >> 4) << 4))))
-#define pixel_clear(x, y)	(cache[(x)][(y) >> 3] &= ~(bits_mask((y) - (((y) >> 3) << 3))))// y - ((y >> 4) << 4) <==> y % 16;
+#define pixel_clear(x, y, cache)	(cache[(x)][(y) >> 3] &= ~(bits_mask((y) - (((y) >> 3) << 3))))// y - ((y >> 4) << 4) <==> y % 16;
+
 const u8 logo_bmp[] = {
 
 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -445,7 +446,21 @@ sh1106_clear(struct oled_device *oled, u8 x, u8 y, u8 x_size, 	u8 y_size)
 	}
 }
 
+__STATIC_INLINE void
+sh1106_set_pixel(struct oled_device *oled, u8 x, u8 y)
+{
+    struct private_user_data *user = (struct private_user_data *)oled->parent.user_data;
+    RT_ASSERT(x < CACHE_X_SIZE && y < CACHE_Y_SIZE);
+    pixel_set(x, y, user->cache);
+}
 
+__STATIC_INLINE void
+sh1106_clear_pixel(struct oled_device *oled, u8 x, u8 y)
+{
+    struct private_user_data *user = (struct private_user_data *)oled->parent.user_data;
+    RT_ASSERT(x < CACHE_X_SIZE && y < CACHE_Y_SIZE);
+    pixel_clear(x, y, user->cache);
+}
 
 /*
  * gpio pin ops configure
@@ -532,6 +547,8 @@ enum {
     SH1106_CMD_DISPLAY_BMP,
     SH1106_CMD_DISPLAY_LOGO,
     SH1106_CMD_DISPLAY,
+    SH1106_CMD_SET_PIXER,
+    SH1106_CMD_CLEAR_PIXER,
     SH1106_CMD_INIT,
     SH1106_CMD_ON,
     SH1106_CMD_OFF,
@@ -593,6 +610,16 @@ sh1106_control(struct oled_device *oled, rt_uint8_t cmd, void *arg)
     case SH1106_CMD_DISPLAY_CHINESE:
         {
             sh1106_display_chinese(oled,lpm->x, lpm->y, lpm->buf, lpm->buf_size);
+            break;
+        }
+    case SH1106_CMD_SET_PIXER:
+        {
+            sh1106_set_pixel(oled,lpm->x, lpm->y);
+            break;
+        }
+    case SH1106_CMD_CLEAR_PIXER:
+        {
+            sh1106_clear_pixel(oled,lpm->x, lpm->y);
             break;
         }
     case SH1106_CMD_DISPLAY_BMP:
@@ -755,6 +782,22 @@ lcd_display_bmp(u8 x, u8 y, u8 x_size, u8 *buf, u8 buf_size)
 
 }
 
+void
+lcd_pixer(u8 x, u8 y, u8 flag)
+{
+    rt_device_t dev;
+    struct sh1106_param lpm;
+
+    if ((dev = device_enable(DEVICE_NAME_OLED_SH1106)) == RT_NULL)
+        return;
+    lpm.x = x;
+    lpm.y = y;
+    if (flag)
+        rt_device_control(dev, SH1106_CMD_SET_PIXER, &lpm);
+    else
+        rt_device_control(dev, SH1106_CMD_CLEAR_PIXER, &lpm);
+}
+
 #ifdef RT_USING_FINSH
 #include <finsh.h>
 
@@ -765,5 +808,5 @@ FINSH_FUNCTION_EXPORT_ALIAS(lcd_inverse, lcd_ivs, [x y x_size y_size]);
 FINSH_FUNCTION_EXPORT_ALIAS(lcd_display_chinese, lcd_chs, [x y buf size]);
 FINSH_FUNCTION_EXPORT_ALIAS(lcd_display_logo, lcd_logo, [x y x_size y_size]);
 FINSH_FUNCTION_EXPORT_ALIAS(lcd_display_bmp, lcd_bmp, [x y buf size]);
-
+FINSH_FUNCTION_EXPORT_ALIAS(lcd_pixer, lcd_pixer, [x y]);
 #endif

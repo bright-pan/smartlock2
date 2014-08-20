@@ -37,4 +37,7 @@ lcd_display_logo(void);
 void
 lcd_display_bmp(u8, u8, u8, u8 *, u8);
 
+void
+lcd_pixer(u8, u8, u8);
+
 #endif
