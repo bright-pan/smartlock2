@@ -1,28 +1,25 @@
 #ifndef __MENU_H__
 #define __MENU_H__
 #include "rtthread.h"
-#include "commfun.h"
-#include "board.h"
+//#include "commfun.h"
+#include "gui.h"
+#define KEY_MAX_MENU_NUM					50
 
-#define KB_MAIL_TYPE_INPUT 1
-#define KB_MAIL_TYPE_SETMODE 2
-#define KB_MAIL_TYPE_TIMEOUT 3
+typedef struct 
+{
+	rt_uint8_t StateIndex;					//当前状态索引号
+	rt_uint8_t DnState;							//按下“向下”键时转向的状态索引号
+	rt_uint8_t UpState;							//按下“向上”键时转向的状态索引号
+	rt_uint8_t SureState;						//按下“回车”键时转向的状态索引号
+	rt_uint8_t BackState;						//按下“退回”键时转向的状态索引号
+	void(*CurrentOperate)(void);		//当前状态应该执行的能操作
+}KbdTabStruct;
 
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-typedef enum {
-	KB_MODE_NORMAL_AUTH = 0,
-	KB_MODE_SETTING_AUTH,
-    KB_MODE_SETTING,
-	KB_MODE_ADD_PASSWORD,
-	KB_MODE_MODIFY_SUPERPWD,
-	KB_MODE_ADD_FPRINT,
-}KB_MODE_TYPEDEF;
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-rt_err_t send_key_value_mail(uint16_t type, KB_MODE_TYPEDEF mode, uint8_t c);
-
+extern rt_uint8_t KeyFuncIndex;
+extern KbdTabStruct	KeyTab[KEY_MAX_MENU_NUM];
 
 void key_input_processing(void);
+
+rt_err_t menu_key_value_acquire(rt_uint8_t *KeyValue);
 
 #endif
