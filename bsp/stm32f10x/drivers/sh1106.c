@@ -704,7 +704,7 @@ lcd_display_string(u8 x, u8 y, u8 *buf, u8 buf_size, u8 inverse_flag)
     lpm.y = y;
     lpm.buf = buf;
     lpm.buf_size = buf_size;
-
+    lpm.inverse_flag = inverse_flag;
     rt_device_control(dev, SH1106_CMD_DISPLAY_STRING, &lpm);
 
 }
