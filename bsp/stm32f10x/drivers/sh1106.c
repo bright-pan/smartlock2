@@ -273,15 +273,18 @@ sh1106_display_chinese(struct oled_device *oled, u8 x, u8 y, u8 *buf, u8 buf_siz
 		if(*(buf + index) < 0x80)
         {
 			sh1106_write_cache(oled, x + index * 7, y, 7, 16, chinese_font_search((u32)*(buf + index)));
+            if (inverse_flag)
+                sh1106_inverse(oled, x + index * 7, y, 7, 16);
         }
         else
 		{
 			sh1106_write_cache(oled, x + index * 7, y, 14, 16, chinese_font_search(((u32)*(buf + index + 1)<< 8) | (u32)*(buf + index)));
 			index++;
+            if (inverse_flag)
+                sh1106_inverse(oled, x + index * 7, y, 14, 16);
 		}
 	}
-    if (inverse_flag)
-        sh1106_inverse(oled, x, y, buf_size * 8, 16);
+
 }
 static void 
 sh1106_display_bmp(struct oled_device *oled, u8 x, u8 y, u8 x_size, const u8 *buf, u32 buf_size)
