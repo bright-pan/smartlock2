@@ -25,8 +25,15 @@ typedef enum {
 #define LCD_X_MAX			128
 #define LCD_Y_MAX			64
 
+#define GUI_WIHIT			1
+#define GUI_BLACK			0
+
 #define SHOW_X_CENTERED(A)				(LCD_X_MAX-(rt_strlen(A)*8))/2				
-#define SHOW_Y_LINE(A)						A*16	
+#define SHOW_Y_LINE(A)						(A*16)	
+#define SHOW_X_ROW8(A)						(A*8)
+#define SHOW_X_ROW16(A)						(A*16)
+
+
 
 rt_err_t send_key_value_mail(uint16_t type, KB_MODE_TYPEDEF mode, uint8_t c);
 
@@ -34,10 +41,19 @@ rt_err_t send_key_value_mail(uint16_t type, KB_MODE_TYPEDEF mode, uint8_t c);
 rt_err_t gui_key_input(rt_uint8_t *KeyValue);
 
 //显示字符串
-void gui_display_string(rt_uint8_t x,rt_uint8_t y,rt_uint8_t *string);
+void gui_display_string(rt_uint8_t x,rt_uint8_t y,rt_uint8_t *string,rt_uint8_t color);
+
+//清屏
+void gui_clear(rt_uint8_t x1,rt_uint8_t y1,rt_uint8_t x2,rt_uint8_t y2);
 
 //显示更新
 void gui_display_update(void);
+
+//画线
+void gui_line(rt_uint8_t x1,rt_uint8_t y1,rt_uint8_t x2,rt_uint8_t y2,rt_uint8_t color);  
+
+//画矩形
+void gui_box(rt_uint8_t x0, rt_uint8_t y0, rt_uint8_t x1, rt_uint8_t y1,rt_uint8_t color,rt_uint8_t fill);
 
 #endif
 

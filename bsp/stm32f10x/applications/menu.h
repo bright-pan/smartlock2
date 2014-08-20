@@ -17,6 +17,7 @@ typedef struct
 
 extern rt_uint8_t KeyFuncIndex;
 extern KbdTabStruct	KeyTab[KEY_MAX_MENU_NUM];
+extern void(*current_operation_index)(void);
 
 void key_input_processing(void);
 

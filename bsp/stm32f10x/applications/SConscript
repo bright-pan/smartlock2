@@ -12,6 +12,7 @@ apppubulic.c
 menu.c
 keyprocess_t.c
 menu_1.c
+gui.c
 """)
 
 CPPPATH = [cwd, str(Dir('#'))]
