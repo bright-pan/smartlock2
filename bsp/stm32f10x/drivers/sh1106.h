@@ -17,10 +17,10 @@
 #include "stm32f10x.h"
 
 void
-lcd_display_string(u8 , u8 , u8 *, u8);
+lcd_display_string(u8 , u8 , u8 *, u8, u8);
 
 void
-lcd_display_chinese(u8, u8, u8 *, u8);
+lcd_display_chinese(u8, u8, u8 *, u8, u8);
 
 void
 lcd_display(u8, u8, u8, u8);

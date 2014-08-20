@@ -63,6 +63,10 @@
 #define pixel_inverse(x, y) (cache[(x)][(y) >> 3] = (cache[(x)][(y) >> 3] & ~(bits_mask((y) - (((y) >> 3) << 3)))) | (~cache[(x)][(y) >> 4] & bits_mask((y) - (((y) >> 4) << 4))))
 #define pixel_clear(x, y, cache)	(cache[(x)][(y) >> 3] &= ~(bits_mask((y) - (((y) >> 3) << 3))))// y - ((y >> 4) << 4) <==> y % 16;
 
+
+static void 
+sh1106_inverse(struct oled_device *, u8, u8, u8, u8);
+
 const u8 logo_bmp[] = {
 
 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -247,7 +251,7 @@ sh1106_write_cache(struct oled_device *oled,
 }
 
 static void 
-sh1106_display_string(struct oled_device *oled, u8 x, u8 y, u8 *buf, u8 buf_size)
+sh1106_display_string(struct oled_device *oled, u8 x, u8 y, u8 *buf, u8 buf_size, u8 inverse_flag)
 {
 	u8 index = 0;
 
@@ -255,10 +259,12 @@ sh1106_display_string(struct oled_device *oled, u8 x, u8 y, u8 *buf, u8 buf_size
 	{
 		sh1106_write_cache(oled, x + index * 8, y, 8, 8, ASCII_FONT[*(buf + index) - 0x20]);
 	}
+    if (inverse_flag)
+        sh1106_inverse(oled, x, y, buf_size * 8, 8);
 }
 
 static void 
-sh1106_display_chinese(struct oled_device *oled, u8 x, u8 y, u8 *buf, u8 buf_size)
+sh1106_display_chinese(struct oled_device *oled, u8 x, u8 y, u8 *buf, u8 buf_size, u8 inverse_flag)
 {
 	u8 index = 0;
 
@@ -274,6 +280,8 @@ sh1106_display_chinese(struct oled_device *oled, u8 x, u8 y, u8 *buf, u8 buf_siz
 			index++;
 		}
 	}
+    if (inverse_flag)
+        sh1106_inverse(oled, x, y, buf_size * 8, 16);
 }
 static void 
 sh1106_display_bmp(struct oled_device *oled, u8 x, u8 y, u8 x_size, const u8 *buf, u32 buf_size)
@@ -565,6 +573,7 @@ struct sh1106_param {
     u8 y_size;
     u8 *buf;
     u32 buf_size;
+    u8 inverse_flag;
 };
 
 static rt_err_t 
@@ -606,12 +615,12 @@ sh1106_control(struct oled_device *oled, rt_uint8_t cmd, void *arg)
         }
     case SH1106_CMD_DISPLAY_STRING:
         {
-            sh1106_display_string(oled,lpm->x, lpm->y,lpm->buf, lpm->buf_size);
+            sh1106_display_string(oled,lpm->x, lpm->y,lpm->buf, lpm->buf_size, lpm->inverse_flag);
             break;
         }
     case SH1106_CMD_DISPLAY_CHINESE:
         {
-            sh1106_display_chinese(oled,lpm->x, lpm->y, lpm->buf, lpm->buf_size);
+            sh1106_display_chinese(oled,lpm->x, lpm->y, lpm->buf, lpm->buf_size, lpm->inverse_flag);
             break;
         }
     case SH1106_CMD_SET_PIXER:
@@ -681,7 +690,7 @@ rt_hw_sh1106_register(void)
 INIT_DEVICE_EXPORT(rt_hw_sh1106_register);
 
 void
-lcd_display_string(u8 x, u8 y, u8 *buf, u8 buf_size)
+lcd_display_string(u8 x, u8 y, u8 *buf, u8 buf_size, u8 inverse_flag)
 {
     rt_device_t dev;
     struct sh1106_param lpm;
@@ -692,12 +701,13 @@ lcd_display_string(u8 x, u8 y, u8 *buf, u8 buf_size)
     lpm.y = y;
     lpm.buf = buf;
     lpm.buf_size = buf_size;
+
     rt_device_control(dev, SH1106_CMD_DISPLAY_STRING, &lpm);
 
 }
 
 void
-lcd_display_chinese(u8 x, u8 y, u8 *buf, u8 buf_size)
+lcd_display_chinese(u8 x, u8 y, u8 *buf, u8 buf_size, u8 inverse_flag)
 {
     rt_device_t dev;
     struct sh1106_param lpm;
@@ -708,6 +718,7 @@ lcd_display_chinese(u8 x, u8 y, u8 *buf, u8 buf_size)
     lpm.y = y;
     lpm.buf = buf;
     lpm.buf_size = buf_size;
+    lpm.inverse_flag = inverse_flag;
     rt_device_control(dev, SH1106_CMD_DISPLAY_CHINESE, &lpm);
 
 }
@@ -803,11 +814,11 @@ lcd_pixer(u8 x, u8 y, u8 flag)
 #ifdef RT_USING_FINSH
 #include <finsh.h>
 
-FINSH_FUNCTION_EXPORT_ALIAS(lcd_display_string, lcd_str, [x y buf size]);
+FINSH_FUNCTION_EXPORT_ALIAS(lcd_display_string, lcd_str, [x y buf size inverse_flag]);
 FINSH_FUNCTION_EXPORT_ALIAS(lcd_display, lcd_ds, [x y x_size y_size]);
 FINSH_FUNCTION_EXPORT_ALIAS(lcd_clear, lcd_clr, [x y x_size y_size]);
 FINSH_FUNCTION_EXPORT_ALIAS(lcd_inverse, lcd_ivs, [x y x_size y_size]);
-FINSH_FUNCTION_EXPORT_ALIAS(lcd_display_chinese, lcd_chs, [x y buf size]);
+FINSH_FUNCTION_EXPORT_ALIAS(lcd_display_chinese, lcd_chs, [x y buf size inverse_flag]);
 FINSH_FUNCTION_EXPORT_ALIAS(lcd_display_logo, lcd_logo, [x y x_size y_size]);
 FINSH_FUNCTION_EXPORT_ALIAS(lcd_display_bmp, lcd_bmp, [x y buf size]);
 FINSH_FUNCTION_EXPORT_ALIAS(lcd_pixer, lcd_pixer, [x y]);
