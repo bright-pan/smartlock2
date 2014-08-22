@@ -25,13 +25,13 @@ typedef enum {
 #define LCD_X_MAX			128
 #define LCD_Y_MAX			64
 
-#define GUI_WIHIT			1
-#define GUI_BLACK			0
+#define GUI_WIHIT			0
+#define GUI_BLACK			1
 
 #define SHOW_X_CENTERED(A)				(LCD_X_MAX-(rt_strlen(A)*8))/2				
-#define SHOW_Y_LINE(A)						(A*16)	
-#define SHOW_X_ROW8(A)						(A*8)
-#define SHOW_X_ROW16(A)						(A*16)
+#define SHOW_Y_LINE(A)						((A)*16)	
+#define SHOW_X_ROW8(A)						((A)*8)
+#define SHOW_X_ROW16(A)						((A)*16)
 
 
 
@@ -54,6 +54,8 @@ void gui_line(rt_uint8_t x1,rt_uint8_t y1,rt_uint8_t x2,rt_uint8_t y2,rt_uint8_t
 
 //»­¾ØÐÎ
 void gui_box(rt_uint8_t x0, rt_uint8_t y0, rt_uint8_t x1, rt_uint8_t y1,rt_uint8_t color,rt_uint8_t fill);
+
+void gui_china16s(rt_uint8_t x, rt_uint8_t y, rt_uint8_t *s, rt_uint8_t fColor);
 
 #endif
 

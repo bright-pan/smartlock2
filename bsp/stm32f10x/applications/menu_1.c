@@ -10,182 +10,294 @@
  *
  * 2014-08-19 wangzw <wangzw@yuettak.com> 
  							管理员登陆界面
+ 							各级菜单界面
  							
  * Copyright (C) 2013 Yuettak Co.,Ltd
  ********************************************************************/
 
 #include"menu_1.h"
+#define PAGE_MAX_SHOW_NUM						4
+#define SHOW_LAND_UI_STRING1				"管理员登陆"
+#define SHOW_LAND_UI_STRING2				"密码:"
+#define SHOW_LAND_UI_PS_ERR					"密码错误!"
+#define SHOW_PW_HIDE_CH							'*'
 
-#define SHOW_LAND_UI_STRING1				"Admin Landing"
-#define SHOW_LAND_UI_STRING2				"KEY:"
-
-#define SHOW_MENU_UI_SYSMANAGE			"System Manage"
-
-void menu_1_ui_show(void)
+//第一层菜单显示内容
+#define MENU_FIRST_NUM							3			
+static const rt_uint8_t MenuFirst[MENU_FIRST_NUM][8*2] = 
 {
-	//请输入管理员密码
-	//
-	//
-	
-}
+	{"用户管理"},
+	{"系统管理"},
+	{">>>>退出"},
+};
 
-rt_err_t string_add_char(rt_uint8_t str[],rt_uint8_t ch,rt_uint8_t str_size)
+//菜单1下第二层菜单显示
+#define MENU1_SECOND_NUM						2
+static const rt_uint8_t Menu1Second[MENU1_SECOND_NUM][8*2] = 
 {
-	rt_uint8_t i;
+	{"用户新建"},
+	{"用户修改"},
+};
 
-	RT_ASSERT(str_size > 1);
+//菜单2下第二层菜单显示
+#define MENU2_SECOND_NUM						2
+static const rt_uint8_t Menu2Second[MENU2_SECOND_NUM][8*2] = 
+{
+	{"本机信息"},
+	{"参数设置"},
+};
+
+//管理员密码检测
+rt_err_t admin_password_check(rt_uint8_t *password)
+{	
+	rt_uint32_t result;
 	
-	for(i=0;i<str_size-1;i++)
+	result = rt_strncmp(password,"123456",6);
+	if(result == 0)
 	{
-		if(str[i] == 0)
-		{
-			str[i] = ch;
-			str[i+1] = 0;
-
-			return RT_EOK;
-		}
+		return RT_EOK;
 	}
 
 	return RT_ERROR;
 }
 
-rt_err_t string_del_char(rt_uint8_t str[],rt_uint8_t ch,rt_uint8_t str_size)
-{
-	rt_uint8_t i;
-
-	RT_ASSERT(str_size > 1);
-	
-	for(i=0;i<str_size;i++)
-	{
-		if(i == 0)
-		{
-			if(str[i] == 0)
-			{
-				return RT_ERROR;
-			}
-		}
-		else if(str[i] == 0)
-		{
-			str[i-1] = 0;
-
-			return RT_EOK;
-		}
-	}
-
-	return RT_ERROR;
-}
-
-void string_hide_string(const rt_uint8_t src[],rt_uint8_t str[],rt_uint8_t size)
-{
-  rt_uint8_t i;
-  
-	RT_ASSERT(size > 1);
-
-  rt_memset(str,0,size);
-
-	for(i=0;i<rt_strlen(src);i++)
-	{
-		if(src[i] != 0)
-		{
-			str[i] = '*';
-		}
-	}
-}
-void menu_1_processing(void)
+void menu_0_processing(void)
 {
 	rt_uint8_t buf[8];
 	rt_uint8_t ShowBuf[8];
+	rt_uint8_t GlintStatus = 0;
 
 	rt_kprintf("进入一级1菜单\n");
 
-	gui_clear(0,0,128,64);
-	gui_display_string(SHOW_X_CENTERED(SHOW_LAND_UI_STRING1),SHOW_Y_LINE(0),SHOW_LAND_UI_STRING1,GUI_WIHIT);
-
-  gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(2),SHOW_LAND_UI_STRING2,GUI_WIHIT);
-
-	gui_box(SHOW_X_ROW8(5)-1,SHOW_Y_LINE(2)-1,SHOW_X_ROW8(15)+1,SHOW_Y_LINE(3)+1,1,0);
-
-  gui_display_update();
-
-	rt_memset(buf,0,8);
-	rt_memset(ShowBuf,0,8);
 	while(1)
 	{
-		rt_err_t result;
-		rt_uint8_t KeyValue;
+    gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+    gui_display_string(SHOW_X_CENTERED(SHOW_LAND_UI_STRING1),SHOW_Y_LINE(0),SHOW_LAND_UI_STRING1,GUI_WIHIT);
+    
+    gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(2),SHOW_LAND_UI_STRING2,GUI_WIHIT);
+    
+    //gui_box(SHOW_X_ROW8(5)-1,SHOW_Y_LINE(2)-1,SHOW_X_ROW8(15)+1,SHOW_Y_LINE(3)+1,1,0);
+    
+    gui_display_update();
+    
+    rt_memset(buf,0,8);
+    rt_memset(ShowBuf,0,8);
+    while(1)
+    {
+      rt_err_t result;
+      rt_uint8_t KeyValue;
+    
+      result = gui_key_input(&KeyValue);
+      if(result == RT_EOK)
+      {
+        if(KeyValue >= '0' && KeyValue <= '9')
+        {
+          result = string_add_char(buf,KeyValue,8);
+          if(result == RT_EOK)
+          {
+            string_hide_string((const rt_uint8_t *)buf,ShowBuf,SHOW_PW_HIDE_CH,8);
+            gui_clear(SHOW_X_ROW8(5),SHOW_Y_LINE(2),SHOW_X_ROW8(15),SHOW_Y_LINE(3));
+            gui_display_string(SHOW_X_ROW8(5),SHOW_Y_LINE(2),ShowBuf,GUI_WIHIT);
+          }
+          else
+          {
+            //输入数量超过8个
+          }
+        }
+        else if(KeyValue == '*')
+        {
+          rt_kprintf("核对密码\n");
+          result =  admin_password_check(buf);
+          if(result == RT_EOK)
+          {
+            KeyFuncIndex = KeyTab[ KeyFuncIndex].SureState;
+            current_operation_index = KeyTab[KeyFuncIndex].CurrentOperate;
+            current_operation_index();
+            return ;
+          }
+          else
+          {
+            //密码错误
+            gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(3),SHOW_LAND_UI_PS_ERR,GUI_WIHIT);
+            gui_display_update();
+            rt_thread_delay(RT_TICK_PER_SECOND);
+            break;
+          }
+        }
+        else if(KeyValue == '#')
+        {
+          rt_kprintf("删除\nn");
+          result = string_del_char(buf,8);
+          if(result == RT_EOK)
+          {
+            string_hide_string((const rt_uint8_t *)buf,ShowBuf,SHOW_PW_HIDE_CH,8);
+            gui_clear(SHOW_X_ROW8(5),SHOW_Y_LINE(2),SHOW_X_ROW8(15),SHOW_Y_LINE(3));
+            gui_display_string(SHOW_X_ROW8(5),SHOW_Y_LINE(2),ShowBuf,GUI_WIHIT);
+          }
+        }
+      }
+      else
+      {
+        menu_inputchar_glint(SHOW_X_ROW8(5+rt_strlen(ShowBuf)),SHOW_Y_LINE(2),GlintStatus%2);
+        GlintStatus++;
+      }
+      gui_display_update();
+    }
 
-		result = gui_key_input(&KeyValue);
-		if(result == RT_EOK)
-		{
-			if(KeyValue >= '0' && KeyValue <= '9')
-			{
-				rt_kprintf("input :%s\n",buf);
-				rt_kprintf("input :%s\n",ShowBuf);
-				result = string_add_char(buf,KeyValue,8);
-				if(result == RT_EOK)
-				{
-					string_hide_string((const rt_uint8_t *)buf,ShowBuf,8);
-					gui_clear(SHOW_X_ROW8(5),SHOW_Y_LINE(2),SHOW_X_ROW8(15),SHOW_Y_LINE(3));
-					gui_display_string(SHOW_X_ROW8(5),SHOW_Y_LINE(2),ShowBuf,GUI_WIHIT);
-				}
-				else
-				{
-					//输入数量超过8个
-				}
-			}
-			else if(KeyValue == '#')
-			{
-				rt_kprintf("核对密码\n");
-				KeyFuncIndex = KeyTab[ KeyFuncIndex].SureState;
-				current_operation_index = KeyTab[KeyFuncIndex].CurrentOperate;
-				current_operation_index();
-				return ;
-			}
-			else if(KeyValue == '*')
-			{
-				rt_kprintf("删除\nn");
-				result = string_del_char(buf,KeyValue,8);
-				if(result == RT_EOK)
-				{
-					string_hide_string((const rt_uint8_t *)buf,ShowBuf,8);
-					gui_clear(SHOW_X_ROW8(5),SHOW_Y_LINE(2),SHOW_X_ROW8(15),SHOW_Y_LINE(3));
-					gui_display_string(SHOW_X_ROW8(5),SHOW_Y_LINE(2),ShowBuf,GUI_WIHIT);
-				}
-			}
-			gui_display_update();
-		}
 	}
 }
 
 
 
-//系统管理
-void menu_2_processing(void)
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//菜单UI代码
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void menu_first_ui(rt_uint8_t InPOS)
 {
-	rt_kprintf("进入二级1菜单\n");
-	gui_clear(0,0,128,64);
-	gui_display_string(SHOW_X_ROW8(5),SHOW_Y_LINE(1),"menu1",GUI_BLACK);
-	gui_display_string(SHOW_X_ROW8(5),SHOW_Y_LINE(2),"menu2",GUI_WIHIT);
+	rt_uint8_t page;
+	rt_uint8_t pos;
+	rt_uint8_t i;
+
+	page = InPOS /PAGE_MAX_SHOW_NUM;//计算显示在那一页
+	pos = InPOS % PAGE_MAX_SHOW_NUM;//当前选中的位置
+	gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+	for(i=0;i<PAGE_MAX_SHOW_NUM;i++)
+	{
+		if(page*PAGE_MAX_SHOW_NUM+i >= MENU_FIRST_NUM)
+		{
+			break;
+		}
+		if(i == pos)
+		{
+			gui_display_string(SHOW_X_CENTERED((const char*)MenuFirst[page*PAGE_MAX_SHOW_NUM+i]),
+												 SHOW_Y_LINE(i),
+												 (rt_uint8_t *)MenuFirst[page*PAGE_MAX_SHOW_NUM+i],
+												 GUI_BLACK);
+		}
+		else
+		{
+			gui_display_string(SHOW_X_CENTERED((const char*)MenuFirst[page*PAGE_MAX_SHOW_NUM+i]),
+												 SHOW_Y_LINE(i),
+												 (rt_uint8_t *)MenuFirst[page*PAGE_MAX_SHOW_NUM+i],
+												 GUI_WIHIT);
+		}
+	}
 	gui_display_update();
 }
 
+void menu_1_processing(void)
+{
+	rt_kprintf("进入二级1菜单\n");
+	
+	menu_first_ui(0);
+}
+
+
+void menu_2_processing(void)
+{
+	rt_kprintf("进入二级2菜单\n");
+	menu_first_ui(1);
+}
 
 void menu_3_processing(void)
 {
-	rt_kprintf("进入二级2菜单\n");
-	gui_clear(0,0,128,64);
-	gui_display_string(SHOW_X_ROW8(5),SHOW_Y_LINE(1),"menu1",GUI_WIHIT);
-	gui_display_string(SHOW_X_ROW8(5),SHOW_Y_LINE(2),"menu2",GUI_BLACK);
+	rt_kprintf("进入三级1菜单\n");
+	menu_first_ui(2);
+}
+
+void menu1_second_ui(rt_uint8_t InPOS)
+{
+	rt_uint8_t page;
+	rt_uint8_t pos;
+	rt_uint8_t i;
+
+	page = InPOS /PAGE_MAX_SHOW_NUM;//计算显示在那一页
+	pos = InPOS % PAGE_MAX_SHOW_NUM;//当前选中的位置
+	gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+  for(i=0;i<PAGE_MAX_SHOW_NUM;i++)
+  {
+    if(page*PAGE_MAX_SHOW_NUM+i >= MENU1_SECOND_NUM)
+    {
+      break;
+    }
+    if(i == pos)
+    {
+      gui_display_string(SHOW_X_CENTERED((const char*)Menu1Second[page*PAGE_MAX_SHOW_NUM+i]),
+                         SHOW_Y_LINE(i),
+                         (rt_uint8_t *)Menu1Second[page*PAGE_MAX_SHOW_NUM+i],
+                         GUI_BLACK);
+    }
+    else
+    {
+      gui_display_string(SHOW_X_CENTERED((const char*)Menu1Second[page*PAGE_MAX_SHOW_NUM+i]),
+                         SHOW_Y_LINE(i),
+                         (rt_uint8_t *)Menu1Second[page*PAGE_MAX_SHOW_NUM+i],
+                         GUI_WIHIT);
+    }
+  }
+
 	gui_display_update();
 }
 
 void menu_4_processing(void)
 {
-	rt_kprintf("进入三级1菜单\n");
+	rt_kprintf("进入三级3菜单\n");
+  menu1_second_ui(0);
 }
 
 void menu_5_processing(void)
 {
 	rt_kprintf("进入三级3菜单\n");
+	menu1_second_ui(1);
 }
+
+void menu2_second_ui(rt_uint8_t InPOS)
+{
+	rt_uint8_t page;
+	rt_uint8_t pos;
+	rt_uint8_t i;
+
+	page = InPOS /PAGE_MAX_SHOW_NUM;//计算显示在那一页
+	pos = InPOS % PAGE_MAX_SHOW_NUM;//当前选中的位置
+	gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+  for(i=0;i<PAGE_MAX_SHOW_NUM;i++)
+  {
+    if(page*PAGE_MAX_SHOW_NUM+i >= MENU2_SECOND_NUM)
+    {
+      break;
+    }
+    if(i == pos)
+    {
+      gui_display_string(SHOW_X_CENTERED((const char*)Menu2Second[page*PAGE_MAX_SHOW_NUM+i]),
+                        SHOW_Y_LINE(i),
+                        (rt_uint8_t *)Menu2Second[page*PAGE_MAX_SHOW_NUM+i],
+                        GUI_BLACK);
+    }
+    else
+    {
+      gui_display_string(SHOW_X_CENTERED((const char*)Menu2Second[page*PAGE_MAX_SHOW_NUM+i]),
+                         SHOW_Y_LINE(i),
+                         (rt_uint8_t *)Menu2Second[page*PAGE_MAX_SHOW_NUM+i],
+                         GUI_WIHIT);
+    }
+  }
+
+	gui_display_update();
+}
+
+
+void menu_6_processing(void)
+{
+	rt_kprintf("进入三级3菜单\n");
+	menu2_second_ui(0);
+}
+
+void menu_7_processing(void)
+{
+	rt_kprintf("进入三级3菜单\n");
+	menu2_second_ui(1);
+}
+
+
 

@@ -10,7 +10,7 @@
 
 void keyprocess_thread_entry(void *arg)
 {
-	rt_device_t dev;
+	//rt_device_t dev;
 
 	while(1)
 	{
