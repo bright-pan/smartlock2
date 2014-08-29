@@ -41,7 +41,7 @@ rt_err_t send_key_value_mail(uint16_t type, KB_MODE_TYPEDEF mode, uint8_t c);
 rt_err_t gui_key_input(rt_uint8_t *KeyValue);
 
 //ÏÔÊ¾×Ö·û´®
-void gui_display_string(rt_uint8_t x,rt_uint8_t y,rt_uint8_t *string,rt_uint8_t color);
+void gui_display_string(rt_uint8_t x,rt_uint8_t y,const rt_uint8_t *string,rt_uint8_t color);
 
 //ÇåÆÁ
 void gui_clear(rt_uint8_t x1,rt_uint8_t y1,rt_uint8_t x2,rt_uint8_t y2);

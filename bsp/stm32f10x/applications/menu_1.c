@@ -52,7 +52,7 @@ rt_err_t admin_password_check(rt_uint8_t *password)
 {	
 	rt_uint32_t result;
 	
-	result = rt_strncmp(password,"123456",6);
+	result = rt_strncmp((const char*)password,"123456",6);
 	if(result == 0)
 	{
 		return RT_EOK;
@@ -138,8 +138,8 @@ void menu_0_processing(void)
       }
       else
       {
-        menu_inputchar_glint(SHOW_X_ROW8(5+rt_strlen(ShowBuf)),SHOW_Y_LINE(2),GlintStatus%2);
-        GlintStatus++;
+      	GlintStatus++;
+        menu_inputchar_glint(SHOW_X_ROW8(5+rt_strlen((const char*)ShowBuf)),SHOW_Y_LINE(2),GlintStatus%2);
       }
       gui_display_update();
     }

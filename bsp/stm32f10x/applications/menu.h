@@ -5,6 +5,7 @@
 #include "gui.h"
 #define KEY_MAX_MENU_NUM					50
 #define MENU_PASSWORD_MAX_LEN			8
+#define MENU_PHONE_MAX_LEN				12
 
 typedef struct 
 {

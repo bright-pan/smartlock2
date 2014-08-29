@@ -77,10 +77,10 @@ rt_err_t gui_key_input(rt_uint8_t *KeyValue)
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void gui_display_string(rt_uint8_t x,rt_uint8_t y,rt_uint8_t *string,rt_uint8_t color)
+void gui_display_string(rt_uint8_t x,rt_uint8_t y,const rt_uint8_t *string,rt_uint8_t color)
 {	
   //lcd_display_chinese(x,y,string,rt_strlen(string),color);
-  gui_china16s(x,y,string,color);
+  gui_china16s(x,y,(rt_uint8_t *)string,color);
 }
 void gui_clear(rt_uint8_t x1,rt_uint8_t y1,rt_uint8_t x2,rt_uint8_t y2)
 {

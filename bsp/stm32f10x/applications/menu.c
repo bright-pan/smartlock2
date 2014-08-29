@@ -1,6 +1,7 @@
 #include"menu.h"
 #include"menu_1.h"
 #include"menu_2.h"
+#include"menu_3.h"
 #define SHOW_GLINT_CH							"_"
 
 
@@ -25,26 +26,34 @@ KbdTabStruct	KeyTab[KEY_MAX_MENU_NUM] =
 
 	//三级
 	{4,5,5,8,1,menu_4_processing},//用户新增
-	{5,4,4,5,1,menu_5_processing},//用户修改
+	{5,4,4,22,1,menu_5_processing},//用户修改
 	
-	{6,7,7,6,2,menu_6_processing},//系统信息
+	{6,7,7,20,2,menu_6_processing},//系统信息
 	{7,6,6,7,2,menu_7_processing},//系统参数
 
 	//四级
-	{8,9,13,14,8,menu_8_processing},//新增密码 >>同时创建账号
-	{9,10,8,15,8,menu_9_processing},//新增指纹
-	{10,11,9,16,8,menu_10_processing},//新增手机
-	{11,12,10,17,8,menu_11_processing},//保存退出
-	{12,13,11,18,12,menu_12_processing},//查看信息
-	{13,8,12,4,8,menu_13_processing},//退出
+	{8,9,13,14,4,menu_8_processing},//新增密码 >>同时创建账号
+	{9,10,8,15,4,menu_9_processing},//新增指纹
+	{10,11,9,16,4,menu_10_processing},//新增手机
+	{11,12,10,17,4,menu_11_processing},//保存退出
+	{12,13,11,18,4,menu_12_processing},//查看信息
+	{13,8,12,19,4,menu_13_processing},//退出
 
 	//五级
 	{14,14,14,14,8,menu_14_processing},//录入密码
-	{15,14,14,14,8,menu_15_processing},//新增密码处理
-	{16,14,14,14,8,menu_16_processing},//新增密码处理
-	{17,14,14,8,11,menu_17_processing},//新增密码处理
-	{18,14,14,14,8,menu_18_processing},//新增密码处理
-	{19,14,14,14,8,menu_19_processing},//新增密码处理
+	{15,15,15,15,9,menu_15_processing},//录入指纹
+	{16,16,16,16,10,menu_16_processing},//录入电话
+	{17,17,17,4,11,menu_17_processing},//保存退出
+	{18,18,18,18,12,menu_18_processing},//查看信息
+	{19,19,19,4,13,menu_19_processing},//退出
+
+	//四级
+	{20,20,20,20,6,menu_20_processing},//显示本机信息
+	{21,21,21,21,7,menu_21_processing},//显示本机信息
+
+	{22,22,22,22,7,menu_22_processing},//显示本机信息
+	{23,23,23,23,7,menu_23_processing},//显示本机信息
+
 };
 
 

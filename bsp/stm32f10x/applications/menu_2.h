@@ -18,6 +18,11 @@ void menu_17_processing(void);
 void menu_18_processing(void);
 void menu_19_processing(void);
 
+
+void menu_22_processing(void);
+void menu_23_processing(void);
+
+
 #endif
 
 
