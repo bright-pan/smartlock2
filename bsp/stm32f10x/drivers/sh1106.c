@@ -24,7 +24,7 @@
 
 #define DEVICE_NAME_OLED_SH1106 "sh1106"
 
-//////////////////////////////////////////////////////////////////////////////////	 
+//////////////////////////////////////////////////////////////////////////////////
 //三线接口
 #define SH1106_CS_PORT	GPIOA
 #define SH1106_CS_PIN	GPIO_Pin_15
@@ -37,8 +37,8 @@
 
 #define SH1106_SCL_PORT	GPIOB
 #define SH1106_SCL_PIN	GPIO_Pin_3
-		    						  
-//-----------------SH1106端口定义----------------  					   
+
+//-----------------SH1106端口定义----------------
 
 #define SH1106_CS_Clr()  GPIO_ResetBits(SH1106_CS_PORT,SH1106_CS_PIN)
 #define SH1106_CS_Set()  GPIO_SetBits(SH1106_CS_PORT,SH1106_CS_PIN)
@@ -58,13 +58,13 @@
 #define CACHE_X_SIZE 128
 #define CACHE_Y_SIZE 64
 #define CACHE_PAGES (CACHE_Y_SIZE >> 3)
-#define bits_mask(x) (1<<(x))
+
 #define pixel_set(x, y, cache)	(cache[(x)][(y) >> 3] |= bits_mask((y) - (((y) >> 3) << 3)))// y - ((y >> 4) << 4) <==> y % 16;
 #define pixel_inverse(x, y) (cache[(x)][(y) >> 3] = (cache[(x)][(y) >> 3] & ~(bits_mask((y) - (((y) >> 3) << 3)))) | (~cache[(x)][(y) >> 4] & bits_mask((y) - (((y) >> 4) << 4))))
 #define pixel_clear(x, y, cache)	(cache[(x)][(y) >> 3] &= ~(bits_mask((y) - (((y) >> 3) << 3))))// y - ((y >> 4) << 4) <==> y % 16;
 
 
-static void 
+static void
 sh1106_inverse(struct oled_device *, u8, u8, u8, u8);
 
 const u8 logo_bmp[] = {
@@ -124,7 +124,7 @@ __STATIC_INLINE void sh1106_write(u8 dat,u8 cmd)
         SH1106_SDIN_Clr();
         delay_us(1);
         SH1106_SCLK_Set();
-	} else {  
+	} else {
 		SH1106_SCLK_Clr();
 		delay_us(1);
 		SH1106_SDIN_Set();
@@ -132,13 +132,13 @@ __STATIC_INLINE void sh1106_write(u8 dat,u8 cmd)
 		SH1106_SCLK_Set();
 	}
 	//delay_us(10);
-	for (i = 0;i < 8; i++) {	  
+	for (i = 0;i < 8; i++) {
 		SH1106_SCLK_Clr();
 		if (dat & 0x80)
             SH1106_SDIN_Set();
 		else
             SH1106_SDIN_Clr();
-        delay_us(1); 
+        delay_us(1);
         SH1106_SCLK_Set();
         delay_us(1);
         dat <<= 1;
@@ -149,25 +149,25 @@ __STATIC_INLINE void sh1106_write(u8 dat,u8 cmd)
         SH1106_SDIN_Clr();
         delay_us(1);
         SH1106_SCLK_Set();
-	} else {  
+	} else {
 		SH1106_SCLK_Clr();
 		delay_us(1);
 		SH1106_SDIN_Set();
 		delay_us(1);
 		SH1106_SCLK_Set();
 	}
-	SH1106_CS_Set();	  
+	SH1106_CS_Set();
 }
 const static u8 bit_map[8] = {
 
-	0x00, 0x01, 0x03, 0x07, 
+	0x00, 0x01, 0x03, 0x07,
 	0x0f, 0x1f, 0x3f, 0x7f
 };
 
-static void 
-sh1106_write_cache(struct oled_device *oled, 
-                          u8 x, u8 y, 
-                          u8 x_size, u8 y_size, 
+static void
+sh1106_write_cache(struct oled_device *oled,
+                          u8 x, u8 y,
+                          u8 x_size, u8 y_size,
                           const u8 *data_array)
 {
 	u8 col,cols;
@@ -180,12 +180,12 @@ sh1106_write_cache(struct oled_device *oled,
 	u8 ys_bytes = 0;
 
     struct private_user_data *user = (struct private_user_data *)oled->parent.user_data;
-    
+
     RT_ASSERT(x+x_size <= CACHE_X_SIZE);
     RT_ASSERT(y+y_size <= CACHE_Y_SIZE);
-	
+
     ys_bytes = y_size >> 3;
-	
+
 	if(x_size)
 		x_size--;
 	if(y_size)
@@ -221,7 +221,7 @@ sh1106_write_cache(struct oled_device *oled,
 					user->cache[col][page + 1] &= ~bit_map[page_offset] << 1;
 					user->cache[col][page + 1] |= data & ((bit_map[page_offset] << 1) + 1);
 				}
-			}			
+			}
 		}
 	}
 	else if(ys_bytes == 1)
@@ -244,13 +244,13 @@ sh1106_write_cache(struct oled_device *oled,
 					data >>= 8 - page_offset;
 					user->cache[col][page + 1] &= ~bit_map[page_offset] << 1;
 					user->cache[col][page + 1] |= data & ((bit_map[page_offset] << 1) + 1);
-				}		
-		}		
+				}
+		}
 	}
 
 }
 
-static void 
+static void
 sh1106_display_string(struct oled_device *oled, u8 x, u8 y, u8 *buf, u8 buf_size, u8 inverse_flag)
 {
 	u8 index = 0;
@@ -263,7 +263,7 @@ sh1106_display_string(struct oled_device *oled, u8 x, u8 y, u8 *buf, u8 buf_size
         sh1106_inverse(oled, x, y, buf_size * 8, 8);
 }
 
-static void 
+static void
 sh1106_display_chinese(struct oled_device *oled, u8 x, u8 y, u8 *buf, u8 buf_size, u8 inverse_flag)
 {
 	u8 index = 0;
@@ -286,13 +286,13 @@ sh1106_display_chinese(struct oled_device *oled, u8 x, u8 y, u8 *buf, u8 buf_siz
 	}
 
 }
-static void 
+static void
 sh1106_display_bmp(struct oled_device *oled, u8 x, u8 y, u8 x_size, const u8 *buf, u32 buf_size)
 {
 	u32 index = 0;
 	u32 step = buf_size / x_size;
 	for(index = 0; index < step; index++){
-		
+
 		sh1106_write_cache(oled, x, y + (index << 3), x_size, 8, buf + x_size * index);
 	}
 }
@@ -302,23 +302,23 @@ sh1106_display_logo(struct oled_device *oled)
 {
     sh1106_display_bmp(oled, 0,0, 128, logo_bmp, sizeof(logo_bmp));
 }
-//更新显存到LCD		 
-static void 
+//更新显存到LCD
+static void
 sh1106_refresh(struct oled_device *oled)
 {
     struct private_user_data *user = (struct private_user_data *)oled->parent.user_data;
 	u8 i,n;
-	for(i = 0; i < CACHE_PAGES; i++)  
-	{  
+	for(i = 0; i < CACHE_PAGES; i++)
+	{
 		sh1106_write(0xb0 + i, SH1106_CMD);    //设置页地址（0~7）
 		sh1106_write(0x02, SH1106_CMD);      //设置显示位置—列低地址
-		sh1106_write(0x10, SH1106_CMD);      //设置显示位置—列高地址   
+		sh1106_write(0x10, SH1106_CMD);      //设置显示位置—列高地址
 		for (n = 0; n < CACHE_X_SIZE; n++)
-            sh1106_write(user->cache[n][i], SH1106_DATA); 
+            sh1106_write(user->cache[n][i], SH1106_DATA);
 	}
 }
 
-static void 
+static void
 sh1106_display(struct oled_device *oled, u8 x, u8 y, u8 x_size, u8 y_size)
 {
 	u8 page, pages;
@@ -339,18 +339,18 @@ sh1106_display(struct oled_device *oled, u8 x, u8 y, u8 x_size, u8 y_size)
         ++pages;
 
 	for(; page < pages; ++page)
-	{  
+	{
 		sh1106_write(0xb0 + page, SH1106_CMD);//设置页地址（0~7）
         col = x;
 		sh1106_write(0x00 | (x+2 & 0x0f), SH1106_CMD);//设置显示位置—列低地址
-		sh1106_write(0x10 | (x+2 >> 4 & 0x0f), SH1106_CMD);//设置显示位置—列高地址  
+		sh1106_write(0x10 | (x+2 >> 4 & 0x0f), SH1106_CMD);//设置显示位置—列高地址
         for (; col < cols; ++col)
-            sh1106_write(user->cache[col][page], SH1106_DATA); 
+            sh1106_write(user->cache[col][page], SH1106_DATA);
 	}
 }
 
 
-static void 
+static void
 sh1106_inverse(struct oled_device *oled, u8 x, u8 y, u8 x_size, u8 y_size)
 {
 	u8 col, cols;
@@ -358,7 +358,7 @@ sh1106_inverse(struct oled_device *oled, u8 x, u8 y, u8 x_size, u8 y_size)
 	u8 page_offset, pages_offet;
  	u8 data;
     struct private_user_data *user;
-    
+
     RT_ASSERT(x+x_size <= CACHE_X_SIZE);
     RT_ASSERT(y+y_size <= CACHE_Y_SIZE);
 
@@ -372,23 +372,23 @@ sh1106_inverse(struct oled_device *oled, u8 x, u8 y, u8 x_size, u8 y_size)
 	cols = x + x_size;
 	page = y >> 3;
 	page_offset = y - ((y >> 3) << 3); // <==> page_offset = y % 8;
-    
+
     user = (struct private_user_data *)oled->parent.user_data;
-    
+
 	if(page != pages)
 	{
 		for(; page < pages; page++)
 		{
-			for(col = x; col <= cols; col++) 
+			for(col = x; col <= cols; col++)
 			{
 				data = ~user->cache[col][page] & ~bit_map[page_offset];
 				user->cache[col][page] &= bit_map[page_offset];
 				user->cache[col][page] |= data;
-				page_offset = 0; 
+				page_offset = 0;
 			}
 
 		}
-		for(col = x; col <= cols; col++) 
+		for(col = x; col <= cols; col++)
 		{
 			data = ~user->cache[col][page] & ~(bit_map[page_offset] | ((~bit_map[pages_offet]) << 1));
 			user->cache[col][page] &= bit_map[page_offset] | ((~bit_map[pages_offet]) << 1);
@@ -398,7 +398,7 @@ sh1106_inverse(struct oled_device *oled, u8 x, u8 y, u8 x_size, u8 y_size)
 	}
 	else
 	{
-		for(col = x; col <= cols; col++) 
+		for(col = x; col <= cols; col++)
 		{
 			data = ~user->cache[col][page] & ~(bit_map[page_offset] | ((~bit_map[pages_offet]) << 1));
 			user->cache[col][page] &= bit_map[page_offset] | ((~bit_map[pages_offet]) << 1);
@@ -408,14 +408,14 @@ sh1106_inverse(struct oled_device *oled, u8 x, u8 y, u8 x_size, u8 y_size)
 	}
 }
 
-static void 
+static void
 sh1106_clear(struct oled_device *oled, u8 x, u8 y, u8 x_size, 	u8 y_size)
 {
 	u8 col, cols;
 	u8 page, pages;
 	u8 page_offset, pages_offet;
 	struct private_user_data *user;
-    
+
     RT_ASSERT(x+x_size <= CACHE_X_SIZE);
     RT_ASSERT(y+y_size <= CACHE_Y_SIZE);
 
@@ -429,31 +429,31 @@ sh1106_clear(struct oled_device *oled, u8 x, u8 y, u8 x_size, 	u8 y_size)
 	cols = x + x_size;
 	page = y >> 3;
 	page_offset = y - ((y >> 3) << 3); // <==> page_offset = y % 16;
-		
+
     user = (struct private_user_data *)oled->parent.user_data;
 
 	if(page != pages)
 	{
 		for(; page < pages; page++)
 		{
-			for(col = x; col <= cols; col++) 
+			for(col = x; col <= cols; col++)
 			{
 				user->cache[col][page] &= bit_map[page_offset];
-				page_offset = 0;        
+				page_offset = 0;
 			}
 
 		}
-		for(col = x; col <= cols; col++) 
+		for(col = x; col <= cols; col++)
 		{
-			user->cache[col][page] &= bit_map[page_offset] | ((~bit_map[pages_offet]) << 1);      
+			user->cache[col][page] &= bit_map[page_offset] | ((~bit_map[pages_offet]) << 1);
 		}
 
 	}
 	else
 	{
-		for(col = x; col <= cols; col++) 
+		for(col = x; col <= cols; col++)
 		{
-			user->cache[col][page] &= bit_map[page_offset] | ((~bit_map[pages_offet]) << 1);   
+			user->cache[col][page] &= bit_map[page_offset] | ((~bit_map[pages_offet]) << 1);
 		}
 
 	}
@@ -478,7 +478,7 @@ sh1106_clear_pixel(struct oled_device *oled, u8 x, u8 y)
 /*
  * gpio pin ops configure
  */
-static rt_err_t 
+static rt_err_t
 sh1106_configure(struct oled_device *oled)
 {
  	GPIO_InitTypeDef  GPIO_InitStructure;
@@ -489,56 +489,56 @@ sh1106_configure(struct oled_device *oled)
  	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA|RCC_APB2Periph_GPIOB|RCC_APB2Periph_GPIOD, ENABLE);	 //使能PC,D,G端口时钟
     GPIO_StructInit(&GPIO_InitStructure);
 	//cs
-	GPIO_InitStructure.GPIO_Pin = SH1106_CS_PIN;	 
- 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP; 		 
+	GPIO_InitStructure.GPIO_Pin = SH1106_CS_PIN;
+ 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
- 	GPIO_Init(SH1106_CS_PORT, &GPIO_InitStructure);	 
+ 	GPIO_Init(SH1106_CS_PORT, &GPIO_InitStructure);
  	GPIO_SetBits(SH1106_CS_PORT,SH1106_CS_PIN);
 
 	//rst
- 	GPIO_InitStructure.GPIO_Pin = SH1106_RST_PIN;	 
+ 	GPIO_InitStructure.GPIO_Pin = SH1106_RST_PIN;
  	GPIO_Init(SH1106_RST_PORT, &GPIO_InitStructure);
  	GPIO_SetBits(SH1106_RST_PORT,SH1106_RST_PIN);
 
 	//si
- 	GPIO_InitStructure.GPIO_Pin = SH1106_SI_PIN;				 
+ 	GPIO_InitStructure.GPIO_Pin = SH1106_SI_PIN;
  	GPIO_Init(SH1106_SI_PORT, &GPIO_InitStructure);
- 	GPIO_SetBits(SH1106_SI_PORT,SH1106_SI_PIN);						 
+ 	GPIO_SetBits(SH1106_SI_PORT,SH1106_SI_PIN);
 
 	//scl
-	GPIO_InitStructure.GPIO_Pin = SH1106_SCL_PIN;				
+	GPIO_InitStructure.GPIO_Pin = SH1106_SCL_PIN;
  	GPIO_Init(SH1106_SCL_PORT, &GPIO_InitStructure);
  	GPIO_SetBits(SH1106_SCL_PORT,SH1106_SCL_PIN);
 
     SH1106_RST_Clr();
     delay_us(100);
-	SH1106_RST_Set(); 
-    
-    sh1106_write(0xAE,SH1106_CMD);     //Set Display Off  
-	sh1106_write(0xD5,SH1106_CMD);     //Display divide ratio/osc. freq. mode   
-	sh1106_write(0x80,SH1106_CMD);      // 
-	sh1106_write(0xA8,SH1106_CMD);      //Multiplex ration mode:63  
-	sh1106_write(0x3F,SH1106_CMD); 
-	sh1106_write(0xD3,SH1106_CMD);      //Set Display Offset    
-	sh1106_write(0x00,SH1106_CMD); 
-	
-	sh1106_write(0x40,SH1106_CMD);       //Set Display Start Line  
-	sh1106_write(0xAD,SH1106_CMD);      //DC-DC Control Mode Set  
-	sh1106_write(0x8A,SH1106_CMD);      //DC-DC ON/OFF Mode Set  
-	sh1106_write(0x32,SH1106_CMD);      //Set Pump voltage value  
-	sh1106_write(0xA1,SH1106_CMD);      //Segment Remap   
-	sh1106_write(0xC8,SH1106_CMD);      //Set COM Output Scan Direction   
-	sh1106_write(0xDA,SH1106_CMD);     //Common pads hardware: alternative   
-	sh1106_write(0x12,SH1106_CMD); 
-	sh1106_write(0x81,SH1106_CMD);      //Contrast control  
-	sh1106_write(0xAA,SH1106_CMD); 
-	sh1106_write(0xD9,SH1106_CMD);     //Set pre-charge period     
-	sh1106_write(0x22,SH1106_CMD); 
-	sh1106_write(0xDB,SH1106_CMD);     //VCOM deselect level mode  
-	sh1106_write(0x18,SH1106_CMD); 
-	sh1106_write(0xA4,SH1106_CMD);     //Set Entire Display On/Off   
-	sh1106_write(0xA6,SH1106_CMD);     //Set Normal Display  
-	sh1106_write(0xAF,SH1106_CMD);     //Set Display On  
+	SH1106_RST_Set();
+
+    sh1106_write(0xAE,SH1106_CMD);     //Set Display Off
+	sh1106_write(0xD5,SH1106_CMD);     //Display divide ratio/osc. freq. mode
+	sh1106_write(0x80,SH1106_CMD);      //
+	sh1106_write(0xA8,SH1106_CMD);      //Multiplex ration mode:63
+	sh1106_write(0x3F,SH1106_CMD);
+	sh1106_write(0xD3,SH1106_CMD);      //Set Display Offset
+	sh1106_write(0x00,SH1106_CMD);
+
+	sh1106_write(0x40,SH1106_CMD);       //Set Display Start Line
+	sh1106_write(0xAD,SH1106_CMD);      //DC-DC Control Mode Set
+	sh1106_write(0x8A,SH1106_CMD);      //DC-DC ON/OFF Mode Set
+	sh1106_write(0x32,SH1106_CMD);      //Set Pump voltage value
+	sh1106_write(0xA1,SH1106_CMD);      //Segment Remap
+	sh1106_write(0xC8,SH1106_CMD);      //Set COM Output Scan Direction
+	sh1106_write(0xDA,SH1106_CMD);     //Common pads hardware: alternative
+	sh1106_write(0x12,SH1106_CMD);
+	sh1106_write(0x81,SH1106_CMD);      //Contrast control
+	sh1106_write(0xAA,SH1106_CMD);
+	sh1106_write(0xD9,SH1106_CMD);     //Set pre-charge period
+	sh1106_write(0x22,SH1106_CMD);
+	sh1106_write(0xDB,SH1106_CMD);     //VCOM deselect level mode
+	sh1106_write(0x18,SH1106_CMD);
+	sh1106_write(0xA4,SH1106_CMD);     //Set Entire Display On/Off
+	sh1106_write(0xA6,SH1106_CMD);     //Set Normal Display
+	sh1106_write(0xAF,SH1106_CMD);     //Set Display On
 
     sh1106_refresh(oled);
     /*
@@ -547,7 +547,7 @@ sh1106_configure(struct oled_device *oled)
     sh1106_display_chinese(oled, 2,2,"遥sdsds",7);
     sh1106_display_string(oled,16,16,"asdf",4);
     sh1106_display(oled,0,0,128,64);
-    
+
     sh1106_display_bmp(oled, 0,0, 128, logo_bmp, sizeof(logo_bmp));
         sh1106_display(oled,0,0,128,64);
     */
@@ -579,7 +579,7 @@ struct sh1106_param {
     u8 inverse_flag;
 };
 
-static rt_err_t 
+static rt_err_t
 sh1106_control(struct oled_device *oled, rt_uint8_t cmd, void *arg)
 {
 	//struct private_user_data *user = (struct private_user_data*)oled->parent.user_data;
@@ -588,17 +588,17 @@ sh1106_control(struct oled_device *oled, rt_uint8_t cmd, void *arg)
 	{
     case SH1106_CMD_INIT:
         {
-            sh1106_configure(oled);     //Set Display On  
+            sh1106_configure(oled);     //Set Display On
             break;
-        }        
+        }
     case SH1106_CMD_ON:
         {
-            sh1106_write(0xAF,SH1106_CMD);     //Set Display On  
+            sh1106_write(0xAF,SH1106_CMD);     //Set Display On
             break;
-        }    
+        }
     case SH1106_CMD_OFF:
         {
-            sh1106_write(0xAE,SH1106_CMD);     //Set Display On  
+            sh1106_write(0xAE,SH1106_CMD);     //Set Display On
             break;
         }
     case SH1106_CMD_CLEAR:
@@ -653,13 +653,13 @@ sh1106_control(struct oled_device *oled, rt_uint8_t cmd, void *arg)
   return RT_EOK;
 }
 
-static void 
+static void
 sh1106_out(struct oled_device *oled, rt_uint8_t data)
 {
     //struct private_user_data *user = (struct private_user_data*)oled->parent.user_data;
 }
 
-static rt_uint8_t 
+static rt_uint8_t
 sh1106_intput(struct oled_device *oled)
 {
     return 0;
@@ -678,13 +678,13 @@ struct private_user_data sh1106_user_data;
 
 struct oled_device sh1106_device;
 
-static int 
+static int
 rt_hw_sh1106_register(void)
 {
     struct oled_device *device = &sh1106_device;
     struct private_user_data *user_data = &sh1106_user_data;
     rt_memcpy((void *)user_data->name, DEVICE_NAME_OLED_SH1106, sizeof(DEVICE_NAME_OLED_SH1106));
-    
+
     device->ops = &sh1106_user_ops;
     rt_hw_oled_register(device, user_data->name, (RT_DEVICE_FLAG_RDWR), user_data);
     return 0;
