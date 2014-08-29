@@ -15,6 +15,7 @@ gpio.c
 gpio_pin.c
 gpio_exti.c
 untils.c
+config.c
 alarm.c
 local.c
 sms.c

@@ -15,7 +15,7 @@
 #include "bdcom.h"
 #include "appconfig.h"
 #if(SMS_SEND_ASTRICT_IS == 1)
-#include "apppubulic.h"
+//#include "apppubulic.h"
 
 #endif
 
@@ -520,8 +520,8 @@ static rt_uint32_t sms_timeout_value_get(ALARM_TYPEDEF type)
 	rt_uint32_t i;
 	rt_uint32_t TimeValue;
 	
-	config_file_mutex_op(RT_TRUE);
-	
+//	config_file_mutex_op(RT_TRUE);
+	/*
 	//有图片短信
 	for(i=1; i < PictureSMS[0] ;i++)
 	{
@@ -545,7 +545,8 @@ static rt_uint32_t sms_timeout_value_get(ALARM_TYPEDEF type)
 		//没有图片的短信
 		TimeValue = device_config.param.alarm_arg[2].timeout;
 	}
-	config_file_mutex_op(RT_FALSE);
+    */
+	//config_file_mutex_op(RT_FALSE);
 
 	TimeValue *= 60;
 	return TimeValue;
@@ -892,6 +893,7 @@ sms_thread_entry(void *parameter)
 						 sms_ucs_bk,
 						 &sms_ucs_length);
 			// send sms
+            /*
 			alarm_telephone_counts = 0;
 			while (alarm_telephone_counts < TELEPHONE_NUMBERS)
 			{
@@ -906,19 +908,20 @@ sms_thread_entry(void *parameter)
 				}
 				alarm_telephone_counts++;
 			}
-
+            */
 			rt_free(sms_ucs);
 			sms_ucs = RT_NULL;
 		}
 		else // receive timeout
 		{
 			#if(SMS_SEND_ASTRICT_IS == 1)			
+            /*
 			if(system_event_process(2,SYS_CLEAR_SMS_CNT) == 0)
 			{
 				timelag_list_delete(TimeOutWindow);
 			}
 			update_list_counter(TimeOutWindow);
-			delete_outtime_node(TimeOutWindow);
+			delete_outtime_node(TimeOutWindow);*/
 			#endif
 		}
 	}
