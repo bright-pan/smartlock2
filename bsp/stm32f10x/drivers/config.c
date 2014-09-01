@@ -558,7 +558,124 @@ device_config_account_verify(u8 *name, u16 length)
 	rt_mutex_release(device_config.mutex);
 	return result;
 }
+/*
+    根据账户ID和钥匙起始位置查找下一个有效钥匙ID。
+    account_id：账户ID。
+    key_pos：钥匙起始位置。
+    返回：
+        -ECONFIG_ERROR，获取错误。
+        >=0, 成功校验返回账户中下一个有效钥匙的位置ID。
+*/
+s32
+device_config_account_next_key_pos(u16 account_id, u8 key_pos)
+{
+	s32 result;
+	u16 i;
+    s32 len;
+	struct account_head ah;
+	RT_ASSERT(account_id < ACCOUNT_NUMBERS);
+    RT_ASSERT(key_pos < ACCOUNT_KEY_NUMBERS);
+    
+	result = -ECONFIG_ERROR;
+	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 
+    if (device_config_get_account_valid(account_id)) {
+        len = device_config_account_operate(i, &ah, 0);
+        if (len >= 0) {
+            for (i = key_pos; i < ACCOUNT_KEY_NUMBERS; ++i) {
+                if (ah.key[i] != KEY_ID_INVALID)
+                    result = i;
+            }
+        }
+    }
+	rt_mutex_release(device_config.mutex);
+	return result;
+}
+
+/*
+    根据账户ID计算账户内有效钥匙数量。
+    account_id：账户ID。
+    返回：
+        -ECONFIG_ERROR，获取错误。
+        >=0, 返回账户中有效钥匙数量。
+*/
+s32
+device_config_account_key_counts(u16 account_id)
+{
+	s32 result;
+	u16 i;
+    s32 len;
+    s32 counts;
+	struct account_head ah;
+
+	RT_ASSERT(account_id < ACCOUNT_NUMBERS);
+    counts = 0;
+	result = -ECONFIG_ERROR;
+	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+
+    if (device_config_get_account_valid(account_id)) {
+        len = device_config_account_operate(i, &ah, 0);
+        if (len >= 0) {
+            for (i = 0; i < ACCOUNT_KEY_NUMBERS; ++i) {
+                if (ah.key[i] != KEY_ID_INVALID)
+                    ++counts;
+            }
+            result = counts;
+        }
+    }
+	rt_mutex_release(device_config.mutex);
+	return result;
+}
+/*
+    检验账户ID后面是否有正确的ID，存在则返回账户ID。
+    account_id：从
+    返回：
+        -ECONFIG_ERROR，账户库里没有有效账户。
+        >=0, 成功校验返回账户的ID。
+*/
+s32
+device_config_account_next_valid(u16 account_id)
+{
+	s32 result;
+	u16 i;
+    
+    RT_ASSERT(account_id < ACCOUNT_NUMBERS);
+    
+	result = -ECONFIG_ERROR;
+	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+	for (i = account_id; i < ACCOUNT_NUMBERS; i++) {
+		if (device_config_get_account_valid(i)) {
+            result = i;
+		}
+	}
+	rt_mutex_release(device_config.mutex);
+	return result;
+}
+/*
+    计算有效账户的数量。
+    返回：
+        -ECONFIG_ERROR，账户库里没有有效账户。
+        >=0, 有效账户数量。
+*/
+s32
+device_config_account_counts(void)
+{
+	s32 result;
+    s32 counts;
+	u16 i;
+    
+    counts = 0;
+	result = -ECONFIG_ERROR;
+	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+	for (i = 0; i < ACCOUNT_NUMBERS; i++) {
+		if (device_config_get_account_valid(i)) {
+            ++counts;
+		}
+	}
+    result = counts;
+	rt_mutex_release(device_config.mutex);
+	return result;
+}
 void
 device_config_account_head_init(struct account_head *ah, u8 *name, u16 length)
 {
