@@ -1339,13 +1339,13 @@ fp_init(void)
 
 
 int
-fp_enroll(uint16_t *key_id, uint8_t *buf, uint32_t time)
+fp_enroll(uint16_t *key_id, uint8_t *buf, uint32_t timeout)
 {
     rt_err_t error;
     int result = -1;
 
     rt_sem_control(s_fprint, RT_IPC_CMD_RESET,0);
-    error = rt_sem_take(s_fprint, time);
+    error = rt_sem_take(s_fprint, timeout);
     if (error == RT_EOK) {
         if (send_fp_mail(FPRINT_CMD_ENROLL, key_id, buf, 0, 1) == FPRINT_EOK)
             result = *key_id;
