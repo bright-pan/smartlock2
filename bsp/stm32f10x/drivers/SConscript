@@ -24,6 +24,9 @@ bluetooth_device.c
 oled.c
 sh1106.c
 font.c
+gpio_pwm.c
+gsm.c
+gpio_adc.c
 """)
 
 # add Ethernet drvers.

@@ -16,9 +16,15 @@
 
 #include "stm32f10x.h"
 #include "usart.h"
-#include "board.h"
 
 #include <rtdevice.h>
+
+/* USART driver select. */
+#define RT_USING_UART1
+#define RT_USING_UART2
+#define RT_USING_UART3
+#define RT_USING_UART4
+//#define RT_USING_UART5
 
 /* USART1 */
 #define UART1_TX_PIN		GPIO_Pin_9
@@ -47,17 +53,17 @@
 #define UART2_REMAP         (((uint32_t)0x00000000))// remap is disable
 
 /* USART3_REMAP[1:0] = 11 */
-#define UART3_TX_PIN		GPIO_Pin_8
-#define UART3_TX_GPIO		GPIOD
-#define UART3_RX_PIN		GPIO_Pin_9
-#define UART3_RX_GPIO		GPIOD
+#define UART3_TX_PIN		GPIO_Pin_10
+#define UART3_TX_GPIO		GPIOB
+#define UART3_RX_PIN		GPIO_Pin_11
+#define UART3_RX_GPIO		GPIOB
 
-#define UART3_CTS_PIN		((uint16_t)0x0000)// cts is disable
-#define UART3_CTS_GPIO		((GPIO_TypeDef *)0x00000000)
-#define UART3_RTS_PIN		((uint16_t)0x0000)// rts is disable
-#define UART3_RTS_GPIO		((GPIO_TypeDef *)0x00000000)
+#define UART3_CTS_PIN		GPIO_Pin_13
+#define UART3_CTS_GPIO		GPIOB
+#define UART3_RTS_PIN		GPIO_Pin_14
+#define UART3_RTS_GPIO		GPIOB
 
-#define UART3_REMAP         GPIO_FullRemap_USART3
+#define UART3_REMAP         (((uint32_t)0x00000000))
 
 /* USART4 */
 #define UART4_TX_PIN		GPIO_Pin_10
@@ -612,7 +618,7 @@ rt_hw_usart_init(void)
 	uart3_int_rx.pool = uart3_pool;
 	uart3_int_rx.size = UART3_POOL_SIZE;
 
-	config.baud_rate = 57600;
+	config.baud_rate = BAUD_RATE_115200;
 
 	serial->ops    = &stm32_uart_ops;
 	serial->int_rx = &uart3_int_rx;
@@ -719,8 +725,16 @@ uart_rw(const char *name, rt_int8_t cmd, const char *str)
         }
         else if (cmd == 2)
         {
-            char *temp = "\xEF\x01\xFF\xFF\xFF\xFF\x01\x00\x07\x13\x00\x00\x00\x00\x00\x1B";
-            rt_device_write(uart,0,temp,16);
+            char *temp = "\x55\xAA\x00\x00\x03\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x01";
+            rt_device_write(uart,0,temp,26);
+        }
+        else if (cmd == 3)
+        {
+			char *temp = "0891683108705505F011000D91688176557581F50008C252667A80FD95016B6388AB66B4529B5F00542FFF0C8BF76CE8610F5B89516830100032003000310034002D00300033002D00310037002000310035003A00300035003A00320039002060A65FB7667A80FD3011";
+			rt_device_write(uart, 0, "AT+CMGS=97\r", strlen("AT+CMGS=97\r"));
+			rt_thread_delay(50);
+			rt_device_write(uart, 0, temp, strlen(temp));
+            rt_device_write(uart, 0, "\x1A", 1);
         }
         else
         {

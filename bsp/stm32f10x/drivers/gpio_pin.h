@@ -50,11 +50,17 @@
 #define DEVICE_NAME_MOTOR_STATUS4 "mt_stat4"
 */
 
-#define DEVICE_NAME_FLASH_POWER "pwr_flh"
-#define DEVICE_NAME_MOTOR_POWER "pwr_mt"
-#define DEVICE_NAME_BT_POWER "pwr_bt"
-#define DEVICE_NAME_FRONT_POWER "pwr_frt"
-#define DEVICE_NAME_GSM_POWER "pwr_gsm"
+#define DEVICE_NAME_POWER_FLASH "pwr_fh"
+#define DEVICE_NAME_POWER_MOTOR "pwr_mt"
+#define DEVICE_NAME_POWER_BT "pwr_bt"
+#define DEVICE_NAME_POWER_FRONT "pwr_ft"
+#define DEVICE_NAME_POWER_GSM "pwr_gsm"
+
+#define DEVICE_NAME_GSM_POWER "g_pwr"
+#define DEVICE_NAME_GSM_STATUS "g_stat"
+#define DEVICE_NAME_GSM_LED "g_led"
+#define DEVICE_NAME_GSM_DTR "g_dtr"
+#define DEVICE_NAME_GSM_RESET "g_rst"
 
 #define DEVICE_NAME_KB_IN1 "kb_in1"
 #define DEVICE_NAME_KB_IN2 "kb_in2"

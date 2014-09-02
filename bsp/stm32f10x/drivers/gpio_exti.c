@@ -350,7 +350,7 @@ int rt_hw_switch2_register(void)
     return 0;
 }
 */
-/* switch3 device */
+/* switch3 device 
 gpio_device switch3_device;
 rt_timer_t switch3_exti_timer = RT_NULL;
 
@@ -432,6 +432,173 @@ int rt_hw_switch3_register(void)
 
     return 0;
 }
+*/
+
+/* gpio break */
+gpio_device break_device;
+rt_timer_t break_exti_timer = RT_NULL;
+
+void break_exti_timeout(void *parameters)
+{
+
+	//time_t time;
+
+	rt_device_t device = RT_NULL;
+	uint8_t data;
+
+	device = rt_device_find(DEVICE_NAME_BREAK);
+	if (device != RT_NULL)
+	{
+		rt_device_read(device,0,&data,0);
+		if (data == BREAK_STATUS) // rfid key is plugin
+		{
+            rt_kprintf("it is BREAK detect!\n");
+			// produce mail
+			//rt_device_control(rtc_device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
+
+			// send mail
+			//send_alarm_mail(ALARM_TYPE_RFID_switch2, ALARM_PROCESS_FLAG_LOCAL, RFID_switch2_STATUS, time);
+		}
+		rt_device_control(device, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0);
+	}
+
+	rt_timer_stop(break_exti_timer);
+}
+
+
+rt_err_t break_rx_ind(rt_device_t dev, rt_size_t size)
+{
+	//gpio_device *gpio = RT_NULL;
+	//gpio = (gpio_device *)dev;
+	rt_device_t device = RT_NULL;
+
+	device = rt_device_find(DEVICE_NAME_BREAK);
+	RT_ASSERT(device != RT_NULL);
+	rt_device_control(device, RT_DEVICE_CTRL_MASK_EXTI, (void *)0);
+	rt_timer_start(break_exti_timer);
+
+	return RT_EOK;
+}
+
+struct gpio_exti_user_data break_user_data =
+{
+    DEVICE_NAME_BREAK,
+    GPIOB,
+    GPIO_Pin_15,
+    GPIO_Mode_IPU,
+    GPIO_Speed_50MHz,
+    RCC_APB2Periph_GPIOB |RCC_APB2Periph_AFIO,
+    GPIO_PortSourceGPIOB,
+    GPIO_PinSource15,
+    EXTI_Line15,
+    EXTI_Mode_Interrupt,
+    BREAK_EXTI_TRIGGER_MODE,
+    EXTI15_10_IRQn,
+    1,
+    5,
+    break_rx_ind,
+};
+
+int rt_hw_break_register(void)
+{
+    gpio_device *gpio_device = &break_device;
+    struct gpio_exti_user_data *gpio_user_data = &break_user_data;
+
+    gpio_device->ops = &gpio_exti_user_ops;
+
+    rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX), gpio_user_data);
+    break_exti_timer = rt_timer_create("t_brk",
+										 break_exti_timeout,
+										 RT_NULL,
+										 BREAK_INT_INTERVAL,
+										 RT_TIMER_FLAG_ONE_SHOT | RT_TIMER_FLAG_SOFT_TIMER);
+    rt_device_set_rx_indicate((rt_device_t)gpio_device, gpio_user_data->gpio_exti_rx_indicate);
+
+    return 0;
+}
+/* gpio mag */
+gpio_device mag_device;
+rt_timer_t mag_exti_timer = RT_NULL;
+
+void mag_exti_timeout(void *parameters)
+{
+
+	//time_t time;
+
+	rt_device_t device = RT_NULL;
+	uint8_t data;
+
+	device = rt_device_find(DEVICE_NAME_MAG);
+	if (device != RT_NULL)
+	{
+		rt_device_read(device,0,&data,0);
+		if (data == MAG_STATUS) // rfid key is plugin
+		{
+            rt_kprintf("it is MAG detect!\n");
+			// produce mail
+			//rt_device_control(rtc_device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
+
+			// send mail
+			//send_alarm_mail(ALARM_TYPE_RFID_switch2, ALARM_PROCESS_FLAG_LOCAL, RFID_switch2_STATUS, time);
+		}
+		rt_device_control(device, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0);
+	}
+
+	rt_timer_stop(mag_exti_timer);
+}
+
+
+rt_err_t mag_rx_ind(rt_device_t dev, rt_size_t size)
+{
+	//gpio_device *gpio = RT_NULL;
+	//gpio = (gpio_device *)dev;
+	rt_device_t device = RT_NULL;
+
+	device = rt_device_find(DEVICE_NAME_MAG);
+	RT_ASSERT(device != RT_NULL);
+	rt_device_control(device, RT_DEVICE_CTRL_MASK_EXTI, (void *)0);
+	rt_timer_start(mag_exti_timer);
+
+	return RT_EOK;
+}
+
+struct gpio_exti_user_data mag_user_data =
+{
+    DEVICE_NAME_MAG,
+    GPIOB,
+    GPIO_Pin_12,
+    GPIO_Mode_IPU,
+    GPIO_Speed_50MHz,
+    RCC_APB2Periph_GPIOB |RCC_APB2Periph_AFIO,
+    GPIO_PortSourceGPIOB,
+    GPIO_PinSource12,
+    EXTI_Line12,
+    EXTI_Mode_Interrupt,
+    MAG_EXTI_TRIGGER_MODE,
+    EXTI15_10_IRQn,
+    1,
+    5,
+    mag_rx_ind,
+};
+
+int rt_hw_mag_register(void)
+{
+    gpio_device *gpio_device = &mag_device;
+    struct gpio_exti_user_data *gpio_user_data = &mag_user_data;
+
+    gpio_device->ops = &gpio_exti_user_ops;
+
+    rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX), gpio_user_data);
+    mag_exti_timer = rt_timer_create("t_mag",
+										 mag_exti_timeout,
+										 RT_NULL,
+										 MAG_INT_INTERVAL,
+										 RT_TIMER_FLAG_ONE_SHOT | RT_TIMER_FLAG_SOFT_TIMER);
+    rt_device_set_rx_indicate((rt_device_t)gpio_device, gpio_user_data->gpio_exti_rx_indicate);
+
+    return 0;
+}
+
 /* fp_touch device */
 gpio_device fp_touch_device;
 rt_timer_t fp_touch_exti_timer = RT_NULL;
@@ -904,12 +1071,12 @@ rt_hw_kb_intr_register(void)
 //  rt_device_set_rx_indicate((rt_device_t)gpio_device, gpio_user_data->gpio_exti_rx_indicate);
 //}
 
-/* gsm_ring device
-   gpio_device gsm_ring_device;
-   rt_timer_t gsm_ring_exti_timer = RT_NULL;
+/* gsm_ring device */
+gpio_device gsm_ring_device;
+rt_timer_t gsm_ring_exti_timer = RT_NULL;
 
-   void gsm_ring_exti_timeout(void *parameters)
-   {
+void gsm_ring_exti_timeout(void *parameters)
+{
    time_t time;
 
    rt_device_t device = RT_NULL;
@@ -922,12 +1089,13 @@ rt_hw_kb_intr_register(void)
    {
    rt_device_read(device,0,&data,0);
    rt_device_read(g_stat_dev,0,&gstat,1);
-   if (data == GSM_RING_DETECT_STATUS && gstat != 0) // gsm ring
+   if (data == 0 && gstat != 0) // gsm ring
    {
    // produce mail
    RT_ASSERT(rtc_device != RT_NULL);
    rt_device_control(rtc_device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
-
+   }
+/*
    // send mail
    send_alarm_mail(ALARM_TYPE_GSM_RING, ALARM_PROCESS_FLAG_LOCAL, GSM_RING_DETECT_STATUS, time);
 
@@ -941,14 +1109,15 @@ rt_hw_kb_intr_register(void)
    {
    RT_DEBUG_LOG(PRINTF_RING_HW_CASE,("ring error Ring_pin = %d GSM_stat = %d\n",data,gstat));
    }
+       */
    rt_device_control(device, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0);
    }
 
    rt_timer_stop(gsm_ring_exti_timer);
-   }
+}
 
-   rt_err_t gsm_ring_rx_ind(rt_device_t dev, rt_size_t size)
-   {
+rt_err_t gsm_ring_rx_ind(rt_device_t dev, rt_size_t size)
+{
    rt_device_t device = RT_NULL;
 
    device = rt_device_find(DEVICE_NAME_GSM_RING);
@@ -956,42 +1125,43 @@ rt_hw_kb_intr_register(void)
    rt_device_control(device, RT_DEVICE_CTRL_MASK_EXTI, (void *)0);
    rt_timer_start(gsm_ring_exti_timer);
    return RT_EOK;
-   }
+}
 
-   struct gpio_exti_user_data gsm_ring_user_data =
-   {
+struct gpio_exti_user_data gsm_ring_user_data =
+{
    DEVICE_NAME_GSM_RING,
-   GPIOD,
-   GPIO_Pin_13,
+   GPIOE,
+   GPIO_Pin_14,
    GPIO_Mode_IN_FLOATING,
    GPIO_Speed_50MHz,
-   RCC_APB2Periph_GPIOD |RCC_APB2Periph_AFIO,
-   GPIO_PortSourceGPIOD,
-   GPIO_PinSource13,
-   EXTI_Line13,
+   RCC_APB2Periph_GPIOE |RCC_APB2Periph_AFIO,
+   GPIO_PortSourceGPIOE,
+   GPIO_PinSource14,
+   EXTI_Line14,
    EXTI_Mode_Interrupt,
    GSM_RING_EXTI_TRIGGER_MODE,
    EXTI15_10_IRQn,
    1,
    5,
    gsm_ring_rx_ind,
-   };
+};
 
-   void rt_hw_gsm_ring_register(void)
-   {
-   gpio_device *gpio_device = &gsm_ring_device;
-   struct gpio_exti_user_data *gpio_user_data = &gsm_ring_user_data;
+int rt_hw_gsm_ring_register(void)
+{
+    gpio_device *gpio_device = &gsm_ring_device;
+    struct gpio_exti_user_data *gpio_user_data = &gsm_ring_user_data;
 
-   gpio_device->ops = &gpio_exti_user_ops;
-   rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX), gpio_user_data);
-   gsm_ring_exti_timer = rt_timer_create("g_ring",
-   gsm_ring_exti_timeout,
-   RT_NULL,
-   GSM_RING_INT_INTERVAL,
-   RT_TIMER_FLAG_ONE_SHOT);
-   rt_device_set_rx_indicate((rt_device_t)gpio_device, gpio_user_data->gpio_exti_rx_indicate);
-   }
-*/
+    gpio_device->ops = &gpio_exti_user_ops;
+    rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX), gpio_user_data);
+    gsm_ring_exti_timer = rt_timer_create("g_ring",
+    gsm_ring_exti_timeout,
+    RT_NULL,
+    GSM_RING_INT_INTERVAL,
+    RT_TIMER_FLAG_ONE_SHOT);
+    rt_device_set_rx_indicate((rt_device_t)gpio_device, gpio_user_data->gpio_exti_rx_indicate);
+    return 0;
+}
+
 /* lock_gate device
    gpio_device lock_gate_device;
 
@@ -1605,8 +1775,19 @@ EXTI15_10_IRQHandler(void)
 	rt_interrupt_enter();
 	if(EXTI_GetITStatus(EXTI_Line15) == SET)
 	{
-		rt_hw_gpio_isr(&switch3_device);
+		rt_hw_gpio_isr(&break_device);
 		EXTI_ClearITPendingBit(EXTI_Line15);
+	}
+	rt_interrupt_enter();
+	if(EXTI_GetITStatus(EXTI_Line14) == SET)
+	{
+		rt_hw_gpio_isr(&gsm_ring_device);
+		EXTI_ClearITPendingBit(EXTI_Line14);
+	}
+	if(EXTI_GetITStatus(EXTI_Line12) == SET)
+	{
+		rt_hw_gpio_isr(&mag_device);
+		EXTI_ClearITPendingBit(EXTI_Line12);
 	}
 	/* leave interrupt */
 	rt_interrupt_leave();
@@ -1617,16 +1798,21 @@ rt_hw_gpio_exti_enable(void)
 {
     //device_enable(DEVICE_NAME_SWITCH1);
     //device_enable(DEVICE_NAME_SWITCH2);
-    device_enable(DEVICE_NAME_SWITCH3);
+    //device_enable(DEVICE_NAME_SWITCH3);
     device_enable(DEVICE_NAME_KB_INTR);
     device_enable(DEVICE_NAME_FP_TOUCH);
+    device_enable(DEVICE_NAME_GSM_RING);
+    device_enable(DEVICE_NAME_BREAK);
+    device_enable(DEVICE_NAME_MAG);
     return 0;
 }
 
 //INIT_DEVICE_EXPORT(rt_hw_switch1_register);
 //INIT_DEVICE_EXPORT(rt_hw_switch2_register);
-INIT_DEVICE_EXPORT(rt_hw_switch3_register);
+//INIT_DEVICE_EXPORT(rt_hw_switch3_register);
 INIT_DEVICE_EXPORT(rt_hw_kb_intr_register);
 INIT_DEVICE_EXPORT(rt_hw_fp_touch_register);
-
+INIT_DEVICE_EXPORT(rt_hw_gsm_ring_register);
+INIT_DEVICE_EXPORT(rt_hw_break_register);
+INIT_DEVICE_EXPORT(rt_hw_mag_register);
 INIT_APP_EXPORT(rt_hw_gpio_exti_enable);
