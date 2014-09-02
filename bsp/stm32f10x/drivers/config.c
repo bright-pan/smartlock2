@@ -86,10 +86,10 @@ device_config_account_remove_phone(u16);
         1 该钥匙有效。
         0 该钥匙无效。
 */
-s8
+s32
 device_config_get_key_valid(u16 key_id)
 {
-	s8 result = -ECONFIG_ERROR;
+	s32 result = -ECONFIG_ERROR;
     RT_ASSERT(key_id < KEY_NUMBERS);
     result = (device_config.param.kv_map.data[key_id/32] & bits_mask(key_id%32)) ? 1 : 0;
     return result;
@@ -109,10 +109,10 @@ device_config_set_key_valid(u16 key_id, u8 value)
 	}
 }
 
-s8
+s32
 device_config_get_phone_valid(u16 phone_id)
 {
-	s8 result = -ECONFIG_ERROR;
+	s32 result = -ECONFIG_ERROR;
     RT_ASSERT(phone_id < PHONE_NUMBERS);
 	result = (device_config.param.pv_map.data[phone_id/32] & bits_mask(phone_id%32)) ? 1 : 0;
 	return result;
@@ -129,10 +129,10 @@ device_config_set_phone_valid(u16 phone_id, u8 value)
 	}
 }
 
-s8
+s32
 device_config_get_account_valid(u16 account_id)
 {
-	s8 result = -ECONFIG_ERROR;
+	s32 result = -ECONFIG_ERROR;
     RT_ASSERT(account_id < ACCOUNT_NUMBERS);
 	result = (device_config.param.av_map.data[account_id/32] & bits_mask(account_id%32)) ? 1 : 0;
 	return result;
@@ -149,10 +149,10 @@ device_config_set_account_valid(u16 account_id, u8 value)
 	}
 }
 
-s16
+s32
 device_config_get_key_code_size(u16 key_type)
 {
-	s16 result = -ECONFIG_ERROR;
+	s32 result = -ECONFIG_ERROR;
 
 	switch (key_type)
 	{
@@ -229,7 +229,7 @@ s32
 device_config_key_verify(u16 key_type, const u8 *buf, u16 length)
 {
     s32 result;
-    u16 i;
+    s32 i;
 	struct key k;
     s32 len;
 
@@ -286,7 +286,7 @@ s32
 device_config_key_create(u16 key_type, u8 *buf, u16 length)
 {
     int result;
-    u16 i;
+    s32 i;
 	struct key k;
 
 	result = -ECONFIG_ERROR;
@@ -354,7 +354,7 @@ device_config_phone_operate(u16 phone_id, struct phone_head *ph, u8 flag)
 {
 	s32 fd;
 	s32 result;
-	u16 len;
+	s32 len;
 
     RT_ASSERT(phone_id < PHONE_NUMBERS);
 
@@ -399,7 +399,7 @@ s32
 device_config_phone_verify(u8 *buf, u16 length)
 {
 	s32 result;
-	u16 i;
+	s32 i;
     s32 len;
 	struct phone_head ph;
     u8 temp[PHONE_ADDRESS_LENGTH];
@@ -438,7 +438,7 @@ s32
 device_config_phone_create(u8 *buf, u8 len)
 {
     int result;
-    u16 i;
+    s32 i;
 	struct phone_head ph;
     u8 temp[PHONE_ADDRESS_LENGTH];
 	RT_ASSERT(len <= PHONE_ADDRESS_LENGTH);
@@ -535,7 +535,7 @@ s32
 device_config_account_verify(u8 *name, u16 length)
 {
 	s32 result;
-	u16 i;
+	s32 i;
     s32 len;
 	struct account_head ah;
     u8 temp[ACCOUNT_NAME_LENGTH];
@@ -562,15 +562,16 @@ device_config_account_verify(u8 *name, u16 length)
     根据账户ID和钥匙起始位置查找下一个有效钥匙ID。
     account_id：账户ID。
     key_pos：钥匙起始位置。
+    flag : 1，向前找；0，向后找。
     返回：
         -ECONFIG_ERROR，获取错误。
         >=0, 成功校验返回账户中下一个有效钥匙的位置ID。
 */
 s32
-device_config_account_next_key_pos(u16 account_id, u8 key_pos)
+device_config_account_next_key_pos(u16 account_id, u8 key_pos, u8 flag)
 {
 	s32 result;
-	u16 i;
+	s32 i;
     s32 len;
 	struct account_head ah;
 	RT_ASSERT(account_id < ACCOUNT_NUMBERS);
@@ -582,10 +583,18 @@ device_config_account_next_key_pos(u16 account_id, u8 key_pos)
     if (device_config_get_account_valid(account_id)) {
         len = device_config_account_operate(i, &ah, 0);
         if (len >= 0) {
-            for (i = key_pos; i < ACCOUNT_KEY_NUMBERS; ++i) {
-                if (ah.key[i] != KEY_ID_INVALID)
-                    result = i;
-                    break;
+            if (flag) {
+                for (i = key_pos; i < ACCOUNT_KEY_NUMBERS; ++i) {
+                    if (ah.key[i] != KEY_ID_INVALID)
+                        result = i;
+                        break;
+                }
+            } else {
+                for (i = key_pos; i >= 0; --i) {
+                    if (ah.key[i] != KEY_ID_INVALID)
+                        result = i;
+                        break;
+                }
             }
         }
     }
@@ -604,7 +613,7 @@ s32
 device_config_account_key_counts(u16 account_id)
 {
 	s32 result;
-	u16 i;
+	s32 i;
     s32 len;
     s32 counts;
 	struct account_head ah;
@@ -629,27 +638,37 @@ device_config_account_key_counts(u16 account_id)
 }
 /*
     检验账户ID后面是否有正确的ID，存在则返回账户ID。
-    account_id：从
+    account_id：起始ID
+    flag : 1，向前找；0，向后找。
     返回：
         -ECONFIG_ERROR，账户库里没有有效账户。
         >=0, 成功校验返回账户的ID。
 */
 s32
-device_config_account_next_valid(u16 account_id)
+device_config_account_next_valid(u16 account_id, u8 flag)
 {
 	s32 result;
-	u16 i;
+	s32 i;
     
     RT_ASSERT(account_id < ACCOUNT_NUMBERS);
     
 	result = -ECONFIG_ERROR;
 	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
-	for (i = account_id; i < ACCOUNT_NUMBERS; i++) {
-		if (device_config_get_account_valid(i)) {
-            result = i;
-            break;
-		}
-	}
+    if (flag) {
+        for (i = account_id; i < ACCOUNT_NUMBERS; ++i) {
+            if (device_config_get_account_valid(i)) {
+                result = i;
+                break;
+            }
+        }
+    } else {
+        for (i = account_id; i >=0; --i) {
+            if (device_config_get_account_valid(i)) {
+                result = i;
+                break;
+            }
+        }
+    }
 	rt_mutex_release(device_config.mutex);
 	return result;
 }
@@ -664,7 +683,7 @@ device_config_account_counts(void)
 {
 	s32 result;
     s32 counts;
-	u16 i;
+	s32 i;
     
     counts = 0;
 	result = -ECONFIG_ERROR;
