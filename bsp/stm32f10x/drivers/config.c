@@ -585,6 +585,7 @@ device_config_account_next_key_pos(u16 account_id, u8 key_pos)
             for (i = key_pos; i < ACCOUNT_KEY_NUMBERS; ++i) {
                 if (ah.key[i] != KEY_ID_INVALID)
                     result = i;
+                    break;
             }
         }
     }
@@ -646,6 +647,7 @@ device_config_account_next_valid(u16 account_id)
 	for (i = account_id; i < ACCOUNT_NUMBERS; i++) {
 		if (device_config_get_account_valid(i)) {
             result = i;
+            break;
 		}
 	}
 	rt_mutex_release(device_config.mutex);
@@ -1228,6 +1230,7 @@ FINSH_FUNCTION_EXPORT_ALIAS(device_config_get_account_valid, devcfg_gav, [accoun
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_set_account_valid, devcfg_sav, [account_id value]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_account_delete, devcfg_ad, [account_id]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_account_display, devcfg_ads, [account_id]);
+FINSH_FUNCTION_EXPORT_ALIAS(device_config_account_next_valid, devcfg_anv, [account_id]);
 
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_account_append_key, devcfg_aak, [account_id key_id]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_account_remove_key, devcfg_ark, [key_id]);
