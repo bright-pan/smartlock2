@@ -24,6 +24,6 @@
 #define RT_DEVICE_CTRL_DISABLE_CONVERT   0x15    /* disable adc convert */
 #define RT_DEVICE_CTRL_GET_CONVERT_VALUE 0x16    /* get adc converted value */
 
-#define DEVICE_NAME_CAMERA_LIGHT "cm_light" /* BATTERY DEVICE NAME */
+#define DEVICE_NAME_BAT "bat" /* BATTERY DEVICE NAME */
 
 #endif

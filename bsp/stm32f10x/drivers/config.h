@@ -196,27 +196,15 @@ typedef struct
 
 //extern struct device_config device_config;
 
-int
-device_config_init(struct device_configure *);
-int
-device_config_file_operate(struct device_configure *, u8);
-int
-device_config_superpwd_verify(const u8 *);
-int
-device_config_superpwd_save(u8 *);
 s32
-device_config_key_operate(u16, struct key *, u8);
+device_config_account_remove_phone(u16 phone_id);
+s32
+device_config_account_append_phone(u16 account_id, u16 phone_id);
 int
-device_config_key_verify(u16, const u8 *, u16);
-int
-device_config_key_create(u16, u8 *, u16);
-int
-device_config_key_delete(u16);
-
+device_config_file_operate(struct device_configure *config, u8 flag);
 s32 
-device_config_key_index(int(*)(struct key *, void *, void *, void *), void *, void *);
-
-s32
+device_config_key_index(int(*callback)(struct key *, void *arg1, void *arg2, void *arg3), void *arg1, void *arg2);
+int
 system_init(void);
 
 #endif /* _CONFIG_H_ */

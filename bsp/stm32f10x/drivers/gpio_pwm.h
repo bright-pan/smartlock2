@@ -29,13 +29,9 @@
 //#define RT_DEVICE_FLAG_ONE_PULSE        0x2000
 #define DEVICE_NAME_MOTOR1 "mt1"
 #define DEVICE_NAME_MOTOR2 "mt2"
-#define DEVICE_NAME_MOTOR3 "mt3"
-#define DEVICE_NAME_MOTOR4 "mt4"
-
-#define DEVICE_NAME_CAMERA_LED "cm_led"
-#define DEVICE_NAME_LCD_LED "lcd_led"
-#define DEVICE_NAME_INFRA_PULSE "infra_s"
 #define DEVICE_NAME_LOGO_LED "logo"
+
+#define DEVICE_NAME_SPEAK "speak"
 
 extern rt_mutex_t motor_action_mutex;
 

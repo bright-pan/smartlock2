@@ -1082,7 +1082,7 @@ device_config_account_remove_phone(u16 phone_id)
 
 
 s32 
-device_config_key_index(int(*callback)(struct key *, void *, void *, void *), void *arg1, void *arg2)
+device_config_key_index(int(*callback)(struct key *, void *arg1, void *arg2, void *arg3), void *arg1, void *arg2)
 {
     s32 result;
     u16 i;

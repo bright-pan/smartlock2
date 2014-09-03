@@ -223,9 +223,9 @@ struct rt_gpio_ops gpio_adc_user_ops=
     gpio_adc_out,
     gpio_adc_intput
 };
-struct gpio_adc_user_data camera_light_user_data = 
+struct gpio_adc_user_data bat_user_data = 
 {
-    DEVICE_NAME_CAMERA_LIGHT,
+    DEVICE_NAME_BAT,
     /* gpio */
     GPIOC,
     GPIO_Pin_4,
@@ -262,19 +262,19 @@ struct gpio_adc_user_data camera_light_user_data =
     DMA_M2M_Disable,//dma_m2m
 };
 
-gpio_device camera_light_device;
+gpio_device bat_device;
 
-int rt_hw_camera_light_register(void)
+int rt_hw_bat_register(void)
 {
-    gpio_device *adc_device = &camera_light_device;
-    struct gpio_adc_user_data *adc_user_data = &camera_light_user_data;
+    gpio_device *adc_device = &bat_device;
+    struct gpio_adc_user_data *adc_user_data = &bat_user_data;
     adc_user_data->dma_memory_base_address = (uint32_t)&(adc_user_data->adc_converted_value);
     adc_device->ops = &gpio_adc_user_ops;
     rt_hw_gpio_register(adc_device,adc_user_data->name, (RT_DEVICE_FLAG_RDONLY | RT_DEVICE_FLAG_DMA_RX), adc_user_data);
     return 0;
 }
 
-//INIT_DEVICE_EXPORT(rt_hw_camera_light_register);
+INIT_DEVICE_EXPORT(rt_hw_bat_register);
 
 uint16_t adc_get_value(const char* name)
 {
