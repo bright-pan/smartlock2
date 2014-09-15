@@ -18,6 +18,7 @@ void menu_6_processing(void);
 
 void menu_7_processing(void);
 
+void menu_32_processing(void);
 
 #endif
 

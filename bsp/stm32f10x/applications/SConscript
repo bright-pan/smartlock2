@@ -13,7 +13,9 @@ keyprocess_t.c
 menu_1.c
 menu_2.c
 menu_3.c
+accountop.c
 gui.c
+unlock_ui.c
 """)
 
 CPPPATH = [cwd, str(Dir('#'))]

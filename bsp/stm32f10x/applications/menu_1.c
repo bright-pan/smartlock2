@@ -26,31 +26,35 @@
 #define MENU_FIRST_NUM							3			
 static const rt_uint8_t MenuFirst[MENU_FIRST_NUM][8*2] = 
 {
-	{"用户管理"},
-	{"系统管理"},
-	{">>>>退出"},
+	{"1.用户管理"},
+	{"2.系统管理"},
+	{"3.>>>>退出"},
 };
 
 //菜单1下第二层菜单显示
-#define MENU1_SECOND_NUM						2
+#define MENU1_SECOND_NUM						3
 static const rt_uint8_t Menu1Second[MENU1_SECOND_NUM][8*2] = 
 {
-	{"用户新建"},
-	{"用户修改"},
+	{"1.用户新建"},
+	{"2.用户修改"},
+	{"3.管理员>>"},
 };
 
 //菜单2下第二层菜单显示
 #define MENU2_SECOND_NUM						2
 static const rt_uint8_t Menu2Second[MENU2_SECOND_NUM][8*2] = 
 {
-	{"本机信息"},
-	{"参数设置"},
+	{"1.本机信息"},
+	{"2.参数设置"},
 };
 
 //管理员密码检测
 rt_err_t admin_password_check(rt_uint8_t *password)
 {	
 	rt_uint32_t result;
+
+	//调试登陆
+	//return RT_EOK;
 	
 	result = rt_strncmp((const char*)password,"123456",6);
 	if(result == 0)
@@ -133,6 +137,11 @@ void menu_0_processing(void)
             string_hide_string((const rt_uint8_t *)buf,ShowBuf,SHOW_PW_HIDE_CH,8);
             gui_clear(SHOW_X_ROW8(5),SHOW_Y_LINE(2),SHOW_X_ROW8(15),SHOW_Y_LINE(3));
             gui_display_string(SHOW_X_ROW8(5),SHOW_Y_LINE(2),ShowBuf,GUI_WIHIT);
+          }
+          else
+          {
+						system_menu_choose(0);
+						return ;
           }
         }
       }
@@ -250,6 +259,11 @@ void menu_5_processing(void)
 {
 	rt_kprintf("进入三级3菜单\n");
 	menu1_second_ui(1);
+}
+
+void menu_32_processing(void)
+{
+  menu1_second_ui(2);
 }
 
 void menu2_second_ui(rt_uint8_t InPOS)

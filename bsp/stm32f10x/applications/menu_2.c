@@ -33,6 +33,7 @@ static const rt_uint8_t MenuCommText[][LCD_LINE_MAX_LEN] =
 {
   {"请输入返回键退出"},
   {"操作成功!"},
+  {"操作失败!"},
 };
 
 //密码新增
@@ -60,6 +61,7 @@ static const rt_uint8_t PhoneAddText[][LCD_LINE_MAX_LEN] =
 	{"用户编号:"},
 	{"请输入新电话:"},
 	{"输入错误"},
+	{"再输入一次"},
 };
 
 //保存退出界面文本
@@ -89,20 +91,44 @@ static const rt_uint8_t UserSearchText[][LCD_LINE_MAX_LEN] =
 #define MENU_USER_ADD_NUM						6
 static const rt_uint8_t MenuUserAdd_list[MENU_USER_ADD_NUM][8*2] = 
 {
-	{"新建密码"},
-	{"新建指纹"},
-	{"新建电话"},
-	{"保存退出"},
-	{"用户信息"},
-	{">>>>退出"},
+	{"1.新建密码"},
+	{"2.新建指纹"},
+	{"3.新建电话"},
+	{"4.保存退出"},
+	{"5.用户信息"},
+	{"6.>>>>退出"},
 };
 
+#define MENU_USER_MODIFY_TYPE_NUM		5
+static const rt_uint8_t MenuUserModifyList[MENU_USER_MODIFY_TYPE_NUM][8*2] = 
+{
+	{"1.添加密码"},
+	{"2.添加指纹"},
+	{"3.添加电话"},
+	{"4.保存退出"},
+	{"5.删除账户"},
+};
+
+static const rt_uint8_t UserModifyText[][8*2] = 
+{
+	{"密码数量:"},
+	{"当前序号:"},
+};
+
+static const rt_uint8_t AdminModifyText[][8*2]=
+{
+	{"管理员密码修改"},
+	{"新密码:"},
+};
 
 static void menu_user_add_ui(rt_uint8_t InPOS)
 {
 	rt_uint8_t page;
 	rt_uint8_t pos;
 	rt_uint8_t i;
+
+	//新增用户过程中
+	account_add_enter();
 
 	page = InPOS /PAGE_MAX_SHOW_NUM;//计算显示在那一页
 	pos = InPOS % PAGE_MAX_SHOW_NUM;//当前选中的位置
@@ -173,13 +199,16 @@ void menu_13_processing(void)
 //检查新增密码是否合法
 rt_err_t add_new_password_check(rt_uint8_t password[])
 {
-	if(password[0] == 0)
+	rt_err_t result = RT_EOK;
+	
+	if(rt_strlen((const char*)password) < CONFIG_PASSWORD_LEN)
 	{
 		//新增密码为空
 		return RT_ERROR;
 	}
+	result = key_add_password_check(password);
 	
-	return RT_EOK;
+	return result;
 }
 
 //输入密码处理
@@ -189,12 +218,23 @@ void menu_14_processing(void)
 	rt_uint8_t buf1[MENU_PASSWORD_MAX_LEN];
 	rt_uint8_t ShowBuf[MENU_PASSWORD_MAX_LEN];
 	rt_uint8_t GlintStatus;
+	rt_uint8_t CurUserPos;
+	rt_uint8_t UserMaxPsNum;
 
 	while(1)
 	{
+		CurUserPos = account_cur_pos_get();
+		UserMaxPsNum = user_valid_password_num();
+		
     gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+    
     gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(0),PasswordAddText[0],GUI_WIHIT);
+		rt_sprintf((char *)buf,"%03d",CurUserPos);
+    gui_display_string(SHOW_X_ROW8(12),SHOW_Y_LINE(0),buf,GUI_WIHIT);
+    
     gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(1),PasswordAddText[1],GUI_WIHIT);
+    rt_sprintf((char *)buf,"%02d",UserMaxPsNum);
+    gui_display_string(SHOW_X_ROW8(13),SHOW_Y_LINE(1),buf,GUI_WIHIT);
     gui_display_update();
     //第一次输入密码
     rt_memset(buf,0,MENU_PASSWORD_MAX_LEN);
@@ -272,12 +312,19 @@ void menu_14_processing(void)
     }
     
     //第二次输入密码
+    gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+    
+    gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(0),PasswordAddText[0],GUI_WIHIT);
+		rt_sprintf((char *)buf,"%03d",CurUserPos);
+    gui_display_string(SHOW_X_ROW8(12),SHOW_Y_LINE(0),buf,GUI_WIHIT);
+    
+    gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(1),PasswordAddText[2],GUI_WIHIT);
+    rt_sprintf((char *)buf,"%02d",UserMaxPsNum);
+    gui_display_string(SHOW_X_ROW8(13),SHOW_Y_LINE(1),buf,GUI_WIHIT);
+    gui_display_update();
+
     rt_memset(buf,0,MENU_PASSWORD_MAX_LEN);
     rt_memset(ShowBuf,0,MENU_PASSWORD_MAX_LEN);
-    gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
-    gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(0),PasswordAddText[0],GUI_WIHIT);
-    gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(1),PasswordAddText[2],GUI_WIHIT);
-    gui_display_update();
     while(1)
     {
       rt_err_t result;
@@ -306,7 +353,7 @@ void menu_14_processing(void)
           //检测输入的密码是否合法
           rt_uint32_t temp;
           
-          temp = rt_memcmp(buf1,buf,rt_strlen((const char *)buf));
+          temp = rt_memcmp(buf1,buf,rt_strlen((const char *)buf1));
           if(temp != 0)
           {
             //密码匹配错误
@@ -317,7 +364,28 @@ void menu_14_processing(void)
           }
           else
           {
+          	rt_uint8_t save = 1;
+          	
             //添加成功保存对象
+            result = key_add_password(buf1);
+            if(result != RT_EOK)
+            {
+							//保存失败
+							save = 2;
+							rt_kprintf("save fail\n");
+            }
+          
+            result = account_cur_add_password(buf1);
+            if(result != RT_EOK)
+            {
+							//保存失败
+							rt_kprintf("save fail\n");
+							save = 2;
+            }
+            gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),MenuCommText[save],GUI_WIHIT);
+    				gui_display_update();
+    				rt_thread_delay(RT_TICK_PER_SECOND);
+    				gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(3),SHOW_X_ROW8(15),SHOW_Y_LINE(4));
           }
           //新密码输入完成 进入验证。
           break;
@@ -357,20 +425,28 @@ void menu_14_processing(void)
 void menu_15_processing(void)
 {
 	rt_uint8_t KeyValue;
-	rt_uint8_t FrintNum;
+	rt_uint8_t FPrintNum;
+	rt_uint8_t CurUserPos;
 	rt_err_t	 result;
 	rt_uint8_t buf[LCD_LINE_MAX_LEN];
 	
   //gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
   //获取当前指纹数量
-  FrintNum = 0;
+  FPrintNum = 0;
   while(1)
   {
+  	FPrintNum = user_valid_fprint_num();
+  	CurUserPos = account_cur_pos_get();
+  	
   	gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
     gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(0),FrintAddText[0],GUI_WIHIT);
+    rt_sprintf((char *)buf,"%03d",CurUserPos);
+    gui_display_string(SHOW_X_ROW8(12),SHOW_Y_LINE(0),buf,GUI_WIHIT);
+    
     gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(1),FrintAddText[1],GUI_WIHIT);
-    rt_sprintf((char *)buf,"%d",FrintNum);
-    gui_display_string(SHOW_X_ROW8(rt_strlen((const char *)FrintAddText[1])),SHOW_Y_LINE(1),buf,GUI_WIHIT);
+    rt_sprintf((char *)buf,"%02d",FPrintNum);
+    gui_display_string(SHOW_X_ROW8(13),SHOW_Y_LINE(1),buf,GUI_WIHIT);
+    
     gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(2),FrintAddText[2],GUI_WIHIT);
     gui_display_update();
 		while(1)
@@ -384,21 +460,26 @@ void menu_15_processing(void)
 					gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(2),SHOW_X_ROW8(15),SHOW_Y_LINE(3));
 					gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),FrintAddText[3],GUI_WIHIT);
 					gui_display_update();
-					result = RT_EOK;
+					result = user_add_fprint(30*RT_TICK_PER_SECOND);
 					if(result == RT_EOK)
 					{
 						//指纹采集成功
-						rt_thread_delay(100);
 						gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(2),SHOW_X_ROW8(15),SHOW_Y_LINE(3));
 						gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),MenuCommText[1],GUI_WIHIT);
 						gui_display_update();
-						rt_thread_delay(100);
-						FrintNum++;
+						rt_thread_delay(RT_TICK_PER_SECOND*2);
+						rt_kprintf("采集成功\n");
 						break;
 					}
 					else
 					{
 						//指纹采集失败
+						gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(2),SHOW_X_ROW8(15),SHOW_Y_LINE(3));
+						gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),MenuCommText[2],GUI_WIHIT);
+						gui_display_update();
+						rt_thread_delay(RT_TICK_PER_SECOND*2);
+						rt_kprintf("采集失败\n");
+						break;
 					}
 				}
 				else if(KeyValue == '#')
@@ -421,12 +502,21 @@ void menu_15_processing(void)
 rt_err_t add_new_phone_check(rt_uint8_t phone[])
 {
 	rt_uint8_t len;
+	rt_err_t result;
 
 	len = rt_strlen((const char *)phone);
 	if(len < PHONE_STAND_LEN)
 	{
 		return RT_ERROR;
 	}	
+
+	result = user_phone_add_check(phone);
+	if(result != RT_EOK)
+	{
+		rt_kprintf("The mobile phone number ALREADY EXISTS\n");
+		
+    return RT_ERROR;
+	}
 	
 	return RT_EOK;
 }
@@ -434,6 +524,7 @@ rt_err_t add_new_phone_check(rt_uint8_t phone[])
 void menu_16_processing(void)
 {
 	rt_uint8_t PhoneNum = 0;
+	rt_uint8_t CurUserPos = 0;
 	rt_uint8_t buf[LCD_LINE_MAX_LEN];
 	rt_uint8_t PhoneBuf[MENU_PHONE_MAX_LEN+1];
 	rt_uint8_t KeyValue;
@@ -444,14 +535,21 @@ void menu_16_processing(void)
 
   while(1)
   {
+  	//第一次输入手机号码
+  	CurUserPos = account_cur_pos_get();
+    PhoneNum = user_valid_phone_num();
+    
   	gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
     gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(0),PhoneAddText[0],GUI_WIHIT);
+    rt_sprintf((char *)buf,"%03d",CurUserPos);
+    gui_display_string(SHOW_X_ROW8(12),SHOW_Y_LINE(0),buf,GUI_WIHIT);
+
     gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(1),PhoneAddText[1],GUI_WIHIT);
-    rt_sprintf((char *)buf,"%d",PhoneNum);
-    gui_display_string(SHOW_X_ROW8(rt_strlen((const char *)PhoneAddText[1])),SHOW_Y_LINE(1),buf,GUI_WIHIT);
+    rt_sprintf((char *)buf,"%02d",PhoneNum);
+    gui_display_string(SHOW_X_ROW8(13),SHOW_Y_LINE(1),buf,GUI_WIHIT);
     gui_display_update();
 
-    rt_memset(PhoneBuf,0,MENU_PHONE_MAX_LEN);
+    rt_memset(buf,0,MENU_PHONE_MAX_LEN);
 		while(1)
 		{
 			result = gui_key_input(&KeyValue);
@@ -460,11 +558,11 @@ void menu_16_processing(void)
         //有按键
         if(KeyValue >= '0' && KeyValue <= '9')
         {
-          result = string_add_char(PhoneBuf,KeyValue,MENU_PHONE_MAX_LEN);
+          result = string_add_char(buf,KeyValue,MENU_PHONE_MAX_LEN);
           if(result == RT_EOK)
           {
             gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(2),SHOW_X_ROW8(15),SHOW_Y_LINE(3));
-            gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),PhoneBuf,GUI_WIHIT);
+            gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),buf,GUI_WIHIT);
           }
           else
           {
@@ -473,11 +571,11 @@ void menu_16_processing(void)
         }
         else if(KeyValue == '*')
         {
-          //检测输入的密码是否合法
-          result = add_new_phone_check(PhoneBuf);
+          //检测输入的手机是否合法
+          result = add_new_phone_check(buf);
           if(result != RT_EOK)
           {
-          	//密码不合法
+          	//不合法
     				gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PhoneAddText[2],GUI_WIHIT);
     				gui_display_update();
     				rt_thread_delay(RT_TICK_PER_SECOND);
@@ -485,8 +583,8 @@ void menu_16_processing(void)
           }
           else
           {
-            //新密码是合法的
-            //rt_memcpy(buf1,buf,MENU_PASSWORD_MAX_LEN);
+          	//合法
+           	rt_memcpy(PhoneBuf,buf,MENU_PHONE_MAX_LEN);
             break;
           }
           //新密码输入完成 进入验证。
@@ -494,11 +592,11 @@ void menu_16_processing(void)
         else if(KeyValue == '#')
         {
           rt_kprintf("删除\nn");
-          result = string_del_char(PhoneBuf,MENU_PHONE_MAX_LEN);
+          result = string_del_char(buf,MENU_PHONE_MAX_LEN);
           if(result == RT_EOK)
           {
             gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(2),SHOW_X_ROW8(15),SHOW_Y_LINE(3));
-            gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),PhoneBuf,GUI_WIHIT);
+            gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),buf,GUI_WIHIT);
           }
          	else
          	{
@@ -512,7 +610,102 @@ void menu_16_processing(void)
       {
         //闪烁提示
         GlintStatus++;
-        menu_inputchar_glint(SHOW_X_ROW8(rt_strlen((const char *)PhoneBuf)),SHOW_Y_LINE(2),GlintStatus%2);
+        menu_inputchar_glint(SHOW_X_ROW8(rt_strlen((const char *)buf)),SHOW_Y_LINE(2),GlintStatus%2);
+      }
+      //更新显示
+      
+      gui_display_update();
+			rt_thread_delay(1);
+		}
+
+		//第二次验证手机号码
+		CurUserPos = account_cur_pos_get();
+    PhoneNum = user_valid_phone_num();
+    
+  	gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+    gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(0),PhoneAddText[0],GUI_WIHIT);
+    rt_sprintf((char *)buf,"%03d",PhoneNum);
+    gui_display_string(SHOW_X_ROW8(12),SHOW_Y_LINE(0),buf,GUI_WIHIT);
+
+    gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(1),PhoneAddText[3],GUI_WIHIT);
+    rt_sprintf((char *)buf,"%02d",PhoneNum);
+    gui_display_string(SHOW_X_ROW8(13),SHOW_Y_LINE(1),buf,GUI_WIHIT);
+    gui_display_update();
+
+    rt_memset(buf,0,MENU_PHONE_MAX_LEN);
+		while(1)
+		{
+			result = gui_key_input(&KeyValue);
+      if(RT_EOK == result)
+      {
+        //有按键
+        if(KeyValue >= '0' && KeyValue <= '9')
+        {
+          result = string_add_char(buf,KeyValue,MENU_PHONE_MAX_LEN);
+          if(result == RT_EOK)
+          {
+            gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(2),SHOW_X_ROW8(15),SHOW_Y_LINE(3));
+            gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),buf,GUI_WIHIT);
+          }
+          else
+          {
+            //输入数量超过8个
+          }
+        }
+        else if(KeyValue == '*')
+        {
+        	rt_int32_t res;
+          //检测输入的手机是否合法
+          res = rt_memcmp(PhoneBuf,buf,11);
+          if(res != 0)
+          {
+          	//不合法
+    				gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PhoneAddText[2],GUI_WIHIT);
+    				gui_display_update();
+    				rt_thread_delay(RT_TICK_PER_SECOND);
+    				gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(3),SHOW_X_ROW8(15),SHOW_Y_LINE(4));
+          }
+          else
+          {
+          	rt_uint8_t SaveShowFlag = 1;
+          	
+          	//合法
+           	result = user_cur_add_phone(PhoneBuf);
+           	if(result == RT_ERROR)
+           	{
+							//保存失败
+							SaveShowFlag = 2;
+           	}
+           	gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),MenuCommText[SaveShowFlag],GUI_WIHIT);
+    				gui_display_update();
+    				rt_thread_delay(RT_TICK_PER_SECOND);
+    				gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(3),SHOW_X_ROW8(15),SHOW_Y_LINE(4));
+            break;
+          }
+          //新密码输入完成 进入验证。
+        }
+        else if(KeyValue == '#')
+        {
+          rt_kprintf("删除\nn");
+          result = string_del_char(buf,MENU_PHONE_MAX_LEN);
+          if(result == RT_EOK)
+          {
+            gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(2),SHOW_X_ROW8(15),SHOW_Y_LINE(3));
+            gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),buf,GUI_WIHIT);
+          }
+         	else
+         	{
+         		gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),MenuCommText[0],GUI_WIHIT);
+         		gui_display_update();
+						return ;
+         	}
+        }
+      }
+      else
+      {
+        //闪烁提示
+        GlintStatus++;
+        menu_inputchar_glint(SHOW_X_ROW8(rt_strlen((const char *)buf)),SHOW_Y_LINE(2),GlintStatus%2);
       }
       //更新显示
       
@@ -532,6 +725,7 @@ void menu_17_processing(void)
 	gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(1),SaveEixtText[1],GUI_WIHIT);
 	gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),SaveEixtText[2],GUI_WIHIT);
   gui_display_update();
+  account_add_exit(RT_TRUE);
 }
 
 void menu_18_processing(void)
@@ -546,48 +740,62 @@ void menu_19_processing(void)
   gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
   gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(0),EixtText[0],GUI_WIHIT);
 	gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(1),EixtText[1],GUI_WIHIT);
+	account_add_exit(RT_FALSE);
   gui_display_update();
 }
 
 rt_err_t search_user_id_check(rt_uint8_t *buf,rt_uint8_t *user)
 {
-	sscanf((const char*)buf,"%s",user);
+	rt_kprintf("buf %s",buf);
+	sscanf((const char*)buf,"%d",user);
 	if(rt_strlen((const char *)buf) == 0)
+	{
+		return RT_ERROR;
+	}
+
+	if(account_valid_check(*user) < 0)
 	{
 		return RT_ERROR;
 	}
 	
 	return RT_EOK;
 }
+static rt_uint8_t ModifyUserPos;
 
-static  rt_uint8_t  TextUser[100][LCD_LINE_MAX_LEN] = 
-{
-	{"user1"},
-	{"user2"},
-	{"user3"},
-	{"user5"},
-	{"user6"},
-	{"user7"},
-	{"user8"},
-	{"user9"},
-};
+#define PAGE_MAX_SHOW_LINE	4
 static void user_list_processing(void)
 {
 	rt_uint8_t KeyValue;
 	rt_err_t	 result;
 	rt_uint8_t buf[LCD_LINE_MAX_LEN];
 	rt_uint8_t ShowStart = 0;
+	rt_int8_t CurLine = 0;
+	rt_uint8_t UserMaxNum = 100;
+	rt_int32_t Page;
+	rt_uint8_t CurPage;
+	rt_int32_t surplus;
+	UserInfoDef UserInfo[PAGE_MAX_SHOW_LINE];
+	rt_int32_t start_id = 0;
+	rt_int32_t start_id1;
 	rt_uint8_t i;
 	
 	gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
 
-	//初始化测试数据
-	for(i= 0;i<100;i++)
+	//获取用户最大数量
+	UserMaxNum = user_valid_num();
+	if(UserMaxNum == 0)
 	{
-		rt_memset(buf,0,LCD_LINE_MAX_LEN);
-		rt_sprintf(buf,"User_%d",i);
-		rt_strncpy(TextUser[i],buf,LCD_LINE_MAX_LEN);
+		//没有用户
+		return ;
 	}
+	Page = UserMaxNum/PAGE_MAX_SHOW_LINE;
+	surplus = UserMaxNum % PAGE_MAX_SHOW_LINE;
+  CurPage = 0;
+  start_id = 0;
+
+	rt_kprintf("judge = %d\n",start_id);
+	user_get_info_continuous(UserInfo,&start_id,PAGE_MAX_SHOW_LINE,0);
+	start_id1 = start_id;
 	while(1)
 	{
     result = gui_key_input(&KeyValue);
@@ -596,47 +804,102 @@ static void user_list_processing(void)
       if(KeyValue == '8')
       {
         //上
+        if(CurPage >= 0)
+        {
+          CurLine--;
+          if(CurLine < 0)
+          {
+ 						if(CurPage > 0)
+ 						{
+ 							CurLine = 3;
+ 							if(CurPage == Page)
+ 							{
+								user_get_info_continuous(UserInfo,&start_id,surplus,1);
+ 							}
+	            CurPage--;
+	            user_get_info_continuous(UserInfo,&start_id,PAGE_MAX_SHOW_LINE,1);
+ 						}
+ 						else
+ 						{
+              CurLine++;
+ 						}
+          }
+        }
       }
       else if(KeyValue == '0')
       {
         //下
+        CurLine++;
+        if(CurLine > 3)
+        {
+        	if(CurPage*PAGE_MAX_SHOW_LINE+CurLine < UserMaxNum)
+        	{
+        		rt_int32_t tmp;
+
+        		if(CurPage == 0)
+        		{
+              start_id = start_id1;
+        		}
+        		CurLine = 0;
+  					CurPage++;
+  					user_get_info_continuous(UserInfo,&start_id,PAGE_MAX_SHOW_LINE,0);
+        	}
+        	else
+        	{
+						CurLine--;
+        	}
+        }
       }
-      else if(KeyValue == '7')
+      /*else if(KeyValue == '7')
       {
         //左
-        if(ShowStart > 4)
+        if(CurPage > 1)
         {
-					ShowStart-=4;
+					CurPage--;
+					user_get_info_continuous(UserInfo,&start_id,PAGE_MAX_SHOW_LINE,1);
         }
       }
       else if(KeyValue == '9')
       {
         //右
-        if(ShowStart < 100)
+        if(CurPage > Page)
         {
-          ShowStart+=4;
+          CurPage++;
+          user_get_info_continuous(UserInfo,&start_id,PAGE_MAX_SHOW_LINE,0);
         }
-      }
+      }*/
       else if(KeyValue == '*')
       {
         //确定
+        rt_kprintf("Choose User:%d\n",CurPage*PAGE_MAX_SHOW_LINE+CurLine);
+        ModifyUserPos = CurPage*PAGE_MAX_SHOW_LINE+CurLine;
+        menu_run_sure_process();
+        account_set_use(CurPage*PAGE_MAX_SHOW_LINE+CurLine);
+        return ;
       }
       else if(KeyValue == '#')
       {
         //取消
       }
-    }
-    for(i = 0;i<4;i++)
-			{
 
-				rt_memset(buf,0,LCD_LINE_MAX_LEN);
-				rt_sprintf(buf,"%03d",ShowStart+i);
-				gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(i),buf,GUI_WIHIT);
-				
-				rt_memset(buf,0,LCD_LINE_MAX_LEN);
-				rt_strncpy(buf,TextUser[ShowStart+i],LCD_LINE_MAX_LEN);
-				gui_display_string(SHOW_X_ROW16(4),SHOW_Y_LINE(i),buf,GUI_WIHIT);
+      rt_kprintf("CurPage = %d CurLine = %d\n",CurPage,CurLine);
+    }
+    for(i = 0;i<PAGE_MAX_SHOW_LINE;i++)
+		{
+			rt_uint8_t color = GUI_WIHIT;
+			
+			rt_memset(buf,0,LCD_LINE_MAX_LEN);
+			rt_sprintf(buf,"%03d",UserInfo[i].id);
+			if(CurLine == i)
+			{
+				color = GUI_BLACK;
 			}
+			gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(i),buf,color);
+			
+			rt_memset(buf,0,LCD_LINE_MAX_LEN);
+			rt_strncpy(buf,UserInfo[i].name,LCD_LINE_MAX_LEN);
+			gui_display_string(SHOW_X_ROW16(4),SHOW_Y_LINE(i),buf,GUI_WIHIT);
+		}
     gui_display_update();
 	}
 }
@@ -697,6 +960,7 @@ void menu_22_processing(void)
 							{
 								//进入浏览界面
 								user_list_processing();
+								return ;
 							}
 							else if(KeyValue == '#')
 							{
@@ -711,6 +975,10 @@ void menu_22_processing(void)
 	      else
 	      {
 	        //如果能找到这个人进入修改界面
+	        menu_run_sure_process();
+	        ModifyUserPos = UserPos;
+
+	        account_set_use(UserPos);
 	       	rt_kprintf("User Pos=%d\n",UserPos);
 	        break;
 	      }
@@ -747,20 +1015,369 @@ void menu_22_processing(void)
   gui_display_update();
 }
 
+static void menu_user_modify_ui(rt_uint8_t InPOS)
+{
+	rt_uint8_t page;
+	rt_uint8_t pos;
+	rt_uint8_t i;
+
+	page = InPOS /PAGE_MAX_SHOW_NUM;//计算显示在那一页
+	pos = InPOS % PAGE_MAX_SHOW_NUM;//当前选中的位置
+	gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+	for(i=0;i<PAGE_MAX_SHOW_NUM;i++)
+	{
+		if(page*PAGE_MAX_SHOW_NUM+i >= MENU_USER_MODIFY_TYPE_NUM)
+		{
+			break;
+		}
+		if(i == pos)
+		{
+			gui_display_string(SHOW_X_CENTERED((const char*)MenuUserModifyList[page*PAGE_MAX_SHOW_NUM+i]),
+												 SHOW_Y_LINE(i),
+												 (rt_uint8_t *)MenuUserModifyList[page*PAGE_MAX_SHOW_NUM+i],
+												 GUI_BLACK);
+		}
+		else
+		{
+			gui_display_string(SHOW_X_CENTERED((const char*)MenuUserModifyList[page*PAGE_MAX_SHOW_NUM+i]),
+												 SHOW_Y_LINE(i),
+												 (rt_uint8_t *)MenuUserModifyList[page*PAGE_MAX_SHOW_NUM+i],
+												 GUI_WIHIT);
+		}
+	}
+	gui_display_update();
+}
+
+
 //浏览界面
 void menu_23_processing(void)
 {
-  gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
-  
-  gui_display_update();
+ menu_user_modify_ui(0);
 }
+
+void menu_24_processing(void)
+{
+ menu_user_modify_ui(1);
+}
+
+void menu_25_processing(void)
+{
+ menu_user_modify_ui(2);
+}
+
+void menu_26_processing(void)
+{
+ menu_user_modify_ui(3);
+}
+
+void menu_27_processing(void)
+{
+ menu_user_modify_ui(4);
+}
+
+//添加密码
+void menu_28_processing(void)
+{
+	/*rt_uint8_t PasswordNum = 0;
+	rt_uint8_t CurPos = 0;
+	rt_uint8_t ShowBuf[LCD_LINE_MAX_LEN];
+	
+	gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+  gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(0),UserModifyText[0],GUI_WIHIT);
+
+	rt_memset(ShowBuf,0,LCD_LINE_MAX_LEN);
+	rt_sprintf((char*)ShowBuf,"%d",PasswordNum);
+  gui_display_string(SHOW_X_ROW8(rt_strlen((const char *)UserModifyText[0])),SHOW_Y_LINE(0),ShowBuf,GUI_WIHIT);
+  gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(0),UserModifyText[1],GUI_WIHIT);
+	gui_display_update();
+	while(1)
+	{
+		rt_err_t result;
+		rt_uint8_t KeyValue;
+		
+	  result = gui_key_input(&KeyValue);
+	  if(result == RT_EOK)
+	  {
+			
+	  }
+	  
+	}
+	*/
+	menu_14_processing();
+}
+
+//添加指纹
+void menu_29_processing(void)
+{
+	/*gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+
+	gui_display_update();
+	while(1)
+	{
+	  
+	}*/
+	menu_15_processing();
+}
+
+//添加电话
+void menu_30_processing(void)
+{
+	/*gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+
+	gui_display_update();
+	while(1)
+	{
+	  
+	}*/
+	menu_16_processing();
+}
+
+
+
+void menu_31_processing(void)
+{
+	rt_err_t result;
+
+	gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+
+	result = account_cur_delete();
+	if(result != RT_EOK)
+	{
+		gui_display_string(SHOW_X_CENTERED(MenuCommText[2]),SHOW_Y_LINE(2),MenuCommText[2],GUI_WIHIT);
+	}
+	else
+	{
+    gui_display_string(SHOW_X_CENTERED(MenuCommText[1]),SHOW_Y_LINE(2),MenuCommText[1],GUI_WIHIT);
+
+	}
+	gui_display_update();
+}
+
+//管理员密码修改处理
+void menu_33_processing(void)
+{
+	rt_uint8_t buf[MENU_PASSWORD_MAX_LEN];
+	rt_uint8_t buf1[MENU_PASSWORD_MAX_LEN];
+	rt_uint8_t ShowBuf[MENU_PASSWORD_MAX_LEN];
+	rt_uint8_t GlintStatus;
+	rt_uint8_t CurUserPos;
+	rt_uint8_t UserMaxPsNum;
+
+	while(1)
+	{
+		CurUserPos = account_cur_pos_get();
+		UserMaxPsNum = user_valid_password_num();
+		
+    gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+    gui_display_string(SHOW_X_CENTERED(AdminModifyText[0]),SHOW_Y_LINE(0),AdminModifyText[0],GUI_WIHIT);
+    gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(1),AdminModifyText[1],GUI_WIHIT);
+    gui_display_update();
+    //第一次输入密码
+    rt_memset(buf,0,MENU_PASSWORD_MAX_LEN);
+    rt_memset(ShowBuf,0,MENU_PASSWORD_MAX_LEN);
+    while(1)
+    {
+      rt_err_t result;
+      rt_uint8_t KeyValue;
+      
+      result = gui_key_input(&KeyValue);
+      if(RT_EOK == result)
+      {
+        //有按键
+        if(KeyValue >= '0' && KeyValue <= '9')
+        {
+          result = string_add_char(buf,KeyValue,8);
+          if(result == RT_EOK)
+          {
+            string_hide_string((const rt_uint8_t *)buf,ShowBuf,SHOW_PW_HIDE_CH,8);
+            gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(2),SHOW_X_ROW8(15),SHOW_Y_LINE(3));
+            gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),ShowBuf,GUI_WIHIT);
+          }
+          else
+          {
+            //输入数量超过8个
+          }
+        }
+        else if(KeyValue == '*')
+        {
+          //检测输入的密码是否合法
+          result = add_new_password_check(buf);
+          if(result != RT_EOK)
+          {
+          	//密码不合法
+    				gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PasswordAddText[3],GUI_WIHIT);
+    				gui_display_update();
+    				rt_thread_delay(RT_TICK_PER_SECOND);
+    				gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(3),SHOW_X_ROW8(15),SHOW_Y_LINE(4));
+          }
+          else
+          {
+            //新密码是合法的
+            rt_memcpy(buf1,buf,MENU_PASSWORD_MAX_LEN);
+            break;
+          }
+          //新密码输入完成 进入验证。
+        }
+        else if(KeyValue == '#')
+        {
+          rt_kprintf("删除\nn");
+          result = string_del_char(buf,8);
+          if(result == RT_EOK)
+          {
+            string_hide_string((const rt_uint8_t *)buf,ShowBuf,SHOW_PW_HIDE_CH,8);
+            gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(2),SHOW_X_ROW8(15),SHOW_Y_LINE(3));
+            gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),ShowBuf,GUI_WIHIT);
+          }
+         	else
+         	{
+         		gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),MenuCommText[0],GUI_WIHIT);
+         		gui_display_update();
+						return ;
+         	}
+        }
+      }
+      else
+      {
+        //闪烁提示
+        GlintStatus++;
+        menu_inputchar_glint(SHOW_X_ROW8(rt_strlen((const char *)ShowBuf)),SHOW_Y_LINE(2),GlintStatus%2);
+      }
+      //更新显示
+      
+      gui_display_update();
+    }
+    
+    //第二次输入密码
+   	gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+    gui_display_string(SHOW_X_CENTERED(AdminModifyText[0]),SHOW_Y_LINE(0),AdminModifyText[0],GUI_WIHIT);
+    gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(1),AdminModifyText[1],GUI_WIHIT);
+    gui_display_update();
+
+    rt_memset(buf,0,MENU_PASSWORD_MAX_LEN);
+    rt_memset(ShowBuf,0,MENU_PASSWORD_MAX_LEN);
+    while(1)
+    {
+      rt_err_t result;
+      rt_uint8_t KeyValue;
+      
+      result = gui_key_input(&KeyValue);
+      if(RT_EOK == result)
+      {
+        //有按键
+        if(KeyValue >= '0' && KeyValue <= '9')
+        {
+          result = string_add_char(buf,KeyValue,8);
+          if(result == RT_EOK)
+          {
+            string_hide_string((const rt_uint8_t *)buf,ShowBuf,SHOW_PW_HIDE_CH,8);
+            gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(2),SHOW_X_ROW8(15),SHOW_Y_LINE(3));
+            gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),ShowBuf,GUI_WIHIT);
+          }
+          else
+          {
+            //输入数量超过8个
+          }
+        }
+        else if(KeyValue == '*')
+        {
+          //检测输入的密码是否合法
+          rt_uint32_t temp;
+          
+          temp = rt_memcmp(buf1,buf,rt_strlen((const char *)buf1));
+          if(temp != 0)
+          {
+            //密码匹配错误
+            gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PasswordAddText[3],GUI_WIHIT);
+    				gui_display_update();
+    				rt_thread_delay(RT_TICK_PER_SECOND);
+    				gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(3),SHOW_X_ROW8(15),SHOW_Y_LINE(4));
+          }
+          else
+          {
+          	rt_uint8_t save = 1;
+          	
+            //添加成功保存对象
+            result = key_add_password(buf1);
+            if(result != RT_EOK)
+            {
+							//保存失败
+							save = 2;
+							rt_kprintf("save fail\n");
+            }
+          
+            result = account_cur_add_password(buf1);
+            if(result != RT_EOK)
+            {
+							//保存失败
+							rt_kprintf("save fail\n");
+							save = 2;
+            }
+            gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),MenuCommText[save],GUI_WIHIT);
+    				gui_display_update();
+    				rt_thread_delay(RT_TICK_PER_SECOND);
+    				gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(3),SHOW_X_ROW8(15),SHOW_Y_LINE(4));
+          }
+          //新密码输入完成 进入验证。
+          break;
+        }
+        else if(KeyValue == '#')
+        {
+          rt_kprintf("删除\nn");
+          result = string_del_char(buf,8);
+          if(result == RT_EOK)
+          {
+            string_hide_string((const rt_uint8_t *)buf,ShowBuf,SHOW_PW_HIDE_CH,8);
+            gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(2),SHOW_X_ROW8(15),SHOW_Y_LINE(3));
+            gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),ShowBuf,GUI_WIHIT);
+          }
+          else
+          {
+          	rt_kprintf("退出钥匙添加\n");
+						//return ;
+          }
+        }
+      }
+      else
+      {
+        //闪烁提示
+        GlintStatus++;
+        menu_inputchar_glint(SHOW_X_ROW8(rt_strlen((const char *)ShowBuf)),SHOW_Y_LINE(2),GlintStatus%2);
+      }
+      //更新显示
+      
+      gui_display_update();
+    }
+
+	}
+}
+
+
 
 //修改界面
 
 
+#ifdef RT_USING_FINSH
+#include <finsh.h>
 
+void config_test(void)
+{
+	int user_num;
+	rt_int32_t key_num;
+	
+	user_num = device_config_account_counts();
+	rt_kprintf("user num:%d\n",user_num);
 
+	key_num = device_config_account_key_counts();
+	rt_kprintf("user key:%d\n",key_num);
 
+	key_num = device_config_account_next_valid(11,0);
+	rt_kprintf("next %d\n",key_num);
 
+	key_num = device_config_account_next_valid(11,1);
+	rt_kprintf("next %d\n",key_num);
+}
+FINSH_FUNCTION_EXPORT(config_test,config api test);
+
+#endif
 
 

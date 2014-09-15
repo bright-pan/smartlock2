@@ -1,5 +1,6 @@
 #include "keyprocess_t.h"
 #include "keyboard_t.h"
+#include "unlock_ui.h"
 #include "menu.h"
 
 #define KEYPROCESS_DEBUG_INFO				1
@@ -11,7 +12,8 @@
 void keyprocess_thread_entry(void *arg)
 {
 	//rt_device_t dev;
-
+	//Ω‚À¯ΩÁ√Ê	
+  key_input_processing_init();
 	while(1)
 	{
     key_input_processing();
@@ -26,7 +28,7 @@ int	keyprocess_thread_init(void)
 	
 	thread = rt_thread_create("key",
 	                           keyprocess_thread_entry, RT_NULL,
-	                           1024,KEYB_THREAD_PRIORITY,10);
+	                           1024*2,KEYB_THREAD_PRIORITY,10);
 	rt_thread_startup(thread);
 	
 	return 0;

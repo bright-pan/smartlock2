@@ -3,9 +3,13 @@
 #include "rtthread.h"
 //#include "commfun.h"
 #include "gui.h"
+#include"accountop.h"
+
 #define KEY_MAX_MENU_NUM					50
 #define MENU_PASSWORD_MAX_LEN			8
 #define MENU_PHONE_MAX_LEN				12
+
+#define CONFIG_PASSWORD_LEN				6	//配置文件标准密码长度
 
 typedef struct 
 {
@@ -25,6 +29,7 @@ void key_input_processing(void);
 
 rt_err_t menu_key_value_acquire(rt_uint8_t *KeyValue);
 
+void menu_run_sure_process(void);
 
 rt_err_t string_add_char(rt_uint8_t str[],rt_uint8_t ch,rt_uint8_t str_size);
 
@@ -34,4 +39,7 @@ void string_hide_string(const rt_uint8_t src[],rt_uint8_t str[],rt_uint8_t ch,rt
 
 void menu_inputchar_glint(rt_uint8_t x,rt_uint8_t y,rt_uint8_t status);
 
+void key_input_processing_init(void);
+
+void system_menu_choose(rt_uint8_t menu);
 #endif

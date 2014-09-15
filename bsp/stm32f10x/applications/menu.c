@@ -2,13 +2,16 @@
 #include"menu_1.h"
 #include"menu_2.h"
 #include"menu_3.h"
+#include"unlock_ui.h"
 #define SHOW_GLINT_CH							"_"
 
-
-rt_uint8_t KeyFuncIndex = 0;
 typedef void (*fun1)(void);
 
+rt_uint8_t KeyFuncIndex = 0;
 fun1 current_operation_index = RT_NULL;
+
+fun1 cur_run_processing = RT_NULL;
+
 
 //void(*current_operation_index)(void);
 
@@ -20,30 +23,30 @@ KbdTabStruct	KeyTab[KEY_MAX_MENU_NUM] =
 	{0,0,0,1,0,menu_0_processing},//登陆界面
 
 	//二级
-	{1,2,3,4,1,menu_1_processing},//用户管理
-	{2,3,1,6,1,menu_2_processing},//系统设置 
-  {3,1,2,0,1,menu_3_processing},//用户管理
+	{1,2,3,4,3,menu_1_processing},//用户管理
+	{2,3,1,6,3,menu_2_processing},//系统设置 
+  {3,1,2,0,3,menu_3_processing},//用户管理
 
 	//三级
-	{4,5,5,8,1,menu_4_processing},//用户新增
-	{5,4,4,22,1,menu_5_processing},//用户修改
+	{4,5,32,8,1,menu_4_processing},//用户新增
+	{5,32,4,22,1,menu_5_processing},//用户修改
 	
 	{6,7,7,20,2,menu_6_processing},//系统信息
 	{7,6,6,7,2,menu_7_processing},//系统参数
 
 	//四级
-	{8,9,13,14,4,menu_8_processing},//新增密码 >>同时创建账号
-	{9,10,8,15,4,menu_9_processing},//新增指纹
-	{10,11,9,16,4,menu_10_processing},//新增手机
-	{11,12,10,17,4,menu_11_processing},//保存退出
-	{12,13,11,18,4,menu_12_processing},//查看信息
-	{13,8,12,19,4,menu_13_processing},//退出
+	{8,9,13,14,8,menu_8_processing},//新增密码 >>同时创建账号
+	{9,10,8,15,9,menu_9_processing},//新增指纹
+	{10,11,9,16,10,menu_10_processing},//新增手机
+	{11,12,10,17,11,menu_11_processing},//保存退出
+	{12,13,11,18,12,menu_12_processing},//查看信息
+	{13,8,12,19,13,menu_13_processing},//退出
 
 	//五级
 	{14,14,14,14,8,menu_14_processing},//录入密码
 	{15,15,15,15,9,menu_15_processing},//录入指纹
 	{16,16,16,16,10,menu_16_processing},//录入电话
-	{17,17,17,4,11,menu_17_processing},//保存退出
+	{17,17,17,4,4,menu_17_processing},//保存退出
 	{18,18,18,18,12,menu_18_processing},//查看信息
 	{19,19,19,4,13,menu_19_processing},//退出
 
@@ -51,13 +54,89 @@ KbdTabStruct	KeyTab[KEY_MAX_MENU_NUM] =
 	{20,20,20,20,6,menu_20_processing},//显示本机信息
 	{21,21,21,21,7,menu_21_processing},//显示本机信息
 
-	{22,22,22,22,7,menu_22_processing},//显示本机信息
-	{23,23,23,23,7,menu_23_processing},//显示本机信息
+	{22,22,22,23,5,menu_22_processing},//用户搜索界面
 
+	//五级
+	{23,24,27,28,23,menu_23_processing},//修改密码
+	{24,25,23,29,24,menu_24_processing},//修改指纹
+	{25,26,24,30,25,menu_25_processing},//修改电话
+	{26,27,25,5,26,menu_26_processing},//保存退出
+	{27,23,26,31,27,menu_27_processing},//退出
+	
+	{28,23,24,25,23,menu_28_processing},//修改密码处理
+	{29,23,24,25,24,menu_29_processing},//修改指纹处理
+	{30,23,24,25,25,menu_30_processing},//修改电话处理
+	{31,31,31,5,26,menu_31_processing},//删除用户处理
+
+	//三级菜单
+	{32,4,5,33,1,menu_32_processing},//管理员修改
+	{33,33,33,33,32,menu_33_processing},//管理员密码修改
 };
 
+//系统进入菜单
+#define SYSTEM_ENTER_MENU_NUM				10
+rt_uint8_t	SystemFuncIndex = 0;
+fun1 System_menu_index = RT_NULL;
 
-void key_input_processing(void)
+KbdTabStruct	SystemMenu[SYSTEM_ENTER_MENU_NUM] = 
+{
+  {0,1,1,2,0,system_menu1_show},//显示开锁
+  {1,0,0,3,1,system_menu2_show},//系统管理
+  {2,2,2,2,0,unlock_process_ui},//开锁
+  {3,3,3,3,1,system_manage_processing},//进入系统管理
+};
+
+//系统进入界面处理
+void system_entry_ui_processing(void)
+{
+  rt_err_t result;
+	rt_uint8_t KeyValue;
+
+	result = gui_key_input(&KeyValue);
+	if (result == RT_EOK) 
+	{ 
+	  switch(KeyValue)
+	  {
+	    case '*':
+	    {
+	      //确定
+	      if(System_menu_index == RT_NULL)
+	      {
+	        break;
+	      }
+	      SystemFuncIndex = SystemMenu[ SystemFuncIndex].SureState;
+	      break;
+	    }
+	    case '#':
+	    {
+	      //取消
+	      SystemFuncIndex = SystemMenu[ SystemFuncIndex].BackState;
+	      break;
+	    }
+	    case '8':
+	    {
+	      //上
+	      SystemFuncIndex = SystemMenu[ SystemFuncIndex].UpState;
+	      break;
+	    }
+	    case '0':
+	    {
+	      //下
+	      SystemFuncIndex = SystemMenu[ SystemFuncIndex].DnState;
+	      break;
+	    }
+	    default:
+	    {
+	      break;
+	    }
+	  }
+	  System_menu_index = SystemMenu[SystemFuncIndex].CurrentOperate;
+	  System_menu_index();
+	}
+}
+
+//系统管理菜单处理
+void system_manage_ui_processing(void)
 {
 	rt_err_t result;
 	rt_uint8_t KeyValue;
@@ -105,6 +184,53 @@ void key_input_processing(void)
 		current_operation_index();
 	}
 }
+
+void system_menu_choose(rt_uint8_t menu)
+{
+	switch(menu)
+	{
+		case 0:
+		{
+			SystemFuncIndex = 0;
+			KeyFuncIndex = 0;
+			System_menu_index = RT_NULL;
+			cur_run_processing = system_entry_ui_processing;
+			break;
+		}
+		case 1:
+		{
+			KeyFuncIndex = 0;
+			SystemFuncIndex = 0;
+			current_operation_index = RT_NULL;
+			cur_run_processing = system_manage_ui_processing;
+			break;
+		}
+		default:
+		{
+			cur_run_processing = system_entry_ui_processing;
+			break;
+		}
+	}
+}
+
+void key_input_processing_init(void)
+{
+  system_menu_choose(0);
+}
+
+void key_input_processing(void)
+{
+	cur_run_processing();
+}
+
+//菜单运行确定按钮处理函数
+void menu_run_sure_process(void)
+{
+	KeyFuncIndex = KeyTab[ KeyFuncIndex].SureState;
+	current_operation_index = KeyTab[KeyFuncIndex].CurrentOperate;
+	current_operation_index();
+}
+
 
 //从字符串中添加字符
 rt_err_t string_add_char(rt_uint8_t str[],rt_uint8_t ch,rt_uint8_t str_size)
