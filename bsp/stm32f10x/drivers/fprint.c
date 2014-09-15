@@ -1142,8 +1142,10 @@ fprint_thread_entry(void *parameters)
                                     error = fprint_frame_process(FPRINT_FRAME_CMD_STORE_CHAR,
                                                                     &req_data, &rep_data);
                                     if (error == FPRINT_EOK) {
-                                        rt_memcpy(fprint_mail.buf, buf, 512);
-                                        *fprint_mail.key_id = (uint16_t)temp;
+                                        if (fprint_mail.buf != RT_NULL)
+                                            rt_memcpy(fprint_mail.buf, buf, 512);
+                                        if (fprint_mail.key_id != RT_NULL)
+                                            *fprint_mail.key_id = (uint16_t)temp;
                                     }
                                 }
                             }
@@ -1311,7 +1313,7 @@ rt_fprint_init(void)
     if (fprint_mq == RT_NULL)
         return -1;
 
-    s_fprint = rt_sem_create("s_fprint", 1, RT_IPC_FLAG_FIFO);
+    s_fprint = rt_sem_create("s_fprint", 0, RT_IPC_FLAG_FIFO);
 
     // finger print thread
 	fprint_thread = rt_thread_create("fprint", fprint_thread_entry,
@@ -1336,21 +1338,23 @@ fp_init(void)
     return result;
 }
 
-
+static char enroll_flag = 0;
 
 int
 fp_enroll(uint16_t *key_id, uint8_t *buf, uint32_t timeout)
 {
     rt_err_t error;
     int result = -1;
+    
+    RT_ASSERT(key_id != RT_NULL);
 
-    rt_sem_control(s_fprint, RT_IPC_CMD_RESET,0);
+    enroll_flag = 1;
     error = rt_sem_take(s_fprint, timeout);
     if (error == RT_EOK) {
         if (send_fp_mail(FPRINT_CMD_ENROLL, key_id, buf, 0, 1) == FPRINT_EOK)
             result = *key_id;
     }
-    rt_sem_control(s_fprint, RT_IPC_CMD_RESET,(void *)1);
+    enroll_flag = 0;
     return result;
 }
 
@@ -1376,15 +1380,10 @@ fp_verify(void)
 void
 fp_inform(void)
 {
-    uint16_t value;
-
-    rt_sem_control(s_fprint, RT_IPC_CMD_GET_VALUE, &value);
-    if (value == 0)
-    {
+    if (enroll_flag)
         rt_sem_release(s_fprint);
-    } else {
+    else
         fp_verify();
-    }
 }
 
 int
@@ -1399,17 +1398,22 @@ fp_up_char(uint16_t key_id)
 #ifdef RT_USING_FINSH
 #include <finsh.h>
 
-void fp_enroll_test(void)
+void fp_enroll_test(u16 timeout)
 {
     uint16_t key_id;
     uint8_t buf[512];
-    if (send_fp_mail(FPRINT_CMD_ENROLL, &key_id, buf, 0, 1) == FPRINT_EOK)
-    rt_kprintf("key_id = %d\n--------------------\n", key_id);
-    print_hex(buf, 512);
+    if (fp_enroll(&key_id, buf, timeout) >= 0) {
+        rt_kprintf("key_id = %d\n--------------------\n", key_id);
+        print_hex(buf, 512);
+    } else {
+        rt_kprintf("fprint enroll timeout\n");
+    }
 }
+
 FINSH_FUNCTION_EXPORT(fp_init, fp_init[void]);
-FINSH_FUNCTION_EXPORT(fp_enroll_test, fp_enroll_test[void]);
+FINSH_FUNCTION_EXPORT(fp_enroll_test, fp_enroll_test[timeout]);
 FINSH_FUNCTION_EXPORT(fp_delete, fp_delete[uint16]);
 FINSH_FUNCTION_EXPORT(fp_verify, fp_verify[void]);
+FINSH_FUNCTION_EXPORT(fp_inform, fp_inform[void]);
 FINSH_FUNCTION_EXPORT_ALIAS(fp_up_char, fp_uchar, fp_up_char[key_id]);
 #endif // RT_USING_FINSH
