@@ -799,7 +799,7 @@ device_config_account_delete(u16 account_id)
         }
         for (i = 0; i < ACCOUNT_PHONE_NUMBERS; ++i) {
             if (ah.phone[i] != PHONE_ID_INVALID)
-                device_config_key_delete(ah.phone[i]);
+                device_config_phone_delete(ah.phone[i]);
         }
     }
     device_config_set_account_valid(account_id, 0);
@@ -934,11 +934,14 @@ device_config_account_remove_key(u16 key_id)
 				if (pos >= 0) {
 					ah.key[pos] = KEY_ID_INVALID;
 					device_config_account_operate(k.head.account, &ah, 1);
+                    result = key_id;
 				}
 			}
 			k.head.account = ACCOUNT_ID_INVALID;
 			device_config_key_operate(key_id, &k, 1);
-		}
+		} else {
+            result = key_id;
+        }
 	}
 	rt_mutex_release(device_config.mutex);
 //__exit:
@@ -1069,11 +1072,14 @@ device_config_account_remove_phone(u16 phone_id)
 				if (pos >= 0) {
 					ah.phone[pos] = PHONE_ID_INVALID;
 					device_config_account_operate(ph.account, &ah, 1);
+                    result = phone_id;
 				}
 			}
 			ph.account = ACCOUNT_ID_INVALID;
 			device_config_phone_operate(phone_id, &ph, 1);
-		}
+		} else {
+            result = phone_id;
+        }
 	}
 	rt_mutex_release(device_config.mutex);
 //__exit:
@@ -1242,6 +1248,7 @@ FINSH_FUNCTION_EXPORT_ALIAS(device_config_key_create, devcfg_kcr, [key_type buf 
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_get_key_valid, devcfg_gkv, [key_id]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_set_key_valid, devcfg_skv, [key_id value]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_key_delete, devcfg_kd, [key_id]);
+FINSH_FUNCTION_EXPORT_ALIAS(device_config_key_verify, devcfg_kv, [key_buf]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_key_display, devcfg_kds, [key_id]);
 
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_account_create, devcfg_acr, [name length]);
