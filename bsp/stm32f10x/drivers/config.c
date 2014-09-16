@@ -576,7 +576,7 @@ device_config_account_next_key_pos(u16 account_id, u8 key_pos, u8 flag)
 	struct account_head ah;
 	RT_ASSERT(account_id < ACCOUNT_NUMBERS);
     RT_ASSERT(key_pos < ACCOUNT_KEY_NUMBERS);
-    
+
 	result = -ECONFIG_ERROR;
 	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 
@@ -649,9 +649,9 @@ device_config_account_next_valid(u16 account_id, u8 flag)
 {
 	s32 result;
 	s32 i;
-    
+
     RT_ASSERT(account_id < ACCOUNT_NUMBERS);
-    
+
 	result = -ECONFIG_ERROR;
 	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
     if (flag) {
@@ -684,7 +684,7 @@ device_config_account_counts(void)
 	s32 result;
     s32 counts;
 	s32 i;
-    
+
     counts = 0;
 	result = -ECONFIG_ERROR;
 	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
@@ -786,11 +786,11 @@ device_config_account_delete(u16 account_id)
 {
     s32 result, i;
     struct account_head ah;
-    
+
     RT_ASSERT(account_id < ACCOUNT_NUMBERS);
 	result = -ECONFIG_ERROR;
     rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
-	
+
     result = device_config_account_operate(account_id, &ah, 0);
     if (result >= 0) {
         for (i = 0; i < ACCOUNT_KEY_NUMBERS; ++i) {
@@ -910,7 +910,7 @@ device_config_account_append_key(u16 account_id, u16 key_id)
     ·µ»Ø£º
         >=0, Ô¿³×ID
         -ECONFIG_ERROR,ÒÆ³ýÊ§°Ü¡£
-    
+
 */
 s32
 device_config_account_remove_key(u16 key_id)
@@ -961,7 +961,7 @@ device_config_account_get_invalid_phone_pos(struct account_head *ah)
 
 	result = -ECONFIG_ERROR;
 	for (i = 0; i < ACCOUNT_PHONE_NUMBERS; ++i) {
-		if (ah->key[i] == PHONE_ID_INVALID) {
+		if (ah->phone[i] == PHONE_ID_INVALID) {
 			result = i;
 			break;
 		}
@@ -1048,7 +1048,7 @@ device_config_account_append_phone(u16 account_id, u16 phone_id)
     ·µ»Ø£º
         >=0, Ô¿³×ID
         -ECONFIG_ERROR,ÒÆ³ýÊ§°Ü¡£
-    
+
 */
 s32
 device_config_account_remove_phone(u16 phone_id)
@@ -1087,7 +1087,7 @@ device_config_account_remove_phone(u16 phone_id)
 }
 
 
-s32 
+s32
 device_config_key_index(int(*callback)(struct key *, void *arg1, void *arg2, void *arg3), void *arg1, void *arg2)
 {
     s32 result;
