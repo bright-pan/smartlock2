@@ -798,8 +798,6 @@ INIT_DEVICE_EXPORT(rt_hw_speak_register);
   //INIT_DEVICE_EXPORT(rt_hw_logo_led_register);
   INIT_DEVICE_EXPORT(rt_hw_infra_pulse_register);
 */
-#ifdef RT_USING_FINSH
-#include <finsh.h>
 void pwm_set_counts(char *str, rt_uint32_t counts)
 {
 	rt_device_t device = RT_NULL;
@@ -809,7 +807,6 @@ void pwm_set_counts(char *str, rt_uint32_t counts)
 		rt_device_control(device, RT_DEVICE_CTRL_SET_PULSE_COUNTS, (void *)&counts);
 	}
 }
-FINSH_FUNCTION_EXPORT(pwm_set_counts, pwm_set_pulse_counts[device_name x])
 
 void pwm_set_value(char *str, rt_uint16_t time)
 {
@@ -820,7 +817,6 @@ void pwm_set_value(char *str, rt_uint16_t time)
 		rt_device_control(device, RT_DEVICE_CTRL_SET_PULSE_VALUE, (void *)&time);
 	}
 }
-FINSH_FUNCTION_EXPORT(pwm_set_value, pwm_set_pulse_value[device_name x]);
 
 void pwm_send_pulse(char *str)
 {
@@ -835,24 +831,29 @@ void pwm_send_pulse(char *str)
 		rt_device_control(device, RT_DEVICE_CTRL_SEND_PULSE, (void *)0);
 	}
 }
+
+void motor_rotate(rt_int16_t data)
+{
+    if(data < 0)
+    {
+        data = 0 - data;
+        pwm_set_counts(DEVICE_NAME_MOTOR1,data);
+        pwm_send_pulse(DEVICE_NAME_MOTOR1);
+    }
+    else
+    {
+        pwm_set_counts(DEVICE_NAME_MOTOR2,data);
+        pwm_send_pulse(DEVICE_NAME_MOTOR2);
+    }
+}
+
+#ifdef RT_USING_FINSH
+#include <finsh.h>
+FINSH_FUNCTION_EXPORT(pwm_set_counts, pwm_set_pulse_counts[device_name x]);
+FINSH_FUNCTION_EXPORT(pwm_set_value, pwm_set_pulse_value[device_name x]);
 FINSH_FUNCTION_EXPORT(pwm_send_pulse, pwm_send_pulse[device_name]);
 
 //FINSH_FUNCTION_EXPORT(voice_output, voice_output[counts]);
-/*
-  void motor_rotate(rt_int16_t data)
-  {
-  if(data < 0)
-  {
-  data = 0 - data;
-  pwm_set_counts(DEVICE_NAME_MOTOR_A_PULSE,data);
-  pwm_send_pulse(DEVICE_NAME_MOTOR_A_PULSE);
-  }
-  else
-  {
-  pwm_set_counts(DEVICE_NAME_MOTOR_B_PULSE,data);
-  pwm_send_pulse(DEVICE_NAME_MOTOR_B_PULSE);
-  }
-  }
-  FINSH_FUNCTION_EXPORT(motor_rotate, motor_rotate[angle]);
-*/
+FINSH_FUNCTION_EXPORT(motor_rotate, motor_rotate[angle]);
+
 #endif

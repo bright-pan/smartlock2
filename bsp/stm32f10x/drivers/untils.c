@@ -16,7 +16,7 @@
 #include <dfs_elm.h>
 #include <dfs_fs.h>
 #include "dfs_posix.h"
-
+#include <time.h>
 #define CONFIG_DEBUG 1
 
 rt_device_t rtc_device;
@@ -24,11 +24,11 @@ rt_device_t rtc_device;
 /*
   功能:获得当前时间
 */
-u32
+time_t
 sys_cur_date(void)
 {
 	rt_device_t device;
-	u32 time=0;
+	time_t time=0;
 
 	device = rt_device_find("rtc");
 	if (device != RT_NULL)

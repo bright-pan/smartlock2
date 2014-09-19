@@ -265,7 +265,7 @@ device_config_key_head_init(struct key_head *kh, u16 key_type)
     kh->is_updated = 0;
 	kh->account = ACCOUNT_ID_INVALID;
     kh->key_type = key_type;
-    kh->operation_type = OPERATION_TYPE_FOREVER;
+    kh->operation_type = KEY_OPERATION_TYPE_FOREVER;
     kh->updated_time = sys_cur_date();
     kh->start_time = 0;
     kh->end_time = 0;
@@ -1200,7 +1200,7 @@ void device_config_phone_display(u16 phone_id)
     rt_kprintf("phone_is_valid = %d\n", device_config_get_phone_valid(phone_id));
 	rt_kprintf("phone_account = 0x%x\n", ph.account);
 	rt_kprintf("phone_auth = 0x%x\n", ph.auth);
-	rt_kprintf("phone_auth = 0x%s\n", ph.address);
+	rt_kprintf("phone_address = %s\n", ph.address);
 }
 
 void device_config_key_display(u16 key_id)
@@ -1242,13 +1242,14 @@ FINSH_FUNCTION_EXPORT_ALIAS(device_config_phone_create, devcfg_pcr, [name len]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_get_phone_valid, devcfg_gpv, [phone_id]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_set_phone_valid, devcfg_spv, [phone_id value]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_phone_delete, devcfg_pd, [phone_id]);
+FINSH_FUNCTION_EXPORT_ALIAS(device_config_phone_verify, devcfg_pv, [phone_buf length]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_phone_display, devcfg_pds, [phone_id]);
 
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_key_create, devcfg_kcr, [key_type buf length]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_get_key_valid, devcfg_gkv, [key_id]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_set_key_valid, devcfg_skv, [key_id value]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_key_delete, devcfg_kd, [key_id]);
-FINSH_FUNCTION_EXPORT_ALIAS(device_config_key_verify, devcfg_kv, [key_buf]);
+FINSH_FUNCTION_EXPORT_ALIAS(device_config_key_verify, devcfg_kv, [key_buf length]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_key_display, devcfg_kds, [key_id]);
 
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_account_create, devcfg_acr, [name length]);
