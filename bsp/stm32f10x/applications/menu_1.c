@@ -32,12 +32,12 @@ static const rt_uint8_t MenuFirst[MENU_FIRST_NUM][8*2] =
 };
 
 //菜单1下第二层菜单显示
-#define MENU1_SECOND_NUM						3
+#define MENU1_SECOND_NUM						2
 static const rt_uint8_t Menu1Second[MENU1_SECOND_NUM][8*2] = 
 {
 	{"1.用户新建"},
 	{"2.用户修改"},
-	{"3.管理员>>"},
+	//{"3.管理员>>"},
 };
 
 //菜单2下第二层菜单显示
@@ -51,18 +51,11 @@ static const rt_uint8_t Menu2Second[MENU2_SECOND_NUM][8*2] =
 //管理员密码检测
 rt_err_t admin_password_check(rt_uint8_t *password)
 {	
-	rt_uint32_t result;
-
-	//调试登陆
-	//return RT_EOK;
+	rt_err_t result;
 	
-	result = rt_strncmp((const char*)password,"123456",6);
-	if(result == 0)
-	{
-		return RT_EOK;
-	}
+	result = admin_password_verify(password);
 
-	return RT_ERROR;
+	return result;
 }
 
 void menu_0_processing(void)
@@ -261,10 +254,10 @@ void menu_5_processing(void)
 	menu1_second_ui(1);
 }
 
-void menu_32_processing(void)
+/*void menu_32_processing(void)
 {
   menu1_second_ui(2);
-}
+}*/
 
 void menu2_second_ui(rt_uint8_t InPOS)
 {

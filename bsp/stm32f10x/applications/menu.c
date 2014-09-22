@@ -28,8 +28,8 @@ KbdTabStruct	KeyTab[KEY_MAX_MENU_NUM] =
   {3,1,2,0,3,menu_3_processing},//用户管理
 
 	//三级
-	{4,5,32,8,1,menu_4_processing},//用户新增
-	{5,32,4,22,1,menu_5_processing},//用户修改
+	{4,5,5,8,1,menu_4_processing},//用户新增
+	{5,4,4,22,1,menu_5_processing},//用户修改
 	
 	{6,7,7,20,2,menu_6_processing},//系统信息
 	{7,6,6,7,2,menu_7_processing},//系统参数
@@ -57,9 +57,9 @@ KbdTabStruct	KeyTab[KEY_MAX_MENU_NUM] =
 	{22,22,22,23,5,menu_22_processing},//用户搜索界面
 
 	//五级
-	{23,24,27,28,23,menu_23_processing},//修改密码
-	{24,25,23,29,24,menu_24_processing},//修改指纹
-	{25,26,24,30,25,menu_25_processing},//修改电话
+	{23,24,27,28,26,menu_23_processing},//修改密码
+	{24,25,23,29,26,menu_24_processing},//修改指纹
+	{25,26,24,30,26,menu_25_processing},//修改电话
 	{26,27,25,5,26,menu_26_processing},//保存退出
 	{27,23,26,31,27,menu_27_processing},//退出
 	
@@ -69,8 +69,8 @@ KbdTabStruct	KeyTab[KEY_MAX_MENU_NUM] =
 	{31,31,31,5,26,menu_31_processing},//删除用户处理
 
 	//三级菜单
-	{32,4,5,33,1,menu_32_processing},//管理员修改
-	{33,33,33,33,32,menu_33_processing},//管理员密码修改
+	//{32,4,5,33,1,menu_32_processing},//管理员修改
+	//{33,33,33,33,32,menu_33_processing},//管理员密码修改
 };
 
 //系统进入菜单

@@ -2,9 +2,9 @@
 
 typedef struct
 {
-	rt_uint8_t AccountPos;
-	rt_uint8_t PasswordPos;
-	rt_uint8_t PhonePos;
+	rt_int16_t AccountPos;
+	rt_int16_t PasswordPos;
+	rt_int16_t PhonePos;
 	rt_uint8_t Save;
 }AccountUseStruct;
 
@@ -64,7 +64,7 @@ rt_err_t account_valid_check(rt_int32_t pos)
 rt_err_t account_cur_delete(void)
 {
 	rt_int32_t  result;
-	
+
 	result = device_config_account_delete(AccountUse.AccountPos);
 
 	if(result < 0)
@@ -87,6 +87,48 @@ rt_err_t key_add_password_check(rt_uint8_t *key)
 
 	return RT_EOK;
 }
+
+rt_err_t key_check_password_cur_pos(rt_uint8_t *password)
+{
+  rt_int32_t result;
+  struct key *key = RT_NULL;
+
+	result = device_config_key_verify(KEY_TYPE_KBOARD,password,6);
+	if(result < 0)
+	{
+	  return RT_ERROR;
+	}
+	key = rt_calloc(1,sizeof(struct key));
+	device_config_key_operate(result,key,0);
+	if(key->head.account == AccountUse.AccountPos)
+	{
+		rt_free(key);
+		return RT_EOK;
+	}
+	
+  rt_free(key);
+	return RT_ERROR;
+}
+//修改密码
+rt_err_t admin_modify_password(rt_uint8_t *key)
+{
+	rt_int32_t result;
+  struct key *k;
+  
+  k = rt_calloc(1,sizeof(*k));
+  
+  AccountUse.PasswordPos = 0;
+  device_config_key_operate(AccountUse.PasswordPos,k,0);
+  rt_memcpy((void *)k->data.kboard.code,(const void *)key,KEY_KBOARD_CODE_SIZE);
+  result = device_config_key_operate(AccountUse.PasswordPos,k,1);
+	if(result < 0)
+	{
+		return RT_ERROR;
+	}
+  rt_free(k);
+  return RT_EOK;
+}
+
 //添加新密码
 rt_err_t key_add_password(rt_uint8_t *key)
 {
@@ -128,9 +170,12 @@ rt_err_t account_cur_add_password(rt_uint8_t *key)
 rt_err_t user_phone_add_check(rt_uint8_t *phone)
 {
 	rt_int32_t pos;
-	
+	rt_uint8_t len;
+
+	len = rt_strlen(phone);
 	RT_ASSERT(phone != RT_NULL);
-	pos = device_config_phone_verify(phone,PHONE_ADDRESS_LENGTH);
+	pos = device_config_phone_verify(phone,len);
+	rt_kprintf("%s This Phone pos %d len %d\n",phone,pos,len);
 	if(pos < 0)
 	{
 		return RT_EOK;
@@ -144,7 +189,7 @@ rt_err_t phone_data_create(rt_uint8_t *phone)
 {
 	rt_int32_t pos;
 	
-	pos = device_config_phone_create(phone,PHONE_ADDRESS_LENGTH);
+	pos = device_config_phone_create(phone,rt_strlen(phone));
 
 	if(pos < 0)
 	{
@@ -160,7 +205,11 @@ rt_err_t user_cur_add_phone(rt_uint8_t *phone)
 	rt_int32_t result;
 	
 	phone_data_create(phone);
-	
+
+	if(AccountUse.PhonePos < 0)
+	{
+		return RT_ERROR;
+	}
 	result = device_config_account_append_phone(AccountUse.AccountPos,AccountUse.PhonePos);
 	if(result < 0)
 	{
@@ -170,6 +219,25 @@ rt_err_t user_cur_add_phone(rt_uint8_t *phone)
 
 	return RT_EOK;
 }
+
+//管理员手机修改
+rt_err_t admin_modify_phone(rt_uint8_t *phone)
+{
+  struct account_head *ah;
+
+  ah = rt_calloc(1,sizeof(*ah));
+  
+	device_config_account_operate(0,ah,0);
+
+	if(ah->phone[0] != KEY_ID_INVALID)
+	{
+    device_config_account_remove_phone(ah->phone[0]);
+	}
+	rt_free(ah);
+
+	return user_cur_add_phone(phone);
+}
+
 //获取用户最大数量
 rt_int32_t user_valid_num(void)
 {
@@ -304,6 +372,24 @@ rt_err_t user_add_fprint(rt_uint32_t outtime)
 	return RT_EOK;
 }
 
+//修改管理员指纹
+rt_err_t admin_modify_fprint(rt_uint32_t outtime)
+{
+  struct account_head *ah;
+
+  ah = rt_calloc(1,sizeof(*ah));
+  
+	device_config_account_operate(0,ah,0);
+
+	if(ah->key[1] != KEY_ID_INVALID)
+	{
+    device_config_account_remove_key(ah->key[1]);
+	}
+	rt_free(ah);
+
+	return user_add_fprint(outtime);
+}
+
 void user_get_info_continuous(UserInfoDef user[],rt_int32_t *start_id,rt_int32_t num,rt_uint8_t flag)
 {
 	rt_uint8_t i;
@@ -391,6 +477,74 @@ rt_uint32_t account_cur_pos_get(void)
 	return AccountUse.AccountPos;
 }
 
+//创建超级用户
+void admin_create(void)
+{
+	rt_int32_t result;
+	rt_int32_t keypos;
+
+	result = device_config_account_next_valid(0,1);
+	if(result == 0)
+	{
+		rt_kprintf("Administrator exist\n");
+	}
+	else
+	{
+    result = device_config_account_create("Admin",rt_strlen("Admin"));
+	  if(result == 0)
+	  {
+	  	rt_kprintf("Administrator create OK\n");
+	  	result = device_config_key_create(KEY_TYPE_KBOARD,"123456",6);
+			if(result >= 0)
+			{
+				rt_kprintf("Administrator key Create OK\n");
+				result = device_config_account_append_key(0,result);
+				if(result >= 0)
+				{
+					rt_kprintf("Administrator append OK\n");
+				}
+				else
+				{
+          rt_kprintf("Admin append Fail\n");
+          RT_ASSERT(RT_NULL == RT_NULL);
+				}
+			}
+			else
+			{
+        rt_kprintf("Admin key create Fail\n");
+        RT_ASSERT(RT_NULL == RT_NULL);
+			}
+	  } 
+	  else
+	  {
+	  	rt_kprintf("Admin Create Fail\n");
+			RT_ASSERT(RT_NULL == RT_NULL);
+	  }
+	}
+}
+
+//管理员密码匹配
+rt_err_t admin_password_verify(rt_uint8_t *password)
+{
+	rt_int32_t Pos;
+	struct key *k;
+ 
+  Pos = key_password_verify(password);
+  if(Pos < 0)
+  {
+		return RT_ERROR;
+  }
+  k = rt_calloc(1,sizeof(*k));
+  device_config_key_operate(Pos,k,0);
+	if(k->head.account != 0)
+	{
+		rt_free(k);
+		return RT_ERROR;
+	}
+	
+  rt_free(k);
+	return RT_EOK;
+}
 #ifdef RT_USING_FINSH
 #include <finsh.h>
 
@@ -438,15 +592,16 @@ void show_account(rt_uint8_t id)
 
 		for(i=0;i<ACCOUNT_PHONE_NUMBERS;i++)
 		{
-			struct phone_head *ph;
-
-			ph = rt_calloc(1,sizeof(struct phone_head));
 			if(ah.phone[i] != PHONE_ID_INVALID)
 			{
-				device_config_phone_operate(id,ph,0);
+				struct phone_head *ph;
+				
+				ph = rt_calloc(1,sizeof(struct phone_head));
+				device_config_phone_operate(ah.phone[i],ph,0);
 				rt_kprintf("Phone ID:%03d Code:%011s\n",ah.phone[i],ph->address);
+				rt_free(ph);
 			}
-			rt_free(ph);
+			
 		}
 	}
 	else

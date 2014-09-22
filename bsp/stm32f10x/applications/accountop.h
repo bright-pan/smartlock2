@@ -44,5 +44,19 @@ rt_err_t key_password_verify(rt_uint8_t *password);
 //用户有效ID检测
 rt_int32_t account_valid_check(rt_int32_t pos);
 
+//管理员密码修改
+rt_err_t admin_modify_password(rt_uint8_t *key);
+
+//管理员密码匹配
+rt_err_t admin_password_verify(rt_uint8_t *password);
+
+//管理员指纹修改
+rt_err_t admin_modify_fprint(rt_uint32_t outtime);
+
+//管理员手机修改
+rt_err_t admin_modify_phone(rt_uint8_t *phone);
+
+//检查这把钥匙是否为当前用户下的
+rt_err_t key_check_password_cur_pos(rt_uint8_t *key);
 #endif
 
