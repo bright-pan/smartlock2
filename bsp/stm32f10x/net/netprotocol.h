@@ -85,6 +85,14 @@ typedef enum
   NET_MSGTYPE_TERMINAL_ACK  = 0X9e, //终端模块查询应答
   NET_MSGTYPE_DOMAIN        = 0x21, //域名管理
   NET_MSGTYPE_DOMAIN_ACK    = 0XA1, //域名管理应答
+  NET_MSGTYPE_ACCOUNTADD    = 0X22, //账户添加
+  NET_MSGTYPE_ACCOUNTADD_ACK = 0XA2, //账户添加应答
+  NET_MSGTYPE_ACCOUNTDEL    = 0X23, //账户删除
+  NET_MSGTYPE_ACCOUNTDEL_ACK = 0XA3, //账户删除应答
+  NET_MSGTYPE_KEYBIND    		= 0X24, //钥匙绑定
+  NET_MSGTYPE_KEYBIND_ACK 	= 0XA4, //钥匙绑定应答
+  NET_MSGTYPE_PHONEBIND			= 0X25, //电话绑定
+  NET_MSGTYPE_PHONEBIND_ACK = 0XA5, //电话绑定应答
   NET_MSGTYPE_NULL          = 0XFF
 }message_type;
 
@@ -193,7 +201,7 @@ typedef struct
 typedef struct 
 {
 	rt_uint8_t result;
-	rt_uint8_t pos;
+	rt_uint8_t pos[2];
 }net_phoneadd_ack;
 
 //响应删除手机号
@@ -206,7 +214,7 @@ typedef struct
 typedef struct 
 {
 	rt_uint8_t result;
-	rt_uint8_t pos;
+	rt_uint8_t pos[2];
 }net_phonedel_ack;
 
 //报警参数
@@ -304,6 +312,21 @@ typedef struct
   rt_uint8_t status;
 }net_terminal;
 
+//添加账户
+typedef struct
+{
+	rt_uint8_t pos[2];
+	rt_uint8_t name[20];
+	rt_uint8_t date[4];
+}net_account_add;
+
+//删除账户
+typedef struct 
+{
+	rt_uint8_t pos[2];
+	rt_uint8_t date[4];
+}net_account_del;
+
 //域名
 typedef struct 
 {
@@ -312,11 +335,34 @@ typedef struct
   rt_uint8_t port[2];
 }net_domain;
 
+//钥匙绑定
+typedef struct 
+{
+	rt_uint8_t KeyPos[2]; 
+	rt_uint8_t AccountPos[2];
+	rt_uint8_t Date[4];
+}net_keybind;
+
+//电话绑定
+typedef struct 
+{
+	rt_uint8_t PhonePos[2];
+	rt_uint8_t AccountPos[2];
+	rt_uint8_t Date[4];
+}net_phonebind;
+
 //发送应答
 typedef struct
 {
 	rt_uint8_t result;
 }net_ack;
+
+//账户应答
+typedef struct 
+{
+	rt_uint8_t result;
+	rt_uint8_t pos[2];
+}net_account_ack;
 
 //数据域
 typedef union 
@@ -360,6 +406,14 @@ typedef union
   net_ack           TerminalAck;  //终端查询应答
   net_domain        domain;   		//域名管理
   net_ack           DomainAck;    //域名管理应答
+  net_account_add   AccountAdd;		//添加账户
+  net_account_ack		AccountAddAck;//添加账户应答
+  net_account_del		AccountDel;		//删除账户
+  net_account_ack		AccountDelAck;//删除账户应答
+  net_keybind 			KeyBind;			//钥匙绑定
+  net_account_ack   KeyBindAck;		//钥匙绑定应答
+  net_phonebind			PhoneBind;		//电话绑定
+  net_account_ack   PhoneBindAck; //电话绑定应答
 }net_messge_data;
 
 //序号的位操作结构
@@ -436,7 +490,8 @@ typedef struct
 //接收到手机列表
 typedef struct 
 {
-  rt_uint8_t pos;
+  rt_uint8_t pos[2];
+  rt_uint8_t permission[2];
   rt_uint8_t data[12];
   rt_uint8_t crc16[2];
 }net_recv_phoneadd;
@@ -444,7 +499,8 @@ typedef struct
 //删除手机号码
 typedef struct 
 {
-	rt_uint8_t pos;
+	rt_uint8_t pos[2];
+	rt_uint8_t date[4];
 	rt_uint8_t crc16[2];
 }net_recv_phonedel;
 
@@ -537,33 +593,102 @@ typedef struct
 {
 	net_setk0 data;
 }net_recv_setk0;
+
+typedef struct 
+{
+	rt_uint8_t pos[2];
+	rt_uint8_t name[20];
+	rt_uint8_t date[4];
+	rt_uint8_t crc16[2];
+}net_recv_accountadd;
+
+typedef struct 
+{
+	rt_uint8_t pos[2];
+	rt_uint8_t date[4];
+	rt_uint8_t crc16[2];
+}net_recv_accountdel;
+
+typedef struct
+{
+	rt_uint8_t result;
+	rt_uint8_t pos[2];
+	rt_uint8_t crc16[2];
+}net_recv_accountadd_ack;
+
+typedef struct
+{
+	rt_uint8_t result;
+	rt_uint8_t pos[2];
+	rt_uint8_t crc16[2];
+}net_recv_accountdel_ack;
+
+typedef struct 
+{
+	rt_uint8_t KeyPos[2];
+	rt_uint8_t AccountPos[2];
+	rt_uint8_t date[4];
+	rt_uint8_t crc16[2];
+}net_recv_keybind;
+
+typedef struct 
+{
+	rt_uint8_t result;
+	rt_uint8_t AccountPos[2];
+  rt_uint8_t crc16[2];
+}net_recv_keybind_ack;
+
+typedef struct 
+{
+	rt_uint8_t PhonePos[2];
+	rt_uint8_t AccountPos[2];
+	rt_uint8_t date[4];
+	rt_uint8_t crc16[2];
+}net_recv_phonebind;
+
+typedef struct 
+{
+	rt_uint8_t result;
+	rt_uint8_t AccountPos[2];
+	rt_uint8_t crc16[2];
+}net_recv_phonebind_ack;
+
+
 //接收报文的数据域
 typedef union 
 {
-  net_recv_landed 		landed_ack;   //登陆
-  net_recv_null   		heart_ack;    //报警
-  net_recv_null   		alarm_ack;    //报警
-  net_recv_null   		fault_ack;    //报警
-  net_recv_null   		opendoor_ack; //开门应答
-  net_recv_null   		battery_ack;  //电池
-  net_recv_filerq 		filerq;       //文件请求
-  net_recv_null       filerq_ack;   //文件请求应答
-  net_recv_filedata 	filedata;     //文件数据
-  net_recv_filedatack filedata_ack; //文件数据应答
-  net_recv_phoneadd 	phoneadd;			//添加手机号码
-  net_recv_phonedel   phonedel;     //删除手机号码
-  net_recv_alarmarg   AlarmArg;     //报警参数
-  net_recv_result     AlarmArgAck;  //报警参数应答
-  net_recv_keyadd     keyadd;				//钥匙添加
-  net_recv_keyadd_ack KeyAddAck;    //钥匙添加应答
-  net_recv_keydel     keydel;       //钥匙删除
-  net_recv_keyadd_ack KeyDelAck;    //钥匙删除应答
-	net_recv_motor      motor;        //电机控制
-	net_recv_time       timing;       //网络对时
-	net_recv_camera     camera;       //远程摄像头控制
-	net_recv_update			update;				//远程更新
-	net_recv_domain			domain;				//域名设置	
-	net_recv_setk0			setk0;				//设置k0
+  net_recv_landed 				landed_ack;   //登陆
+  net_recv_null   				heart_ack;    //报警
+  net_recv_null   				alarm_ack;    //报警
+  net_recv_null   				fault_ack;    //报警
+  net_recv_null   				opendoor_ack; //开门应答
+  net_recv_null   				battery_ack;  //电池
+  net_recv_filerq 				filerq;       //文件请求
+  net_recv_null       		filerq_ack;   //文件请求应答
+  net_recv_filedata 			filedata;     //文件数据
+  net_recv_filedatack 		filedata_ack; //文件数据应答
+  net_recv_phoneadd 			phoneadd;			//添加手机号码
+  net_recv_phonedel   		phonedel;     //删除手机号码
+  net_recv_alarmarg  	 		AlarmArg;     //报警参数
+  net_recv_result     		AlarmArgAck;  //报警参数应答
+  net_recv_keyadd     		keyadd;				//钥匙添加
+  net_recv_keyadd_ack 		KeyAddAck;    //钥匙添加应答
+  net_recv_keydel     		keydel;       //钥匙删除
+  net_recv_keyadd_ack 		KeyDelAck;    //钥匙删除应答
+	net_recv_motor      		motor;        //电机控制
+	net_recv_time       		timing;       //网络对时
+	net_recv_camera     		camera;       //远程摄像头控制
+	net_recv_update					update;				//远程更新
+	net_recv_domain					domain;				//域名设置	
+	net_recv_setk0					setk0;				//设置k0
+	net_recv_accountadd 		AccountAdd;		//添加账户
+	net_recv_accountadd_ack AccountAddAck;//添加账户应答
+	net_recv_accountdel			AccountDel;		//删除账户
+	net_recv_accountdel_ack	AccountDelAck;//删除账户应答
+	net_recv_keybind				KeyBind;			//钥匙绑定
+	net_recv_keybind_ack		KeyBindAck;		//钥匙绑定应答
+	net_recv_phonebind			PhoneBind;		//电话绑定
+	net_recv_phonebind_ack	PhoneBindAck;	//电话绑定应答
 }net_recv_data;
 
 //接收报文的描述结构体
@@ -712,6 +837,58 @@ typedef struct
 	net_send_result result;
 	net_alarmarg args;
 }net_alarmarg_user;
+
+//账户添加
+typedef struct
+{
+	net_send_result result;
+	net_account_add account;
+}net_account_add_user;
+
+//账户删除
+typedef struct 
+{
+  net_send_result result;
+  net_account_del account;
+}net_account_del_user;
+
+//账户操作应答
+typedef struct
+{
+	net_send_result result;
+	net_account_ack ack;
+}net_account_ack_user;
+
+//钥匙绑定
+typedef struct 
+{
+  net_send_result result;
+  net_keybind     data;
+}net_keybind_user;
+
+
+//电话绑定
+typedef struct 
+{
+	net_send_result result;
+	net_phonebind		data;
+}net_phonebind_user;
+
+
+//钥匙绑定应答
+typedef struct 
+{
+  net_send_result result;
+  net_account_ack data;
+}net_keybind_ack_user;
+
+
+//电话绑定应答
+typedef struct 
+{
+  net_send_result result;
+  net_account_ack data;
+}net_keyphone_ack_user;
 
 
 

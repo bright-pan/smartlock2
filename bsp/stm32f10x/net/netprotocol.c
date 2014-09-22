@@ -1106,6 +1106,172 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
 			msg_data->data.DomainAck.result = 1;
       break;
     }
+    case NET_MSGTYPE_ACCOUNTADD:
+    {
+    	//用户添加
+    	net_account_add_user *data;
+    	
+    	msg_data->cmd = NET_MSGTYPE_ACCOUNTADD;
+    	net_set_lenmap(&msg_data->lenmap,1,1,26,2);
+
+    	data = MsgMail->user;
+      if(data != RT_NULL)
+      {
+				msg_data->data.AccountAdd = data->account;
+      }
+      else
+			{
+				RT_DEBUG_LOG(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_ACCOUNTADD message user is null\n"));
+        
+				return RT_ERROR;
+			}
+			break;
+    }
+    case NET_MSGTYPE_ACCOUNTDEL:
+    { 
+    	//用户删除
+    	net_account_del_user *data;
+    	
+    	msg_data->cmd = NET_MSGTYPE_ACCOUNTDEL;
+    	net_set_lenmap(&msg_data->lenmap,1,1,6,2);
+
+    	data = MsgMail->user;
+      if(data != RT_NULL)
+      {
+				msg_data->data.AccountDel= data->account;
+      }
+      else
+			{
+				RT_DEBUG_LOG(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_ACCOUNTDEL message user is null\n"));
+        
+				return RT_ERROR;
+			}
+			break;
+    }
+    case NET_MSGTYPE_ACCOUNTADD_ACK:
+    {
+    	//用户添加应答
+    	net_account_ack_user *ack;
+
+    	if(MsgMail->user != RT_NULL)
+      {
+        ack = (net_account_ack_user*)MsgMail->user;
+        msg_data->data.AccountAddAck = ack->ack;
+      } 
+      else
+			{
+				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_ACCOUNTADD_ACK message user is null\n"));
+        
+				return RT_ERROR;
+			}
+    	msg_data->cmd = NET_MSGTYPE_ACCOUNTADD_ACK ;
+			net_set_lenmap(&msg_data->lenmap,1,1,3,2);
+			break;
+    }
+    case NET_MSGTYPE_ACCOUNTDEL_ACK:
+    {	
+    	//用户删除应答
+ 			net_account_ack_user *ack;
+
+    	if(MsgMail->user != RT_NULL)
+      {
+        ack = (net_account_ack_user*)MsgMail->user;
+        msg_data->data.AccountDelAck = ack->ack;
+      } 
+      else
+			{
+				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_ACCOUNTDEL_ACK message user is null\n"));
+        
+				return RT_ERROR;
+			}
+    	msg_data->cmd = NET_MSGTYPE_ACCOUNTDEL_ACK ;
+			net_set_lenmap(&msg_data->lenmap,1,1,3,2);
+			break;
+    }
+    case NET_MSGTYPE_KEYBIND:
+    {
+    	//钥匙绑定
+    	net_keybind_user *data;
+    	
+    	msg_data->cmd = NET_MSGTYPE_KEYBIND;
+    	net_set_lenmap(&msg_data->lenmap,1,1,8,2);
+
+    	data = MsgMail->user;
+      if(data != RT_NULL)
+      {
+				msg_data->data.KeyBind = data->data;
+      }
+      else
+			{
+				RT_DEBUG_LOG(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_KEYBIND message user is null\n"));
+        
+				return RT_ERROR;
+			}
+			break;
+    }
+    case NET_MSGTYPE_KEYBIND_ACK:
+    {
+    	//钥匙绑定应答
+    	net_keybind_ack_user *data;
+    	
+    	msg_data->cmd = NET_MSGTYPE_KEYBIND_ACK;
+    	net_set_lenmap(&msg_data->lenmap,1,1,3,2);
+
+    	data = MsgMail->user;
+      if(data != RT_NULL)
+      {
+				msg_data->data.KeyBindAck = data->data;
+      }
+      else
+			{
+				RT_DEBUG_LOG(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_KEYBIND message user is null\n"));
+        
+				return RT_ERROR;
+			}
+			break;
+    }
+    case NET_MSGTYPE_PHONEBIND:
+    {
+    	//电话绑定
+    	net_phonebind_user *data;
+    	
+    	msg_data->cmd = NET_MSGTYPE_PHONEBIND;
+    	net_set_lenmap(&msg_data->lenmap,1,1,8,2);
+
+    	data = MsgMail->user;
+      if(data != RT_NULL)
+      {
+				msg_data->data.PhoneBind = data->data;
+      }
+      else
+			{
+				RT_DEBUG_LOG(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_KEYBIND message user is null\n"));
+        
+				return RT_ERROR;
+			}
+			break;
+    }
+    case NET_MSGTYPE_PHONEBIND_ACK:
+    {
+    	//电话绑定应答
+    	net_keyphone_ack_user *data;
+    	
+    	msg_data->cmd = NET_MSGTYPE_PHONEBIND_ACK;
+    	net_set_lenmap(&msg_data->lenmap,1,1,3,2);
+
+    	data = MsgMail->user;
+      if(data != RT_NULL)
+      {
+				msg_data->data.PhoneBindAck = data->data;
+      }
+      else
+			{
+				RT_DEBUG_LOG(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_KEYBIND message user is null\n"));
+        
+				return RT_ERROR;
+			}
+			break;
+    }
     default:
     {
     	rt_kprintf("Send CMD Nonentity:%02X!!!!!!!!!!!!\n\n",MsgMail->type);
@@ -1911,8 +2077,63 @@ static void net_recv_message(net_msgmail_p mail)
 				//钥匙删除
 				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_KEYDELETE\n"));
 				Net_MsgRecv_handle(msg,RT_NULL);
+				break;
 				//message_ASYN(NET_MSGTYPE_KEYDEL_ACK);
 			}
+			case NET_MSGTYPE_ACCOUNTADD:
+			{
+				//账户添加
+        RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_ACCOUNTADD\n"));
+        Net_MsgRecv_handle(msg,RT_NULL);
+				break;
+			}	
+			case NET_MSGTYPE_ACCOUNTADD_ACK:
+			{
+				//账户添加应答
+        RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_ACCOUNTADD_ACK\n"));
+        Net_MsgRecv_handle(msg,RT_NULL);
+				break;
+			}	
+			case NET_MSGTYPE_ACCOUNTDEL:
+			{
+				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_ACCOUNTDEL\n"));
+        Net_MsgRecv_handle(msg,RT_NULL);
+				break;
+			}
+			case NET_MSGTYPE_ACCOUNTDEL_ACK:
+			{
+				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_ACCOUNTDEL_ACK\n"));
+        Net_MsgRecv_handle(msg,RT_NULL);
+				break;
+			}
+			case NET_MSGTYPE_KEYBIND:
+			{
+				//钥匙绑定
+        RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_KEYBIND\n"));
+        Net_MsgRecv_handle(msg,RT_NULL);
+				break;
+			}	
+			case NET_MSGTYPE_KEYBIND_ACK:
+			{
+				//钥匙绑定应答
+        RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_KEYBIND_ACK\n"));
+        Net_MsgRecv_handle(msg,RT_NULL);
+				break;
+			}	
+			case NET_MSGTYPE_PHONEBIND:
+			{
+				//手机绑定
+        RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_PHONEBIND\n"));
+        Net_MsgRecv_handle(msg,RT_NULL);
+				break;
+			}	
+			case NET_MSGTYPE_PHONEBIND_ACK:
+			{
+				//电话绑定应答
+        RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_PHONEBIND_ACK\n"));
+        Net_MsgRecv_handle(msg,RT_NULL);
+				break;
+			}	
 			default:
 			{
 				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("Receive Cannot identify the message!!!\n\n"));

@@ -1,6 +1,7 @@
 #include "bluetooth_device.h"
 //#include "sysconfig.h"
 #include "rtdevice.h"
+#include "netprotocol.h"
 
 #ifndef BTM_THREAD_PRIORITY
 #define BTM_THREAD_PRIORITY   			RT_THREAD_PRIORITY_MAX/2+2
@@ -265,7 +266,7 @@ static rt_err_t bluetooth_mac_manage(bluetooth_module_p module,rt_bool_t mode)
 	if(mode == RT_TRUE)
 	{
 		//设置目标mac
-		rt_memcpy(buf,"AT+CON[",rt_strlen("AT+CON["));
+		/*rt_memcpy(buf,"AT+CON[",rt_strlen("AT+CON["));
 		rt_memcpy(buf+rt_strlen("AT+CON["),BluetoothUerConfig.target_mac,12);
 		rt_memcpy(buf+rt_strlen("AT+CON[")+12,"]",1);
 
@@ -274,7 +275,8 @@ static rt_err_t bluetooth_mac_manage(bluetooth_module_p module,rt_bool_t mode)
 		if(result == RT_ERROR)
 		{
 			result = bt_at_cmd_analysis(module->uart_dev,"AT+CONNL","OK+CONN:S",RT_NULL,400);
-		}
+		}*/
+		result = bt_at_cmd_analysis(module->uart_dev,"AT+CONNL","OK+CONN:S",RT_NULL,400);
 	}
 	else
 	{
@@ -308,6 +310,7 @@ static rt_err_t bluetooth_initiate(bluetooth_module_p module)
 {
 	rt_uint8_t gpio_status;
 
+	rt_kprintf("Bluetooth Moudlue Reset\n");
 	bluetooth_module_reset(module);
 	//wk = 1
 	gpio_status = 1;
@@ -489,11 +492,13 @@ static void bluetooth_cmd_switch(bluetooth_module_p bluetooth,rt_bool_t mode)
 	{
     bluetooth->work_status = BT_MODULE_CMD_MODE;
 		gpio_status = 1;
+		net_event_process(2,NET_ENVET_ONLINE);
 	}
 	else
 	{
     bluetooth->work_status = BT_MODULE_DATA_MODE;
     gpio_status = 0;
+    net_event_process(0,NET_ENVET_ONLINE);
 	}
 	rt_device_write(bluetooth->wk_dev,0,&gpio_status,1);
 	rt_thread_delay(1);
@@ -637,9 +642,10 @@ static void bluetooth_passivity_connect(bluetooth_module_p bluetooth)
 
 		//接收提示信息
 		bt_at_cmd_analysis(bluetooth->uart_dev,RT_NULL,"OK+CONN:S",RT_NULL,500);
-		bt_at_cmd_analysis(bluetooth->uart_dev,RT_NULL,"OK+WUAKE",RT_NULL,500);
+		//bt_at_cmd_analysis(bluetooth->uart_dev,RT_NULL,"OK+WUAKE",RT_NULL,500);
 		//握手信息
 		rt_device_write(bluetooth->uart_dev,0,"Bluetooth\n",rt_strlen("Bluetooth\n"));
+		bluetooth_cmd_switch(bluetooth,RT_FALSE);
 	}
 }
 
@@ -650,19 +656,19 @@ static rt_err_t bluetooth_passivity_disconnect(bluetooth_module_p bluetooth)
 	bluetooth_cmd_switch(bluetooth,RT_TRUE);
 	if(bt_at_cmd_analysis(bluetooth->uart_dev,RT_NULL,"OK+CONN:L",RT_NULL,50) != RT_EOK)
 	{
-		return RT_ERROR;
+		//return RT_ERROR;
 	}
 	//配置从机
-	if(bt_at_cmd_analysis(bluetooth->uart_dev,"AT+ROLE[P]","OK+SET:P",RT_NULL,50) != RT_EOK)
+	if(bt_at_cmd_analysis(bluetooth->uart_dev,"AT+ROLE[P]","OK+SET:P",RT_NULL,50) == RT_EOK)
 	{
-		return RT_ERROR;
+		rt_thread_delay(RT_TICK_PER_SECOND/4);
+		//获取启动信息
+		if(bt_at_cmd_analysis(bluetooth->uart_dev,RT_NULL,"SYS START",RT_NULL,50) != RT_EOK)
+		{
+			return RT_ERROR;
+		}
 	}
-	rt_thread_delay(RT_TICK_PER_SECOND/4);
-	//获取启动信息
-	if(bt_at_cmd_analysis(bluetooth->uart_dev,RT_NULL,"SYS START",RT_NULL,50) != RT_EOK)
-	{
-		return RT_ERROR;
-	}
+	
 	//进入休眠
 	if(bt_at_cmd_analysis(bluetooth->uart_dev,"AT+SLEEP","OK+SLEEP",RT_NULL,50) != RT_EOK)
 	{
@@ -741,137 +747,139 @@ void bluetooth_thread_entry(void *arg)
 	rt_kprintf("bluetooth thread statrt\n");
 
 	bt_module_create(&bluetooth);
-	bluetooth_initiate(bluetooth);
-	rt_thread_delay(1000);
 	while(1)
-	{	
-		rt_uint8_t mb_result;
-		bluetooth_tx_mq mail;
-		rt_uint8_t gpio_status;
+	{
+	  bluetooth_initiate(bluetooth);
+	  rt_thread_delay(1000);
+	  while(1)
+	  { 
+	    rt_uint8_t mb_result;
+	    bluetooth_tx_mq mail;
+	    rt_uint8_t gpio_status;
 
-		if(bluetooth->work_status == BT_MODULE_CMD_MODE)
-		{
-      mb_result = rt_mq_recv(BloothRequest_mq,&mail,sizeof(bluetooth_tx_mq),1);
-      if(mb_result == RT_EOK)
-      {
-      	bluetooth->sleep_cnt = 0;
-      	//主动连接
-        switch(mail.type)
-        {
-					case BT_MAIL_TYPE_CONN:
-					{
-						if(bluetooth_auto_connect(bluetooth) != RT_EOK)
-	        	{
-							goto LINK_ON_AT_CMD_ABNORMAL;
-	        	}
-						rt_mb_send(mail.tx_end,(rt_uint32_t )bluetooth->uart_dev);
-						break;
-					}
-					case BT_MAIL_TYPE_SLEEP:
-					{
-						rt_mb_send(mail.tx_end,RT_NULL);
-						break;
-					}
-					case BT_MAIL_TYPE_STATUS:
-					{ 
-						rt_mb_send(mail.tx_end,(rt_uint32_t )bluetooth->work_status);
-						break;
-					}
-					default:
-					{
-						break;
-					}
-        }
-        
-      }
-      else
-      {
-				//被动连接
-				bluetooth_passivity_connect(bluetooth);
-      }
-		}
-		else
-		{
-			//已经连接
-			rt_device_read(bluetooth->led_dev,0,&gpio_status,1);
-			if(gpio_status == BT_NOW_CONNECT)
-			{
-				//在数据模式下收到发送处理
-				mb_result = rt_mq_recv(BloothRequest_mq,&mail,sizeof(bluetooth_tx_mq),1);
+	    if(bluetooth->work_status == BT_MODULE_CMD_MODE)
+	    {
+	      mb_result = rt_mq_recv(BloothRequest_mq,&mail,sizeof(bluetooth_tx_mq),1);
 	      if(mb_result == RT_EOK)
 	      {
-	      	bluetooth->sleep_cnt = 0;
-	      	switch(mail.type)
-	      	{
-						case BT_MAIL_TYPE_CONN:
-						{
-							//主动连接请求
-							rt_mb_send(mail.tx_end,(rt_uint32_t )bluetooth->uart_dev);
-							break;
-						}
-						case BT_MAIL_TYPE_SLEEP:
-						{
-							//主动断开
-							bluetooth_auto_disconnect(bluetooth);
-							rt_mb_send(mail.tx_end,RT_NULL);
-							break;
-						}
-						case BT_MAIL_TYPE_STATUS:
-						{ 
-							rt_mb_send(mail.tx_end,(rt_uint32_t )bluetooth->work_status);
-							break;
-						}
-						default:
-						{
-							rt_kprintf(BT_SYSTEM_ERROR_INFO,__FUNCTION__, __LINE__);
-							break;
-						}
-	      	}
+	        bluetooth->sleep_cnt = 0;
+	        //主动连接
+	        switch(mail.type)
+	        {
+	          case BT_MAIL_TYPE_CONN:
+	          {
+	            if(bluetooth_auto_connect(bluetooth) != RT_EOK)
+	            {
+	              goto LINK_ON_AT_CMD_ABNORMAL;
+	            }
+	            rt_mb_send(mail.tx_end,(rt_uint32_t )bluetooth->uart_dev);
+	            net_event_process(0,NET_ENVET_RELINK);
+	            break;
+	          }
+	          case BT_MAIL_TYPE_SLEEP:
+	          {
+	            rt_mb_send(mail.tx_end,RT_NULL);
+	            break;
+	          }
+	          case BT_MAIL_TYPE_STATUS:
+	          { 
+	            rt_mb_send(mail.tx_end,(rt_uint32_t )bluetooth->work_status);
+	            break;
+	          }
+	          default:
+	          {
+	            break;
+	          }
+	        }
+	        
 	      }
 	      else
 	      {
-	      	bluetooth->sleep_cnt++;
-					if(bluetooth->sleep_cnt > BT_AUTO_SLEEP_TIME)
+	        //被动连接
+					rt_device_read(bluetooth->led_dev,0,&gpio_status,1);
+					if(gpio_status == BT_NOW_CONNECT)
 					{
-						bluetooth_auto_disconnect(bluetooth);
+						bluetooth_passivity_connect(bluetooth);
+						net_event_process(0,NET_ENVET_RELINK);
 					}
 	      }
-				
-	      //读取数据
-	      bluetooth_uart_read_data(bluetooth);
-			}
-			else
-			{
-				//连接被动断开
-				if(bluetooth_passivity_disconnect(bluetooth) != RT_EOK)
-				{
-					goto LINK_OFF_AT_CMD_ABNORMAL;
-				}
-			}
-			rt_thread_delay(1);
-		}
-		
-		if(bluetooth->work_status == BT_MODULE_CMD_ABNORMAL)
-		{
+	    }
+	    else
+	    {
+	      //已经连接
+	      rt_device_read(bluetooth->led_dev,0,&gpio_status,1);
+	      if(gpio_status == BT_NOW_CONNECT)
+	      {
+	        //在数据模式下收到发送处理
+	        mb_result = rt_mq_recv(BloothRequest_mq,&mail,sizeof(bluetooth_tx_mq),1);
+	        if(mb_result == RT_EOK)
+	        {
+	          bluetooth->sleep_cnt = 0;
+	          switch(mail.type)
+	          {
+	            case BT_MAIL_TYPE_CONN:
+	            {
+	              //主动连接请求
+	              rt_mb_send(mail.tx_end,(rt_uint32_t )bluetooth->uart_dev);
+	              break;
+	            }
+	            case BT_MAIL_TYPE_SLEEP:
+	            {
+	              //主动断开
+	              bluetooth_auto_disconnect(bluetooth);
+	              rt_mb_send(mail.tx_end,RT_NULL);
+	              break;
+	            }
+	            case BT_MAIL_TYPE_STATUS:
+	            { 
+	              rt_mb_send(mail.tx_end,(rt_uint32_t )bluetooth->work_status);
+	              break;
+	            }
+	            default:
+	            {
+	              rt_kprintf(BT_SYSTEM_ERROR_INFO,__FUNCTION__, __LINE__);
+	              break;
+	            }
+	          }
+	        }
+	        else
+	        {
+	          bluetooth->sleep_cnt++;
+	          if(bluetooth->sleep_cnt > BT_AUTO_SLEEP_TIME)
+	          {
+	            rt_kprintf("The bluetooth module into sleep mode automatically");
+	            bluetooth_auto_disconnect(bluetooth);
+	          }
+	        }
+	        
+	        //读取数据
+	        bluetooth_uart_read_data(bluetooth);
+	      }
+	      else
+	      {
+	        //连接被动断开
+	        if(bluetooth->work_status == BT_MODULE_DATA_MODE)
+	        {
+	        	rt_kprintf("Bluetooth Server Disconnected \n");
+						if(bluetooth_passivity_disconnect(bluetooth) != RT_EOK)
+						{
+							//break;
+						}
+	        }
+	      }
+	      rt_thread_delay(1);
+	    }
+	    
+	    if(bluetooth->work_status == BT_MODULE_CMD_ABNORMAL)
+	    {
 LINK_ON_AT_CMD_ABNORMAL:
-			//AT指令异常处理
-			rt_kprintf("####### abnormal AT\n");
-			bluetooth_cmd_switch(bluetooth,RT_TRUE);
-			bluetooth->work_status = BT_MODULE_CMD_MODE;
-			bluetooth_initiate(bluetooth);
-			//重启模块
-			continue;
-LINK_OFF_AT_CMD_ABNORMAL:
-      rt_kprintf("####### abnormal AT\n");
-      bluetooth_cmd_switch(bluetooth,RT_TRUE);
-      bluetooth->work_status = BT_MODULE_CMD_MODE;
-      bluetooth_initiate(bluetooth);
-      //重启模块
-      continue;
+				break;
+	    }
+	    rt_thread_delay(1);
+	  }
 
-		}
-		rt_thread_delay(1);
 	}
+
 	bt_module_detele(bluetooth);
 }
 
@@ -1045,6 +1053,25 @@ void bt_sleep_test(void)
 	bluetooth_sleep();
 }
 FINSH_FUNCTION_EXPORT(bt_sleep_test, bt_sleep_test);
+
+void bt_info(void)
+{
+	rt_device_t dev;
+	rt_uint8_t	*mac;
+
+	mac = rt_calloc(1,13);
+	dev = rt_device_find("Blooth");
+	if(!(dev->open_flag & RT_DEVICE_OFLAG_OPEN))
+	{
+		rt_kprintf("open blooth module\n");
+		rt_device_open(dev,RT_DEVICE_OFLAG_OPEN);
+	}
+	rt_device_control(dev,4,mac);
+
+	rt_kprintf("MAC:%s\n",mac);
+	rt_free(mac);
+}
+FINSH_FUNCTION_EXPORT(bt_info,show blooth module information);
 
 #endif 
 

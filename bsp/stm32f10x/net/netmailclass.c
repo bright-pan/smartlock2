@@ -81,7 +81,7 @@ void send_net_landed_mail(void)
   mail->time = 0;
   mail->type = NET_MSGTYPE_LANDED;
   mail->resend = 2;
-  mail->outtime = 1200;
+  mail->outtime = 600;
   mail->sendmode = ASYN_MODE;
   mail->col.byte = get_msg_new_order(RT_TRUE);
 
@@ -450,7 +450,8 @@ void msg_mail_phoneadd_ack(net_recvmsg_p RMail,rt_uint8_t result)
   mail->sendmode = ASYN_MODE;       				//异步
   mail->col = RMail->col;
 	//设置私有数据
-	UserData->pos = RMail->data.phoneadd.pos;
+	//UserData->pos = ;
+	rt_memcpy(UserData->pos,RMail->data.phoneadd.pos,2);
 	UserData->result = result;
 	//发送邮件
   net_msg_send_mail(mail);
@@ -484,7 +485,7 @@ void msg_mail_phonedel_ack(net_recvmsg_p RMail,rt_uint8_t result)
   mail->sendmode = ASYN_MODE;       				//异步
   mail->col = RMail->col;
 	//设置私有数据
-	UserData->pos = RMail->data.phonedel.pos;
+	rt_memcpy(UserData->pos,RMail->data.phonedel.pos,2);
 	UserData->result = result;
 	//发送邮件
   net_msg_send_mail(mail);
@@ -781,13 +782,342 @@ void msg_mail_fileack(net_recvmsg_p RMail,rt_uint8_t Fresult)
 
 
 
+/*
+功能:账户添加
+*/
+rt_uint8_t msg_mail_account_add(rt_int16_t account_pos,rt_uint8_t *name,rt_uint32_t date)
+{
+	rt_uint8_t result;
+	net_msgmail_p mail = RT_NULL;
+	net_account_add_user *UserData = RT_NULL;
+	
+	//获取资源
+	mail = (net_msgmail_p)rt_calloc(1,sizeof(net_msgmail));
+	UserData = rt_calloc(1,sizeof(net_account_add_user));
+	RT_ASSERT(mail != RT_NULL);
+	RT_ASSERT(UserData != RT_NULL);
+	mail->user = UserData;
+	
+	UserData->result.complete = smg_send_wait_sem_crate();
+  RT_ASSERT(UserData != RT_NULL);
+
+	//设置邮件
+	mail->type = NET_MSGTYPE_ACCOUNTADD;   //邮件类型
+  mail->resend = MAIL_FAULT_RESEND;									//重发技术
+  mail->outtime = MAIL_FAULT_OUTTIME;              //超时间
+  mail->sendmode = SYNC_MODE;       //同步
+  mail->col.byte = get_msg_new_order(RT_TRUE);
+	//设置私有数据
+
+	account_pos = net_rev16(account_pos);
+	rt_memcpy(UserData->account.pos,&account_pos,2);
+	rt_memcpy(UserData->account.name,name,20);
+	date = net_rev32(date);
+	rt_memcpy(UserData->account.date,&date,4);
+	
+	//发送邮件
+  net_msg_send_mail(mail);
+  rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
+  rt_sem_delete(UserData->result.complete);
+  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
+  result = UserData->result.result;
+  
+  //释放资源
+  RT_ASSERT(UserData != RT_NULL);
+	rt_free(UserData);
+	RT_ASSERT(mail != RT_NULL);
+	rt_free(mail);
+
+	return result;
+}
 
 
 
+/*
+功能:账户添加应答
+*/
+void msg_mail_account_add_ack(net_recvmsg_p RMail,rt_uint8_t result)
+{
+	net_msgmail_p mail = RT_NULL;
+	net_account_ack_user *UserData;
+
+	//获取资源
+	mail = (net_msgmail_p)rt_calloc(1,sizeof(net_msgmail));
+	RT_ASSERT(mail != RT_NULL);
+
+	//设置邮件
+	mail->type = NET_MSGTYPE_ACCOUNTADD_ACK;	//邮件类型
+	mail->resend = 0;         							//重发技术
+	mail->outtime = 0;        							//超时间
+	mail->sendmode = ASYN_MODE;							//同步
+	mail->col = RMail->col;
+
+	//设置数据域 在发送完成后销毁
+	UserData = rt_calloc(1,sizeof(net_account_ack_user));
+	RT_ASSERT(UserData != RT_NULL);
+	mail->user = UserData;
+	UserData->ack.result = result;
+	rt_memcpy(UserData->ack.pos,RMail->data.AccountAdd.pos,2);
+	//发送邮件
+	net_msg_send_mail(mail);
+
+	//释放资源
+	RT_ASSERT(mail != RT_NULL);
+	rt_free(mail);
+}
+
+/*
+功能:账户删除
+*/
+rt_uint8_t msg_mail_account_del(rt_int16_t account_pos,rt_uint32_t date)
+{
+	rt_uint8_t result;
+	net_msgmail_p mail = RT_NULL;
+	net_account_del_user *UserData = RT_NULL;
+
+	//获取资源
+	mail = (net_msgmail_p)rt_calloc(1,sizeof(net_msgmail));
+	UserData = rt_calloc(1,sizeof(net_account_del_user));
+	RT_ASSERT(mail != RT_NULL);
+	RT_ASSERT(UserData != RT_NULL);
+	mail->user = UserData;
+
+	UserData->result.complete = smg_send_wait_sem_crate();
+	RT_ASSERT(UserData != RT_NULL);
+
+	//设置邮件
+	mail->type = NET_MSGTYPE_ACCOUNTDEL;   //邮件类型
+	mail->resend = MAIL_FAULT_RESEND;                 //重发技术
+	mail->outtime = MAIL_FAULT_OUTTIME;              //超时间
+	mail->sendmode = SYNC_MODE;       //同步
+	mail->col.byte = get_msg_new_order(RT_TRUE);
+	//设置私有数据
+
+	account_pos = net_rev16(account_pos);
+	rt_memcpy(UserData->account.pos,&account_pos,2);
+	date = net_rev32(date);
+	rt_memcpy(UserData->account.date,&date,4);
+
+	//发送邮件
+	net_msg_send_mail(mail);
+	rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
+	rt_sem_delete(UserData->result.complete);
+	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
+	result = UserData->result.result;
+
+	//释放资源
+	RT_ASSERT(UserData != RT_NULL);
+	rt_free(UserData);
+	RT_ASSERT(mail != RT_NULL);
+	rt_free(mail);
+
+	return result;
+}
+
+  
+/*
+功能:账户删除应答
+*/
+void msg_mail_account_del_ack(net_recvmsg_p RMail,rt_uint8_t result)
+{
+	net_msgmail_p mail = RT_NULL;
+	net_account_ack_user *UserData;
+
+	//获取资源
+	mail = (net_msgmail_p)rt_calloc(1,sizeof(net_msgmail));
+	RT_ASSERT(mail != RT_NULL);
+
+	//设置邮件
+	mail->type = NET_MSGTYPE_ACCOUNTDEL_ACK;  //邮件类型
+	mail->resend = 0;                       //重发技术
+	mail->outtime = 0;                      //超时间
+	mail->sendmode = ASYN_MODE;             //同步
+	mail->col = RMail->col;
+
+	//设置数据域 在发送完成后销毁
+	UserData = rt_calloc(1,sizeof(net_account_del_user));
+	RT_ASSERT(UserData != RT_NULL);
+	mail->user = UserData;
+	UserData->ack.result = result;
+	rt_memcpy(UserData->ack.pos,RMail->data.AccountDel.pos,2);
+	//发送邮件
+	net_msg_send_mail(mail);
+
+	//释放资源
+	RT_ASSERT(mail != RT_NULL);
+	rt_free(mail);
+}
 
 
+/*
+功能:钥匙绑定
+*/
+rt_uint8_t msg_mail_keybind(rt_uint16_t key_pos,rt_uint16_t account_pos,rt_uint32_t date)
+{
+	rt_uint8_t result;
+	net_msgmail_p mail = RT_NULL;
+	net_keybind_user *UserData = RT_NULL;
 
+	//获取资源
+	mail = (net_msgmail_p)rt_calloc(1,sizeof(net_msgmail));
+	UserData = rt_calloc(1,sizeof(net_phonebind_user));
+	RT_ASSERT(mail != RT_NULL);
+	RT_ASSERT(UserData != RT_NULL);
+	mail->user = UserData;
 
+	UserData->result.complete = smg_send_wait_sem_crate();
+	RT_ASSERT(UserData != RT_NULL);
+
+	//设置邮件
+	mail->type = NET_MSGTYPE_KEYBIND;   //邮件类型
+	mail->resend = MAIL_FAULT_RESEND;                 //重发技术
+	mail->outtime = MAIL_FAULT_OUTTIME;              //超时间
+	mail->sendmode = SYNC_MODE;       //同步
+	mail->col.byte = get_msg_new_order(RT_TRUE);
+	//设置私有数据
+
+	account_pos = net_rev16(account_pos);
+	rt_memcpy(UserData->data.AccountPos,&account_pos,2);
+
+	key_pos = net_rev16(key_pos);
+	rt_memcpy(UserData->data.KeyPos,&key_pos,2);
+	
+	date = net_rev32(date);
+	rt_memcpy(UserData->data.Date,&date,4);
+
+	//发送邮件
+	net_msg_send_mail(mail);
+	rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
+	rt_sem_delete(UserData->result.complete);
+	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
+	result = UserData->result.result;
+
+	//释放资源
+	RT_ASSERT(UserData != RT_NULL);
+	rt_free(UserData);
+	RT_ASSERT(mail != RT_NULL);
+	rt_free(mail);
+
+	return result;
+}
+
+/*
+功能:钥匙绑定应答
+*/
+void msg_mail_keybind_ack(net_recvmsg_p RMail,rt_uint8_t result)
+{
+	net_msgmail_p mail = RT_NULL;
+	net_keybind_ack_user *UserData;
+
+	//获取资源
+	mail = (net_msgmail_p)rt_calloc(1,sizeof(net_msgmail));
+	RT_ASSERT(mail != RT_NULL);
+
+	//设置邮件
+	mail->type = NET_MSGTYPE_KEYBIND_ACK;  //邮件类型
+	mail->resend = 0;                       //重发技术
+	mail->outtime = 0;                      //超时间
+	mail->sendmode = ASYN_MODE;             //同步
+	mail->col = RMail->col;
+
+	//设置数据域 在发送完成后销毁
+	UserData = rt_calloc(1,sizeof(net_keybind_ack_user));
+	RT_ASSERT(UserData != RT_NULL);
+	mail->user = UserData;
+	UserData->data.result = result;
+	rt_memcpy(UserData->data.pos,RMail->data.KeyBind.AccountPos,2);
+	//发送邮件
+	net_msg_send_mail(mail);
+
+	//释放资源
+	RT_ASSERT(mail != RT_NULL);
+	rt_free(mail);
+}
+
+/*
+功能:电话绑定
+*/
+rt_uint8_t msg_mail_phonebind(rt_uint16_t phone_pos,rt_uint16_t account_pos,rt_uint32_t date)
+{
+	rt_uint8_t result;
+	net_msgmail_p mail = RT_NULL;
+	net_phonebind_user *UserData = RT_NULL;
+
+	//获取资源
+	mail = (net_msgmail_p)rt_calloc(1,sizeof(net_msgmail));
+	UserData = rt_calloc(1,sizeof(net_phonebind_user));
+	RT_ASSERT(mail != RT_NULL);
+	RT_ASSERT(UserData != RT_NULL);
+	mail->user = UserData;
+
+	UserData->result.complete = smg_send_wait_sem_crate();
+	RT_ASSERT(UserData != RT_NULL);
+
+	//设置邮件
+	mail->type = NET_MSGTYPE_PHONEBIND;   //邮件类型
+	mail->resend = MAIL_FAULT_RESEND;                 //重发技术
+	mail->outtime = MAIL_FAULT_OUTTIME;              //超时间
+	mail->sendmode = SYNC_MODE;       //同步
+	mail->col.byte = get_msg_new_order(RT_TRUE);
+	//设置私有数据
+
+	account_pos = net_rev16(account_pos);
+	rt_memcpy(UserData->data.AccountPos,&account_pos,2);
+
+	phone_pos = net_rev16(phone_pos);
+	rt_memcpy(UserData->data.PhonePos,&phone_pos,2);
+
+	date = net_rev32(date);
+	rt_memcpy(UserData->data.Date,&date,4);
+
+	//发送邮件
+	net_msg_send_mail(mail);
+	rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
+	rt_sem_delete(UserData->result.complete);
+	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
+	result = UserData->result.result;
+
+	//释放资源
+	RT_ASSERT(UserData != RT_NULL);
+	rt_free(UserData);
+	RT_ASSERT(mail != RT_NULL);
+	rt_free(mail);
+
+	return result;
+}
+
+/*
+功能:电话绑定应答
+*/
+void msg_mail_phonebind_ack(net_recvmsg_p RMail,rt_uint8_t result)
+{
+	net_msgmail_p mail = RT_NULL;
+	net_keyphone_ack_user *UserData;
+
+	//获取资源
+	mail = (net_msgmail_p)rt_calloc(1,sizeof(net_msgmail));
+	RT_ASSERT(mail != RT_NULL);
+
+	//设置邮件
+	mail->type = NET_MSGTYPE_KEYBIND_ACK;  //邮件类型
+	mail->resend = 0;                       //重发技术
+	mail->outtime = 0;                      //超时间
+	mail->sendmode = ASYN_MODE;             //同步
+	mail->col = RMail->col;
+
+	//设置数据域 在发送完成后销毁
+	UserData = rt_calloc(1,sizeof(net_keybind_ack_user));
+	RT_ASSERT(UserData != RT_NULL);
+	mail->user = UserData;
+	UserData->data.result = result;
+	rt_memcpy(UserData->data.pos,RMail->data.PhoneBind.AccountPos,2);
+	//发送邮件
+	net_msg_send_mail(mail);
+
+	//释放资源
+	RT_ASSERT(mail != RT_NULL);
+	rt_free(mail);
+}
 
 
 /*********************************************************************
@@ -992,6 +1322,57 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 	 		msg_mail_resultack(Mail,result);
 			break;
 	 	}
+	 	case NET_MSGTYPE_ACCOUNTADD:
+		{
+			//账户添加
+
+ 			msg_mail_account_add_ack(Mail,result);
+			break;
+		}	
+		case NET_MSGTYPE_ACCOUNTADD_ACK:
+		{
+			//账户添加应答
+   
+			break;
+		}	
+		case NET_MSGTYPE_ACCOUNTDEL:
+		{
+			//账户删除
+ 			msg_mail_account_del_ack(Mail,result);
+			break;
+		}	
+		case NET_MSGTYPE_ACCOUNTDEL_ACK:
+		{
+			//账户删除应答
+   
+			break;
+		}	
+		case NET_MSGTYPE_KEYBIND:
+		{
+			//钥匙绑定
+
+   		msg_mail_keybind_ack(Mail,result);
+			break;
+		}	
+		case NET_MSGTYPE_KEYBIND_ACK:
+		{
+			//钥匙绑定应答
+    
+			break;
+		}	
+		case NET_MSGTYPE_PHONEBIND:
+		{
+			//手机绑定
+
+   		msg_mail_phonebind_ack(Mail,result);
+			break;
+		}	
+		case NET_MSGTYPE_PHONEBIND_ACK:
+		{
+			//电话绑定应答
+    
+			break;
+		}	
 	  default:
 	  {
 	    break;
@@ -1061,15 +1442,16 @@ INIT_APP_EXPORT(InitNetRecvFun);
 #ifdef RT_USING_FINSH
 #include <finsh.h>
 
-FINSH_FUNCTION_EXPORT(msg_mail_alarm,"(Alarm,Lock,Time)Send Alarm Mail Message");
-FINSH_FUNCTION_EXPORT(msg_mail_fault,"(Type,Time)Send Fault Mail Message");
-FINSH_FUNCTION_EXPORT(msg_mail_battery,"(Statu,Capacity,Time)Send Battery Mail Message");
-FINSH_FUNCTION_EXPORT(msg_mail_opendoor,"(Type,KeyCode,Time)Send OpenDoor Mail Message");
-FINSH_FUNCTION_EXPORT(msg_mail_adjust_time,"(void)Send Adjust Time Message");
-FINSH_FUNCTION_EXPORT(msg_mail_alarmarg,"(Type,arg)Send Set Alarm Argument Message");
-FINSH_FUNCTION_EXPORT(msg_mail_nullack,"(MSGType)Send Ack Data Is NULL Message");
-FINSH_FUNCTION_EXPORT(msg_mail_phoneadd_ack,"(pos result)Send Add Phone Message");
-FINSH_FUNCTION_EXPORT(msg_mail_phonedel_ack,"(pos result)Send delete Phone Message");
+FINSH_FUNCTION_EXPORT_ALIAS(msg_mail_alarm,packet_alarm,"(Alarm,Lock,Time)");
+FINSH_FUNCTION_EXPORT_ALIAS(msg_mail_fault,packet_fault,"(Type,Time)");
+FINSH_FUNCTION_EXPORT_ALIAS(msg_mail_battery,packet_bat,"(Statu,Capacity,Time)");
+FINSH_FUNCTION_EXPORT_ALIAS(msg_mail_opendoor,packet_opendoor,"(Type,KeyCode,Time)");
+FINSH_FUNCTION_EXPORT_ALIAS(msg_mail_adjust_time,packet_adjtime,"(void)");
+FINSH_FUNCTION_EXPORT_ALIAS(msg_mail_alarmarg,packet_alarmarg,"(Type,arg)");
+FINSH_FUNCTION_EXPORT_ALIAS(msg_mail_nullack,packet_nullack,"(MSGType)");
+FINSH_FUNCTION_EXPORT_ALIAS(msg_mail_phoneadd_ack,packet_phoneaddack,"(pos result)");
+FINSH_FUNCTION_EXPORT_ALIAS(msg_mail_phonedel_ack,packet_phonedelack,"(pos result)");
+FINSH_FUNCTION_EXPORT_ALIAS(msg_mail_account_add,packet_accountadd,"(pos,name,date)");
 
 
 

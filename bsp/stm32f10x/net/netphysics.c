@@ -91,19 +91,7 @@ void netprotocol_thread_entry(void *arg)
 		net_event_process(0,NET_ENVET_CONNECT);
     //连接
     net_event_process(2,NET_ENVET_CONNECT);
-    #if 0
-    while(1)
-    {
-      int  i;
-    	
-    	bytes_received = comm_recv_gprs_data(recv_data,TCP_BUF_SIZE);
-    	for(i = 0;i < bytes_received;i++)
-	    {
-	      rt_kprintf("%02X",recv_data[i]);
-	    }
-			rt_thread_delay(100);
-    }
-    #endif
+   
 		//连接成功开始登陆 
 		//send_net_landed_mail();
     while(1)
@@ -118,11 +106,12 @@ void netprotocol_thread_entry(void *arg)
 				RT_DEBUG_LOG(SHOW_PRINTF_INFO,("relink TCP/IP !!!!\n"));
         //gsm_set_link(0);
 				//断开连接
+        send_net_landed_mail();
         RT_ASSERT(recv_data != RT_NULL);
 				rt_free(recv_data);
 				break;
     	}
-    	
+			
     	//接收数据
       bytes_received = rt_device_read(hw_dev,0,recv_data+SavePos,TCP_BUF_SIZE - (1+SavePos));
       //分析数据有效性

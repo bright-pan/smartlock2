@@ -154,4 +154,10 @@ print_rcc(void)
 FINSH_FUNCTION_EXPORT(device_enable, device_enable[name]);
 INIT_BOARD_EXPORT(print_rcc);
 
+void sysreset()
+{
+  NVIC_SystemReset();
+}
+FINSH_FUNCTION_EXPORT(sysreset,sysreset() -- reset stm32);
+
 #endif

@@ -1242,6 +1242,7 @@ FINSH_FUNCTION_EXPORT_ALIAS(device_config_phone_create, devcfg_pcr, [name len]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_get_phone_valid, devcfg_gpv, [phone_id]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_set_phone_valid, devcfg_spv, [phone_id value]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_phone_delete, devcfg_pd, [phone_id]);
+FINSH_FUNCTION_EXPORT_ALIAS(device_config_phone_verify, devcfg_pv, [key_buf]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_phone_display, devcfg_pds, [phone_id]);
 
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_key_create, devcfg_kcr, [key_type buf length]);
