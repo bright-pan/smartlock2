@@ -198,4 +198,4 @@ rt_local_init(void)
     return 0;
 }
 
-//INIT_APP_EXPORT(rt_local_init);
+INIT_APP_EXPORT(rt_local_init);

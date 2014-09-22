@@ -189,8 +189,33 @@ struct rt_gpio_ops gpio_exti_user_ops=
  *             gpio exti device register
  *
  *******************************************************/
+/*
+* Function gpio_config ()
+*
+* 将IO端口都设置成模拟输入，以降低功耗以及增强电磁兼容
+*
+*/
+//IO端口配置结构体变量
+static void gpio_config(void)
+{
+GPIO_InitTypeDef GPIO_InitStructure;
+RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB |
+RCC_APB2Periph_GPIOC | RCC_APB2Periph_GPIOD |
+RCC_APB2Periph_GPIOE, ENABLE);
+GPIO_InitStructure.GPIO_Pin = GPIO_Pin_All;
+GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
+GPIO_Init(GPIOA, &GPIO_InitStructure);
+GPIO_Init(GPIOB, &GPIO_InitStructure);
+//GPIO_Init(GPIOC, &GPIO_InitStructure);
+GPIO_Init(GPIOD, &GPIO_InitStructure);
+GPIO_Init(GPIOE, &GPIO_InitStructure);
 
-/* switch1 device 
+RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB |
+//RCC_APB2Periph_GPIOC | RCC_APB2Periph_GPIOD | RCC_APB2Periph_GPIOE, DISABLE);
+RCC_APB2Periph_GPIOD | RCC_APB2Periph_GPIOE, DISABLE);
+
+    }
+/* switch1 device */
 gpio_device switch1_device;
 rt_timer_t switch1_exti_timer = RT_NULL;
 
@@ -206,8 +231,15 @@ void switch1_exti_timeout(void *parameters)
 		if (data == SWITCH1_STATUS)
 		{
             rt_kprintf("it is switch1 detect!\n");
+            gpio_pin_output(DEVICE_NAME_POWER_FLASH,0,0);
+            gpio_pin_output(DEVICE_NAME_POWER_MOTOR,0,0);
+            gpio_pin_output(DEVICE_NAME_POWER_BT,0,0);
+            gpio_pin_output(DEVICE_NAME_POWER_FRONT,0,0);
+            gpio_pin_output(DEVICE_NAME_POWER_GSM,0,0);
+            gpio_config();
+            PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFI);
 			// produce mail
-			send_alarm_mail(ALARM_TYPE_SWITCH1, ALARM_PROCESS_FLAG_LOCAL, SWITCH1_STATUS, 0);
+			//send_alarm_mail(ALARM_TYPE_SWITCH1, ALARM_PROCESS_FLAG_LOCAL, SWITCH1_STATUS, 0);
 		}
 		rt_device_control(device, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0);
 	}
@@ -233,12 +265,12 @@ rt_err_t switch1_rx_ind(rt_device_t dev, rt_size_t size)
 struct gpio_exti_user_data switch1_user_data =
 {
 	DEVICE_NAME_SWITCH1,
-	GPIOE,
+	GPIOC,
 	GPIO_Pin_7,
 	GPIO_Mode_IPU,
 	GPIO_Speed_50MHz,
-	RCC_APB2Periph_GPIOE |RCC_APB2Periph_AFIO,
-	GPIO_PortSourceGPIOE,
+	RCC_APB2Periph_GPIOC |RCC_APB2Periph_AFIO,
+	GPIO_PortSourceGPIOC,
 	GPIO_PinSource7,
 	EXTI_Line7,
 	EXTI_Mode_Interrupt,
@@ -266,8 +298,7 @@ int rt_hw_switch1_register(void)
 
     return 0;
 }
-*/
-/* switch2 device 
+/* switch2 device */
 gpio_device switch2_device;
 rt_timer_t switch2_exti_timer = RT_NULL;
 
@@ -285,8 +316,20 @@ void switch2_exti_timeout(void *parameters)
 		rt_device_read(device,0,&data,0);
 		if (data == SWITCH2_STATUS) // rfid key is plugin
 		{
+
             rt_kprintf("it is key2 detect!\n");
+
+            rt_enter_critical();
+            gpio_pin_output(DEVICE_NAME_POWER_FLASH,0,0);
+            gpio_pin_output(DEVICE_NAME_POWER_MOTOR,0,0);
+            gpio_pin_output(DEVICE_NAME_POWER_BT,0,0);
+            gpio_pin_output(DEVICE_NAME_POWER_FRONT,0,0);
+            gpio_pin_output(DEVICE_NAME_POWER_GSM,0,0);
+            gpio_config();
+            PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFI);
+            rt_exit_critical();
 			// produce mail
+
 			//rt_device_control(rtc_device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
 
 			// send mail
@@ -316,14 +359,14 @@ rt_err_t switch2_rx_ind(rt_device_t dev, rt_size_t size)
 struct gpio_exti_user_data switch2_user_data =
 {
     DEVICE_NAME_SWITCH2,
-    GPIOE,
-    GPIO_Pin_8,
+    GPIOC,
+    GPIO_Pin_6,
     GPIO_Mode_IPU,
     GPIO_Speed_50MHz,
-    RCC_APB2Periph_GPIOE |RCC_APB2Periph_AFIO,
-    GPIO_PortSourceGPIOE,
-    GPIO_PinSource8,
-    EXTI_Line8,
+    RCC_APB2Periph_GPIOC |RCC_APB2Periph_AFIO,
+    GPIO_PortSourceGPIOC,
+    GPIO_PinSource6,
+    EXTI_Line6,
     EXTI_Mode_Interrupt,
     SWITCH2_EXTI_TRIGGER_MODE,
     EXTI9_5_IRQn,
@@ -349,7 +392,6 @@ int rt_hw_switch2_register(void)
 
     return 0;
 }
-*/
 /* switch3 device 
 gpio_device switch3_device;
 rt_timer_t switch3_exti_timer = RT_NULL;
@@ -1739,17 +1781,21 @@ EXTI9_5_IRQHandler(void)
 
 	/* enter interrupt */
 	rt_interrupt_enter();
-	/* lock_shell exti isr 
+	/* lock_shell exti isr */
 	if(EXTI_GetITStatus(EXTI_Line7) == SET)
 	{
-		rt_hw_gpio_isr(&switch1_device);
-		EXTI_ClearITPendingBit(EXTI_Line7);
-	}
-	if(EXTI_GetITStatus(EXTI_Line8) == SET)
+		//rt_hw_gpio_isr(&switch1_device);
+        EXTI_ClearITPendingBit(EXTI_Line7);
+        SystemInit();
+        SystemCoreClockUpdate();
+    }
+
+	if(EXTI_GetITStatus(EXTI_Line6) == SET)
 	{
 		rt_hw_gpio_isr(&switch2_device);
-		EXTI_ClearITPendingBit(EXTI_Line8);
+		EXTI_ClearITPendingBit(EXTI_Line6);
 	}
+    /*
 	if(EXTI_GetITStatus(EXTI_Line9) == SET)
 	{
 		rt_hw_gpio_isr(&switch3_device);
@@ -1796,8 +1842,8 @@ EXTI15_10_IRQHandler(void)
 static int 
 rt_hw_gpio_exti_enable(void)
 {
-    //device_enable(DEVICE_NAME_SWITCH1);
-    //device_enable(DEVICE_NAME_SWITCH2);
+    device_enable(DEVICE_NAME_SWITCH1);
+    device_enable(DEVICE_NAME_SWITCH2);
     //device_enable(DEVICE_NAME_SWITCH3);
     device_enable(DEVICE_NAME_KB_INTR);
     device_enable(DEVICE_NAME_FP_TOUCH);
@@ -1807,8 +1853,8 @@ rt_hw_gpio_exti_enable(void)
     return 0;
 }
 
-//INIT_DEVICE_EXPORT(rt_hw_switch1_register);
-//INIT_DEVICE_EXPORT(rt_hw_switch2_register);
+INIT_DEVICE_EXPORT(rt_hw_switch1_register);
+INIT_DEVICE_EXPORT(rt_hw_switch2_register);
 //INIT_DEVICE_EXPORT(rt_hw_switch3_register);
 INIT_DEVICE_EXPORT(rt_hw_kb_intr_register);
 INIT_DEVICE_EXPORT(rt_hw_fp_touch_register);
