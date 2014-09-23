@@ -1699,6 +1699,10 @@ send_gsm_sms_mail(uint8_t *buf, uint16_t length, uint8_t flag)
 		if (result == -RT_EFULL)
 		{
 			rt_kprintf("mq_gsm is full!!!\n");
+		}		
+        else
+		{
+			rt_sem_take(gsm_mail_buf.result_sem, RT_WAITING_FOREVER);
 		}
 	}
 	else
@@ -1752,6 +1756,10 @@ send_gsm_ctrl_mail(u8 ctrl_cmd, uint8_t *buf, uint16_t length, uint8_t flag)
 		{
 			rt_kprintf("mq_gsm is full!!!\n");
             goto __free_process;
+		}        
+        else
+		{
+			rt_sem_take(gsm_mail_buf.result_sem, RT_WAITING_FOREVER);
 		}
 	}
 	else
@@ -1820,6 +1828,10 @@ send_gsm_gprs_mail(uint8_t *buf, uint16_t length, uint8_t flag)
 		{
 			rt_kprintf("mq_gsm is full!!!\n");
             goto __free_process;
+		}        
+        else
+		{
+			rt_sem_take(gsm_mail_buf.result_sem, RT_WAITING_FOREVER);
 		}
 	}
 	else
