@@ -19,7 +19,6 @@
 #include "fprint.h"
 #include "gpio_pin.h"
 #include "gpio_pwm.h"
-#include "comm.h"
 
 #define FPRINT_MAIL_MAX_MSGS 10
 
@@ -1128,7 +1127,7 @@ fprint_thread_entry(void *parameters)
                         } else {
                             error = fprint_enroll(buf,&req_data, &rep_data);
                             if (error == FPRINT_EOK) {
-                                temp = device_config_key_create(KEY_TYPE_FPRINT, buf, sizeof(buf));
+                                temp = device_config_key_create(KEY_ID_INVALID, KEY_TYPE_FPRINT, buf, sizeof(buf));
                                 if (temp < 0) {
                                     RT_DEBUG_LOG(FPRINT_DEBUG, ("the finger print key create failure!\n"));
                                     error = FPRINT_EERROR;

@@ -109,14 +109,17 @@ struct account_head {
 
 struct account_valid_map {
 	u32 data[KEY_MAP_SIZE];
+    u32 updated_time;
 };
 
 struct key_valid_map {
 	u32 data[KEY_MAP_SIZE];
+    u32 updated_time;
 };
 
 struct phone_valid_map {
 	u32 data[PHONE_MAP_SIZE];
+    u32 updated_time;
 };
 
 struct tcp_domain_port {
@@ -194,11 +197,52 @@ typedef struct
 }PRODUCT_ID;
 
 //extern struct device_config device_config;
+s32
+device_config_set_key_valid(u16 key_id, u8 value);
+s32
+device_config_set_account_valid(u16 account_id, u8 value);
+s32
+device_config_set_phone_valid(u16 phone_id, u8 value);
 
+s32
+device_config_get_account_valid(u16 account_id);
+s32
+device_config_get_key_valid(u16 key_id);
+s32
+device_config_get_phone_valid(u16 phone_id);
+
+s32
+device_config_account_create(u16 account_id, u8 *name, u8 length);
+s32
+device_config_account_append_key(u16 account_id, u16 key_id, u32 op_time, u8 flag);
+s32
+device_config_account_delete(u16 account_id, u32 op_time, u8 flag);
+s32
+device_config_phone_create(u16 phone_id, u8 *buf, u8 len);
+s32
+device_config_phone_verify(u8 *buf, u16 length);
+s32
+device_config_phone_delete(u16 phone_id, u32 op_time, u8 flag);
+s32
+device_config_key_create(u16 key_id, u16 key_type, void *buf, u16 length);
+s32
+device_config_key_delete(u16 key_id, u32 op_time, u8 flag);
+s32
+device_config_key_operate(u16 key_id, struct key *k, u8 flag);
+s32
+device_config_key_verify(u16 key_type, const u8 *buf, u16 length);
+s32
+device_config_account_operate(u16 account_id, struct account_head *ah, u8 flag);
 s32
 device_config_account_remove_phone(u16 phone_id);
 s32
-device_config_account_append_phone(u16 account_id, u16 phone_id);
+device_config_account_append_phone(u16 account_id, u16 phone_id, u32 op_time, u8 flag);
+s32
+device_config_account_counts(void);
+s32
+device_config_phone_operate(u16 phone_id, struct phone_head *ph, u8 flag);
+s32
+device_config_account_next_valid(u16 account_id, u8 flag);
 int
 device_config_file_operate(struct device_configure *config, u8 flag);
 s32 

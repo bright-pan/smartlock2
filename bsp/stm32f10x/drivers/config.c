@@ -83,6 +83,7 @@ device_config_account_remove_phone(u16);
 /*
     根据钥匙ID获得钥匙的有效使用状况。
     返回：
+        -ECONFIG_ERROR 该钥匙不可用。
         1 该钥匙有效。
         0 该钥匙无效。
 */
@@ -90,63 +91,80 @@ s32
 device_config_get_key_valid(u16 key_id)
 {
 	s32 result = -ECONFIG_ERROR;
-    RT_ASSERT(key_id < KEY_NUMBERS);
-    result = (device_config.param.kv_map.data[key_id/32] & bits_mask(key_id%32)) ? 1 : 0;
+    if (key_id < KEY_NUMBERS)
+        result = (device_config.param.kv_map.data[key_id/32] & bits_mask(key_id%32)) ? 1 : 0;
     return result;
 }
 /*
     根据钥匙ID，设置钥匙为有效（1），无效状态（0）。
-    无返回。
+    返回：
+        -ECONFIG_ERROR 该钥匙不可用。
+        >= 0, 返回钥匙id，成功设置。
 */
-void
+s32
 device_config_set_key_valid(u16 key_id, u8 value)
 {
-	RT_ASSERT(key_id < KEY_NUMBERS);
-	if (value) {
-		device_config.param.kv_map.data[key_id/32] |= bits_mask(key_id%32);
-	} else {
-		device_config.param.kv_map.data[key_id/32] &= ~bits_mask(key_id%32);
-	}
+    s32 result = -ECONFIG_ERROR;
+	if (key_id < KEY_NUMBERS) {
+        if (value) {
+            device_config.param.kv_map.data[key_id/32] |= bits_mask(key_id%32);
+        } else {
+            device_config.param.kv_map.data[key_id/32] &= ~bits_mask(key_id%32);
+        }
+        device_config.param.kv_map.updated_time = sys_cur_date();
+        result = key_id;
+    }
+    return result;
 }
 
 s32
 device_config_get_phone_valid(u16 phone_id)
 {
 	s32 result = -ECONFIG_ERROR;
-    RT_ASSERT(phone_id < PHONE_NUMBERS);
-	result = (device_config.param.pv_map.data[phone_id/32] & bits_mask(phone_id%32)) ? 1 : 0;
+    if (phone_id < PHONE_NUMBERS)
+        result = (device_config.param.pv_map.data[phone_id/32] & bits_mask(phone_id%32)) ? 1 : 0;
 	return result;
 }
 
-void
+s32
 device_config_set_phone_valid(u16 phone_id, u8 value)
 {
-	RT_ASSERT(phone_id < PHONE_NUMBERS);
-	if (value) {
-		device_config.param.pv_map.data[phone_id/32] |= bits_mask(phone_id%32);
-	} else {
-		device_config.param.pv_map.data[phone_id/32] &= ~bits_mask(phone_id%32);
-	}
+    s32 result = -ECONFIG_ERROR;
+	if (phone_id < PHONE_NUMBERS) {
+        if (value) {
+            device_config.param.pv_map.data[phone_id/32] |= bits_mask(phone_id%32);
+        } else {
+            device_config.param.pv_map.data[phone_id/32] &= ~bits_mask(phone_id%32);
+        }
+        device_config.param.pv_map.updated_time = sys_cur_date();
+        result = phone_id;
+    }
+    return result;
 }
 
 s32
 device_config_get_account_valid(u16 account_id)
 {
 	s32 result = -ECONFIG_ERROR;
-    RT_ASSERT(account_id < ACCOUNT_NUMBERS);
-	result = (device_config.param.av_map.data[account_id/32] & bits_mask(account_id%32)) ? 1 : 0;
+    if (account_id < ACCOUNT_NUMBERS)
+        result = (device_config.param.av_map.data[account_id/32] & bits_mask(account_id%32)) ? 1 : 0;
 	return result;
 }
 
-void
+s32
 device_config_set_account_valid(u16 account_id, u8 value)
 {
-	RT_ASSERT(account_id < ACCOUNT_NUMBERS);
-	if (value) {
-		device_config.param.av_map.data[account_id/32] |= bits_mask(account_id%32);
-	} else {
-		device_config.param.av_map.data[account_id/32] &= ~bits_mask(account_id%32);
-	}
+    s32 result = -ECONFIG_ERROR;
+	if(account_id < ACCOUNT_NUMBERS) {
+        if (value) {
+            device_config.param.av_map.data[account_id/32] |= bits_mask(account_id%32);
+        } else {
+            device_config.param.av_map.data[account_id/32] &= ~bits_mask(account_id%32);
+        }
+        device_config.param.av_map.updated_time = sys_cur_date();
+        result = account_id;
+    }
+    return result;
 }
 
 s32
@@ -173,7 +191,7 @@ device_config_get_key_code_size(u16 key_type)
 			}
 		default :
 			{
-		RT_DEBUG_LOG(CONFIG_DEBUG, ("the key type is invalid\n"));
+                RT_DEBUG_LOG(CONFIG_DEBUG, ("the key type is invalid\n"));
 				result = 0;
 				break;
 			}
@@ -196,9 +214,11 @@ device_config_key_operate(u16 key_id, struct key *k, u8 flag)
 	s32 result;
 	s32 len;
 
-    RT_ASSERT(key_id < KEY_NUMBERS);
+    result = -ECONFIG_ERROR;
 
-	result = -ECONFIG_ERROR;
+    if (key_id >= KEY_NUMBERS)
+        return result;
+
 	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 	fd = open(DEVICE_CONFIG_FILE_NAME, O_RDWR, 0x777);
 	if (fd >= 0)
@@ -212,7 +232,6 @@ device_config_key_operate(u16 key_id, struct key *k, u8 flag)
 			result = len;
 		close(fd);
 	}
-
 	rt_mutex_release(device_config.mutex);
 	return result;
 }
@@ -230,20 +249,22 @@ device_config_key_verify(u16 key_type, const u8 *buf, u16 length)
 {
     s32 result;
     s32 i;
-	struct key k;
+	struct key *k;
     s32 len;
 
 	result = -ECONFIG_ERROR;
 
     rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
-
+    k = rt_malloc(sizeof(*k));
+    if (k == RT_NULL)
+        goto __exit;
 	for (i = 0; i < KEY_NUMBERS; i++) {
-		if (device_config_get_key_valid(i)) {
-			len = device_config_key_operate(i, &k, 0);
+		if (device_config_get_key_valid(i) > 0) {
+			len = device_config_key_operate(i, k, 0);
 			if (len >= 0) {
-				if (k.head.key_type && k.head.key_type == key_type) {
+				if (k->head.key_type && k->head.key_type == key_type) {
 					//len = device_config_get_key_code_size(k.head.key_type);
-					if (!rt_memcmp(&k.data, buf, length)) {
+					if (!rt_memcmp(&k->data, buf, length)) {
 						result = i;
 						break;
 					}
@@ -251,6 +272,8 @@ device_config_key_verify(u16 key_type, const u8 *buf, u16 length)
 			}
 		}
 	}
+__exit:
+    rt_free(k);
 	rt_mutex_release(device_config.mutex);
     return result;
 }
@@ -273,6 +296,9 @@ device_config_key_head_init(struct key_head *kh, u16 key_type)
 
 /*
     创建钥匙。
+    key_id: 指定钥匙ID，
+            这个ID如果被占用，则返回错误；
+            如果是无效ID则自动创建最小可用ID。
     key_type: 钥匙类型。参检KEY_TYPE_FPRINT,KEY_TYPE_KBOARD，等宏定义。
     buf：钥匙的编码地址。
     length：编码长度。
@@ -283,31 +309,49 @@ device_config_key_head_init(struct key_head *kh, u16 key_type)
         >=0, 创建成功的钥匙编号。
 */
 s32
-device_config_key_create(u16 key_type, u8 *buf, u16 length)
+device_config_key_create(u16 key_id, u16 key_type, void *buf, u16 length)
 {
     int result;
     s32 i;
 	struct key k;
 
 	result = -ECONFIG_ERROR;
+    if (key_id >= KEY_NUMBERS && key_id != KEY_ID_INVALID)
+        return result;
 	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
     rt_memset(&k, 0, sizeof(k));
+    i = device_config_get_key_code_size(key_type);
+    length = length > i ? i :length; 
 	if (device_config_key_verify(key_type, buf, length) < 0) {
-		for (i = 0; i < KEY_NUMBERS; i++) {
-			if (!device_config_get_key_valid(i)) {
-				device_config_key_head_init(&k.head, key_type);
-				rt_memcpy(&k.data, buf, length);
-				if (device_config_key_operate(i, &k, 1) < 0)
-					goto __exit;
-				device_config_set_key_valid(i, 1);
-				if (device_config_file_operate(&device_config, 1) < 0)
-					goto __exit;
-				result = i;
-				break;
-			}
-		}
-        if (i == KEY_NUMBERS)
-            result = -ECONFIG_FULL;
+        if (key_id != KEY_ID_INVALID) {
+            i = key_id;
+            if (!device_config_get_key_valid(i)) {
+                device_config_key_head_init(&k.head, key_type);
+                rt_memcpy(&k.data, buf, length);
+                if (device_config_key_operate(i, &k, 1) < 0)
+                    goto __exit;
+                device_config_set_key_valid(i, 1);
+                if (device_config_file_operate(&device_config, 1) < 0)
+                    goto __exit;
+                result = i;
+            }
+        } else {
+            for (i = 0; i < KEY_NUMBERS; i++) {
+                if (!device_config_get_key_valid(i)) {
+                    device_config_key_head_init(&k.head, key_type);
+                    rt_memcpy(&k.data, buf, length);
+                    if (device_config_key_operate(i, &k, 1) < 0)
+                        goto __exit;
+                    device_config_set_key_valid(i, 1);
+                    if (device_config_file_operate(&device_config, 1) < 0)
+                        goto __exit;
+                    result = i;
+                    break;
+                }
+            }
+            if (i == KEY_NUMBERS)
+                result = -ECONFIG_FULL;
+        }
     } else {
 		result = -ECONFIG_EXIST;
 	}
@@ -316,25 +360,102 @@ __exit:
     return result;
 }
 
+s32
+device_config_key_set(u16 key_id, struct key *new_key, u32 op_time)
+{
+    s32 result;
+    s32 i;
+	struct key k;
+    s32 len;
+
+	result = -ECONFIG_ERROR;
+
+    rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+    
+    rt_memset(&k, 0, sizeof(k));
+    i = key_id;
+    if (device_config_get_key_valid(i) > 0) {
+            len = device_config_key_operate(i, &k, 0);
+            if (len >= 0) {
+                    if (op_time > k.head.updated_time) {
+                        len = device_config_key_verify(new_key->head.key_type, (u8 *)&new_key->data, device_config_get_key_code_size(new_key->head.key_type));
+                        if (len < 0 || len == i) {
+                            k.head.is_updated = 0;
+                            k.head.key_type = new_key->head.key_type;
+                            k.head.operation_type = new_key->head.operation_type;
+                            k.head.start_time = new_key->head.start_time;
+                            k.head.end_time = new_key->head.end_time;
+                            k.head.updated_time = op_time;
+                            k.data = new_key->data;
+                            len = device_config_key_operate(i, &k, 1);
+                            if (len >= 0)
+                                result = i;
+                        } else {
+                            result = -ECONFIG_EXIST;
+                        }
+                    }
+            }
+
+    } else {
+        len = device_config_key_create(i, new_key->head.key_type, &new_key->data, device_config_get_key_code_size(new_key->head.key_type));
+        if (len >= 0) {
+            len = device_config_key_operate(i, &k, 0);
+            if (len >= 0) {
+                k.head.is_updated = 0;
+                k.head.key_type = new_key->head.key_type;
+                k.head.operation_type = new_key->head.operation_type;
+                k.head.start_time = new_key->head.start_time;
+                k.head.end_time = new_key->head.end_time;
+                k.head.updated_time = op_time;
+                len = device_config_key_operate(i, &k, 1);
+                if (len >= 0)
+                    result = i;
+            }
+        } else {
+            result = len;
+        }
+    }
+	rt_mutex_release(device_config.mutex);
+    return result;
+}
+
 /*
     钥匙删除， 先删除钥匙与账户直接的关系映射，然后再使钥匙无效。
     key_id: 需要删除的钥匙ID。
+    op_time: 操作时间。
+    flag：使用操作时间比较, 1,比较，0，不比较。
     返回：
         -ECONFIG_ERROR,删除出错。
         >=0, 删除成功的钥匙ID。
 */
 s32
-device_config_key_delete(u16 key_id)
+device_config_key_delete(u16 key_id, u32 op_time, u8 flag)
 {
     s32 result = -ECONFIG_ERROR;
-
-    RT_ASSERT(key_id < KEY_NUMBERS);
+    struct key k;
+    if (key_id >= KEY_NUMBERS)
+        return result;
     rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
-    result = device_config_account_remove_key(key_id);
-    if (result >= 0) {
-        device_config_set_key_valid(key_id, 0);
-        if (device_config_file_operate(&device_config, 1) >= 0)
-            result = key_id;
+    if (flag) {
+        if (device_config_get_key_valid(key_id) > 0 && 
+            device_config_key_operate(key_id, &k, 0) >= 0) {
+            if (op_time > k.head.updated_time)
+            {
+                result = device_config_account_remove_key(key_id);
+                if (result >= 0) {
+                    device_config_set_key_valid(key_id, 0);
+                    if (device_config_file_operate(&device_config, 1) >= 0)
+                        result = key_id;
+                }
+            }
+        }
+    } else {
+        result = device_config_account_remove_key(key_id);
+        if (result >= 0) {
+            device_config_set_key_valid(key_id, 0);
+            if (device_config_file_operate(&device_config, 1) >= 0)
+                result = key_id;
+        }
     }
 	rt_mutex_release(device_config.mutex);
     return result;
@@ -356,9 +477,10 @@ device_config_phone_operate(u16 phone_id, struct phone_head *ph, u8 flag)
 	s32 result;
 	s32 len;
 
-    RT_ASSERT(phone_id < PHONE_NUMBERS);
-
 	result = -ECONFIG_ERROR;
+    if (phone_id >= PHONE_NUMBERS)
+        return result;
+
 	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 	fd = open(DEVICE_CONFIG_FILE_NAME, O_RDWR, 0x777);
 	if (fd >= 0)
@@ -403,8 +525,10 @@ device_config_phone_verify(u8 *buf, u16 length)
     s32 len;
 	struct phone_head ph;
     u8 temp[PHONE_ADDRESS_LENGTH];
-	RT_ASSERT(length <= PHONE_ADDRESS_LENGTH);
-	result = -ECONFIG_ERROR;
+    result = -ECONFIG_ERROR;
+	if (length > PHONE_ADDRESS_LENGTH)
+        return result;
+
     rt_memset(temp, '\0', PHONE_ADDRESS_LENGTH);
     rt_memcpy(temp, buf, length);
 	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
@@ -419,13 +543,13 @@ device_config_phone_verify(u8 *buf, u16 length)
 			}
 		}
 	}
-
 	rt_mutex_release(device_config.mutex);
 	return result;
 }
 
 /*
     创建电话。
+    phone_id:电话ID
     buf：电话号码。
     length：电话长度。
     返回：
@@ -435,32 +559,46 @@ device_config_phone_verify(u8 *buf, u16 length)
         >=0, 创建成功的电话ID。
 */
 s32
-device_config_phone_create(u8 *buf, u8 len)
+device_config_phone_create(u16 phone_id, u8 *buf, u8 length)
 {
     int result;
     s32 i;
 	struct phone_head ph;
     u8 temp[PHONE_ADDRESS_LENGTH];
-	RT_ASSERT(len <= PHONE_ADDRESS_LENGTH);
-	result = -ECONFIG_ERROR;
+    result = -ECONFIG_ERROR;
+	if ((phone_id >= PHONE_NUMBERS && phone_id != PHONE_ID_INVALID) || length > PHONE_ADDRESS_LENGTH)
+        return result;
 	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
     rt_memset(temp, '\0', PHONE_ADDRESS_LENGTH);
-    rt_memcpy(temp, buf, len);
+    rt_memcpy(temp, buf, length);
 	if (device_config_phone_verify(temp, PHONE_ADDRESS_LENGTH) < 0) {
-		for (i = 0; i < PHONE_NUMBERS; i++) {
-			if (!device_config_get_phone_valid(i)) {
-				device_config_phone_head_init(&ph, temp, PHONE_ADDRESS_LENGTH);
-				if (device_config_phone_operate(i, &ph, 1) < 0)
-					goto __exit;
-				device_config_set_phone_valid(i, 1);
-				if (device_config_file_operate(&device_config, 1) < 0)
-					goto __exit;
-				result = i;
-				break;
-			}
-		}
-        if (i == PHONE_NUMBERS)
-            result = -ECONFIG_FULL;
+        if (phone_id == PHONE_ID_INVALID) {
+            for (i = 0; i < PHONE_NUMBERS; i++) {
+                if (!device_config_get_phone_valid(i)) {
+                    device_config_phone_head_init(&ph, temp, PHONE_ADDRESS_LENGTH);
+                    if (device_config_phone_operate(i, &ph, 1) < 0)
+                        goto __exit;
+                    device_config_set_phone_valid(i, 1);
+                    if (device_config_file_operate(&device_config, 1) < 0)
+                        goto __exit;
+                    result = i;
+                    break;
+                }
+            }
+            if (i == PHONE_NUMBERS)
+                result = -ECONFIG_FULL;
+        } else {
+            i = phone_id;
+            if (!device_config_get_phone_valid(i)) {
+                device_config_phone_head_init(&ph, temp, PHONE_ADDRESS_LENGTH);
+                if (device_config_phone_operate(i, &ph, 1) < 0)
+                    goto __exit;
+                device_config_set_phone_valid(i, 1);
+                if (device_config_file_operate(&device_config, 1) < 0)
+                    goto __exit;
+                result = i;
+            }
+        }
 	} else {
 		result = -ECONFIG_EXIST;
 	}
@@ -468,22 +606,100 @@ __exit:
 	rt_mutex_release(device_config.mutex);
     return result;
 }
-
+/*
+    创建账户。
+    phone_id: 指定手机ID，如果为无效ID则选则最小无效ID。
+    buf：手机号码。
+    length：账户长度。
+    op_time: 操作时间。
+    返回：
+        -ECONFIG_ERROR， 创建失败。
+        -ECONFIG_FULL, 账户库已满。
+        -ECONFIG_EXIST, 账户已存在。
+        >=0, 创建成功的账户ID。
+*/
 s32
-device_config_phone_delete(u16 phone_id)
+device_config_phone_set(u16 phone_id, u8 *buf, u8 length, u32 op_time)
 {
     s32 result;
-    RT_ASSERT(phone_id < PHONE_NUMBERS);
+    s32 i;
+    struct phone_head ph;
+    s32 len;
 
-	result = -ECONFIG_ERROR;
+    result = -ECONFIG_ERROR;
+	if (phone_id >= PHONE_NUMBERS || length > PHONE_ADDRESS_LENGTH)
+        return result;
     rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
-    result = device_config_account_remove_phone(phone_id);
-    if (result >= 0) {
-        device_config_set_phone_valid(phone_id, 0);
-        if (device_config_file_operate(&device_config, 1) >= 0)
-            result = phone_id;
+    i = phone_id;
+    if (device_config_get_phone_valid(i) > 0) {
+            len = device_config_phone_operate(i, &ph, 0);
+            if (len >= 0) {
+                if (op_time > ph.updated_time) { 
+                    len = device_config_phone_verify(buf, length);
+                    if (len < 0 || len == i) {
+                        rt_memcpy(ph.address, buf, ACCOUNT_NAME_LENGTH);
+                        ph.updated_time = op_time;
+                        len = device_config_phone_operate(i, &ph, 1);
+                        if (len >= 0)
+                            result = i;
+                    } else {
+                        result = -ECONFIG_EXIST;
+                    }
+                }
+            }
+    } else {
+        len = device_config_phone_create(i, buf, length);
+        if (len >= 0) {
+            result = i;
+        } else {
+            result = len;
+        }
     }
+	rt_mutex_release(device_config.mutex);
+    return result;
+}
+/*
+    手机删除， 先删除手机与账户直接的关系映射，然后再使手机无效。
+    phone_id: 需要删除的手机ID。
+    op_time: 操作时间。
+    flag：使用操作时间比较, 1,比较，0，不比较。
+    返回：
+        -ECONFIG_ERROR,删除出错。
+        >=0, 删除成功的手机ID。
+*/
+s32
+device_config_phone_delete(u16 phone_id, u32 op_time, u8 flag)
+{
+    s32 result;
+    struct phone_head ph;
+	result = -ECONFIG_ERROR;
 
+    if (phone_id >= PHONE_NUMBERS)
+        return result;
+
+    rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+    if (flag) {
+        if (device_config_get_phone_valid(phone_id) > 0 && 
+            device_config_phone_operate(phone_id, &ph, 0) >= 0) {
+            if (op_time > ph.updated_time)
+            {
+                result = device_config_account_remove_phone(phone_id);
+                if (result >= 0) {
+                    device_config_set_phone_valid(phone_id, 0);
+                    if (device_config_file_operate(&device_config, 1) >= 0)
+                        result = phone_id;
+                }
+            }
+        }
+    } else {
+        result = device_config_account_remove_phone(phone_id);
+        if (result >= 0) {
+            device_config_set_phone_valid(phone_id, 0);
+            if (device_config_file_operate(&device_config, 1) >= 0)
+                result = phone_id;
+        }
+    }
+    
 	rt_mutex_release(device_config.mutex);
     return result;
 }
@@ -504,9 +720,10 @@ device_config_account_operate(u16 account_id, struct account_head *ah, u8 flag)
 	s32 result;
 	s32 len;
 
-    RT_ASSERT(account_id < ACCOUNT_NUMBERS);
-
 	result = -ECONFIG_ERROR;
+    if (account_id >= ACCOUNT_NUMBERS)
+        return result;
+
 	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 	fd = open(DEVICE_CONFIG_FILE_NAME, O_RDWR, 0x777);
 	if (fd >= 0)
@@ -539,13 +756,14 @@ device_config_account_verify(u8 *name, u16 length)
     s32 len;
 	struct account_head ah;
     u8 temp[ACCOUNT_NAME_LENGTH];
-	RT_ASSERT(length <= ACCOUNT_NAME_LENGTH);
 	result = -ECONFIG_ERROR;
+	if (length > ACCOUNT_NAME_LENGTH)
+        return result;
     rt_memset(temp, '\0', ACCOUNT_NAME_LENGTH);
     rt_memcpy(temp, name, length);
 	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 	for (i = 0; i < ACCOUNT_NUMBERS; i++) {
-		if (device_config_get_account_valid(i)) {
+		if (device_config_get_account_valid(i) > 0) {
 			len = device_config_account_operate(i, &ah, 0);
 			if (len >= 0) {
 				if (!rt_memcmp(ah.name, temp, ACCOUNT_NAME_LENGTH)) {
@@ -574,13 +792,13 @@ device_config_account_next_key_pos(u16 account_id, u8 key_pos, u8 flag)
 	s32 i;
     s32 len;
 	struct account_head ah;
-	RT_ASSERT(account_id < ACCOUNT_NUMBERS);
-    RT_ASSERT(key_pos < ACCOUNT_KEY_NUMBERS);
 
 	result = -ECONFIG_ERROR;
-	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+	if (account_id >= ACCOUNT_NUMBERS || key_pos >= ACCOUNT_KEY_NUMBERS)
+        return result;
 
-    if (device_config_get_account_valid(account_id)) {
+	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+    if (device_config_get_account_valid(account_id) > 0) {
         len = device_config_account_operate(i, &ah, 0);
         if (len >= 0) {
             if (flag) {
@@ -618,12 +836,13 @@ device_config_account_key_counts(u16 account_id)
     s32 counts;
 	struct account_head ah;
 
-	RT_ASSERT(account_id < ACCOUNT_NUMBERS);
     counts = 0;
 	result = -ECONFIG_ERROR;
-	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+	if (account_id >= ACCOUNT_NUMBERS)
+        return result;
 
-    if (device_config_get_account_valid(account_id)) {
+	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+    if (device_config_get_account_valid(account_id) > 0) {
         len = device_config_account_operate(i, &ah, 0);
         if (len >= 0) {
             for (i = 0; i < ACCOUNT_KEY_NUMBERS; ++i) {
@@ -650,20 +869,21 @@ device_config_account_next_valid(u16 account_id, u8 flag)
 	s32 result;
 	s32 i;
 
-    RT_ASSERT(account_id < ACCOUNT_NUMBERS);
-
 	result = -ECONFIG_ERROR;
+    if (account_id >= ACCOUNT_NUMBERS)
+        return result;
+
 	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
     if (flag) {
         for (i = account_id; i < ACCOUNT_NUMBERS; ++i) {
-            if (device_config_get_account_valid(i)) {
+            if (device_config_get_account_valid(i) > 0) {
                 result = i;
                 break;
             }
         }
     } else {
         for (i = account_id; i >=0; --i) {
-            if (device_config_get_account_valid(i)) {
+            if (device_config_get_account_valid(i) > 0) {
                 result = i;
                 break;
             }
@@ -689,7 +909,7 @@ device_config_account_counts(void)
 	result = -ECONFIG_ERROR;
 	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 	for (i = 0; i < ACCOUNT_NUMBERS; i++) {
-		if (device_config_get_account_valid(i)) {
+		if (device_config_get_account_valid(i) > 0) {
             ++counts;
 		}
 	}
@@ -712,7 +932,8 @@ device_config_account_head_init(struct account_head *ah, u8 *name, u16 length)
 }
 /*
     创建账户。
-    name：账户的名称。
+    account_id: 指定账户ID，如果为无效ID则选则最小无效ID。
+    name：账户的名称，如果为空，则自动生成USER_XX格式的账户名称。
     length：账户长度。
     返回：
         -ECONFIG_ERROR， 创建失败。
@@ -721,21 +942,45 @@ device_config_account_head_init(struct account_head *ah, u8 *name, u16 length)
         >=0, 创建成功的账户ID。
 */
 s32
-device_config_account_create(u8 *name, u8 length)
+device_config_account_create(u16 account_id, u8 *name, u8 length)
 {
     int result;
     u16 i;
 	struct account_head ah;
     u8 temp[ACCOUNT_NAME_LENGTH];
-	RT_ASSERT(length <= ACCOUNT_NAME_LENGTH);
+    
 	result = -ECONFIG_ERROR;
-	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
-    if (name != RT_NULL) {
-        rt_memset(temp, '\0', ACCOUNT_NAME_LENGTH);
-        rt_memcpy(temp, name, length);
-        if (device_config_account_verify(temp, ACCOUNT_NAME_LENGTH) < 0) {
+	if ((account_id >= ACCOUNT_NUMBERS && account_id != ACCOUNT_ID_INVALID) || length > ACCOUNT_NAME_LENGTH)
+        return result;
+
+    rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+    if (account_id == ACCOUNT_ID_INVALID) {
+        if (name != RT_NULL) {
+            rt_memset(temp, '\0', ACCOUNT_NAME_LENGTH);
+            rt_memcpy(temp, name, length);
+            if (device_config_account_verify(temp, ACCOUNT_NAME_LENGTH) < 0) {
+                for (i = 0; i < ACCOUNT_NUMBERS; i++) {
+                    if (!device_config_get_account_valid(i)) {
+                        device_config_account_head_init(&ah, temp, ACCOUNT_NAME_LENGTH);
+                        if (device_config_account_operate(i, &ah, 1) < 0)
+                            goto __exit;
+                        device_config_set_account_valid(i, 1);
+                        if (device_config_file_operate(&device_config, 1) < 0)
+                            goto __exit;
+                        result = i;
+                        break;
+                    }
+                }
+                if (i == ACCOUNT_NUMBERS)
+                    result = -ECONFIG_FULL;
+            } else {
+                result = -ECONFIG_EXIST;
+            }
+        } else {
             for (i = 0; i < ACCOUNT_NUMBERS; i++) {
                 if (!device_config_get_account_valid(i)) {
+                    rt_memset(temp, '\0', ACCOUNT_NAME_LENGTH);
+                    snprintf((char *)temp, ACCOUNT_NAME_LENGTH, "USER%d", i);
                     device_config_account_head_init(&ah, temp, ACCOUNT_NAME_LENGTH);
                     if (device_config_account_operate(i, &ah, 1) < 0)
                         goto __exit;
@@ -748,11 +993,29 @@ device_config_account_create(u8 *name, u8 length)
             }
             if (i == ACCOUNT_NUMBERS)
                 result = -ECONFIG_FULL;
-        } else {
-            result = -ECONFIG_EXIST;
         }
     } else {
-        for (i = 0; i < ACCOUNT_NUMBERS; i++) {
+        if (name != RT_NULL) {
+            rt_memset(temp, '\0', ACCOUNT_NAME_LENGTH);
+            rt_memcpy(temp, name, length);
+            if (device_config_account_verify(temp, ACCOUNT_NAME_LENGTH) < 0) {
+                i = account_id;
+                if (!device_config_get_account_valid(i)) {
+                    device_config_account_head_init(&ah, temp, ACCOUNT_NAME_LENGTH);
+                    if (device_config_account_operate(i, &ah, 1) < 0)
+                        goto __exit;
+                    device_config_set_account_valid(i, 1);
+                    if (device_config_file_operate(&device_config, 1) < 0)
+                        goto __exit;
+                    result = i;
+                }
+                if (i == ACCOUNT_NUMBERS)
+                    result = -ECONFIG_FULL;
+            } else {
+                result = -ECONFIG_EXIST;
+            }
+        } else {
+            i = account_id;
             if (!device_config_get_account_valid(i)) {
                 rt_memset(temp, '\0', ACCOUNT_NAME_LENGTH);
                 snprintf((char *)temp, ACCOUNT_NAME_LENGTH, "USER%d", i);
@@ -763,49 +1026,116 @@ device_config_account_create(u8 *name, u8 length)
                 if (device_config_file_operate(&device_config, 1) < 0)
                     goto __exit;
                 result = i;
-                break;
             }
+            if (i == ACCOUNT_NUMBERS)
+                result = -ECONFIG_FULL;
         }
-        if (i == ACCOUNT_NUMBERS)
-            result = -ECONFIG_FULL;
     }
 __exit:
+	rt_mutex_release(device_config.mutex);
+    return result;
+}
+/*
+    创建账户。
+    account_id: 指定账户ID，如果为无效ID则选则最小无效ID。
+    name：账户的名称，如果为空，则自动生成USER_XX格式的账户名称。
+    length：账户长度。
+    op_time: 操作时间。
+    返回：
+        -ECONFIG_ERROR， 创建失败。
+        -ECONFIG_FULL, 账户库已满。
+        -ECONFIG_EXIST, 账户已存在。
+        >=0, 创建成功的账户ID。
+*/
+s32
+device_config_account_set(u16 account_id, u8 *name, u8 length, u32 op_time)
+{
+    s32 result;
+    s32 i;
+    struct account_head ah;
+    s32 len;
+    u8 temp[ACCOUNT_NAME_LENGTH];
+
+    result = -ECONFIG_ERROR;
+
+    rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+    i = account_id;
+    if (device_config_get_account_valid(i) > 0) {
+            len = device_config_account_operate(i, &ah, 0);
+            if (len >= 0) {
+                if (op_time > ah.updated_time) {
+                    rt_memset(temp, '\0', ACCOUNT_NAME_LENGTH);
+                    rt_memcpy(temp, name, length);
+                    len = device_config_account_verify(temp, ACCOUNT_NAME_LENGTH);
+                    if (len < 0 || len == i) {
+                        rt_memcpy(ah.name, temp, ACCOUNT_NAME_LENGTH);
+                        ah.updated_time = op_time;
+                        len = device_config_account_operate(i, &ah, 1);
+                        if (len >= 0)
+                            result = i;
+                    } else {
+                        result = -ECONFIG_EXIST;
+                    }
+                }
+                
+            }
+
+    } else {
+        result = device_config_account_create(i, name, length);
+    }
 	rt_mutex_release(device_config.mutex);
     return result;
 }
 
 /*
     账户删除， 先删除钥匙与账户直接的关系映射，然后再使账户无效。
-    key_id: 需要删除的账户ID。
+    account_id: 需要删除的账户ID。
+    op_time: 操作时间。
+    flag：使用操作时间比较, 1,比较，0，不比较。
     返回：
         -ECONFIG_ERROR,删除出错。
         >=0, 删除成功的账户ID。
 */
 s32
-device_config_account_delete(u16 account_id)
+device_config_account_delete(u16 account_id, u32 op_time, u8 flag)
 {
     s32 result, i;
     struct account_head ah;
-
-    RT_ASSERT(account_id < ACCOUNT_NUMBERS);
 	result = -ECONFIG_ERROR;
-    rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+    if (account_id >= ACCOUNT_NUMBERS)
+        return result;
 
+    rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
     result = device_config_account_operate(account_id, &ah, 0);
     if (result >= 0) {
-        for (i = 0; i < ACCOUNT_KEY_NUMBERS; ++i) {
-            if (ah.key[i] != KEY_ID_INVALID)
-                device_config_key_delete(ah.key[i]);
-        }
-        for (i = 0; i < ACCOUNT_PHONE_NUMBERS; ++i) {
-            if (ah.phone[i] != PHONE_ID_INVALID)
-                device_config_phone_delete(ah.phone[i]);
+        if (flag) {
+            if (op_time > ah.updated_time) {
+                for (i = 0; i < ACCOUNT_KEY_NUMBERS; ++i) {
+                    if (ah.key[i] != KEY_ID_INVALID)
+                        device_config_key_delete(ah.key[i], 0, 0);
+                    }
+                for (i = 0; i < ACCOUNT_PHONE_NUMBERS; ++i) {
+                    if (ah.phone[i] != PHONE_ID_INVALID)
+                        device_config_phone_delete(ah.phone[i], 0, 0);
+                }
+                device_config_set_account_valid(account_id, 0);
+                if (device_config_file_operate(&device_config, 1) >= 0)
+                    result = account_id;
+            }
+        } else {
+            for (i = 0; i < ACCOUNT_KEY_NUMBERS; ++i) {
+                if (ah.key[i] != KEY_ID_INVALID)
+                    device_config_key_delete(ah.key[i], 0, 0);
+            }
+            for (i = 0; i < ACCOUNT_PHONE_NUMBERS; ++i) {
+                if (ah.phone[i] != PHONE_ID_INVALID)
+                    device_config_phone_delete(ah.phone[i], 0, 0);
+            }
+            device_config_set_account_valid(account_id, 0);
+            if (device_config_file_operate(&device_config, 1) >= 0)
+                result = account_id;
         }
     }
-    device_config_set_account_valid(account_id, 0);
-	if (device_config_file_operate(&device_config, 1) >= 0)
-		result = account_id;
-
 	rt_mutex_release(device_config.mutex);
     return result;
 }
@@ -851,11 +1181,12 @@ device_config_account_get_key_pos(struct account_head *ah, u16 key_id)
 	}
 	return result;
 }
-
 /*
     将钥匙绑定到账户里（需要注意的3个情况，账户里可能已经绑定该钥匙，或者账户钥匙已满，或者钥匙已经绑定别的账户的情况。
     account_id：账户id。
     key_id；钥匙id。
+    op_time: 操作时间。
+    flag：使用操作时间比较, 1,比较，0，不比较。
     返回：
         -ECONFIG_ERROR， 绑定失败。
         -ECONFIG_FULL, 账户钥匙已满。
@@ -863,34 +1194,56 @@ device_config_account_get_key_pos(struct account_head *ah, u16 key_id)
         >=0, 创建成功的钥匙ID。
 */
 s32
-device_config_account_append_key(u16 account_id, u16 key_id)
+device_config_account_append_key(u16 account_id, u16 key_id, u32 op_time, u8 flag)
 {
 	s32 result;
 	struct account_head ah;
 	struct key k;
 	s32 pos;
 
-	RT_ASSERT(account_id < ACCOUNT_NUMBERS && key_id < KEY_NUMBERS);
-
 	result = -ECONFIG_ERROR;
+	if (account_id >= ACCOUNT_NUMBERS || key_id >= KEY_NUMBERS)
+        return result;
+
 	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
-	if (device_config_get_account_valid(account_id) &&
+	if (device_config_get_account_valid(account_id) > 0 &&
 		device_config_account_operate(account_id, &ah, 0) >= 0) {
 			pos = device_config_account_get_key_pos(&ah, key_id);
 			/* key is not in account */
 			if (pos < 0) {
 				pos = device_config_account_get_invalid_key_pos(&ah);
 				if (pos >= 0) {
-					if (device_config_get_key_valid(key_id) &&
+					if (device_config_get_key_valid(key_id) > 0 &&
 						device_config_key_operate(key_id, &k, 0) >= 0) {
-						if (k.head.account != ACCOUNT_ID_INVALID) {
-							device_config_account_remove_key(key_id);
-						}
-						k.head.account = account_id;
-						device_config_key_operate(key_id, &k, 1);
-						ah.key[pos] = key_id;
-						device_config_account_operate(account_id, &ah, 1);
-                        result = key_id;
+                        if (flag) {
+                            if (op_time > k.head.updated_time) {
+                                if (k.head.account != ACCOUNT_ID_INVALID) {
+                                    device_config_account_remove_key(key_id);
+                                }
+                                k.head.account = account_id;
+                                k.head.is_updated = 0;
+                                k.head.updated_time = op_time;
+                                device_config_key_operate(key_id, &k, 1);
+                                ah.key[pos] = key_id;
+                                ah.is_updated = 0;
+                                ah.updated_time = op_time;
+                                device_config_account_operate(account_id, &ah, 1);
+                                result = key_id;
+                            }
+                        } else {
+                            if (k.head.account != ACCOUNT_ID_INVALID) {
+                                device_config_account_remove_key(key_id);
+                            }
+                            k.head.account = account_id;
+                            k.head.is_updated = 1;
+                            k.head.updated_time = sys_cur_date();
+                            device_config_key_operate(key_id, &k, 1);
+                            ah.key[pos] = key_id;
+                            ah.is_updated = 1;
+                            ah.updated_time = k.head.updated_time;
+                            device_config_account_operate(account_id, &ah, 1);
+                            result = key_id;
+                        }
 					}
 				} else {
 					result = -ECONFIG_FULL;
@@ -920,24 +1273,27 @@ device_config_account_remove_key(u16 key_id)
 	struct key k;
 	s32 pos;
 
-	RT_ASSERT(key_id < KEY_NUMBERS);
-
 	result = -ECONFIG_ERROR;
+	if (key_id >= KEY_NUMBERS)
+        return result;
+
 	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
-	if (device_config_get_key_valid(key_id) &&
+	if (device_config_get_key_valid(key_id) > 0 &&
 		device_config_key_operate(key_id, &k, 0) >= 0) {
 		/* key has valid account */
 		if (k.head.account != ACCOUNT_ID_INVALID) {
-            if (device_config_get_account_valid(k.head.account) &&
+            if (device_config_get_account_valid(k.head.account) > 0 &&
 				device_config_account_operate(k.head.account, &ah, 0) >= 0) {
 				pos = device_config_account_get_key_pos(&ah, key_id);
 				if (pos >= 0) {
 					ah.key[pos] = KEY_ID_INVALID;
+                    ah.updated_time = sys_cur_date();
 					device_config_account_operate(k.head.account, &ah, 1);
                     result = key_id;
 				}
 			}
 			k.head.account = ACCOUNT_ID_INVALID;
+            k.head.updated_time = ah.updated_time;
 			device_config_key_operate(key_id, &k, 1);
 		} else {
             result = key_id;
@@ -994,6 +1350,8 @@ device_config_account_get_phone_pos(struct account_head *ah, u16 phone_id)
     将手机绑定到账户里（需要注意的3个情况，账户里可能已经绑定该手机，或者账户手机已满，或者手机已经绑定别的账户的情况。
     account_id：账户id。
     phone_id；手机id。
+    op_time: 操作时间。
+    flag：使用操作时间比较, 1,比较，0，不比较。
     返回：
         -ECONFIG_ERROR， 绑定失败。
         -ECONFIG_FULL, 账户手机已满。
@@ -1001,18 +1359,19 @@ device_config_account_get_phone_pos(struct account_head *ah, u16 phone_id)
         >=0, 创建成功的钥匙ID。
 */
 s32
-device_config_account_append_phone(u16 account_id, u16 phone_id)
+device_config_account_append_phone(u16 account_id, u16 phone_id, u32 op_time, u8 flag)
 {
 	s32 result;
 	struct account_head ah;
 	struct phone_head ph;
 	s32 pos;
 
-	RT_ASSERT(account_id < ACCOUNT_NUMBERS && phone_id < KEY_NUMBERS);
-
 	result = -ECONFIG_ERROR;
+	if (account_id >= ACCOUNT_NUMBERS || phone_id >= KEY_NUMBERS)
+        return result;
+
 	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
-	if (device_config_get_account_valid(account_id) &&
+	if (device_config_get_account_valid(account_id) >= 0 &&
 		device_config_account_operate(account_id, &ah, 0) >= 0) {
 			pos = device_config_account_get_phone_pos(&ah, phone_id);
 			/* phone is not in account */
@@ -1021,14 +1380,33 @@ device_config_account_append_phone(u16 account_id, u16 phone_id)
 				if (pos >= 0) {
 					if (device_config_get_phone_valid(phone_id) &&
 						device_config_phone_operate(phone_id, &ph, 0) >= 0) {
-						if (ph.account != ACCOUNT_ID_INVALID) {
-							device_config_account_remove_phone(phone_id);
-						}
-						ph.account = account_id;
-						device_config_phone_operate(phone_id, &ph, 1);
-						ah.phone[pos] = phone_id;
-						device_config_account_operate(account_id, &ah, 1);
-                        result = phone_id;
+                        if (flag) {
+                            if (op_time > ph.updated_time) {
+                                if (ph.account != ACCOUNT_ID_INVALID) {
+                                    device_config_account_remove_phone(phone_id);
+                                }
+                                ph.account = account_id;
+                                ph.updated_time = op_time;
+                                device_config_phone_operate(phone_id, &ph, 1);
+                                ah.phone[pos] = phone_id;
+                                ah.is_updated = 0;
+                                ah.updated_time = op_time;
+                                device_config_account_operate(account_id, &ah, 1);
+                                result = phone_id;
+                            }
+                        } else {
+                            if (ph.account != ACCOUNT_ID_INVALID) {
+                                device_config_account_remove_phone(phone_id);
+                            }
+                            ph.account = account_id;
+                            ph.updated_time = sys_cur_date();
+                            device_config_phone_operate(phone_id, &ph, 1);
+                            ah.phone[pos] = phone_id;
+                            ah.is_updated = 1;
+                            ah.updated_time = ph.updated_time;
+                            device_config_account_operate(account_id, &ah, 1);
+                            result = phone_id;
+                        }
 					}
 				} else {
 					result = -ECONFIG_FULL;
@@ -1058,15 +1436,16 @@ device_config_account_remove_phone(u16 phone_id)
 	struct phone_head ph;
 	s32 pos;
 
-	RT_ASSERT(phone_id < KEY_NUMBERS);
-
 	result = -ECONFIG_ERROR;
+	if (phone_id >= PHONE_NUMBERS)
+        return result;
+
 	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 	if (device_config_get_phone_valid(phone_id) &&
 		device_config_phone_operate(phone_id, &ph, 0) >= 0) {
 		/* phone has valid account */
 		if (ph.account != ACCOUNT_ID_INVALID) {
-            if (device_config_get_account_valid(ph.account) &&
+            if (device_config_get_account_valid(ph.account) >= 0 &&
 				device_config_account_operate(ph.account, &ah, 0) >= 0) {
 				pos = device_config_account_get_phone_pos(&ah, phone_id);
 				if (pos >= 0) {
@@ -1100,7 +1479,7 @@ device_config_key_index(int(*callback)(struct key *, void *arg1, void *arg2, voi
     rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 
 	for (i = 0; i < KEY_NUMBERS; i++) {
-		if (device_config_get_key_valid(i)) {
+		if (device_config_get_key_valid(i) > 0) {
 			len = device_config_key_operate(i, &k, 0);
 			if (len >= 0) {
                 result = callback(&k, arg1, arg2, &i);
@@ -1201,6 +1580,7 @@ void device_config_phone_display(u16 phone_id)
 	rt_kprintf("phone_account = 0x%x\n", ph.account);
 	rt_kprintf("phone_auth = 0x%x\n", ph.auth);
 	rt_kprintf("phone_address = %s\n", ph.address);
+	rt_kprintf("phone_updated_time = %d\n", ph.updated_time);
 }
 
 void device_config_key_display(u16 key_id)
@@ -1237,31 +1617,50 @@ void device_config_account_display(u16 account_id)
 		rt_kprintf("0x%x ", ah.phone[i]);
 	rt_kprintf("\n");
 }
-
-FINSH_FUNCTION_EXPORT_ALIAS(device_config_phone_create, devcfg_pcr, [name len]);
+s32 device_config_key_set_test(u16 key_id, u16 k_type, u8 *buf, u16 o_type, u32 s_time, u32 e_time, u32 op_time)
+{
+    s32 result = -1;
+    struct key *k;
+    k = rt_malloc(sizeof(*k));
+    if (k == RT_NULL)
+        return result;
+    rt_memset(k, '\0', sizeof(*k));
+    k->head.key_type = k_type;
+    rt_memcpy(&k->data, buf, device_config_get_key_code_size(k_type));
+    k->head.operation_type = o_type;
+    k->head.start_time = s_time;
+    k->head.end_time = e_time;
+    result = device_config_key_set(key_id, k, op_time);
+    rt_free(k);
+    return result;
+}
+FINSH_FUNCTION_EXPORT_ALIAS(device_config_phone_create, devcfg_pcr, [phone_id name len]);
+FINSH_FUNCTION_EXPORT_ALIAS(device_config_phone_set, devcfg_ps, [phone_id name len op_time]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_get_phone_valid, devcfg_gpv, [phone_id]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_set_phone_valid, devcfg_spv, [phone_id value]);
-FINSH_FUNCTION_EXPORT_ALIAS(device_config_phone_delete, devcfg_pd, [phone_id]);
+FINSH_FUNCTION_EXPORT_ALIAS(device_config_phone_delete, devcfg_pd, [phone_id op_time flag]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_phone_verify, devcfg_pv, [phone_buf length]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_phone_display, devcfg_pds, [phone_id]);
 
-FINSH_FUNCTION_EXPORT_ALIAS(device_config_key_create, devcfg_kcr, [key_type buf length]);
+FINSH_FUNCTION_EXPORT_ALIAS(device_config_key_create, devcfg_kcr, [key_id key_type buf length]);
+FINSH_FUNCTION_EXPORT_ALIAS(device_config_key_set_test, devcfg_ks, [key_id k_type buf o_type s_time e_time op_time]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_get_key_valid, devcfg_gkv, [key_id]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_set_key_valid, devcfg_skv, [key_id value]);
-FINSH_FUNCTION_EXPORT_ALIAS(device_config_key_delete, devcfg_kd, [key_id]);
+FINSH_FUNCTION_EXPORT_ALIAS(device_config_key_delete, devcfg_kd, [key_id op_time flag]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_key_verify, devcfg_kv, [key_buf length]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_key_display, devcfg_kds, [key_id]);
 
-FINSH_FUNCTION_EXPORT_ALIAS(device_config_account_create, devcfg_acr, [name length]);
+FINSH_FUNCTION_EXPORT_ALIAS(device_config_account_create, devcfg_acr, [account_id name length]);
+FINSH_FUNCTION_EXPORT_ALIAS(device_config_account_set, devcfg_as, [account_id name length op_time]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_get_account_valid, devcfg_gav, [account_id]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_set_account_valid, devcfg_sav, [account_id value]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_account_delete, devcfg_ad, [account_id]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_account_display, devcfg_ads, [account_id]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_account_next_valid, devcfg_anv, [account_id]);
 
-FINSH_FUNCTION_EXPORT_ALIAS(device_config_account_append_key, devcfg_aak, [account_id key_id]);
+FINSH_FUNCTION_EXPORT_ALIAS(device_config_account_append_key, devcfg_aak, [account_id key_id op_time flag]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_account_remove_key, devcfg_ark, [key_id]);
 
-FINSH_FUNCTION_EXPORT_ALIAS(device_config_account_append_phone, devcfg_aap, [account_id phone_id]);
+FINSH_FUNCTION_EXPORT_ALIAS(device_config_account_append_phone, devcfg_aap, [account_id phone_id op_time flag]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_account_remove_phone, devcfg_arp, [phone_id]);
 #endif

@@ -1,5 +1,6 @@
 #include"accountop.h"
-
+#include "config.h"
+#include "fprint.h"
 typedef struct
 {
 	rt_uint8_t AccountPos;
@@ -17,7 +18,7 @@ rt_err_t account_add_enter(void)
 	if(AccountUse.Save == 0)
 	{
 		AccountUse.Save = 1;
-    AccountUse.AccountPos  = device_config_account_create(RT_NULL,0);
+    AccountUse.AccountPos  = device_config_account_create(ACCOUNT_ID_INVALID, RT_NULL,0);
 	}
 
 	return RT_EOK;
@@ -37,7 +38,7 @@ rt_err_t account_add_exit(rt_bool_t mode)
 	{
 		//不保存退出
 		AccountUse.Save = 0;
-		result = device_config_account_delete(AccountUse.AccountPos);
+		result = device_config_account_delete(AccountUse.AccountPos, 0, 0);
 		if(result < 0)
 		{
 			return RT_ERROR;
@@ -65,7 +66,7 @@ rt_err_t account_cur_delete(void)
 {
 	rt_int32_t  result;
 	
-	result = device_config_account_delete(AccountUse.AccountPos);
+	result = device_config_account_delete(AccountUse.AccountPos, 0, 0);
 
 	if(result < 0)
 	{
@@ -92,7 +93,7 @@ rt_err_t key_add_password(rt_uint8_t *key)
 {
 	rt_int32_t result;
 
-	result = device_config_key_create(KEY_TYPE_KBOARD,key,6);
+	result = device_config_key_create(KEY_ID_INVALID, KEY_TYPE_KBOARD,key,6);
 	if(result < 0)
 	{
 		return RT_ERROR;
@@ -114,10 +115,10 @@ rt_err_t account_cur_add_password(rt_uint8_t *key)
 	}
   device_config_key_verify(KEY_TYPE_KBOARD,key,6);
 
-	result = device_config_account_append_key(AccountUse.AccountPos,AccountUse.PasswordPos);
+	result = device_config_account_append_key(AccountUse.AccountPos,AccountUse.PasswordPos, 0, 0);
 	if(result < 0)
 	{
-		device_config_key_delete(AccountUse.PasswordPos);
+		device_config_key_delete(AccountUse.PasswordPos, 0, 0);
 		return RT_ERROR;
 	}
 
@@ -144,7 +145,7 @@ rt_err_t phone_data_create(rt_uint8_t *phone)
 {
 	rt_int32_t pos;
 	
-	pos = device_config_phone_create(phone,PHONE_ADDRESS_LENGTH);
+	pos = device_config_phone_create(PHONE_ID_INVALID,phone,PHONE_ADDRESS_LENGTH);
 
 	if(pos < 0)
 	{
@@ -161,10 +162,10 @@ rt_err_t user_cur_add_phone(rt_uint8_t *phone)
 	
 	phone_data_create(phone);
 	
-	result = device_config_account_append_phone(AccountUse.AccountPos,AccountUse.PhonePos);
+	result = device_config_account_append_phone(AccountUse.AccountPos,AccountUse.PhonePos, 0, 0);
 	if(result < 0)
 	{
-		device_config_phone_delete(AccountUse.PhonePos);
+		device_config_phone_delete(AccountUse.PhonePos, 0, 0);
 		return RT_ERROR;
 	}
 
@@ -277,7 +278,7 @@ rt_err_t user_add_fprint(rt_uint32_t outtime)
 {
 	rt_uint8_t *buf;
 	rt_int32_t result;
-	rt_int32_t KeyPos;
+	u16 KeyPos;
 	
 	buf = rt_calloc(1,1024);
 	rt_memset(buf,0,1024);
@@ -291,7 +292,7 @@ rt_err_t user_add_fprint(rt_uint32_t outtime)
 	}
 
 	rt_kprintf("正在绑定用户\n");
-	result = device_config_account_append_key(AccountUse.AccountPos,result);
+	result = device_config_account_append_key(AccountUse.AccountPos,result,0, 0);
 	if(result < 0)
 	{
 		rt_kprintf("Fingerprint binding failure\n");
@@ -409,7 +410,7 @@ void show_account(rt_uint8_t id)
 
 	device_config_account_operate(id, &ah, 0);
 	rt_kprintf("------------------------------------------------|\n");
-	if(device_config_get_account_valid(id))
+	if(device_config_get_account_valid(id) > 0)
 	{
 		rt_kprintf("User name:%s update flag:%d\n",ah.name,ah.is_updated);
 
@@ -467,7 +468,7 @@ void all_account(rt_uint8_t mode)
 		if(mode == 0)
 		{
       device_config_account_operate(i, &ah, 0);
-      if(device_config_get_account_valid(i))
+      if(device_config_get_account_valid(i) > 0)
       {
         show_account(i);
       }
