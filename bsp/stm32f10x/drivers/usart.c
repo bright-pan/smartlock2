@@ -580,7 +580,7 @@ rt_hw_usart_init(void)
 
 	/* register UART1 device */
 	rt_hw_serial_register(serial, "uart1",
-                          RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX | RT_DEVICE_FLAG_STREAM,
+                          RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,
 						  uart);
 #endif /* RT_USING_UART1 */
 
