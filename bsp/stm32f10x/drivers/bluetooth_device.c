@@ -6,7 +6,7 @@
 #ifndef BTM_THREAD_PRIORITY
 #define BTM_THREAD_PRIORITY   			RT_THREAD_PRIORITY_MAX/2+2
 #endif
-
+//#define USEING_BT_C_CONN      //使用蓝牙主动连接
 #define RT_DRIVE_NAME         "Blooth"
 #define RT_USEING_DEBUG				1
 #define BT_USEING_UARTX_NAME	"uart1"
@@ -73,6 +73,8 @@ static bluetooth_user	BluetoothUerConfig =
 {
 	"7C669D9F676C"
 };
+
+rt_size_t bluetooth_module_read(rt_uint8_t *buf,rt_size_t size);
 
 //驱动设备初始化
 static void device_init_processor(rt_device_t *dev,const char *dev_name)
@@ -200,7 +202,7 @@ static rt_err_t bt_at_cmd_analysis(rt_device_t uart
 													,rt_uint16_t outtime)
 {
 	rt_err_t result = RT_EOK;
-	rt_uint8_t run = 3;
+	rt_uint8_t run = 2;
 
 	//parameter detection
 	RT_ASSERT(uart != RT_NULL);
@@ -431,7 +433,7 @@ static void bluetooth_uart_read_data(bluetooth_module_p module)
 	data_buf = rt_calloc(1,BT_DATA_PAGE_SIZE);
 	RT_ASSERT(data_buf != RT_NULL);
 
-	read_len = rt_device_read(module->uart_dev,0,data_buf,BT_DATA_PAGE_SIZE);
+	read_len = rt_device_read(module->uart_dev,0,(void *)data_buf,BT_DATA_PAGE_SIZE);
 	if(read_len > 0)
 	{
 		rt_ringbuffer_put(&bt_ringbuf_rcv,data_buf,read_len);
@@ -446,7 +448,7 @@ static void bluetooth_uart_read_data(bluetooth_module_p module)
 			rt_kprintf("\nBluetooth received data:\n");
 			for(i=0;i<read_len;i++)
 			{
-				rt_kprintf("%X",*(buf_p+i));
+				rt_kprintf("%02X",*(buf_p+i));
 			}
 			rt_kprintf("\n");
 		}
@@ -492,13 +494,11 @@ static void bluetooth_cmd_switch(bluetooth_module_p bluetooth,rt_bool_t mode)
 	{
     bluetooth->work_status = BT_MODULE_CMD_MODE;
 		gpio_status = 1;
-		net_event_process(2,NET_ENVET_ONLINE);
 	}
 	else
 	{
     bluetooth->work_status = BT_MODULE_DATA_MODE;
     gpio_status = 0;
-    net_event_process(0,NET_ENVET_ONLINE);
 	}
 	rt_device_write(bluetooth->wk_dev,0,&gpio_status,1);
 	rt_thread_delay(1);
@@ -653,11 +653,24 @@ static void bluetooth_passivity_connect(bluetooth_module_p bluetooth)
 static rt_err_t bluetooth_passivity_disconnect(bluetooth_module_p bluetooth)
 {
 	//进入命令模式
+	rt_uint8_t *buf;
+
+	buf = rt_calloc(1,16);
+	RT_ASSERT(buf != RT_NULL);
+	
 	bluetooth_cmd_switch(bluetooth,RT_TRUE);
-	if(bt_at_cmd_analysis(bluetooth->uart_dev,RT_NULL,"OK+CONN:L",RT_NULL,50) != RT_EOK)
+
+	bluetooth_module_read(buf,12);
+
+	if(rt_strstr((const char *)buf,"OK+CONN:L") == RT_NULL)
 	{
-		//return RT_ERROR;
+    if(bt_at_cmd_analysis(bluetooth->uart_dev,RT_NULL,"OK+CONN:L",RT_NULL,50) != RT_EOK)
+    {
+      //return RT_ERROR;
+    }
 	}
+	rt_free(buf);
+	
 	//配置从机
 	if(bt_at_cmd_analysis(bluetooth->uart_dev,"AT+ROLE[P]","OK+SET:P",RT_NULL,50) == RT_EOK)
 	{
@@ -711,6 +724,7 @@ rt_size_t bluetooth_module_wirte(rt_uint8_t *buf,rt_size_t size)
 		rt_mb_delete(tx_mq.tx_end);
 		return 0;
 	}
+
 	RT_DEBUG_LOG(RT_USEING_DEBUG,("Start Send Data:\n",i));
 	page = size / BT_DATA_PAGE_SIZE;
 	send_num = 0;
@@ -768,16 +782,19 @@ void bluetooth_thread_entry(void *arg)
 	        {
 	          case BT_MAIL_TYPE_CONN:
 	          {
+	          	rt_kprintf("Bluetooth C Client-initialized\n");
+	          	#ifdef USEING_BT_C_CONN
 	            if(bluetooth_auto_connect(bluetooth) != RT_EOK)
 	            {
 	              goto LINK_ON_AT_CMD_ABNORMAL;
 	            }
+	            #endif
 	            rt_mb_send(mail.tx_end,(rt_uint32_t )bluetooth->uart_dev);
-	            net_event_process(0,NET_ENVET_RELINK);
 	            break;
 	          }
 	          case BT_MAIL_TYPE_SLEEP:
 	          {
+	          	rt_kprintf("Bluetooth C  Sleep Preventer\n");
 	            rt_mb_send(mail.tx_end,RT_NULL);
 	            break;
 	          }
@@ -791,7 +808,6 @@ void bluetooth_thread_entry(void *arg)
 	            break;
 	          }
 	        }
-	        
 	      }
 	      else
 	      {
@@ -940,8 +956,10 @@ static rt_err_t  rt_bluetooth_control(rt_device_t dev, rt_uint8_t cmd, void *arg
 			//连接状态
 			if(args != RT_NULL)
 			{
+				//rt_kprintf("Get the bluetooth MAC\n");
 				bluetooth_conn_status((rt_uint8_t *)args);
 			}
+			break;
 		}
 		case 4:
 		{
@@ -950,6 +968,7 @@ static rt_err_t  rt_bluetooth_control(rt_device_t dev, rt_uint8_t cmd, void *arg
 			{
 				rt_memcpy(args,BluetoothUerConfig.local_mac,12);
 			}
+			break;
 		}
 		default :
 		{
@@ -1058,7 +1077,8 @@ void bt_info(void)
 {
 	rt_device_t dev;
 	rt_uint8_t	*mac;
-
+	rt_uint8_t status;
+	
 	mac = rt_calloc(1,13);
 	dev = rt_device_find("Blooth");
 	if(!(dev->open_flag & RT_DEVICE_OFLAG_OPEN))
@@ -1067,9 +1087,11 @@ void bt_info(void)
 		rt_device_open(dev,RT_DEVICE_OFLAG_OPEN);
 	}
 	rt_device_control(dev,4,mac);
-
 	rt_kprintf("MAC:%s\n",mac);
-	rt_free(mac);
+  rt_free(mac);
+
+	rt_device_control(dev,3,&status);
+	rt_kprintf("status:%d\n",status);
 }
 FINSH_FUNCTION_EXPORT(bt_info,show blooth module information);
 
