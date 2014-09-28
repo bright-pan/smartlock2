@@ -32,9 +32,9 @@
 
 //#define DEVICE_NAME_MOTOR_STATUS "mt_stat"
 
-//#define DEVICE_NAME_SWITCH1 "sw1"
-//#define DEVICE_NAME_SWITCH2 "sw2"
-#define DEVICE_NAME_SWITCH3 "sw3"
+#define DEVICE_NAME_SWITCH1 "sw1"
+#define DEVICE_NAME_SWITCH2 "sw2"
+//#define DEVICE_NAME_SWITCH3 "sw3"
 #define DEVICE_NAME_BREAK "brk"
 #define DEVICE_NAME_MAG "mag"
 #define DEVICE_NAME_KB_INTR "kb_intr"
@@ -48,20 +48,20 @@
 
 #define RT_DEVICE_CTRL_MASK_EXTI 0x15    /* mask exti */
 #define RT_DEVICE_CTRL_UNMASK_EXTI  0x16    /* unmask exti */
-/*
-#define SWITCH1_EXTI_TRIGGER_MODE EXTI_Trigger_Rising
-#define SWITCH1_STATUS 1
+
+#define SWITCH1_EXTI_TRIGGER_MODE EXTI_Trigger_Falling
+#define SWITCH1_STATUS 0
 #define SWITCH1_INT_INTERVAL 100
 
-#define SWITCH2_EXTI_TRIGGER_MODE EXTI_Trigger_Rising
-#define SWITCH2_STATUS 1
+#define SWITCH2_EXTI_TRIGGER_MODE EXTI_Trigger_Falling
+#define SWITCH2_STATUS 0
 #define SWITCH2_INT_INTERVAL 100
-*/
 
+/*
 #define SWITCH3_EXTI_TRIGGER_MODE EXTI_Trigger_Rising
 #define SWITCH3_STATUS 1
 #define SWITCH3_INT_INTERVAL 100
-
+*/
 #define KB_INTR_EXTI_TRIGGER_MODE EXTI_Trigger_Falling
 #define KB_INTR_STATUS 0
 #define KB_INTR_INT_INTERVAL 1

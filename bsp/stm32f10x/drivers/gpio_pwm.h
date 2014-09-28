@@ -43,5 +43,5 @@ void voice_output(rt_uint16_t counts ,rt_uint16_t	delay);
 #define GATE_LOCK 0
 #define GATE_UNLOCK 1
 int8_t lock_output(uint8_t direction);
-
+void motor_rotate(rt_int16_t);
 #endif

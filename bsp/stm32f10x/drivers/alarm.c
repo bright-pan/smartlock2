@@ -119,7 +119,7 @@ void alarm_thread_entry(void *parameter)
 			if (alarm_mail_buf.alarm_process_flag & ALARM_PROCESS_FLAG_LOCAL)
 			{
 				//produce mail
-                send_local_mail(alarm_mail_buf.alarm_type,alarm_mail_buf.time);
+                //send_local_mail(alarm_mail_buf.alarm_type,alarm_mail_buf.time);
 			}
 		}/* msg receive error */
 	}

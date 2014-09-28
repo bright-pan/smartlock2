@@ -18,10 +18,12 @@
 #include <rtthread.h>
 #include <rthw.h>
 #include <stm32f10x.h>
+#include <time.h>
 
 #define bits_mask(x) (1<<(x))
 
-u32
+time_t
+
 sys_cur_date(void);
 
 void
