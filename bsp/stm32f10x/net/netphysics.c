@@ -9,7 +9,7 @@
 //#include "comm.h"
 //#include "appconfig.h"
 
-#define SHOW_PRINTF_INFO   0    //打印调试信息
+#define SHOW_PRINTF_INFO   1    //打印调试信息
 
 #define TCP_BUF_SIZE       1024 //接收缓冲区
 
@@ -24,23 +24,33 @@ rt_size_t find_package_end(rt_uint8_t *buffer,rt_size_t size)
   rt_uint16_t length;
 
   net_string_copy_uint16(&length,buffer);
-  RT_DEBUG_LOG(SHOW_PRINTF_INFO,("Receive the packet length:%d = %x!!\n",length,length));
 
 	if(length >= TCP_BUF_SIZE)//长度大于缓冲区长度
 	{
-		rt_kprintf("recv size error1\n");
+		rt_kprintf("Recv message length(%d) abnormal is bad message ! ! !\n",length);
 		return size;
 	}
-	
+	RT_DEBUG_LOG(SHOW_PRINTF_INFO,("Receive the packet length:%d = %x!!\n",length,length));
+	#ifdef 0
+	{
+    rt_uint8_t i;
+		for(i = 0;i < length;i++)
+    {
+      RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("%02X",buffer[i]));
+    }
+    RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("\n"));
+	}
+	#endif
   for(i = 0; i < size; i++)
   {
     FlagStr[0] = FlagStr[1];
     FlagStr[1] = buffer[i];
+    RT_DEBUG_LOG(SHOW_PRINTF_INFO,("[find:%X%X]>>",FlagStr[0],FlagStr[1]));
     if((FlagStr[0] == 0x0d) && (FlagStr[1] == 0x0a))
     {
-    	if(length < i+1)
+    	if(length <= i+1)
     	{
-    		//rt_kprintf("recv size ok %d\n",size);
+    		RT_DEBUG_LOG(SHOW_PRINTF_INFO,("recv message succeed (length:%d)\n",size));
         return i+1;
     	}
     }
@@ -52,6 +62,28 @@ rt_size_t find_package_end(rt_uint8_t *buffer,rt_size_t size)
   }
   
   return 0;
+}
+
+//检测物理连接是否在线
+rt_err_t netprotocol_connect_status(void)
+{
+	rt_device_t dev;
+	rt_uint8_t  status;
+	
+	dev = rt_device_find("Blooth");
+	if(!(dev->open_flag & RT_DEVICE_OFLAG_OPEN))
+	{
+	  rt_kprintf("open blooth module\n");
+	  rt_device_open(dev,RT_DEVICE_OFLAG_OPEN);
+	}
+	rt_device_control(dev,3,&status);
+
+	if(status == 1)
+	{
+		return RT_EOK;
+	}
+
+	return RT_ERROR;
 }
 
 
@@ -88,12 +120,9 @@ void netprotocol_thread_entry(void *arg)
 
 		RT_ASSERT(recv_data != RT_NULL);
 
-		net_event_process(0,NET_ENVET_CONNECT);
-    //连接
+		//请求连接阶段
+		//net_event_process(0,NET_ENVET_CONNECT);
     net_event_process(2,NET_ENVET_CONNECT);
-   
-		//连接成功开始登陆 
-		//send_net_landed_mail();
     while(1)
     {
       int mq_result;
@@ -104,21 +133,39 @@ void netprotocol_thread_entry(void *arg)
     	if(net_event_process(2,NET_ENVET_RELINK) == 0)
     	{
 				RT_DEBUG_LOG(SHOW_PRINTF_INFO,("relink TCP/IP !!!!\n"));
-        //gsm_set_link(0);
-				//断开连接
+				//清除所有登陆报文
+				clear_wnd_cmd_all(NET_MSGTYPE_LANDED);
+				rt_thread_delay(RT_TICK_PER_SECOND*3);
         send_net_landed_mail();
         RT_ASSERT(recv_data != RT_NULL);
 				rt_free(recv_data);
 				break;
     	}
-			
-    	//接收数据
+    	if(netprotocol_connect_status() == RT_ERROR)
+    	{
+    		rt_thread_delay(10);
+    		if(net_event_process(0,NET_ENVET_CONNECT) == 1)
+    		{
+          //请求连接阶段
+          net_event_process(0,NET_ENVET_CONNECT);
+    		}
+				continue;
+    	}
+			else
+			{
+				if(net_event_process(0,NET_ENVET_CONNECT) == 0)
+				{
+					//请求连接成功
+    			net_event_process(2,NET_ENVET_CONNECT);
+				}
+			}
       bytes_received = rt_device_read(hw_dev,0,recv_data+SavePos,TCP_BUF_SIZE - (1+SavePos));
       //分析数据有效性
       if(bytes_received > 0)
-      {
+      {      	
       	ClearBufTime = 0;
       	SavePos += bytes_received;
+      	
         while(1)
         {
           //找包尾
@@ -145,7 +192,7 @@ void netprotocol_thread_entry(void *arg)
           	}
 
           	//打印调试信息
-          	RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("\nReceives the encrypted data:\n"));
+          	RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("\nReceives the encrypted data:\n<<<<<"));
             for(i = 0;i < MsgEndPos;i++)
             {
               RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("%02X",recv_data[i]));
@@ -186,13 +233,14 @@ void netprotocol_thread_entry(void *arg)
             rt_size_t i;
 	          rt_uint8_t *buf = RT_NULL;
 
-	          rt_kprintf("\n>>>>>>>>>");
+	          rt_kprintf(">>>>>");
 	          buf = message.buffer;
 
 	          for(i=0;i<message.length+4;i++)
 	          {
-	            rt_kprintf("%X",*(buf++));
+	            rt_kprintf("%02X",*(buf++));
 	          }
+	          rt_kprintf("\n");
         	}
         	
           //发送
