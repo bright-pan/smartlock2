@@ -107,8 +107,8 @@ typedef struct
 //长度映射域
 typedef  union 
 {
-  rt_uint16_t  bype;
-  net_lenmap_bit bit;
+  rt_uint16_t  		bype;
+  net_lenmap_bit 	bit;
 }net_lenmap;
 
 //登陆
@@ -463,6 +463,7 @@ typedef struct
 {
 	rt_uint8_t result;
 	rt_uint8_t time[4];
+	rt_uint8_t key_crc32[4];
 	rt_uint8_t crc16[2];
 }net_recv_landed;
 
@@ -739,7 +740,7 @@ typedef struct _NET_SENDWND_LIST_
 协议使用到的事件类型
 */
 #define  NET_ENVET_RELINK              0X01<<0 //物理层重新链接
-#define  NET_ENVET_ONLINE              0X01<<1 //在线
+#define  NET_ENVET_ONLINE              0X01<<1 //在线(服务器)
 #define  NET_ENVET_FILERQ              0x01<<2 //文件请求
 #define  NET_ENVET_CONNECT             0X01<<3 //正在连接
 #define  NET_ENVET_FILE_ON             0X01<<4 //文件传送完成 

@@ -13,17 +13,18 @@
 #define SEND_OK            0
 #define SEND_FAIL          1
 
-rt_mq_t net_msgmail_mq = RT_NULL;     //报文邮件
-rt_mq_t net_datsend_mq = RT_NULL;     //协议层发送给物理网络层
-rt_mailbox_t net_datrecv_mb = RT_NULL;//接收邮箱
-rt_event_t net_event = RT_NULL;       //网络协议层的事件
+rt_mq_t 				net_msgmail_mq = RT_NULL;     //报文邮件
+rt_mq_t 				net_datsend_mq = RT_NULL;     //协议层发送给物理网络层
+rt_mailbox_t 		net_datrecv_mb = RT_NULL;			//接收邮箱
+rt_event_t 			net_event = RT_NULL;       		//网络协议层的事件
+rt_mutex_t 			net_wnd_mutex = RT_NULL;			//网络窗口互斥量
 
 //发送窗口
-net_sendwnd sendwnd_node[NET_WND_MAX_NUM+1];
-rt_timer_t  sendwnd_timer = RT_NULL;//发送窗口的定时器
+net_sendwnd 		sendwnd_node[NET_WND_MAX_NUM+1];
+rt_timer_t  		sendwnd_timer = RT_NULL;//发送窗口的定时器
 
 //序号
-net_col net_order;
+net_col 				net_order;	//序号
 
 //ID key0 key1
 net_parameter NetParameterConfig = 
@@ -266,6 +267,24 @@ static void net_evt_mutex_op(rt_bool_t way)
 	else if(way == RT_FALSE)
 	{
 		rt_mutex_release(system_evt);
+	}
+}
+
+static void net_wnd_mutex_op(rt_bool_t way)
+{
+	static rt_mutex_t wnd_mutex = RT_NULL;
+	
+	if(wnd_mutex == RT_NULL)
+	{
+		wnd_mutex = rt_mutex_create("netwnd",RT_IPC_FLAG_FIFO);
+	}
+	if(way == RT_TRUE)
+	{
+    rt_mutex_take(wnd_mutex,RT_WAITING_FOREVER);
+	}
+	else if(way == RT_FALSE)
+	{
+		rt_mutex_release(wnd_mutex);
 	}
 }
 
@@ -1388,6 +1407,7 @@ void clear_wnd_cmd_all(rt_uint8_t cmd)
 	rt_uint8_t i;
 	rt_int8_t  pos;
 
+	net_wnd_mutex_op(RT_TRUE);
 	for(i = 0 ;i < NET_WND_MAX_NUM;i++)
 	{
 		pos = get_wnd_mail_pos(cmd);
@@ -1396,6 +1416,7 @@ void clear_wnd_cmd_all(rt_uint8_t cmd)
       clear_wnd_mail_pos(pos,SEND_FAIL);
 		}
 	}
+	net_wnd_mutex_op(RT_FALSE);
 }
 
 /*
@@ -1746,7 +1767,7 @@ static rt_int8_t net_des_decode(net_recvmsg_p msg)
   
   //小端转换
   msg->length = net_rev16(msg->length);
-  RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("Receive data length = %X \n",msg->length));
+  RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("Receive data length = %d \n",msg->length));
 
   //判断包长度是否大于buffer长度
   if(msg->length > sizeof(net_recvmsg))
@@ -2530,7 +2551,7 @@ void wnd_show(void)
 	level = rt_hw_interrupt_disable();
 	for(i = 0;i < NET_WND_MAX_NUM; i++)
 	{
-		rt_kprintf("[%2d] permission=%d order=%03d resend=%d outtime=%3d curtime=%3d resend=0x%X type=0x%2X *user=%X\n"
+		rt_kprintf("[%2d] permission=%02d order=%03d resend=%d outtime=%3d curtime=%3d resend=0x%X type=0x%2X *user=%X\n"
 		,i
 		,sendwnd_node[i].permission
 		,sendwnd_node[i].mail.col.bit.col
@@ -2558,6 +2579,17 @@ void bit_map(rt_uint8_t cmd,rt_uint8_t col,
   rt_kprintf("%X\n",test.bype);
 }
 FINSH_FUNCTION_EXPORT(bit_map,"(cmd,col,data,check)bit length map");
+
+void bit_showmap(rt_uint16_t map)
+{
+	net_lenmap test;
+
+	test.bype = map;
+
+	rt_kprintf("cmd%d  col%d data%d check%d\n",test.bit.cmd,test.bit.col,test.bit.data,test.bit.check);
+}
+FINSH_FUNCTION_EXPORT(bit_showmap,"(map)show map bit");
+
 void order_get(rt_uint8_t order,rt_uint8_t resend)
 {
   net_col col = {0,0};
@@ -2614,6 +2646,28 @@ void fileopentest(void)
 	}
 }
 FINSH_FUNCTION_EXPORT(fileopentest,"FileOpenTest");
+
+void net_status(void)
+{
+	rt_kprintf("|------------------------|\n");
+	if(net_event_process(1,NET_ENVET_ONLINE) == 0)
+	{
+		rt_kprintf("on-line\n");
+	}
+	if(net_event_process(1,NET_ENVET_CONNECT) == 0)
+	{
+		rt_kprintf("connecting\n");
+	}
+	if(net_event_process(1,NET_ENVET_FILE_ON) == 0)
+	{
+		rt_kprintf("file send ok\n");
+	}
+	if(net_event_process(1,NET_ENVET_RELINK) == 0)
+	{
+		rt_kprintf("reconnection\n");
+	}
+}
+FINSH_FUNCTION_EXPORT(net_status,"net current situation ");
 
 #endif
 

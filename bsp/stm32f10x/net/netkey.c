@@ -35,7 +35,7 @@ static rt_bool_t check_net_key_data(rt_uint16_t keypos,rt_uint8_t KeyType)
 	{
 		return RT_FALSE;
 	}
-
+	
 	return RT_TRUE;
 }
 
@@ -47,7 +47,7 @@ static rt_bool_t check_net_key_data(rt_uint16_t keypos,rt_uint8_t KeyType)
 */
 rt_err_t net_key_add_process(net_recvmsg_p mail)
 {
-	KEY_TYPEDEF *key = RT_NULL;
+	/*KEY_TYPEDEF *key = RT_NULL;
 	net_recv_keyadd *remote;
 	rt_uint16_t keypos;
 	
@@ -105,6 +105,24 @@ rt_err_t net_key_add_process(net_recvmsg_p mail)
 	
 	rt_free(key);
 	return RT_EOK;
+	*/
+	net_recv_keyadd *remote;
+  struct key			*keydat;
+	rt_uint16_t     KeyID;
+	
+	RT_ASSERT(remote != RT_NULL);
+
+	keydat = rt_calloc(1,sizeof(*keydat));
+
+	net_string_copy_uint16(&KeyID,remote->col);
+	keydat->head.key_type = remote->type+1;//1//1.Ö¸ÎÆ 2.RFID 3.ÃÜÂë
+	keydat->head.operation_type = remote->accredit+1;
+	net_string_copy_uint32((rt_uint32_t *)&keydat->head.updated_time,remote->createt);
+	net_string_copy_uint32((rt_uint32_t *)&keydat->head.start_time,remote->start_t);
+	net_string_copy_uint32((rt_uint32_t *)&keydat->head.end_time,remote->stop_t);
+	//device_config_key_operate(KeyID,keydat,1);
+
+	rt_free(keydat);
 }
 
 /** 

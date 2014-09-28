@@ -81,7 +81,7 @@ void send_net_landed_mail(void)
   mail->time = 0;
   mail->type = NET_MSGTYPE_LANDED;
   mail->resend = 2;
-  mail->outtime = 600;
+  mail->outtime = 150;
   mail->sendmode = ASYN_MODE;
   mail->col.byte = get_msg_new_order(RT_TRUE);
 
