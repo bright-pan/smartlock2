@@ -22,6 +22,8 @@
 
 #define RT_USING_OVERFLOW_CHECK
 
+/*Using zmodem*/
+//#define RT_USING_RZM
 /* Using Hook */
 #define RT_USING_HOOK
 
