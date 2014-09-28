@@ -12,6 +12,22 @@ typedef struct
 static AccountUseStruct AccountUse=
 {0,0,0,0};
 
+static rt_uint32_t get_cur_date(void)
+{
+	rt_device_t device;
+	rt_uint32_t time=0;
+
+	device = rt_device_find("rtc");
+	if (device != RT_NULL)
+	{
+	    rt_device_control(device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
+	}
+
+	rt_kprintf("Current System Time: 0x%X\n",time);
+	return time;
+}
+
+
 //进入新增功能
 rt_err_t account_add_enter(void)
 {
@@ -75,6 +91,7 @@ rt_err_t account_cur_delete(void)
 	return RT_EOK;
 }
 
+//密码添加检测
 rt_err_t key_add_password_check(rt_uint8_t *key)
 {
 	rt_int32_t result;
@@ -88,6 +105,7 @@ rt_err_t key_add_password_check(rt_uint8_t *key)
 	return RT_EOK;
 }
 
+//检测这把钥匙是否当前用户下的钥匙
 rt_err_t key_check_password_cur_pos(rt_uint8_t *password)
 {
   rt_int32_t result;
@@ -109,6 +127,39 @@ rt_err_t key_check_password_cur_pos(rt_uint8_t *password)
   rt_free(key);
 	return RT_ERROR;
 }
+
+//根据密码获得密码的位置
+rt_int32_t key_pos_get_password(rt_uint8_t *password)
+{
+  return device_config_key_verify(KEY_TYPE_KBOARD,password,6);
+}
+
+//修改密码
+rt_err_t key_password_modify(rt_int16_t KeyID,rt_uint8_t *password)
+{
+	rt_int32_t result;
+  struct key *key = RT_NULL;
+
+  result = device_config_key_verify(KEY_TYPE_KBOARD,password,6);
+	if(result >= 0)
+	{
+	  return RT_ERROR;
+	}
+	key = rt_calloc(1,sizeof(struct key));
+	device_config_key_operate(KeyID,key,0);
+
+	rt_memcpy(key->data.kboard.code,(const void *)password,6);
+	result = device_config_key_operate(KeyID,key,1);
+	if(result != KeyID)
+	{
+		rt_free(key);
+		return RT_EOK;
+	}
+	
+  rt_free(key);
+	return RT_ERROR;
+}
+
 //修改密码
 rt_err_t admin_modify_password(rt_uint8_t *key)
 {
@@ -489,15 +540,16 @@ void admin_create(void)
 	}
 	else
 	{
-    result = device_config_account_create("Admin",rt_strlen("Admin"));
+    result = device_config_account_create(ACCOUNT_ID_INVALID,"Admin",rt_strlen("Admin"));
 	  if(result == 0)
 	  {
 	  	rt_kprintf("Administrator create OK\n");
-	  	result = device_config_key_create(KEY_TYPE_KBOARD,"123456",6);
+	  	result = device_config_key_create(KEY_ID_INVALID,KEY_TYPE_KBOARD,"123456",6);
 			if(result >= 0)
 			{
 				rt_kprintf("Administrator key Create OK\n");
-				result = device_config_account_append_key(0,result);
+				
+				result = device_config_account_append_key(0,result,get_cur_date(),0);
 				if(result >= 0)
 				{
 					rt_kprintf("Administrator append OK\n");

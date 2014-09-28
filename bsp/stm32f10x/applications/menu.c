@@ -35,10 +35,10 @@ KbdTabStruct	KeyTab[KEY_MAX_MENU_NUM] =
 	{7,6,6,7,2,menu_7_processing},//系统参数
 
 	//四级
-	{8,9,13,14,8,menu_8_processing},//新增密码 >>同时创建账号
-	{9,10,8,15,9,menu_9_processing},//新增指纹
-	{10,11,9,16,10,menu_10_processing},//新增手机
-	{11,12,10,17,11,menu_11_processing},//保存退出
+	{8,9,13,14,13,menu_8_processing},//新增密码 >>同时创建账号
+	{9,10,8,15,13,menu_9_processing},//新增指纹
+	{10,11,9,16,13,menu_10_processing},//新增手机
+	{11,12,10,17,13,menu_11_processing},//保存退出
 	{12,13,11,18,12,menu_12_processing},//查看信息
 	{13,8,12,19,13,menu_13_processing},//退出
 
@@ -145,6 +145,23 @@ void system_manage_ui_processing(void)
 	if (result == RT_EOK) 
 	{	
 		rt_kprintf("recv key value :%c\n",KeyValue);
+		/*if(KeyValue > '0' && KeyValue < '8')
+		{
+			rt_uint8_t MenuPos;
+			rt_uint8_t i;
+			
+			MenuPos -= '0';
+			MenuPos -= 1;
+			
+			rt_kprintf("快捷键%d\n",MenuPos);
+			for(i = 0;i<MenuPos%4;i++)
+			{
+        SystemFuncIndex = SystemMenu[ SystemFuncIndex].DnState;
+			}
+			SystemFuncIndex = SystemMenu[ SystemFuncIndex].SureState;
+			System_menu_index = SystemMenu[SystemFuncIndex].CurrentOperate;
+	 		System_menu_index();
+		}*/
 		switch(KeyValue)
 		{
 			case '*':
@@ -203,6 +220,10 @@ void system_menu_choose(rt_uint8_t menu)
 			SystemFuncIndex = 0;
 			current_operation_index = RT_NULL;
 			cur_run_processing = system_manage_ui_processing;
+
+			//KeyFuncIndex = KeyTab[ KeyFuncIndex].SureState;
+			current_operation_index = KeyTab[KeyFuncIndex].CurrentOperate;
+			current_operation_index();
 			break;
 		}
 		default:

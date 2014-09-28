@@ -58,5 +58,12 @@ rt_err_t admin_modify_phone(rt_uint8_t *phone);
 
 //检查这把钥匙是否为当前用户下的
 rt_err_t key_check_password_cur_pos(rt_uint8_t *key);
+
+//根据密码找到密码ID
+rt_int32_t key_pos_get_password(rt_uint8_t *password);
+
+//修改密码
+rt_err_t key_password_modify(rt_int16_t KeyID,rt_uint8_t *password);
+
 #endif
 
