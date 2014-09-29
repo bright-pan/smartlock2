@@ -165,6 +165,7 @@ send_local_mail(ALARM_TYPEDEF alarm_type, time_t time, union alarm_data *data)
 	} else {
         buf.time = sys_cur_date();
 	}
+    buf.data = *data;
 	if (local_mq != NULL) {
 		result = rt_mq_send(local_mq, &buf, sizeof(LOCAL_MAIL_TYPEDEF));
 		if (result == -RT_EFULL) {
