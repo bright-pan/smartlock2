@@ -834,6 +834,7 @@ void pwm_send_pulse(char *str)
 
 void motor_rotate(rt_int16_t data)
 {
+    gpio_pin_output(DEVICE_NAME_POWER_MOTOR,1,0);
     if(data < 0)
     {
         data = 0 - data;
@@ -845,6 +846,7 @@ void motor_rotate(rt_int16_t data)
         pwm_set_counts(DEVICE_NAME_MOTOR2,data);
         pwm_send_pulse(DEVICE_NAME_MOTOR2);
     }
+    gpio_pin_output(DEVICE_NAME_POWER_MOTOR,0,0);
 }
 
 #ifdef RT_USING_FINSH
