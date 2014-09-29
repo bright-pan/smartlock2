@@ -1124,9 +1124,9 @@ fprint_thread_entry(void *parameters)
                         } else {
                             error = fprint_enroll(buf,&req_data, &rep_data);
                             if (error == FPRINT_EOK) {
-                                temp = device_config_key_create(KEY_ID_INVALID, KEY_TYPE_FPRINT, buf, sizeof(buf));
+                                temp = device_config_key_create(*fprint_mail.key_id, KEY_TYPE_FPRINT, buf, sizeof(buf));
                                 if (temp < 0) {
-                                    RT_DEBUG_LOG(FPRINT_DEBUG, ("the finger print key create failure!\n"));
+                                    RT_DEBUG_LOG(FPRINT_DEBUG, ("the finger print key create failure! error: %d\n", temp));
                                     error = FPRINT_EERROR;
                                 } else {
                                     // store fprint template to template_id
