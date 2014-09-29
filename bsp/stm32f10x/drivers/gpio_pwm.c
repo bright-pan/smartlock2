@@ -14,6 +14,7 @@
 #include "gpio_pwm.h"
 #include "gpio_exti.h"
 #include "gpio_pin.h"
+#include "untils.h"
 //#include "sms.h"
 //#include "gprs.h"
 //#include "local.h"
@@ -835,6 +836,7 @@ void pwm_send_pulse(char *str)
 void motor_rotate(rt_int16_t data)
 {
     gpio_pin_output(DEVICE_NAME_POWER_MOTOR,1,0);
+    delay_us(100);
     if(data < 0)
     {
         data = 0 - data;
