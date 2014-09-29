@@ -19,6 +19,7 @@
 #include "fprint.h"
 #include "gpio_pin.h"
 #include "gpio_pwm.h"
+#include "local.h"
 
 #define FPRINT_MAIL_MAX_MSGS 10
 
@@ -371,10 +372,6 @@ reverse(uint8_t *dst, uint8_t *src, uint8_t len)
 static void
 fprint_reset(void)
 {
-//	gpio_pin_output(DEVICE_NAME_FPRINT_RESET, 0);
-	rt_thread_delay(20);
-//	gpio_pin_output(DEVICE_NAME_FPRINT_RESET, 1);
-	rt_thread_delay(100);
 }
 
 
@@ -1196,6 +1193,10 @@ fprint_thread_entry(void *parameters)
 
                             reverse((uint8_t *)&template_id, rep_data.rep_search.template_id, 2);
                             RT_DEBUG_LOG(FPRINT_DEBUG, ("fprint verify is exist, %d\n", template_id - FPRINT_TEMPLATE_OFFSET));
+                            union alarm_data data;
+                            data.lock.key_id = template_id - FPRINT_TEMPLATE_OFFSET;
+                            data.lock.operation = GATE_UNLOCK;
+                            send_local_mail(ALARM_TYPE_LOCK_PROCESS, 0, &data);
                             if(fprintf_ok_fun != RT_NULL)
                             {
                                 FPINTF_USER key;
