@@ -86,6 +86,9 @@ typedef enum {
     FPRINT_CMD_VERIFY,
 	FPRINT_CMD_RESET,
     FPRINT_CMD_UP_CHAR,
+    FPRINT_CMD_STORE_TEMPLATE,
+    FPRINT_CMD_GET_TEMPLATE,
+
 }FPRINT_CMD_TYPEDEF;
 
 typedef struct {
@@ -1148,6 +1151,25 @@ fprint_thread_entry(void *parameters)
                         }
 						break;
 					}
+                case FPRINT_CMD_GET_TEMPLATE:
+					{
+                        static uint16_t template_id = 0;
+                        rt_memset(&req_data, 0, sizeof(req_data));
+                        rt_memset(&rep_data, 0, sizeof(rep_data));
+                        error = fprint_verify(&req_data, &rep_data);
+                        if (error == FPRINT_EOK) {
+                            reverse((uint8_t *)&template_id, rep_data.rep_search.template_id, 2);
+                            RT_DEBUG_LOG(FPRINT_DEBUG, ("fprint verify is exist, %d\n", template_id - FPRINT_TEMPLATE_OFFSET));
+                            error = FPRINT_EEXIST;
+                        } else {
+                            error = fprint_enroll(buf,&req_data, &rep_data);
+                            if (error == FPRINT_EOK) {
+                                if (fprint_mail.buf != RT_NULL)
+                                    rt_memcpy(fprint_mail.buf, buf, 512);
+                            }
+                        }
+						break;
+					}
 				case FPRINT_CMD_DELETE:
 					{
                         rt_memset(&req_data, 0, sizeof(req_data));
@@ -1158,6 +1180,24 @@ fprint_thread_entry(void *parameters)
                         reverse(req_data.req_del_char.size, (uint8_t *)&temp, 2);
                         error = fprint_frame_process(FPRINT_FRAME_CMD_DEL_CHAR,
                                                         &req_data, &rep_data);
+                        break;
+					}
+				case FPRINT_CMD_STORE_TEMPLATE:
+					{
+                        rt_memset(&req_data, 0, sizeof(req_data));
+                        rt_memset(&rep_data, 0, sizeof(rep_data));
+                        req_data.req_down_char.buf_id = 1;
+                        error = fprint_frame_process(FPRINT_FRAME_CMD_DOWN_CHAR, &req_data, &rep_data);
+                        if (error != FPRINT_EOK)
+                            fprint_frame_send_data(fprint_mail.buf,512);
+                        rt_memset(&req_data, 0, sizeof(req_data));
+                        rt_memset(&rep_data, 0, sizeof(rep_data));
+                        temp = *fprint_mail.key_id + FPRINT_TEMPLATE_OFFSET;
+                        reverse(req_data.req_store_char.template_id, (uint8_t *)&temp, 2);
+                        req_data.req_store_char.buf_id = 1;
+                        error = fprint_frame_process(FPRINT_FRAME_CMD_STORE_CHAR,
+                                                        &req_data, &rep_data);
+
                         break;
 					}
 				case FPRINT_CMD_UP_CHAR:
@@ -1190,13 +1230,13 @@ fprint_thread_entry(void *parameters)
                         static uint16_t template_id = 0;
                         error = fprint_verify(&req_data, &rep_data);
                         if (error == FPRINT_EOK) {
-
+                            //union alarm_data data;
                             reverse((uint8_t *)&template_id, rep_data.rep_search.template_id, 2);
                             RT_DEBUG_LOG(FPRINT_DEBUG, ("fprint verify is exist, %d\n", template_id - FPRINT_TEMPLATE_OFFSET));
-                            union alarm_data data;
-                            data.lock.key_id = template_id - FPRINT_TEMPLATE_OFFSET;
-                            data.lock.operation = GATE_UNLOCK;
-                            send_local_mail(ALARM_TYPE_LOCK_PROCESS, 0, &data);
+
+                            //data.lock.key_id = template_id - FPRINT_TEMPLATE_OFFSET;
+                            //data.lock.operation = GATE_UNLOCK;
+                            //send_local_mail(ALARM_TYPE_LOCK_PROCESS, 0, &data);
                             if(fprintf_ok_fun != RT_NULL)
                             {
                                 FPINTF_USER key;
@@ -1355,6 +1395,30 @@ fp_enroll(uint16_t *key_id, uint8_t *buf, uint32_t timeout)
             result = *key_id;
     }
     enroll_flag = 0;
+    return result;
+}
+int
+fp_get_template(uint8_t *buf, uint32_t timeout)
+{
+    rt_err_t error;
+    int result = -1;
+
+    enroll_flag = 1;
+    error = rt_sem_take(s_fprint, timeout);
+    if (error == RT_EOK) {
+        if (send_fp_mail(FPRINT_CMD_GET_TEMPLATE, RT_NULL, buf, 0, 1) == FPRINT_EOK)
+            result = 1;
+    }
+    enroll_flag = 0;
+    return result;
+}
+
+int
+fp_store_template(const uint16_t key_id, uint8_t *buf, uint32_t timeout)
+{
+    int result = -1;
+    if (send_fp_mail(FPRINT_CMD_STORE_TEMPLATE, (uint16_t *)&key_id, buf, 0, 1) == FPRINT_EOK)
+        result = key_id;
     return result;
 }
 
