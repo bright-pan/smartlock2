@@ -1,6 +1,8 @@
 #include"accountop.h"
 #include "config.h"
 #include "fprint.h"
+
+#define USEING_DEBUG_ACCOP		0
 typedef struct
 {
 	rt_int16_t AccountPos;
@@ -12,7 +14,7 @@ typedef struct
 static AccountUseStruct AccountUse=
 {0,0,0,0};
 
-static rt_uint32_t get_cur_date(void)
+rt_uint32_t menu_get_cur_date(void)
 {
 	rt_device_t device;
 	rt_uint32_t time=0;
@@ -23,7 +25,7 @@ static rt_uint32_t get_cur_date(void)
 	    rt_device_control(device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
 	}
 
-	rt_kprintf("Current System Time: 0x%X\n",time);
+	RT_DEBUG_LOG(USEING_DEBUG_ACCOP,("Current System Time: 0x%X\n",time));
 	return time;
 }
 
@@ -92,6 +94,8 @@ rt_err_t account_cur_delete(void)
 }
 
 //密码添加检测
+//RT_EOK :数据库中没有重复的密码
+//RT_ERROR:数据库中有重复的密码
 rt_err_t key_add_password_check(rt_uint8_t *key)
 {
 	rt_int32_t result;
@@ -160,7 +164,18 @@ rt_err_t key_password_modify(rt_int16_t KeyID,rt_uint8_t *password)
 	return RT_ERROR;
 }
 
-//修改密码
+//删除密码
+rt_err_t key_password_delete(rt_int32_t KeyID)
+{
+	KeyID = device_config_key_delete(KeyID,menu_get_cur_date(),0);
+	if(KeyID < 0)
+	{
+		return RT_ERROR;
+	}
+	return RT_EOK;
+}
+
+//修改管理员密码
 rt_err_t admin_modify_password(rt_uint8_t *key)
 {
 	rt_int32_t result;
@@ -226,7 +241,7 @@ rt_err_t user_phone_add_check(rt_uint8_t *phone)
 	len = rt_strlen(phone);
 	RT_ASSERT(phone != RT_NULL);
 	pos = device_config_phone_verify(phone,len);
-	rt_kprintf("%s This Phone pos %d len %d\n",phone,pos,len);
+	RT_DEBUG_LOG(USEING_DEBUG_ACCOP,("%s This Phone pos %d len %d\n",phone,pos,len));
 	if(pos < 0)
 	{
 		return RT_EOK;
@@ -317,7 +332,7 @@ rt_uint32_t user_valid_password_num(void)
 	{
 		if(ah.key[i] != KEY_ID_INVALID)
 		{
-			rt_kprintf("ah.key[i] = %d\n",ah.key[i] );
+			RT_DEBUG_LOG(USEING_DEBUG_ACCOP,("ah.key[i] = %d\n",ah.key[i]));
 			device_config_key_operate(ah.key[i],key,0);
 			if(key->head.key_type == KEY_TYPE_KBOARD)
 			{
@@ -367,7 +382,7 @@ rt_uint32_t user_valid_fprint_num(void)
 	{
 		if(ah.key[i] != KEY_ID_INVALID)
 		{
-			rt_kprintf("ah.key[i] = %d\n",ah.key[i] );
+			RT_DEBUG_LOG(USEING_DEBUG_ACCOP,("ah.key[i] = %d\n",ah.key[i]));
 			device_config_key_operate(ah.key[i],key,0);
 			if(key->head.key_type == KEY_TYPE_FPRINT)
 			{
@@ -395,7 +410,7 @@ rt_err_t user_add_fprint(rt_uint32_t outtime)
 {
 	rt_uint8_t *buf;
 	rt_int32_t result;
-	u16 KeyPos;
+	u16 KeyPos = KEY_ID_INVALID;
 	
 	buf = rt_calloc(1,1024);
 	rt_memset(buf,0,1024);
@@ -421,6 +436,39 @@ rt_err_t user_add_fprint(rt_uint32_t outtime)
 
 	return RT_EOK;
 }
+
+//指纹修改
+rt_err_t user_modify_fprint(rt_uint16_t KeyPos,rt_uint32_t outtime)
+{
+	rt_uint8_t *buf;
+	rt_int32_t result;
+	
+	buf = rt_calloc(1,1024);
+	rt_memset(buf,0,1024);
+	result = fp_enroll(&KeyPos,buf,outtime);
+	if(result < 0)
+	{
+		rt_kprintf("Fingerprint acquisition failure\n");
+		rt_free(buf);
+
+		return RT_ERROR;
+	}
+
+	rt_kprintf("正在绑定用户\n");
+	result = device_config_account_append_key(AccountUse.AccountPos,result,0, 0);
+	if(result < 0)
+	{
+		rt_kprintf("Fingerprint binding failure\n");
+		rt_free(buf);
+
+		return RT_ERROR;
+	}
+	rt_free(buf);
+
+	return RT_EOK;
+}
+
+
 
 //修改管理员指纹
 rt_err_t admin_modify_fprint(rt_uint32_t outtime)
@@ -549,7 +597,7 @@ void admin_create(void)
 			{
 				rt_kprintf("Administrator key Create OK\n");
 				
-				result = device_config_account_append_key(0,result,get_cur_date(),0);
+				result = device_config_account_append_key(0,result,menu_get_cur_date(),0);
 				if(result >= 0)
 				{
 					rt_kprintf("Administrator append OK\n");

@@ -14,11 +14,12 @@
  * Copyright (C) 2013 Yuettak Co.,Ltd
  ********************************************************************/
 #include "menu_2.h"
-#define USEING_MODIF_UI           
+#include "KeyModifyUI.h"
+//#define USEING_MODIF_UI           
 
+#define MENU2_DEBUG_ARG						1
 
 #define PAGE_MAX_SHOW_NUM					4
-#define LCD_LINE_MAX_LEN					17							//留出一个结束符的位置
 #define PHONE_STAND_LEN						11
 #define ADMIN_DATA_POS						0
 
@@ -150,7 +151,10 @@ static const rt_uint8_t PasswordModifyText[][8*2] =
 	{"请再输入一次:"},
 	{"新密码匹配失败"},
 	{"添加此密码请按*"},
+	{"按*删除 #返回"},
+	{"删除成功"},
 };
+
 static void menu_user_add_ui(rt_uint8_t InPOS)
 {
 	rt_uint8_t page;
@@ -299,6 +303,7 @@ void menu_14_processing(void)
           if(result != RT_EOK)
           {
           	//密码不合法
+          	menu_error_handle(1);
     				gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PasswordAddText[3],GUI_WIHIT);
     				gui_display_update();
     				rt_thread_delay(RT_TICK_PER_SECOND);
@@ -387,6 +392,7 @@ void menu_14_processing(void)
           if(temp != 0)
           {
             //密码匹配错误
+            menu_error_handle(1);
             gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PasswordAddText[3],GUI_WIHIT);
     				gui_display_update();
     				rt_thread_delay(RT_TICK_PER_SECOND);
@@ -522,6 +528,7 @@ void menu_15_processing(void)
 					else
 					{
 						//指纹采集失败
+						menu_error_handle(1);
 						gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(2),SHOW_X_ROW8(15),SHOW_Y_LINE(3));
 						gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),MenuCommText[2],GUI_WIHIT);
 						gui_display_update();
@@ -624,6 +631,7 @@ void menu_16_processing(void)
           if(result != RT_EOK)
           {
           	//不合法
+          	menu_error_handle(1);
     				gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PhoneAddText[2],GUI_WIHIT);
     				gui_display_update();
     				rt_thread_delay(RT_TICK_PER_SECOND);
@@ -708,6 +716,7 @@ void menu_16_processing(void)
           if(res != 0)
           {
           	//不合法
+          	menu_error_handle(1);
     				gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PhoneAddText[2],GUI_WIHIT);
     				gui_display_update();
     				rt_thread_delay(RT_TICK_PER_SECOND);
@@ -731,6 +740,7 @@ void menu_16_processing(void)
            	if(result == RT_ERROR)
            	{
 							//保存失败
+							menu_error_handle(2);
 							SaveShowFlag = 2;
            	}
            	gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),MenuCommText[SaveShowFlag],GUI_WIHIT);
@@ -1266,11 +1276,13 @@ static rt_err_t menu_intput_password_two(rt_uint8_t *buf,rt_uint8_t *ShowBuf,rt_
 		    temp = rt_memcmp(password,buf,rt_strlen((const char *)password));
 		    if(temp != 0)
 		    {
+		    	//两次输入不匹配
+		    	RT_DEBUG_LOG(MENU2_DEBUG_ARG,("password1 : %s != password2 %s\n",password,buf));
 		      return RT_ERROR;
 		    }
 		    else
 		    {	
-		    	//两次输入不匹配
+		    	RT_DEBUG_LOG(MENU2_DEBUG_ARG,("Password Change successfully\n"));
 		      return RT_EOK;
 		    }
 		  }
@@ -1287,7 +1299,7 @@ static rt_err_t menu_intput_password_two(rt_uint8_t *buf,rt_uint8_t *ShowBuf,rt_
 		    else
 		    {
 		      rt_kprintf("退出钥匙添加\n");
-		      //return ;
+		      return RT_ETIMEOUT;
 		    }
 		  }
 		}
@@ -1336,16 +1348,21 @@ static rt_err_t menu_input_password_one(rt_uint8_t *buf,rt_uint8_t *ShowBuf)
       else if(KeyValue == '*')
       {
         //检测输入的密码是否合法
+        if(rt_strlen((const char*)buf) < CONFIG_PASSWORD_LEN)
+        {
+        	//密码是空的
+					return RT_ENOMEM;
+        }
         result = add_new_password_check(buf);
         if(result != RT_EOK)
         {
           //密码不合法
-          
+          return RT_ERROR;
         }
         else
         {
           //新密码是合法的
-          break;
+          return RT_EOK;
         }
         //新密码输入完成 进入验证。
       }
@@ -1361,9 +1378,7 @@ static rt_err_t menu_input_password_one(rt_uint8_t *buf,rt_uint8_t *ShowBuf)
         }
         else
         {
-          gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),MenuCommText[0],GUI_WIHIT);
-          gui_display_update();
-          return ;
+          return RT_ETIMEOUT;
         }
       }
     }
@@ -1511,35 +1526,34 @@ static rt_uint8_t password_modify_fun_chonse(rt_uint8_t *buf,rt_int32_t *KeyPos)
 	rt_uint8_t CurUserPos;
 #if 1
   CurUserPos = account_cur_pos_get();
-	
+
+ 	if(rt_strlen((const char*)buf) < CONFIG_PASSWORD_LEN)
+	{	
+		//输入旧密码为空
+		gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PasswordModifyText[4],GUI_WIHIT);
+		gui_display_update();
+		menu_input_sure_key();
+		gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(3),SHOW_X_ROW8(15),SHOW_Y_LINE(4));
+		return 4;
+	}
 	//检测密码是否存在
 	result = add_new_password_check(buf);	
 	if(result  == RT_EOK)
 	{
-	  //这是个新密码 或者是空密码
-	 	if(rt_strlen((const char*)buf) < CONFIG_PASSWORD_LEN)
-		{	
-			//输入旧密码为空
-			gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PasswordModifyText[4],GUI_WIHIT);
-			gui_display_update();
-			menu_input_sure_key();
-			gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(3),SHOW_X_ROW8(15),SHOW_Y_LINE(4));
+	  //这是个新密码 
+		gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PasswordModifyText[10],GUI_WIHIT);
+		gui_display_update();
+
+		if(menu_input_sure_key() == RT_EOK)
+		{
+			//确定新增
+			return 1;
 		}
 		else
 		{
-			//输入新密码
-			gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PasswordModifyText[10],GUI_WIHIT);
-			gui_display_update();
-
-			if(menu_input_sure_key() == RT_EOK)
-			{
-				//确定新增
-			}
-			else
-			{
-				//返回重新输入
-			}	
-		}
+			//返回重新输入
+			return 4;
+		}	
 	}
 	else
 	{
@@ -1559,6 +1573,7 @@ static rt_uint8_t password_modify_fun_chonse(rt_uint8_t *buf,rt_int32_t *KeyPos)
 			if(menu_input_sure_key() == RT_EOK)
 			{
 				//确定修改
+				return 2;
 			}
 			else
 			{
@@ -1571,10 +1586,12 @@ static rt_uint8_t password_modify_fun_chonse(rt_uint8_t *buf,rt_int32_t *KeyPos)
 			//当前用户没有这个密码
 			gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PasswordModifyText[6],GUI_WIHIT);
   		gui_display_update();
+  		return 3;
 		}
 	}
 #endif
 }
+
 //密码修改GUI
 void menu_password_modify_ui(void)
 {
@@ -1590,159 +1607,231 @@ void menu_password_modify_ui(void)
 	RT_ASSERT(PasswordOne != RT_NULL);
 	while(1)
 	{	
-		//初始化界面
-		menu_password_modify_uiinit(buf,0);
+	
     //输入修改的密码
-    rt_memset(buf,0,MENU_PASSWORD_MAX_LEN);
-		result  = menu_input_string_ui1(buf,7);
-		if(result == RT_EOK)
-		{
-			rt_uint8_t OpResult;
-			
-			OpResult = password_modify_fun_chonse(buf,&OldKeyPos);
-
-			if(OpResult == 1)
-			{
-				//新增密码
-				rt_memcpy(PasswordOne,buf,6);
-		    //初始化界面
-		    menu_password_modify_uiinit(buf,2);
-		    result = menu_intput_password_two(buf,ShowBuf,PasswordOne);
-		    if(result == RT_EOK)
-		    {
-					//密码匹配错误
-		      gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PasswordModifyText[9],GUI_WIHIT);
-		      gui_display_update();
-		      rt_thread_delay(RT_TICK_PER_SECOND);
-		      gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(3),SHOW_X_ROW8(15),SHOW_Y_LINE(4));
-		    }
-		    else
-		    {
-		      rt_uint8_t save = 1;
-		      
-			    //管理员用户
-			    if(CurUserPos == ADMIN_DATA_POS)
-			    {
-			      result = admin_modify_password(PasswordOne);
+MENU_INPUT_PASSWORD_OLD:
+    while(1)
+    {	
+    	//初始化界面
+			menu_password_modify_uiinit(buf,0);
+      rt_memset(buf,0,MENU_PASSWORD_MAX_LEN);
+      result  = menu_input_string_ui1(buf,7);
+      if(result == RT_EOK)
+      {
+        rt_uint8_t OpResult;
+        
+        OpResult = password_modify_fun_chonse(buf,&OldKeyPos);
+        RT_DEBUG_LOG(MENU2_DEBUG_ARG,("password:%s fun:%d Pos:%d\n",buf,OpResult,OldKeyPos));
+        if(OpResult == 1)
+        {
+          //新增密码
+          rt_memcpy(PasswordOne,buf,rt_strlen((const char *)buf));
+          while(1)
+          {
+			      //初始化界面
+			      menu_password_modify_uiinit(buf,2);
+			      result = menu_intput_password_two(buf,ShowBuf,PasswordOne);
 			      if(result == RT_ERROR)
 			      {
-			        save = 2;
+			        //密码匹配错误
+			        gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PasswordModifyText[9],GUI_WIHIT);
+			        gui_display_update();
+			        rt_thread_delay(RT_TICK_PER_SECOND);
+			        gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(3),SHOW_X_ROW8(15),SHOW_Y_LINE(4));
 			      }
-			    }
-			    else
-			    {
-			      //添加成功保存对象
-			      result = key_password_modify(OldKeyPos,PasswordOne);
-			      if(result != RT_EOK)
+			      else if(result == RT_EOK)
 			      {
-			        //保存失败
-			        rt_kprintf("save fail\n");
-			        save = 2;
+			        rt_uint8_t save = 1;
+			        
+			        //管理员用户
+			        if(CurUserPos == ADMIN_DATA_POS)
+			        {
+			          result = admin_modify_password(PasswordOne);
+			          if(result == RT_ERROR)
+			          {
+			          	RT_DEBUG_LOG(MENU2_DEBUG_ARG,("Modify Admin Password Failure\n"));
+			            save = 2;
+			          }
+			        }
+			        else
+			        {
+			          //添加成功保存对象
+			          result = key_password_modify(OldKeyPos,PasswordOne);
+			          if(result != RT_EOK)
+			          {
+			            //保存失败
+			            RT_DEBUG_LOG(MENU2_DEBUG_ARG,("Modify User Password Failure\n"));
+			            save = 2;
+			          }
+			        }
+			        RT_DEBUG_LOG(MENU2_DEBUG_ARG,("Modify Password Succeed\n"));
+			        gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),MenuCommText[save],GUI_WIHIT);
+			        gui_display_update();
+			        rt_thread_delay(RT_TICK_PER_SECOND);
+			        gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(3),SHOW_X_ROW8(15),SHOW_Y_LINE(4));
+			        
+			        goto EXIT_MENU_PASSWORD_MODIFY_UI;;
 			      }
-			    }
-			    gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),MenuCommText[save],GUI_WIHIT);
-			    gui_display_update();
-			    rt_thread_delay(RT_TICK_PER_SECOND);
-			    gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(3),SHOW_X_ROW8(15),SHOW_Y_LINE(4));
-		    }
-			}
-			else if(OpResult == 2)
-			{
-				//确定修改
-				break;
-			}
-			else if(OpResult == 3)
-			{
-				//输入错误
-				gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PasswordModifyText[7],GUI_WIHIT);
-				gui_display_update();
-			}
-			else if(OpResult == 4)
-			{
-				//重新输入
-			}
-		}
-		else
-		{
-		 //退出修改密码
-     goto EXIT_MENU_PASSWORD_MODIFY_UI;
-		}
-		
+			      else
+			      {
+							break;
+			      }
+					}
+        }
+        else if(OpResult == 2)
+        {
+          //确定修改
+          RT_DEBUG_LOG(MENU2_DEBUG_ARG,("Modify %s\n",buf));
+          break;
+        }
+        else if(OpResult == 3)
+        {
+          //输入错误
+          gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PasswordModifyText[7],GUI_WIHIT);
+          gui_display_update();
+        }
+        else if(OpResult == 4)
+        {
+          //重新输入
+        }
+      }
+      else
+      {
+       //退出修改密码
+       goto EXIT_MENU_PASSWORD_MODIFY_UI;
+      }
+    }
 
-	  //初始化界面
-		menu_password_modify_uiinit(buf,0);
-    //第一次输入密码
-    result = menu_input_password_one(buf,ShowBuf);
-    if(result == RT_EOK)
-    {
-			//输入密码符合要求
-			rt_memcpy(PasswordOne,buf,rt_strlen((const char *)buf));
-    }
-    else
-    {
-			gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PasswordModifyText[7],GUI_WIHIT);
-      gui_display_update();
-      rt_thread_delay(RT_TICK_PER_SECOND);
-      gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(3),SHOW_X_ROW8(15),SHOW_Y_LINE(4));
-    }
+MENU2_INPUT_PASSWORD_ONE:
+		//第一次输入新密码
+		while(1)
+		{
+      //初始化界面
+      menu_password_modify_uiinit(buf,1);
+      result = menu_input_password_one(buf,ShowBuf);
+      if(result == RT_ENOMEM)
+      {
+				//空的密码
+				if(CurUserPos == 0)
+				{
+					//管理员不能删除
+					continue;
+				}
+				gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PasswordModifyText[11],GUI_WIHIT);
+				gui_display_update();
+				result = menu_input_sure_key();
+				if(result == RT_EOK)
+				{
+					//删除
+					result = key_password_delete(OldKeyPos);
+					if(result == RT_EOK)
+					{
+						gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PasswordModifyText[12],GUI_WIHIT);
+						gui_display_update();
+						menu_input_sure_key();
+						goto MENU_INPUT_PASSWORD_OLD;
+					}
+					else
+					{
+						rt_kprintf("system error\n");
+						RT_ASSERT(RT_NULL != RT_NULL);
+					}
+				}
+				else
+				{
+					continue;
+				}
+      }
+      else if(result == RT_EOK)
+      {
+        //输入密码符合要求
+        RT_DEBUG_LOG(MENU2_DEBUG_ARG,("New Password %s is OK\n",buf));
+        rt_memcpy(PasswordOne,buf,rt_strlen((const char *)buf));
+        break;
+      }
+      else if(result == RT_ERROR)
+      {
+        gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PasswordModifyText[7],GUI_WIHIT);
+        gui_display_update();
+        rt_thread_delay(RT_TICK_PER_SECOND);
+        gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(3),SHOW_X_ROW8(15),SHOW_Y_LINE(4));
+      }
+      else if(result == RT_ETIMEOUT)
+      {
+      	gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),MenuCommText[0],GUI_WIHIT);
+      	gui_display_update();
+      	result = menu_input_sure_key();
+      	if(result == RT_EOK)
+      	{
+          gui_display_update();
+          goto MENU_INPUT_PASSWORD_OLD;
+      	}
+      	goto MENU2_INPUT_PASSWORD_ONE;
+      }
+		}
 
     //第二次输入密码
-
-    //初始化界面
-    menu_password_modify_uiinit(buf,0);
-    result = menu_intput_password_two(buf,ShowBuf,PasswordOne);
-    if(result == RT_EOK)
-    {
-			//密码匹配错误
-      gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PasswordModifyText[9],GUI_WIHIT);
-      gui_display_update();
-      rt_thread_delay(RT_TICK_PER_SECOND);
-      gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(3),SHOW_X_ROW8(15),SHOW_Y_LINE(4));
-    }
-    else
-    {
-      rt_uint8_t save = 1;
-      
-	    //管理员用户
-	    if(CurUserPos == ADMIN_DATA_POS)
-	    {
-	      result = admin_modify_password(PasswordOne);
-	      if(result == RT_ERROR)
-	      {
-	        save = 2;
-	      }
-	    }
-	    else
-	    {
-	      //添加成功保存对象
-	      result = key_password_modify(OldKeyPos,PasswordOne);
-	      if(result != RT_EOK)
-	      {
-	        //保存失败
-	        rt_kprintf("save fail\n");
-	        save = 2;
-	      }
-	    }
-	    gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),MenuCommText[save],GUI_WIHIT);
-	    gui_display_update();
-	    rt_thread_delay(RT_TICK_PER_SECOND);
-	    gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(3),SHOW_X_ROW8(15),SHOW_Y_LINE(4));
-    }
+		while(1)
+		{
+      //初始化界面
+      menu_password_modify_uiinit(buf,2);
+      result = menu_intput_password_two(buf,ShowBuf,PasswordOne);
+      if(result == RT_ERROR)
+      {
+        //密码匹配错误
+        gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PasswordModifyText[9],GUI_WIHIT);
+        gui_display_update();
+        rt_thread_delay(RT_TICK_PER_SECOND);
+        gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(3),SHOW_X_ROW8(15),SHOW_Y_LINE(4));
+      }
+      else if(result == RT_EOK)
+      {
+        rt_uint8_t save = 1;
+        
+        //管理员用户
+        if(CurUserPos == ADMIN_DATA_POS)
+        {
+          result = admin_modify_password(PasswordOne);
+          if(result == RT_ERROR)
+          {
+          	RT_DEBUG_LOG(MENU2_DEBUG_ARG,("Modify Admin Password Failure\n"));
+            save = 2;
+          }
+        }
+        else
+        {
+          //添加成功保存对象
+          result = key_password_modify(OldKeyPos,PasswordOne);
+          if(result != RT_EOK)
+          {
+            //保存失败
+            RT_DEBUG_LOG(MENU2_DEBUG_ARG,("Modify User Password Failure\n"));
+            save = 2;
+          }
+        }
+        RT_DEBUG_LOG(MENU2_DEBUG_ARG,("Modify Password Succeed\n"));
+        gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),MenuCommText[save],GUI_WIHIT);
+        gui_display_update();
+        rt_thread_delay(RT_TICK_PER_SECOND);
+        gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(3),SHOW_X_ROW8(15),SHOW_Y_LINE(4));
+        break;
+      }
+      else if(result == RT_ETIMEOUT)
+      {
+				goto MENU2_INPUT_PASSWORD_ONE;
+      }
+		}
 	}
 EXIT_MENU_PASSWORD_MODIFY_UI:
 	rt_free(PasswordOne);
 }
 
-//指纹修改界面
-void menu_fprint_modify_ui(void)
-{
-
-}
-
 //手机修改界面
 void menu_phone_modify_ui(void)
 {
-	
+	gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+  
+  gui_display_update();	
 }
 
 //添加密码

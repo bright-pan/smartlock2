@@ -359,14 +359,14 @@ struct gpio_pwm_user_data speak_user_data =
     /* timer base */
     TIM3,
     RCC_APB1Periph_TIM3,
-    24000000,
-    65535,
+    1000000,
+    1000,
     0,
     TIM_CounterMode_Up,
     /* timer oc */
     TIM_OCMode_PWM2,
     TIM_OutputState_Enable,
-    3000,// pulse value
+    500,// pulse value
     TIM_OCPolarity_High,
     TIM_Channel_3,
     TIM_IT_CC3 | TIM_IT_Update,
@@ -836,7 +836,7 @@ void pwm_send_pulse(char *str)
 void motor_rotate(rt_int16_t data)
 {
     gpio_pin_output(DEVICE_NAME_POWER_MOTOR,1,0);
-    delay_us(100);
+
     if(data < 0)
     {
         data = 0 - data;
@@ -848,7 +848,30 @@ void motor_rotate(rt_int16_t data)
         pwm_set_counts(DEVICE_NAME_MOTOR2,data);
         pwm_send_pulse(DEVICE_NAME_MOTOR2);
     }
+    rt_thread_delay(10);
     gpio_pin_output(DEVICE_NAME_POWER_MOTOR,0,0);
+}
+
+void buzzer_pwm_set(rt_uint32_t value)
+{
+  pwm_set_value(DEVICE_NAME_SPEAK,value);
+}
+
+void buzzer_control(rt_uint32_t time)
+{
+  rt_device_t dev = RT_NULL;
+  rt_uint16_t value = time;
+  
+  dev = rt_device_find(DEVICE_NAME_SPEAK);
+  if(dev != RT_NULL)
+  {
+    if(!(dev->open_flag & RT_DEVICE_OFLAG_OPEN))
+    {
+      rt_device_open(dev,RT_DEVICE_FLAG_WRONLY);
+    }
+    rt_device_control(dev,RT_DEVICE_CTRL_SET_PULSE_COUNTS,(void *)&value);
+    rt_device_control(dev,RT_DEVICE_CTRL_SEND_PULSE,RT_NULL);
+  }
 }
 
 #ifdef RT_USING_FINSH
@@ -859,5 +882,6 @@ FINSH_FUNCTION_EXPORT(pwm_send_pulse, pwm_send_pulse[device_name]);
 
 //FINSH_FUNCTION_EXPORT(voice_output, voice_output[counts]);
 FINSH_FUNCTION_EXPORT(motor_rotate, motor_rotate[angle]);
+FINSH_FUNCTION_EXPORT(buzzer_control, buzzer_control[time]);
 
 #endif

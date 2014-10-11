@@ -193,8 +193,10 @@ typedef struct
 //响应添加手机号
 typedef struct 
 {
-	rt_uint8_t pos;
+	rt_uint8_t pos[2];
+	rt_uint8_t flag[2];
   rt_uint8_t data[12];
+ 	rt_uint8_t date[4];
 }net_phoneadd;
 
 //添加手机应答
@@ -207,7 +209,8 @@ typedef struct
 //响应删除手机号
 typedef struct 
 {
-	rt_uint8_t pos;
+	rt_uint8_t pos[2];
+	rt_uint8_t date[4];
 }net_phonedelete;
 
 //删除手机号码应答
@@ -253,6 +256,7 @@ typedef struct
 typedef struct 
 {
 	rt_uint8_t pos[2];
+	rt_uint8_t date[4];
 }net_keydelete;
 
 //钥匙删除应答
@@ -494,6 +498,7 @@ typedef struct
   rt_uint8_t pos[2];
   rt_uint8_t permission[2];
   rt_uint8_t data[12];
+  rt_uint8_t date[4];
   rt_uint8_t crc16[2];
 }net_recv_phoneadd;
 
@@ -824,6 +829,20 @@ typedef struct
   net_send_result result;
 	net_keydelete data;
 }net_keydelete_user;
+
+//手机添加
+typedef struct
+{
+  net_send_result result;
+	net_phoneadd    data;
+}net_phoneadd_user;
+
+//手机删除
+typedef struct 
+{
+  net_send_result result;
+	net_phonedelete data;
+}net_phonedel_user;
 
 //较时
 typedef struct 

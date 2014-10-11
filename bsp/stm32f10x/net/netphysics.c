@@ -9,7 +9,7 @@
 //#include "comm.h"
 //#include "appconfig.h"
 
-#define SHOW_PRINTF_INFO   1    //打印调试信息
+#define SHOW_PRINTF_INFO   0    //打印调试信息
 
 #define TCP_BUF_SIZE       1024 //接收缓冲区
 
@@ -30,7 +30,7 @@ rt_size_t find_package_end(rt_uint8_t *buffer,rt_size_t size)
 		rt_kprintf("Recv message length(%d) abnormal is bad message ! ! !\n",length);
 		return size;
 	}
-	RT_DEBUG_LOG(SHOW_PRINTF_INFO,("Receive the packet length:%d = %x!!\n",length,length));
+	RT_DEBUG_LOG(SHOW_PRINTF_INFO,("Receive the packet length:%d = 0X%x\n",length,length));
 	#ifdef 0
 	{
     rt_uint8_t i;
@@ -45,7 +45,7 @@ rt_size_t find_package_end(rt_uint8_t *buffer,rt_size_t size)
   {
     FlagStr[0] = FlagStr[1];
     FlagStr[1] = buffer[i];
-    RT_DEBUG_LOG(SHOW_PRINTF_INFO,("[find:%X%X]>>",FlagStr[0],FlagStr[1]));
+    RT_DEBUG_LOG(SHOW_PRINTF_INFO,("[find:0x%02X 0x%02X]\n",FlagStr[0],FlagStr[1]));
     if((FlagStr[0] == 0x0d) && (FlagStr[1] == 0x0a))
     {
     	if(length <= i+1)
@@ -149,6 +149,7 @@ void netprotocol_thread_entry(void *arg)
           //请求连接阶段
           net_event_process(0,NET_ENVET_CONNECT);
     		}
+    		net_event_process(2,NET_ENVET_ONLINE);
 				continue;
     	}
 			else

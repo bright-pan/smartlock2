@@ -22,8 +22,8 @@
 #include <stm32f10x.h>
 #include "alarm.h"
 
-#define LOCK_OPERATION_OPEN 1
-#define LOCK_OPERATION_CLOSE 0
+#define LOCK_OPERATION_OPEN  0
+#define LOCK_OPERATION_CLOSE 1
 
 struct lock_data {
     s32 key_id;

@@ -6,11 +6,9 @@
 #include "netmailclass.h"
 #include "crc16.h"
 #include "netfile.h"
-#include "netkey.h"
-#include "netphone.h"
-#include "netterminal.h"
 #include "stdlib.h"
 #include "netprotocol.h"
+
 
 //#include "untils.h"
 //#include "unlockprocess.h"
@@ -26,14 +24,7 @@
 #define SYSTEM_SOFTWARE_VER   0x01
 #endif
 
-//#define USEING_MOTOR_API 
-//#define USEING_KEY_API
-//#define USEING_SYS_UPDATE
-//#define USEING_SYSCONFIG_API
-//#define USEING_SYS_TIME_API
-//#define USEING_CAMERA_API
-//#define USEING_FILE_API
-//#define USEING_PHONE_API
+
 /**
 网络协议发送接口
 */
@@ -81,7 +72,7 @@ void send_net_landed_mail(void)
   mail->time = 0;
   mail->type = NET_MSGTYPE_LANDED;
   mail->resend = 2;
-  mail->outtime = 150;
+  mail->outtime = 50;
   mail->sendmode = ASYN_MODE;
   mail->col.byte = get_msg_new_order(RT_TRUE);
 
@@ -146,7 +137,7 @@ void net_mail_heart(void)
   mail->col.byte = get_msg_new_order(RT_TRUE);
 
 	#ifdef USEING_MOTOR_API
-	UserData->door_status = (motor_status() == RT_TRUE)?0:1;
+	//UserData->door_status = (motor_status() == RT_TRUE)?0:1;
 	#endif
 	
 	mail->user = UserData;
@@ -427,6 +418,53 @@ rt_uint8_t msg_mail_alarmarg(rt_uint8_t Type,rt_uint8_t arg)
 	return result;
 }
 
+/*
+功能:终端手机添加
+*/
+rt_bool_t msg_mail_phoneadd(rt_uint16_t PhID,rt_uint16_t flag,rt_uint8_t buf[],rt_uint32_t date)
+{
+	rt_uint8_t result;
+	net_msgmail_p mail = RT_NULL;
+	net_phoneadd_user *UserData = RT_NULL;
+	
+	//获取资源
+	mail = (net_msgmail_p)rt_calloc(1,sizeof(net_msgmail));
+	UserData = rt_calloc(1,sizeof(net_keyadd_user));
+	RT_ASSERT(mail != RT_NULL);
+	RT_ASSERT(UserData != RT_NULL);
+	mail->user = UserData;
+	
+	UserData->result.complete = smg_send_wait_sem_crate();
+  RT_ASSERT(UserData != RT_NULL);
+
+	//设置邮件
+	mail->type = NET_MSGTYPE_PHONEADD;   					//邮件类型
+  mail->resend = MAIL_FAULT_RESEND;							//重发次数
+  mail->outtime = MAIL_FAULT_OUTTIME;           //超时间
+  mail->sendmode = SYNC_MODE;       						//同步
+  mail->col.byte = get_msg_new_order(RT_TRUE);
+  
+	//设置私有数据
+	net_uint16_copy_string(UserData->data.pos,PhID);
+	net_uint16_copy_string(UserData->data.flag,flag);
+	rt_memcpy(UserData->data.data,buf,12);
+	net_uint16_copy_string(UserData->data.date,date);
+	
+	//发送邮件
+  net_msg_send_mail(mail);
+  rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
+  rt_sem_delete(UserData->result.complete);
+  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
+  result = UserData->result.result;
+  
+  //释放资源
+	RT_ASSERT(UserData != RT_NULL);
+	rt_free(UserData);
+	RT_ASSERT(mail != RT_NULL);
+	rt_free(mail);
+
+	return (result == 0)?RT_TRUE:RT_FALSE;
+}
 
 /*
 功能:添加手机白名单
@@ -442,7 +480,7 @@ void msg_mail_phoneadd_ack(net_recvmsg_p RMail,rt_uint8_t result)
 	RT_ASSERT(mail != RT_NULL);
 	RT_ASSERT(UserData != RT_NULL);
 	mail->user = UserData;
-
+	
 	//设置邮件
 	mail->type = NET_MSGTYPE_PHONEADD_ACK;   	//邮件类型
   mail->resend = 0;													//重发计数
@@ -459,6 +497,52 @@ void msg_mail_phoneadd_ack(net_recvmsg_p RMail,rt_uint8_t result)
   //释放资源
   RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
+}
+
+/*
+功能:终端手机添加
+*/
+rt_bool_t msg_mail_phondel(rt_uint16_t PhID,rt_uint32_t date)
+{
+	rt_uint8_t result;
+	net_msgmail_p mail = RT_NULL;
+	net_phonedel_user *UserData = RT_NULL;
+	
+	//获取资源
+	mail = (net_msgmail_p)rt_calloc(1,sizeof(net_msgmail));
+	UserData = rt_calloc(1,sizeof(net_keyadd_user));
+	RT_ASSERT(mail != RT_NULL);
+	RT_ASSERT(UserData != RT_NULL);
+	mail->user = UserData;
+	
+	UserData->result.complete = smg_send_wait_sem_crate();
+  RT_ASSERT(UserData != RT_NULL);
+
+	//设置邮件
+	mail->type = NET_MSGTYPE_PHONEDELETE;   					//邮件类型
+  mail->resend = MAIL_FAULT_RESEND;							//重发次数
+  mail->outtime = MAIL_FAULT_OUTTIME;           //超时间
+  mail->sendmode = SYNC_MODE;       						//同步
+  mail->col.byte = get_msg_new_order(RT_TRUE);
+  
+	//设置私有数据
+	net_uint16_copy_string(UserData->data.pos,PhID);
+	net_uint16_copy_string(UserData->data.date,date);
+	
+	//发送邮件
+  net_msg_send_mail(mail);
+  rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
+  rt_sem_delete(UserData->result.complete);
+  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
+  result = UserData->result.result;
+  
+  //释放资源
+	RT_ASSERT(UserData != RT_NULL);
+	rt_free(UserData);
+	RT_ASSERT(mail != RT_NULL);
+	rt_free(mail);
+
+	return (result == 0)?RT_TRUE:RT_FALSE;
 }
 
 /*
@@ -1196,13 +1280,14 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 	 	{
 	 		//钥匙添加
 	 		#ifdef USEING_KEY_API
-	 		result = keylib_mutex_op(RT_TRUE,RT_WAITING_NO);
+	 		//result = keylib_mutex_op(RT_TRUE,RT_WAITING_NO);
+	 		result = RT_EOK;
 			if(result == RT_EOK)
 			{
 				ProcessResult = net_key_add_process(Mail);
 
 	 			result = (ProcessResult == RT_EOK)?1:0;
-	 			keylib_mutex_op(RT_FALSE,RT_WAITING_NO);
+	 			//keylib_mutex_op(RT_FALSE,RT_WAITING_NO);
 			}
 			else
 			{
@@ -1325,7 +1410,10 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 	 	case NET_MSGTYPE_ACCOUNTADD:
 		{
 			//账户添加
-
+			#ifdef USEING_ACCOUNT_API
+      ProcessResult  = net_account_add_process(Mail);
+			result = (ProcessResult == RT_EOK)?1:0;
+			#endif
  			msg_mail_account_add_ack(Mail,result);
 			break;
 		}	
@@ -1338,6 +1426,10 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 		case NET_MSGTYPE_ACCOUNTDEL:
 		{
 			//账户删除
+			#ifdef USEING_ACCOUNT_API
+			ProcessResult  = net_account_del_process(Mail);
+			result = (ProcessResult == RT_EOK)?1:0;
+			#endif
  			msg_mail_account_del_ack(Mail,result);
 			break;
 		}	
@@ -1350,7 +1442,10 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 		case NET_MSGTYPE_KEYBIND:
 		{
 			//钥匙绑定
-
+			#ifdef USEING_BIND_API
+			ProcessResult  = net_bind_key_process(Mail);
+			result = (ProcessResult == RT_EOK)?1:0;
+			#endif
    		msg_mail_keybind_ack(Mail,result);
 			break;
 		}	
@@ -1363,6 +1458,11 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 		case NET_MSGTYPE_PHONEBIND:
 		{
 			//手机绑定
+
+			#ifdef USEING_BIND_API
+			ProcessResult  = net_bind_phone_process(Mail);
+			result = (ProcessResult == RT_EOK)?1:0;
+			#endif
 
    		msg_mail_phonebind_ack(Mail,result);
 			break;
@@ -1508,6 +1608,45 @@ void filelseek(void)
 	close(id);
 }
 FINSH_FUNCTION_EXPORT(filelseek,"lseek funtion test");
+
+void msg_test(rt_uint8_t cmd)
+{
+	switch(cmd)
+	{
+		case 0:
+		{
+			net_keyadd_user *KeyData;
+
+			KeyData = rt_calloc(1,sizeof(net_keyadd_user));
+
+			net_uint16_copy_string(KeyData->data.col,11);
+			net_uint32_copy_string(KeyData->data.createt,net_get_date());
+			KeyData->data.type = 2;
+			KeyData->DataLen = 6;
+			KeyData->data.data = rt_calloc(1,KeyData->DataLen);
+			rt_memcpy(KeyData->data.data,"456789",6);
+			msg_mail_keyadd(KeyData);
+			rt_free(KeyData);
+			rt_free(KeyData->data.data);
+			break;
+		}
+		case 1:
+		{
+			msg_mail_account_add(11,"wzw_test",net_get_date());
+			break;
+		}
+		case 2:
+		{
+			msg_mail_keybind(11,11,net_get_date());
+			break;
+		}
+		default:
+		{
+			break;
+		}
+	}
+}
+FINSH_FUNCTION_EXPORT(msg_test,msg_test(void))
 
 #endif
 

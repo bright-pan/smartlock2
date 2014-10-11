@@ -65,5 +65,13 @@ rt_int32_t key_pos_get_password(rt_uint8_t *password);
 //修改密码
 rt_err_t key_password_modify(rt_int16_t KeyID,rt_uint8_t *password);
 
+//删除密码
+rt_err_t key_password_delete(rt_int32_t KeyID);
+
+//获得时间
+rt_uint32_t menu_get_cur_date(void);
+
+//修改指纹
+rt_err_t user_modify_fprint(rt_uint16_t KeyPos,rt_uint32_t outtime);
 #endif
 

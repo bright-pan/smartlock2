@@ -3,6 +3,10 @@
 #include"menu_2.h"
 #include"menu_3.h"
 #include"unlock_ui.h"
+#ifdef USEING_BUZZER_FUN 	
+#include "buzzer.h"
+#endif
+
 #define SHOW_GLINT_CH							"_"
 
 typedef void (*fun1)(void);
@@ -127,6 +131,7 @@ void system_entry_ui_processing(void)
 	    }
 	    default:
 	    {
+	    	SystemFuncIndex = SystemMenu[ SystemFuncIndex].SureState;
 	      break;
 	    }
 	  }
@@ -310,7 +315,7 @@ void string_hide_string(const rt_uint8_t src[],rt_uint8_t str[],rt_uint8_t ch,rt
 
   rt_memset(str,0,size);
 
-  rt_kprintf("input :%s\n",src);  
+  //rt_kprintf("input :%s\n",src);  
 
 	for(i=0;i<rt_strlen((const char*)src);i++)
 	{
@@ -319,7 +324,7 @@ void string_hide_string(const rt_uint8_t src[],rt_uint8_t str[],rt_uint8_t ch,rt
 			str[i] = ch;
 		}
 	}
-	rt_kprintf("hide  :%s\n",str);   
+	//rt_kprintf("hide  :%s\n",str);   
 }
 
 void menu_inputchar_glint(rt_uint8_t x,rt_uint8_t y,rt_uint8_t status)
@@ -331,6 +336,36 @@ void menu_inputchar_glint(rt_uint8_t x,rt_uint8_t y,rt_uint8_t status)
 	else
 	{
     gui_clear(x,y,x+8,y+16);
+	}
+}
+
+void menu_error_handle(rt_uint8_t type)
+{
+	switch(type)
+	{
+		case 1:
+		{
+			#ifdef USEING_BUZZER_FUN
+			buzzer_send_mail(BZ_TYPE_ERROR1);
+			#endif
+			break;
+		}
+		case 2:
+		{
+			break;
+		}
+		case 3:
+		{
+			//Ô¿³×´íÎó
+			#ifdef USEING_BUZZER_FUN
+			buzzer_send_mail(BZ_TYPE_ERROR3);
+			#endif
+			break;
+		}
+		default:
+		{
+			break;
+		}
 	}
 }
 

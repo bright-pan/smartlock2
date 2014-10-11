@@ -5,6 +5,8 @@
 #include "gui.h"
 #include"accountop.h"
 
+#define LCD_LINE_MAX_LEN					17							//留出一个结束符的位置
+
 #define KEY_MAX_MENU_NUM					50
 #define MENU_PASSWORD_MAX_LEN			8
 #define MENU_PHONE_MAX_LEN				12
@@ -42,4 +44,7 @@ void menu_inputchar_glint(rt_uint8_t x,rt_uint8_t y,rt_uint8_t status);
 void key_input_processing_init(void);
 
 void system_menu_choose(rt_uint8_t menu);
+
+//错误处理
+void menu_error_handle(rt_uint8_t type);
 #endif

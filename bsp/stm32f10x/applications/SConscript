@@ -16,6 +16,8 @@ menu_3.c
 accountop.c
 gui.c
 unlock_ui.c
+KeyModifyUI.c
+buzzer.c
 """)
 
 CPPPATH = [cwd, str(Dir('#'))]

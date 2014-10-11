@@ -17,7 +17,7 @@
 #define SHOW_NFILE_SEND             1 //显示文件发送过程
 #define SHOW_NFILE_SRESULT          1 //显示文件包发送的结果
 
-#define SHOW_CRC16_INIF             0
+#define SHOW_CRC16_INIF             1
 
 #endif
 

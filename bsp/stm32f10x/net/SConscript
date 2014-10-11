@@ -14,6 +14,11 @@ netfile.c
 netmailclass.c
 netphysics.c
 netprotocol.c
+netkey.c
+netphone.c
+netaccount.c
+netbind.h
+netterminal.c
 """)
 
 CPPPATH = [cwd, str(Dir('#'))]

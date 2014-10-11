@@ -17,6 +17,10 @@
 #include "gui.h"
 #include "asiic168.h"
 #include "gb1616.h"
+
+#ifdef USEING_BUZZER_FUN
+#include "buzzer.h"
+#endif
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //key api
 static rt_mq_t key_mq;
@@ -62,7 +66,8 @@ rt_err_t gui_key_input(rt_uint8_t *KeyValue)
 {
 	rt_err_t result;
 	KB_MAIL_TYPEDEF mail;
-
+	static rt_uint8_t cnt = 0;
+	
 	rt_memset(&mail, 0, sizeof(mail));
 
 	if(key_mq == RT_NULL)
@@ -71,7 +76,24 @@ rt_err_t gui_key_input(rt_uint8_t *KeyValue)
 						 5, RT_IPC_FLAG_FIFO);
 	}
 	result = rt_mq_recv(key_mq, &mail, sizeof(mail),RT_TICK_PER_SECOND);
-
+	if(result == RT_EOK)
+	{
+		#ifdef USEING_BUZZER_FUN
+    buzzer_send_mail(BZ_TYPE_KEY);
+    #endif
+    cnt = 0;
+	}
+	else
+	{
+		cnt++;
+		if(cnt > 12)
+		{
+			//ÆÁÄ»ÐÝÃß
+			gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);	
+			gui_display_update();
+		}
+	}
+	
 	*KeyValue = mail.c;
 	return result;
 }

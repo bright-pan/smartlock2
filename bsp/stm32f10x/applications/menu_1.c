@@ -115,6 +115,7 @@ void menu_0_processing(void)
           else
           {
             //√‹¬Î¥ÌŒÛ
+            menu_error_handle(1);
             gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(3),SHOW_LAND_UI_PS_ERR,GUI_WIHIT);
             gui_display_update();
             rt_thread_delay(RT_TICK_PER_SECOND);

@@ -20,6 +20,10 @@
 #include "config.h"
 #include "gpio_pwm.h"
 
+#ifdef USEING_BUZZER_FUN
+#include "buzzer.h"
+#endif
+
 #define LOCAL_DEBUG 1
 
 #define KEY_NOT_PULL_REVOKE_TIME								100*60*30		// 30min
@@ -36,6 +40,74 @@ void lock_process(LOCAL_MAIL_TYPEDEF *);
 // local msg queue for local alarm
 static rt_mq_t local_mq;
 
+
+typedef struct
+{
+	rt_sem_t 		StatusSem;
+	rt_uint8_t  Status;
+}MotorDevDef;
+
+static MotorDevDef MotorManage =
+{
+	RT_NULL,
+	LOCK_OPERATION_OPEN,
+};
+
+void lock_operation(s32 status, u16 pluse);
+
+void motor_status_set(rt_uint8_t status)
+{
+	MotorManage.Status = status;
+}
+
+rt_uint8_t motor_status_get(void)
+{
+	return MotorManage.Status;
+}
+void motor_status_open_send(void)
+{
+	if(MotorManage.StatusSem == RT_NULL)
+	{
+		MotorManage.StatusSem  = rt_sem_create("motor",1,RT_IPC_FLAG_FIFO);
+		RT_ASSERT(MotorManage.StatusSem );
+	}
+
+	rt_sem_release(MotorManage.StatusSem );
+}
+
+void motor_status_manage(void)
+{
+	rt_err_t result;
+	static rt_uint8_t cnt = 0;
+	
+	if(cnt == 0)
+	{
+    result = rt_sem_take(MotorManage.StatusSem ,RT_WAITING_NO);
+    if(result == RT_EOK)
+    {
+      cnt = 1; 
+    }
+	}
+	else
+	{
+		cnt++;
+		if(cnt > 10)
+		{
+			//ÉÏËø
+			cnt = 0;
+      lock_operation(LOCK_OPERATION_CLOSE,500);
+		}
+	}
+
+}
+void motor_status_sem_init(void)
+{
+	if(MotorManage.StatusSem  == RT_NULL)
+	{
+		MotorManage.StatusSem  = rt_sem_create("motor",1,RT_IPC_FLAG_FIFO);
+		RT_ASSERT(MotorManage.StatusSem );
+	}
+}
 void
 local_thread_entry(void *parameter)
 {
@@ -43,6 +115,7 @@ local_thread_entry(void *parameter)
 	LOCAL_MAIL_TYPEDEF local_mail_buf;
 
 	//fprint_module_init();
+	motor_status_sem_init();
 	while (1)
 	{
 		// receive mail
@@ -79,15 +152,21 @@ local_thread_entry(void *parameter)
 					
 					break;
 				}
-                case ALARM_TYPE_LOCK_PROCESS: {
-                    lock_process(&local_mail_buf);
-                }
+        case ALARM_TYPE_LOCK_PROCESS: 
+        {
+        	lock_process(&local_mail_buf);
+        	break;
+        }
 				default :
                 {
                     RT_DEBUG_LOG(LOCAL_DEBUG,("this alarm is not process...\n"));
                     break;
                 };
 			}
+		}
+		else
+		{
+			motor_status_manage();
 		}
 		//motor_auto_lock(RT_FALSE);
 	}
@@ -97,9 +176,29 @@ void
 lock_operation(s32 status, u16 pluse)
 {
     if (status == LOCK_OPERATION_CLOSE)
+    {
+    	if(motor_status_get() == LOCK_OPERATION_OPEN)
+    	{
         motor_rotate(-pluse);
+    		motor_status_set(LOCK_OPERATION_CLOSE);
+    	}
+			#ifdef USEING_BUZZER_FUN
+      buzzer_send_mail(BZ_TYPE_LOCK);
+			#endif
+    }
     else
+    {
+    	if(motor_status_get() == LOCK_OPERATION_CLOSE)
+    	{
         motor_rotate(pluse);
+        motor_status_set(LOCK_OPERATION_OPEN); 
+        motor_status_open_send();
+    	}
+			#ifdef USEING_BUZZER_FUN
+			buzzer_send_mail(BZ_TYPE_UNLOCK);
+			#endif
+    }
+       
 }
 
 s32
@@ -190,7 +289,7 @@ rt_local_init(void)
     // init local thread
     local_thread = rt_thread_create("local",
 									local_thread_entry, RT_NULL,
-									1024, 102, 5);
+									1024*2, 102, 5);
     if (local_thread == RT_NULL)
         return -1;
 

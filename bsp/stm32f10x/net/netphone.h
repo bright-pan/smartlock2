@@ -2,7 +2,7 @@
 #define __NETPHTONE_H__
 #include "rtthread.h"
 #include "netprotocol.h"
-
+#include "config.h"
 
 rt_err_t net_phone_add_process(net_recvmsg_p mail);
 

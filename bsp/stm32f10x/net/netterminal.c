@@ -12,9 +12,11 @@
   ******************************************************************************
   */
 #include "netterminal.h"
-#include "unlockprocess.h"
-#include "camera.h"
-#include "apppubulic.h"
+#include "netmailclass.h"
+
+//#include "unlockprocess.h"
+//#include "camera.h"
+//#include "apppubulic.h"
 
 
 #define SHOW_TM_DEBUG_IFNO     1
@@ -41,7 +43,12 @@ rt_err_t net_motor_Control(net_recvmsg_p mail)
 {
 	if(mail->data.motor.motor.operation == 0)
 	{
-    motor_rotate(RT_TRUE);
+		union alarm_data KeyData;
+
+		KeyData.lock.key_id = 0;
+	  KeyData.lock.operation = 0;
+	  //rt_kprintf("unlock id %d\n",ps_id);
+	  send_local_mail(ALARM_TYPE_LOCK_PROCESS,(time_t)net_get_date(),&KeyData);
 	}
 	
 	return RT_EOK;
@@ -55,7 +62,7 @@ rt_err_t net_motor_Control(net_recvmsg_p mail)
 */
 rt_err_t net_set_system_time(net_recvmsg_p mail)
 {
-	rt_uint32_t CurrentTime;
+	/*rt_uint32_t CurrentTime;
 	rt_device_t dev = RT_NULL;
 	
 	RT_ASSERT(mail != RT_NULL);
@@ -80,7 +87,7 @@ rt_err_t net_set_system_time(net_recvmsg_p mail)
 		RT_DEBUG_LOG(SHOW_TM_DEBUG_IFNO,("Timing Result :%d\n",mail->data.timing.result));
 		
 		return RT_ERROR;
-	}
+	}*/
 	
 	return RT_EOK;
 }
@@ -93,18 +100,18 @@ rt_err_t net_set_system_time(net_recvmsg_p mail)
 */
 rt_err_t net_photograph(net_recvmsg_p mail)
 {
-	RT_ASSERT(mail != RT_NULL);
+	/*RT_ASSERT(mail != RT_NULL);
 	if(mail->data.camera.dat.operation == 0)
 	{
 		camera_send_mail(ALARM_TYPE_GPRS_CAMERA_OP,sys_cur_date());
 	}
-	
+	*/
 	return RT_EOK;
 }
 
 rt_err_t net_set_key0(net_recvmsg_p mail)
 {
-	rt_uint8_t i;
+	/*rt_uint8_t i;
 	
 	RT_ASSERT(mail != RT_NULL);
 	RT_DEBUG_LOG(SHOW_TM_DEBUG_IFNO,("New Key0:"));
@@ -120,13 +127,14 @@ rt_err_t net_set_key0(net_recvmsg_p mail)
 	
 	//±£´æÎÄ¼þ
 	device_config_file_operate(&device_config,1);
-	
+	*/
 	return RT_EOK;
 }
 
 
 rt_err_t net_set_domain(net_recvmsg_p mail)
 {
+	/*
 	RT_ASSERT(mail != RT_NULL);
 	
 	if(mail->lenmap.bit.data-2 >= TCP_DOMAIN_LENGTH)
@@ -150,7 +158,7 @@ rt_err_t net_set_domain(net_recvmsg_p mail)
 	RT_DEBUG_LOG(
 	SHOW_TM_DEBUG_IFNO,("Port:%d\n"
 	,device_config.param.tcp_domain[mail->data.domain.data,mail->data.domain.pos].port));
-
+	*/
 	return RT_EOK;
 }
 
@@ -159,5 +167,5 @@ rt_err_t net_set_doormode(net_recvmsg_p mail)
 	RT_ASSERT(mail != RT_NULL);
 
 	
-	return ;
+	return RT_EOK;
 }

@@ -2,6 +2,39 @@
 #define __NETMAILCLASS_H__
 #include "netprotocol.h"
 
+#define USEING_MOTOR_API 
+#define USEING_KEY_API
+//#define USEING_SYS_UPDATE
+//#define USEING_SYSCONFIG_API
+//#define USEING_SYS_TIME_API
+//#define USEING_CAMERA_API
+//#define USEING_FILE_API
+#define USEING_PHONE_API
+#define USEING_ACCOUNT_API
+#define USEING_BIND_API
+
+
+#ifdef USEING_MOTOR_API
+#include "netterminal.h"
+#include "local.h"
+#endif
+
+#ifdef USEING_KEY_API
+#include "netkey.h"
+#endif
+
+#ifdef USEING_PHONE_API
+#include "netphone.h"
+#endif
+
+#ifdef USEING_ACCOUNT_API
+#include "netaccount.h"
+#endif
+
+#ifdef USEING_BIND_API
+#include "netbind.h"
+#endif
+
 void send_net_landed_mail(void);
 void net_mail_heart(void);
 

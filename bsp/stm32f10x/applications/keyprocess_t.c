@@ -18,8 +18,6 @@ void keyprocess_thread_entry(void *arg)
 	while(1)
 	{
     key_input_processing();
-
-		rt_thread_delay(10);
 	}
 }
 

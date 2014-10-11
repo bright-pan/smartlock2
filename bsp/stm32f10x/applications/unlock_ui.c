@@ -1,5 +1,7 @@
 #include "unlock_ui.h"
 #include "menu.h"
+#include "local.h"
+
 #define PAGE_MAX_SHOW_NUM					4
 
 #define LCD_LINE_MAX_LEN					17							//留出一个结束符的位置
@@ -77,6 +79,7 @@ static rt_err_t unlock_password_verify(rt_uint8_t *password,rt_int32_t *ps_id)
 	return RT_EOK;
 }
 
+static rt_uint8_t OpenDoorErrorCnt = 0;
 void unlock_process_ui(void)
 {
 	rt_uint8_t buf[8];
@@ -126,21 +129,35 @@ void unlock_process_ui(void)
 	        if(result != RT_EOK)
 	        {
 	          //密码不合法
+	          menu_error_handle(1);
 	          gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),UNLOCK_UI_TEXT[2],GUI_WIHIT);
 	          gui_display_update();
 	          rt_thread_delay(RT_TICK_PER_SECOND);
 	          gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(3),SHOW_X_ROW8(15),SHOW_Y_LINE(4));
+	          OpenDoorErrorCnt++;
+	          if(OpenDoorErrorCnt ==  3)
+	          {
+							menu_error_handle(3);
+	          }
 	          break;
 	        }
 	        else
 	        {
+	        	union alarm_data KeyData;
+	        	
+	          KeyData.lock.key_id = ps_id;
+	          KeyData.lock.operation = LOCK_OPERATION_OPEN;
+	          rt_kprintf("unlock id %d\n",ps_id);
+	          send_local_mail(ALARM_TYPE_LOCK_PROCESS,(time_t)menu_get_cur_date,&KeyData);
 	          //新密码是合法的
 	          gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
 	          gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),UNLOCK_UI_TEXT[3],GUI_WIHIT);
 	          gui_display_update();
+
 						//密码匹配的结果
 	          rt_kprintf("This %d key Open the door success\n",ps_id);
 	          system_menu_choose(1);
+	          OpenDoorErrorCnt = 0;
 	          return ;
 	        }
 	      }

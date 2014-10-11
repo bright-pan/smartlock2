@@ -835,13 +835,22 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
     case NET_MSGTYPE_PHONEADD:
     {
     	//添加手机号码
-    	//net_phoneadd *data;
-      
-      msg_data->cmd = NET_MSGTYPE_PHONEADD;
-      net_set_lenmap(&msg_data->lenmap,1,1,13,2);
+    	net_phoneadd_user *data = RT_NULL;
+    	
+    	if(MsgMail->user != RT_NULL)
+    	{
+				data = (net_phoneadd_user*)MsgMail->user;
+				msg_data->data.phoneadd = data->data;
 
-			rt_memcpy(msg_data->data.phoneadd.data,"13544033975",rt_strlen("13544033975"));
-			msg_data->data.phoneadd.pos = 1;
+				msg_data->cmd = NET_MSGTYPE_PHONEADD;
+        net_set_lenmap(&msg_data->lenmap,1,1,20,2);
+    	}
+    	else
+			{
+				RT_DEBUG_LOG(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_PHONEADD message user is null\n"));
+        
+				return RT_ERROR;
+			}
 			
 			break;
     }
@@ -870,6 +879,22 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
     case NET_MSGTYPE_PHONEDELETE:
     {
     	//手机号码删除
+    	net_phonedel_user *data = RT_NULL;
+    	
+    	if(MsgMail->user != RT_NULL)
+    	{
+				data = (net_phonedel_user*)MsgMail->user;
+				msg_data->data.phonedelete = data->data;
+
+				msg_data->cmd = NET_MSGTYPE_PHONEDELETE;
+        net_set_lenmap(&msg_data->lenmap,1,1,6,2);
+    	}
+    	else
+			{
+				RT_DEBUG_LOG(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_PHONEDELETE message user is null\n"));
+        
+				return RT_ERROR;
+			}
 			break;
     }
     case NET_MSGTYPE_PHONEDEL_ACK:
@@ -1843,7 +1868,8 @@ static void net_recv_message(net_msgmail_p mail)
 
 	  //如果已经登陆在线收到的所有报文都解密
 	  if(net_event_process(1,NET_ENVET_ONLINE) == 0)
-	  {
+	  {	
+	  	RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("I have landed ^_^\n"));
       if(net_des_decode(msg) < 0)
       {
         //解密失败
@@ -1853,12 +1879,19 @@ static void net_recv_message(net_msgmail_p mail)
         return ;
       }
 	  }
-	  
-	  //大小端转换
-		//msg.length = net_rev16(msg.length);
+	  else
+	  {
+			//没有登录收到的报文
+			RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("Not login !!!\n"));
+
+			//大小端转换
+			msg->length = net_rev16(msg->length);
+			//如果是响应
+			show_recvmsg(msg);
+	  }
 		msg->lenmap.bype = net_rev16(msg->lenmap.bype);
 
-		//如果是响应
+		
     if(msg->cmd & 0x80)
     {
       rt_int8_t pos;
@@ -1868,10 +1901,11 @@ static void net_recv_message(net_msgmail_p mail)
       {
       	RT_ASSERT(msg != RT_NULL);
         rt_free(msg);
+
+        RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("Message Order Error !!!\n"));
         return ;
       }
     }
-		show_recvmsg(msg);
     rt_timer_stop(sendwnd_timer);
     if(net_event_process(1,NET_ENVET_ONLINE) == 0)
     {
@@ -1879,7 +1913,7 @@ static void net_recv_message(net_msgmail_p mail)
       //verify crc16
       if(CRC16Result == RT_FALSE)
       {
-        RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("Message CRC16 verify Fial\n"));
+        RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("Message CRC16 verify Fial !!!\n"));
         
       	RT_ASSERT(msg != RT_NULL);
         rt_free(msg);
@@ -2413,7 +2447,7 @@ int netmsg_thread_init(void)
 
   id = rt_thread_create("message",
                          netmsg_thread_entry, RT_NULL,
-                         1024,MSG_THREAD_PRI_IS, 20);
+                         2048,MSG_THREAD_PRI_IS, 20);
 
   if(id == RT_NULL)
   {
@@ -2668,6 +2702,16 @@ void net_status(void)
 	}
 }
 FINSH_FUNCTION_EXPORT(net_status,"net current situation ");
+
+void date_hex(void)
+{
+	rt_uint32_t date;
+
+	date = net_get_date();
+	
+  rt_kprintf("date hex :%08x\n",date);
+}
+FINSH_FUNCTION_EXPORT(date_hex,"date hex show");
 
 #endif
 
