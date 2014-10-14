@@ -526,8 +526,10 @@ sh1106_configure(struct oled_device *oled)
 	sh1106_write(0xAD,SH1106_CMD);      //DC-DC Control Mode Set
 	sh1106_write(0x8A,SH1106_CMD);      //DC-DC ON/OFF Mode Set
 	sh1106_write(0x32,SH1106_CMD);      //Set Pump voltage value
-	sh1106_write(0xA1,SH1106_CMD);      //Segment Remap
-	sh1106_write(0xC8,SH1106_CMD);      //Set COM Output Scan Direction
+	//sh1106_write(0xA1,SH1106_CMD);      //Segment Remap
+	//sh1106_write(0xC8,SH1106_CMD);      //Set COM Output Scan Direction
+	sh1106_write(0xA0,SH1106_CMD);      //Segment Remap
+	sh1106_write(0xC0,SH1106_CMD);      //Set COM Output Scan Direction
 	sh1106_write(0xDA,SH1106_CMD);     //Common pads hardware: alternative
 	sh1106_write(0x12,SH1106_CMD);
 	sh1106_write(0x81,SH1106_CMD);      //Contrast control
