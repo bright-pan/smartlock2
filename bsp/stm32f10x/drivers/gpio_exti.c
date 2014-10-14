@@ -743,14 +743,24 @@ bit_to_index(uint16_t data)
     return result;
 }
 
-static const uint8_t char_remap[16] = {
+/*static const uint8_t char_remap[16] = {
     '?',
     '3', '6', '9',
     '#', '2', '5',
     '8', '0', '1',
     '4', '7', '*',
     '?', '?', '?',
+};*/
+
+static const uint8_t char_remap[16] = {
+    '?',
+    '*', '7', '4',
+    '1', '0', '8',
+    '5', '2', '#',
+    '9', '6', '3',
+    '?', '?', '?',
 };
+
 
 __STATIC_INLINE uint16_t
 kb_read(void)
