@@ -62,6 +62,7 @@ struct phone_head {
 	u16 auth;
 	char address[PHONE_ADDRESS_LENGTH];
 	u32 updated_time;
+	u8	is_update;
 };
 
 /* key code offset:
