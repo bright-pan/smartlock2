@@ -17,7 +17,7 @@ netprotocol.c
 netkey.c
 netphone.c
 netaccount.c
-netbind.h
+netbind.c
 netterminal.c
 """)
 
