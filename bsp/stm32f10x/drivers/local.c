@@ -26,6 +26,8 @@
 
 #define LOCAL_DEBUG 1
 
+#define MOTOR_WORK_CUT													180					//电机转动次数
+
 #define KEY_NOT_PULL_REVOKE_TIME								100*60*30		// 30min
 #define KEY_READ_TIMER_BASE											100					// 1s
 #ifndef  TEST_LOCK_GATE_TIME
@@ -45,15 +47,56 @@ typedef struct
 {
 	rt_sem_t 		StatusSem;
 	rt_uint8_t  Status;
+	rt_uint16_t LockTime;
 }MotorDevDef;
+
+typedef struct
+{
+	rt_uint8_t ErrorCnt;
+}KeyErrorDef;
+
+static KeyErrorDef KeyErrorData = 
+{
+	0,
+};
 
 static MotorDevDef MotorManage =
 {
 	RT_NULL,
 	LOCK_OPERATION_OPEN,
+	0,
 };
 
 void lock_operation(s32 status, u16 pluse);
+
+rt_bool_t key_error_alarm_manage(rt_uint8_t mode)
+{
+	switch(mode)
+	{
+		case 0:
+		{	
+			//计数
+			KeyErrorData.ErrorCnt++;
+			if(KeyErrorData.ErrorCnt > 3)
+			{
+				return RT_TRUE;
+			}
+			break;
+		}
+		case 1:
+		{
+			//清除计数
+			KeyErrorData.ErrorCnt = 0;
+			break;
+		}
+		default:
+		{
+			break;
+		}
+	}
+
+	return RT_FALSE;
+}
 
 void motor_status_set(rt_uint8_t status)
 {
@@ -73,29 +116,29 @@ void motor_status_open_send(void)
 	}
 
 	rt_sem_release(MotorManage.StatusSem );
+	MotorManage.LockTime = 0;
 }
 
 void motor_status_manage(void)
 {
 	rt_err_t result;
-	static rt_uint8_t cnt = 0;
 	
-	if(cnt == 0)
+	if(MotorManage.LockTime == 0)
 	{
     result = rt_sem_take(MotorManage.StatusSem ,RT_WAITING_NO);
     if(result == RT_EOK)
     {
-      cnt = 1; 
+      MotorManage.LockTime  = 1; 
     }
 	}
 	else
 	{
-		cnt++;
-		if(cnt > 10)
+		MotorManage.LockTime ++;
+		if(MotorManage.LockTime  > 10)
 		{
 			//上锁
-			cnt = 0;
-      lock_operation(LOCK_OPERATION_CLOSE,500);
+			MotorManage.LockTime  = 0;
+      lock_operation(LOCK_OPERATION_CLOSE,MOTOR_WORK_CUT);
 		}
 	}
 
@@ -179,7 +222,7 @@ lock_operation(s32 status, u16 pluse)
     {
     	if(motor_status_get() == LOCK_OPERATION_OPEN)
     	{
-        motor_rotate(-pluse);
+        motor_rotate(pluse);
     		motor_status_set(LOCK_OPERATION_CLOSE);
     	}
 			#ifdef USEING_BUZZER_FUN
@@ -190,7 +233,7 @@ lock_operation(s32 status, u16 pluse)
     {
     	if(motor_status_get() == LOCK_OPERATION_CLOSE)
     	{
-        motor_rotate(pluse);
+        motor_rotate(-pluse);
         motor_status_set(LOCK_OPERATION_OPEN); 
         motor_status_open_send();
     	}
@@ -230,20 +273,20 @@ void lock_process(LOCAL_MAIL_TYPEDEF *local_mail)
     switch (k.head.operation_type)
     {
         case KEY_OPERATION_TYPE_FOREVER : {
-            lock_operation(local_mail->data.lock.operation, 500);
+            lock_operation(local_mail->data.lock.operation, MOTOR_WORK_CUT);
             // send lock log
             break;
         }
         case KEY_OPERATION_TYPE_ONCE : {
             if (local_mail->time >= k.head.start_time && local_mail->time <= k.head.end_time) {
-                lock_operation(local_mail->data.lock.operation, 500);
+                lock_operation(local_mail->data.lock.operation, MOTOR_WORK_CUT);
                 // send lock log
             }
             break;
         }
         case KEY_OPERATION_TYPE_WEEKLY : {
             if (check_time(k.head.start_time, k.head.end_time, localtime(&local_mail->time)) > 0) {
-                lock_operation(local_mail->data.lock.operation, 500);
+                lock_operation(local_mail->data.lock.operation, MOTOR_WORK_CUT);
                 // send lock log
             }
             break;
@@ -299,3 +342,18 @@ rt_local_init(void)
 }
 
 INIT_APP_EXPORT(rt_local_init);
+
+
+
+
+
+#ifdef RT_USING_FINSH
+#include <finsh.h>
+
+void lock_unlock(rt_uint8_t mode,rt_uint32_t time)
+{
+	lock_operation(mode,time);
+}
+FINSH_FUNCTION_EXPORT(lock_unlock,"lock_unlock(rt_uint8_t mode)");
+
+#endif

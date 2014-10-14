@@ -56,4 +56,7 @@ void local_thread_entry(void *parameter);
 
 void send_local_mail(ALARM_TYPEDEF alarm_type, time_t time, union alarm_data *data);
 
+rt_uint8_t motor_status_get(void);
+
+rt_bool_t key_error_alarm_manage(rt_uint8_t mode);
 #endif
