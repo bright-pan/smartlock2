@@ -31,7 +31,7 @@ rt_size_t find_package_end(rt_uint8_t *buffer,rt_size_t size)
 		return size;
 	}
 	RT_DEBUG_LOG(SHOW_PRINTF_INFO,("Receive the packet length:%d = 0X%x\n",length,length));
-	#ifdef 0
+	/*#ifdef 0
 	{
     rt_uint8_t i;
 		for(i = 0;i < length;i++)
@@ -40,7 +40,7 @@ rt_size_t find_package_end(rt_uint8_t *buffer,rt_size_t size)
     }
     RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("\n"));
 	}
-	#endif
+	#endif*/
   for(i = 0; i < size; i++)
   {
     FlagStr[0] = FlagStr[1];
