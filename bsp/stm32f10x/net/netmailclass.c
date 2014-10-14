@@ -1640,6 +1640,16 @@ void msg_test(rt_uint8_t cmd)
 			msg_mail_keybind(11,11,net_get_date());
 			break;
 		}
+		case 3:
+		{
+			msg_mail_opendoor(2,11,net_get_date());
+			break;
+		}
+		case 4:
+		{
+			msg_mail_alarm(2,1,net_get_date());
+			break;
+		}
 		default:
 		{
 			break;
