@@ -848,7 +848,7 @@ void motor_rotate(rt_int16_t data)
         pwm_set_counts(DEVICE_NAME_MOTOR2,data);
         pwm_send_pulse(DEVICE_NAME_MOTOR2);
     }
-    rt_thread_delay(10);
+    rt_thread_delay(100);
     gpio_pin_output(DEVICE_NAME_POWER_MOTOR,0,0);
 }
 
