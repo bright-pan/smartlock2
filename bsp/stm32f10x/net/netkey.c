@@ -125,8 +125,8 @@ rt_err_t net_key_del_process(net_recvmsg_p mail)
 		return RT_ERROR;
 	}*/
 	RT_DEBUG_LOG(SHOW_NETKEY_INFO,("key delete data info:>>>>>>\n"));
-	RT_DEBUG_LOG(SHOW_NETKEY_INFO,("keypos = %d\n",keypos));
-	RT_DEBUG_LOG(SHOW_NETKEY_INFO,("date = %x\n",date));
+	RT_DEBUG_LOG(SHOW_NETKEY_INFO,("keypos   = %d\n",keypos));
+	RT_DEBUG_LOG(SHOW_NETKEY_INFO,("date     = %x\n",date));
 	KeyOpResult = device_config_key_delete(keypos,date,1);
 	
   RT_DEBUG_LOG(SHOW_NETKEY_INFO,("Remote delete keys to success!!!\n"));

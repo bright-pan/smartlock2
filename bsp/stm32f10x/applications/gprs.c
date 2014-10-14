@@ -13,61 +13,87 @@
   ******************************************************************************
   */
 #include "gprs.h"
-#include "unlockprocess.h"
+#include "gprsmailclass.h"
 #include "netmailclass.h"
-#include "netfile.h"
-#include "untils.h"
-#include "fprint.h"
-#include "keyboard.h"
-#include "apppubulic.h"
-#include "appconfig.h"
 
 #define UPDATE_KEY_CNT    60 //钥匙同步周期
 
 static rt_mq_t gprs_mq = RT_NULL;//gprs data mail 
 
+//手机上传处理
+static void phone_upload_process(rt_uint16_t pos)
+{
+
+}
+
+//账户上传 
+static void account_upload_process(rt_uint16_t pos)
+{
+	struct account_head *data;
+
+	data = rt_calloc(1,sizeof(*data));
+	device_config_account_operate(pos,data,0);
+	
+	rt_free(data);
+}
 /** 
 @brief  key upload process
 @param  mail :gprs thread mail
 @param  keytype :key of type
 @retval void
 */
-static void key_upload_process(rt_uint8_t keytype,rt_uint16_t UpdatePos)
+static void key_upload_process(rt_uint16_t UpdatePos)
 {
-	net_keyadd_user *data;
-	rt_uint16_t keypos;
-	rt_bool_t result;
+	net_keyadd_user *data = RT_NULL;
+	rt_uint16_t 		keypos;
+	rt_bool_t 			result;
+	struct key 			*KeyData = RT_NULL;
 
 	data = rt_calloc(1,sizeof(*data));
 	RT_ASSERT(data != RT_NULL);
 
+	//获得钥钥匙数据
+	KeyData = rt_calloc(1,sizeof(*KeyData));
+	RT_ASSERT(KeyData != RT_NULL);
+
+	device_config_key_operate(UpdatePos,KeyData,0);
+	
 	keypos = UpdatePos;
   keypos = net_rev16(keypos);
   rt_memcpy(data->data.col,&keypos,2);
 
-	data->data.type = keytype;
-  net_uint32_copy_string(data->data.createt,device_config.param.key[UpdatePos].created_time);
+	data->data.type = KeyData->head.key_type;
+  net_uint32_copy_string(data->data.createt,KeyData->head.updated_time);
 	data->data.accredit = 0;
 
-  net_uint32_copy_string(data->data.start_t,device_config.param.key[UpdatePos].start_time);
+  net_uint32_copy_string(data->data.start_t,KeyData->head.start_time);
   
-  net_uint32_copy_string(data->data.stop_t,device_config.param.key[UpdatePos].end_time);
+  net_uint32_copy_string(data->data.stop_t,KeyData->head.end_time);
 
-	switch(keytype)
+	switch(KeyData->head.key_type)
 	{
 		case KEY_TYPE_FPRINT:
 		{
 			data->DataLen = KEY_FPRINT_CODE_SIZE;
+			data->data.data = rt_calloc(1,data->DataLen);
+			RT_ASSERT(data->data.data != RT_NULL);
+			rt_memcpy(data->data.data,KeyData->data.fprint.code,data->DataLen);
 			break;
 		}
 		case KEY_TYPE_KBOARD:
 		{
 			data->DataLen = KEY_KBOARD_CODE_SIZE;
+			data->data.data = rt_calloc(1,data->DataLen);
+			RT_ASSERT(data->data.data != RT_NULL);
+			rt_memcpy(data->data.data,KeyData->data.kboard.code,data->DataLen);
 			break;
 		}
 		case KEY_TYPE_RFID:
 		{
 			data->DataLen = KEY_RFID_CODE_SIZE;
+			data->data.data = rt_calloc(1,data->DataLen);
+			RT_ASSERT(data->data.data != RT_NULL);
+			rt_memcpy(data->data.data,KeyData->data.rfid.code,data->DataLen);
 			break;
 		}
 		default:
@@ -75,26 +101,42 @@ static void key_upload_process(rt_uint8_t keytype,rt_uint16_t UpdatePos)
 			
 			rt_kprintf("Upload key type is error !!!\nfunction:%s line:%d\n",__FUNCTION__, __LINE__);
 			rt_free(data);
-			
+			rt_free(KeyData);
 			return ;
 		}
 	}
 	
-	data->data.data = rt_calloc(1,data->DataLen);
-	
-	RT_ASSERT(data->data.data != RT_NULL);
-
-	device_config_key_operate(UpdatePos,(KEY_TYPE)keytype, data->data.data,0);
-	
 	result = msg_mail_keyadd(data);
 	if(result == RT_TRUE)
 	{
-		set_key_update_flag(UpdatePos,0);
+		//标记
+		KeyData->head.is_updated = 1;
+		device_config_key_operate(UpdatePos,KeyData,1);
 	}
 
 	rt_free(data->data.data);
 	rt_free(data);
+  rt_free(KeyData);
+}
 
+//获得要更新的钥匙位置
+rt_uint16_t get_key_update_pos(void)
+{
+	rt_uint16_t 	i;
+	struct key 		*keydat;
+
+	keydat = rt_calloc(1,sizeof(*keydat));
+	for(i = 0;i < ACCOUNT_NUMBERS;i++)
+	{
+		device_config_key_operate(i,keydat,0);
+		if(keydat->head.is_updated == 0)
+		{
+			return i;
+		}
+	}
+	rt_free(keydat);
+
+	return ACCOUNT_NUMBERS;
 }
 
 /** 
@@ -104,8 +146,7 @@ static void key_upload_process(rt_uint8_t keytype,rt_uint16_t UpdatePos)
 */
 void update_key_lib_remote(void)
 {   
-	rt_uint8_t run = KEY_NUMBERS;
-	KEY_TYPE   KeyType;
+	rt_uint16_t run = KEY_NUMBERS;
 	
 	while(run-- < KEY_NUMBERS);
 	{
@@ -114,13 +155,150 @@ void update_key_lib_remote(void)
 		pos = get_key_update_pos();
 		if(pos < KEY_NUMBERS)
 		{  		
-      KeyType = get_key_type(pos);
-      key_upload_process(KeyType,pos);
+      key_upload_process(pos);
  		}
 	}
 }
 
+//获得要更新的手机位置
+rt_uint16_t get_phone_update_pos(void)
+{
+	rt_uint16_t 				i;
+	struct phone_head 	*phdata;
 
+	phdata = rt_calloc(1,sizeof(*phdata));
+	for(i = 0;i < PHONE_NUMBERS;i++)
+	{
+		device_config_phone_operate(i,phdata,0);
+		if(phdata->is_update == 0)
+		{
+			return i;
+		}
+	}
+	rt_free(phdata);
+
+	return PHONE_NUMBERS;
+}
+
+//手机号码库远程更新
+void update_phone_lib_remote(void)
+{
+	rt_uint16_t run = PHONE_NUMBERS;
+	
+	while(run-- < PHONE_NUMBERS);
+	{
+		rt_uint16_t pos;
+		
+		pos = get_phone_update_pos();
+		if(pos < PHONE_NUMBERS)
+		{  		
+      //key_upload_process(pos);
+ 		}
+	}
+}
+
+//获取要更新的账户位置
+rt_uint16_t get_account_update_pos(void)
+{
+	rt_uint16_t 				  i;
+	struct account_head 	*data;
+
+	data = rt_calloc(1,sizeof(*data));
+	for(i = 0;i < ACCOUNT_NUMBERS;i++)
+	{
+		device_config_account_operate(i,data,0);
+		//if(data->is_update == 0)
+		{
+			return i;
+		}
+	}
+	rt_free(data);
+
+	return ACCOUNT_NUMBERS;
+}
+
+//账户数据远程更新
+void update_account_lib_remote(void)
+{
+	rt_uint16_t run = ACCOUNT_NUMBERS;
+	
+	while(run-- < ACCOUNT_NUMBERS);
+	{
+		rt_uint16_t pos;
+		
+		pos = get_account_update_pos();
+		if(pos < PHONE_NUMBERS)
+		{  		
+      //key_upload_process(pos);
+ 		}
+	}
+}
+
+//处理钥匙开门正确邮件
+static void gprs_key_right_mail_process(GPRS_MAIL_TYPEDEF *mail)
+{
+  GPRS_KeyRightUser_p user = RT_NULL;
+
+	RT_ASSERT(mail != RT_NULL);
+	user = mail->user;
+
+	switch(user->keytype)
+	{
+	  case KEY_TYPE_FPRINT:
+	  {
+	    msg_mail_opendoor(1,user->keypos,mail->time);
+	    break;
+	  }
+	  case KEY_TYPE_KBOARD:
+	  {
+	    msg_mail_opendoor(2,user->keypos,mail->time);
+	    break;
+	  }
+	  case KEY_TYPE_RFID:
+	  {
+	    msg_mail_opendoor(4,user->keypos,mail->time);
+	    break;
+	  }
+	  default:
+	  {
+	    break;
+	  }
+	}
+}
+
+//处理钥匙开门错误邮件
+static void gprs_key_error_mail_process(GPRS_MAIL_TYPEDEF *mail)
+{
+  GPRS_KeyErrorUser_p user = RT_NULL;
+
+	RT_ASSERT(mail != RT_NULL);
+	user = mail->user;
+
+	switch(user->type)
+	{
+	  case KEY_TYPE_FPRINT:
+	  {
+	    msg_mail_alarm(7,motor_status_get(),mail->time);
+	    break;
+	  }
+	  case KEY_TYPE_KBOARD:
+	  {
+	    msg_mail_alarm(8,motor_status_get(),mail->time);
+	    break;
+	  }
+	  /*协议中没有定义这种类型
+	  case KEY_TYPE_RFID:
+	  {
+	    msg_mail_alarm(4,motor_status_get(),mail->time);
+	    break;
+	  }*/
+	  default:
+	  {
+	  	msg_mail_alarm(2,motor_status_get(),mail->time);
+	    break;
+	  }
+	}	
+}
 /** 
 @brief  gprs thread mail process
 @param  mail :gprs thread mail
@@ -130,7 +308,31 @@ static void gprs_mail_process(GPRS_MAIL_TYPEDEF *mail)
 {
 	switch(mail->alarm_type)
 	{
-		case ALARM_TYPE_CAMERA_IRDASENSOR:
+		case ALARM_TYPE_KEY_ADD:
+		{
+			rt_uint16_t *keypos;
+			
+			RT_ASSERT(mail != RT_NULL);
+			keypos = mail->user;
+			key_upload_process(*(rt_uint16_t *)keypos);
+			break;
+		}
+		case ALARM_TYPE_KEY_RIGHT:
+		{
+			//钥匙正确邮件
+			gprs_key_right_mail_process(mail);
+			break;
+		}
+		case ALARM_TYPE_KEY_ERROR:
+		{
+			gprs_key_error_mail_process(mail);
+			break;
+		}
+		case ALARM_TYPE_GPRS_SYS_TIME_UPDATE:
+		{
+			msg_mail_adjust_time();
+		}
+		/*case ALARM_TYPE_CAMERA_IRDASENSOR:
 		{
 			msg_mail_alarm(0,motor_status(),mail->time);
 			
@@ -146,12 +348,6 @@ static void gprs_mail_process(GPRS_MAIL_TYPEDEF *mail)
 			
 			break;
 		}
-		case ALARM_TYPE_RFID_KEY_ERROR:
-		{
-			msg_mail_alarm(2,motor_status(),mail->time);
-			
-			break;
-		}
 		case ALARM_TYPE_FPRINT_KEY_RIGHT:
 		{
 			rt_uint16_t *KeyPos;
@@ -161,16 +357,6 @@ static void gprs_mail_process(GPRS_MAIL_TYPEDEF *mail)
 			KeyPos = (rt_uint16_t *)mail->user;
 			msg_mail_opendoor(1,*KeyPos,mail->time);
 
-			break;
-		}
-		case ALARM_TYPE_CODE_KEY_RIGHT:
-		{
-			rt_uint16_t *KeyPos;
-			
-			RT_ASSERT(mail->user != RT_NULL);
-
-			KeyPos = (rt_uint16_t *)mail->user;
-			msg_mail_opendoor(2,*KeyPos,mail->time);
 			break;
 		}
 		case ALARM_TYPE_FPRINT_KEY_ADD:
@@ -193,10 +379,7 @@ static void gprs_mail_process(GPRS_MAIL_TYPEDEF *mail)
 			
 			break;
 		}
-		case ALARM_TYPE_GPRS_SYS_TIME_UPDATE:
-		{
-			msg_mail_adjust_time();
-		}
+		*/
 		default:
 		{
 			break;
