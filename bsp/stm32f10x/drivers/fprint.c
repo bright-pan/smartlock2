@@ -1397,6 +1397,7 @@ fp_enroll(uint16_t *key_id, uint8_t *buf, uint32_t timeout)
     enroll_flag = 0;
     return result;
 }
+
 int
 fp_get_template(uint8_t *buf, uint32_t timeout)
 {

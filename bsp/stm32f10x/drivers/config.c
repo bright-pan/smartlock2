@@ -184,6 +184,11 @@ device_config_get_key_code_size(u16 key_type)
 				result = KEY_RFID_CODE_SIZE;
 				break;
 			}
+        case KEY_TYPE_RF433:
+			{
+				result = KEY_RF433_CODE_SIZE;
+				break;
+			}
 		case KEY_TYPE_KBOARD:
 			{
 				result = KEY_KBOARD_CODE_SIZE;

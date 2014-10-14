@@ -17,16 +17,7 @@
 #include "gpio_pin.h"
 #include "gpio_pwm.h"
 
-struct gpio_pin_user_data
-{
-  const char name[RT_NAME_MAX];
-  GPIO_TypeDef* gpiox;//port
-  rt_uint16_t gpio_pinx;//pin
-  GPIOMode_TypeDef gpio_mode;//mode
-  GPIOSpeed_TypeDef gpio_speed;//speed
-  rt_uint32_t gpio_clock;//clock
-  rt_uint8_t gpio_default_output;
-};
+
 /*
  * gpio pin ops configure
  */
@@ -168,15 +159,15 @@ void rt_hw_rfid_power_register(void)
 */
 
 
-/* gsm led device
+/* gsm led device */
 struct gpio_pin_user_data gsm_led_user_data =
 {
   DEVICE_NAME_GSM_LED,
-  GPIOE,
-  GPIO_Pin_13,
+  GPIOB,
+  GPIO_Pin_9,
   GPIO_Mode_Out_PP,
   GPIO_Speed_50MHz,
-  RCC_APB2Periph_GPIOE,
+  RCC_APB2Periph_GPIOB,
   0,
 };
 gpio_device gsm_led_device;
@@ -189,7 +180,7 @@ void rt_hw_gsm_led_register(void)
   gpio_device->ops = &gpio_pin_user_ops;
   rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR), gpio_user_data);
 }
-*/
+
 /* gsm power device
 struct gpio_pin_user_data gsm_power_user_data =
 {
@@ -1015,9 +1006,76 @@ int rt_hw_bluetooth_rst_register(void)
 }
 INIT_DEVICE_EXPORT(rt_hw_bluetooth_rst_register);
 
+/* rf enable device */
+struct gpio_pin_user_data  rf_enable =
+{
+	DEVICE_NAME_RF_ENABLE,
+	GPIOD,
+	GPIO_Pin_1,
+	GPIO_Mode_Out_PP,
+	GPIO_Speed_50MHz,
+	RCC_APB2Periph_GPIOD,
+	1,
+};
+gpio_device rf_enable_device;
 
+int rt_hw_rf_enable_register(void)
+{
+	gpio_device *device = &rf_enable_device;
+	struct gpio_pin_user_data *user_data = (struct gpio_pin_user_data *)&rf_enable;
 
+	device->ops = &gpio_pin_user_ops;
+	rt_hw_gpio_register(device,user_data->name, (RT_DEVICE_OFLAG_RDWR), user_data);
+	return 0;
+}
+INIT_DEVICE_EXPORT(rt_hw_rf_enable_register);
+/* rf dat device */
+struct gpio_pin_user_data  rf_dat =
+{
+	DEVICE_NAME_RF_DAT,
+	GPIOD,
+	GPIO_Pin_2,
+	GPIO_Mode_IPD,
+	GPIO_Speed_50MHz,
+	RCC_APB2Periph_GPIOD,
+	1,
+};
+gpio_device rf_dat_device;
+int rt_hw_rf_dat_register(void)
+{
+	gpio_device *device = &rf_dat_device;
+	struct gpio_pin_user_data *user_data = (struct gpio_pin_user_data *)&rf_dat;
 
+	device->ops = &gpio_pin_user_ops;
+	rt_hw_gpio_register(device,user_data->name, (RT_DEVICE_OFLAG_RDWR), user_data);
+	return 0;
+}
+INIT_DEVICE_EXPORT(rt_hw_rf_dat_register);
+
+/* rf dat device
+struct gpio_pin_user_data  rf_dat =
+{
+	DEVICE_NAME_RF_DAT,
+	GPIOD,
+	GPIO_Pin_2,
+	GPIO_Mode_IPD,
+	GPIO_Speed_50MHz,
+	RCC_APB2Periph_GPIOD,
+	1,
+};
+gpio_device rf_dat_device;
+
+int rt_hw_rf_dat_register(void)
+{
+	gpio_device *device = &rf_dat_device;
+	struct gpio_pin_user_data *user_data = (struct gpio_pin_user_data *)&rf_dat;
+
+	device->ops = &gpio_pin_user_ops;
+	rt_hw_gpio_register(device,user_data->name, (RT_DEVICE_OFLAG_RDWR), user_data);
+	return 0;
+}
+INIT_DEVICE_EXPORT(rt_hw_rf_dat_register);
+*/
 /* camera usart tx pin input */
 /*gpio_device camera_TX_device;
 
@@ -1139,7 +1197,8 @@ INIT_DEVICE_EXPORT(rt_hw_power_gsm_register);
 INIT_DEVICE_EXPORT(rt_hw_gsm_power_register);
 INIT_DEVICE_EXPORT(rt_hw_gsm_reset_register);
 INIT_DEVICE_EXPORT(rt_hw_gsm_status_register);
-//INIT_DEVICE_EXPORT(rt_hw_gsm_dtr_register);
+INIT_DEVICE_EXPORT(rt_hw_gsm_dtr_register);
+INIT_DEVICE_EXPORT(rt_hw_gsm_led_register);
 
 INIT_DEVICE_EXPORT(rt_hw_kb_in1_register);
 INIT_DEVICE_EXPORT(rt_hw_kb_in2_register);

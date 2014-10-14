@@ -42,11 +42,13 @@
 #define KEY_FPRINT_CODE_SIZE 512
 #define KEY_RFID_CODE_SIZE 4
 #define KEY_KBOARD_CODE_SIZE 6
+#define KEY_RF433_CODE_SIZE 4
 
 #define	KEY_TYPE_INVALID 0
 #define	KEY_TYPE_FPRINT 1
 #define	KEY_TYPE_RFID 2
 #define	KEY_TYPE_KBOARD 3
+#define KEY_TYPE_RF433 4
 
 #define	KEY_OPERATION_TYPE_FOREVER 1
 #define	KEY_OPERATION_TYPE_ONCE 2
@@ -78,6 +80,9 @@ struct key_fprint_code {
 struct key_kboard_code {
 	u8 code[KEY_KBOARD_CODE_SIZE];
 };
+struct key_rf433_code {
+	u8 code[KEY_RF433_CODE_SIZE];
+};
 struct key_head {
 	u8 is_updated;
 	u16 account;
@@ -91,6 +96,7 @@ union key_data{
 	struct key_rfid_code rfid;
 	struct key_fprint_code fprint;
 	struct key_kboard_code kboard;
+	struct key_rf433_code rf433;
 };
 
 struct key {

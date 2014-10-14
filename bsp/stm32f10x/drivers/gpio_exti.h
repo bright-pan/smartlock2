@@ -41,7 +41,7 @@
 
 #define DEVICE_NAME_FP_TOUCH "fp_t"
 #define DEVICE_NAME_GSM_RING "g_ring"
-
+#define DEVICE_NAME_HALL "hall"
 //#define DEVICE_NAME_BATTERY_SWITCH "bat_sw" /* BATTERY DEVICE NAME */
 
 //#define DEVICE_NAME_BUTTON_ADJUST_IR "adjustIR"
@@ -81,6 +81,10 @@
 #define GSM_RING_EXTI_TRIGGER_MODE EXTI_Trigger_Falling
 #define GSM_RING_STATUS 0
 #define GSM_RING_INT_INTERVAL 100
+
+#define HALL_EXTI_TRIGGER_MODE EXTI_Trigger_Falling
+#define HALL_STATUS 0
+#define HALL_INT_INTERVAL 100
 
 //#define GSM_RING_EXTI_TRIGGER_MODE EXTI_Trigger_Rising
 //#define GSM_RING_DETECT_STATUS 1

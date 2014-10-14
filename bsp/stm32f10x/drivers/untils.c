@@ -17,6 +17,8 @@
 #include <dfs_fs.h>
 #include "dfs_posix.h"
 #include <time.h>
+#include "gpio.h"
+#include "gpio_pin.h"
 #define CONFIG_DEBUG 1
 
 rt_device_t rtc_device;
@@ -159,5 +161,23 @@ void sysreset()
   NVIC_SystemReset();
 }
 FINSH_FUNCTION_EXPORT(sysreset,sysreset() -- reset stm32);
-
+void delay_us_test(char *name, int cnts, int delay1, int delay2)
+{
+    u8 dat = 1;
+    int i;
+    rt_device_t device = device_enable(name);
+	gpio_device *gpio = (gpio_device *)device;
+    struct gpio_pin_user_data *user = (struct gpio_pin_user_data*)gpio->parent.user_data;
+      
+    
+    //rt_base_t level = rt_hw_interrupt_disable();
+    for (i = 0; i < cnts; ++i) {
+        GPIO_SetBits(user->gpiox,user->gpio_pinx);
+        delay_us(delay1);
+        GPIO_ResetBits(user->gpiox,user->gpio_pinx);
+        delay_us(delay2);
+    }
+    //rt_hw_interrupt_enable(level);
+}
+FINSH_FUNCTION_EXPORT(delay_us_test,delay_us_test());
 #endif

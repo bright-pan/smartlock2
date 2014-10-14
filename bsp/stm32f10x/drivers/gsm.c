@@ -1412,12 +1412,13 @@ gsm_init_process(void)
 		(gsm_command(AT_CMIC, 50, &gsm_mail_cmd_data) == AT_RESPONSE_OK) &&
 		(gsm_command(AT_CLVL, 50, &gsm_mail_cmd_data) == AT_RESPONSE_OK) &&
 		(gsm_command(AT_CHFA, 50, &gsm_mail_cmd_data) == AT_RESPONSE_OK) &&
-		(gsm_command(AT_ECHO, 50, &gsm_mail_cmd_data) == AT_RESPONSE_OK) &&
-		(gsm_command(AT_IFC, 50, &gsm_mail_cmd_data) == AT_RESPONSE_OK) &&
-		(gsm_command(AT_W, 50, &gsm_mail_cmd_data) == AT_RESPONSE_OK) &&
-		(gsm_command(AT_CNMI, 50, &gsm_mail_cmd_data) == AT_RESPONSE_OK) &&
-		(gsm_command(AT_CSCA, 50, &gsm_mail_cmd_data) == AT_RESPONSE_OK) &&
-		(gsm_command(AT_CMGF_0, 50, &gsm_mail_cmd_data) == AT_RESPONSE_OK))
+		(gsm_command(AT_ECHO, 50, &gsm_mail_cmd_data) == AT_RESPONSE_OK)
+		 //&& (gsm_command(AT_IFC, 50, &gsm_mail_cmd_data) == AT_RESPONSE_OK)
+		 && (gsm_command(AT_W, 50, &gsm_mail_cmd_data) == AT_RESPONSE_OK)
+		 && (gsm_command(AT_CNMI, 50, &gsm_mail_cmd_data) == AT_RESPONSE_OK)
+		 && (gsm_command(AT_CSCA, 50, &gsm_mail_cmd_data) == AT_RESPONSE_OK)
+		 && (gsm_command(AT_CMGF_0, 50, &gsm_mail_cmd_data) == AT_RESPONSE_OK)
+    )
 	{
 		result = GSM_EOK;
 	}
