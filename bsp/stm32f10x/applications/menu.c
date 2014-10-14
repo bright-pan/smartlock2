@@ -11,6 +11,11 @@
 
 typedef void (*fun1)(void);
 
+MenuManageDef MenuManage = 
+{
+	RT_NULL,
+};
+
 rt_uint8_t KeyFuncIndex = 0;
 fun1 current_operation_index = RT_NULL;
 
@@ -101,7 +106,7 @@ void system_entry_ui_processing(void)
 	{ 
 	  switch(KeyValue)
 	  {
-	    case '*':
+	    case MENU_SURE_VALUE:
 	    {
 	      //确定
 	      if(System_menu_index == RT_NULL)
@@ -111,19 +116,19 @@ void system_entry_ui_processing(void)
 	      SystemFuncIndex = SystemMenu[ SystemFuncIndex].SureState;
 	      break;
 	    }
-	    case '#':
+	    case MENU_DEL_VALUE:
 	    {
 	      //取消
 	      SystemFuncIndex = SystemMenu[ SystemFuncIndex].BackState;
 	      break;
 	    }
-	    case '8':
+	    case MENU_UP_VALUE:
 	    {
 	      //上
 	      SystemFuncIndex = SystemMenu[ SystemFuncIndex].UpState;
 	      break;
 	    }
-	    case '0':
+	    case MENU_DOWN_VALUE:
 	    {
 	      //下
 	      SystemFuncIndex = SystemMenu[ SystemFuncIndex].DnState;
@@ -137,6 +142,14 @@ void system_entry_ui_processing(void)
 	  }
 	  System_menu_index = SystemMenu[SystemFuncIndex].CurrentOperate;
 	  System_menu_index();
+	}
+	else
+	{
+		//操作超时
+		if(menu_event_process(2,MENU_EVT_OP_OUTTIME) == 0)
+		{
+      system_menu_choose(0);
+		}
 	}
 }
 
@@ -169,7 +182,7 @@ void system_manage_ui_processing(void)
 		}*/
 		switch(KeyValue)
 		{
-			case '*':
+			case MENU_SURE_VALUE:
 			{
 				//确定
 				if(current_operation_index == RT_NULL)
@@ -179,19 +192,19 @@ void system_manage_ui_processing(void)
 				KeyFuncIndex = KeyTab[ KeyFuncIndex].SureState;
 				break;
 			}
-			case '#':
+			case MENU_DEL_VALUE:
 			{
 				//取消
 				KeyFuncIndex = KeyTab[ KeyFuncIndex].BackState;
 				break;
 			}
-			case '8':
+			case MENU_UP_VALUE:
 			{
 				//上
 				KeyFuncIndex = KeyTab[ KeyFuncIndex].UpState;
 				break;
 			}
-			case '0':
+			case MENU_DOWN_VALUE:
 			{
 				//下
 				KeyFuncIndex = KeyTab[ KeyFuncIndex].DnState;
@@ -204,6 +217,14 @@ void system_manage_ui_processing(void)
 		}
 		current_operation_index = KeyTab[KeyFuncIndex].CurrentOperate;
 		current_operation_index();
+	}
+	else
+	{
+    //操作超时
+	  if(menu_event_process(2,MENU_EVT_OP_OUTTIME) == 0)
+	  {
+	    system_menu_choose(0);
+	  }
 	}
 }
 
@@ -241,6 +262,11 @@ void system_menu_choose(rt_uint8_t menu)
 
 void key_input_processing_init(void)
 {
+	if(MenuManage.event == RT_NULL)
+	{
+		MenuManage.event = rt_event_create("menu",RT_IPC_FLAG_FIFO);
+		RT_ASSERT(MenuManage.event != RT_NULL);
+	}
   system_menu_choose(0);
 }
 
@@ -315,7 +341,7 @@ void string_hide_string(const rt_uint8_t src[],rt_uint8_t str[],rt_uint8_t ch,rt
 
   rt_memset(str,0,size);
 
-  //rt_kprintf("input :%s\n",src);  
+  rt_kprintf("input :%s\n",src);  
 
 	for(i=0;i<rt_strlen((const char*)src);i++)
 	{
@@ -356,9 +382,10 @@ void menu_error_handle(rt_uint8_t type)
 		}
 		case 3:
 		{
-			//钥匙错误
+			//密码错误
 			#ifdef USEING_BUZZER_FUN
 			buzzer_send_mail(BZ_TYPE_ERROR3);
+			gprs_key_error_mail(KEY_TYPE_KBOARD);
 			#endif
 			break;
 		}
@@ -369,5 +396,90 @@ void menu_error_handle(rt_uint8_t type)
 	}
 }
 
+/*
+功能:操作菜单中事件
+参数:mode 模式  type 事件类型
+返回: -------------------------
+		 |模式 |成功|失败|功能    |
+		 |0    |0   |1   |发送事件|
+		 |1    |0   |1   |收到事件|
+		 |2    |0   |1   |清除事件|
+		 --------------------------
+*/
+rt_uint8_t menu_event_process(rt_uint8_t mode,rt_uint32_t type)
+{
+	rt_uint32_t value;
+	rt_err_t    result;
+	rt_uint8_t  return_data = 1;
+	
+	//net_evt_mutex_op(RT_TRUE);
+
+	if(MenuManage.event == RT_NULL)
+	{
+    MenuManage.event  = rt_event_create("menu",RT_IPC_FLAG_FIFO);
+    RT_ASSERT(MenuManage.event  != RT_NULL);
+	}
+	switch(mode)
+	{
+		case 0:	//set event 
+		{
+			result = rt_event_send(MenuManage.event ,type);
+			if(result == RT_EOK)
+			{
+				return_data = 0;
+			}
+			break;
+		}
+		case 1:	//get event 
+		{
+			result = rt_event_recv(MenuManage.event ,
+			                       type,
+			                       RT_EVENT_FLAG_OR,
+			                       RT_WAITING_NO,&value);
+			if(result == RT_EOK)
+			{
+				return_data = 0;
+			}
+			else if(result == -RT_ETIMEOUT)
+			{
+				return_data = 1;
+			}
+			break;
+		}
+		case 2://clean event
+		{
+			result = rt_event_recv(MenuManage.event,
+			                       type,
+			                       RT_EVENT_FLAG_OR | 
+			                       RT_EVENT_FLAG_CLEAR,
+			                       RT_WAITING_NO,&value);
+			if(result == RT_EOK)
+			{
+				return_data = 0;
+			}
+			break;
+		}
+    case 3://clean all event 
+    {
+      result = rt_event_recv(MenuManage.event,
+                             0xffffffff,
+                             RT_EVENT_FLAG_OR | 
+                             RT_EVENT_FLAG_CLEAR,
+                             RT_WAITING_NO,&value);
+      if(result == RT_EOK)
+      {
+        return_data = 0;
+      }
+      break;
+    }
+    default:
+    {
+			break;
+    }
+	}
+
+	//net_evt_mutex_op(RT_FALSE);
+	return return_data;
+}
 
 

@@ -101,7 +101,7 @@ void menu_0_processing(void)
             //输入数量超过8个
           }
         }
-        else if(KeyValue == '*')
+        else if(KeyValue == MENU_SURE_VALUE)
         {
           rt_kprintf("核对密码\n");
           result =  admin_password_check(buf);
@@ -122,7 +122,7 @@ void menu_0_processing(void)
             break;
           }
         }
-        else if(KeyValue == '#')
+        else if(KeyValue == MENU_DEL_VALUE)
         {
           rt_kprintf("删除\nn");
           result = string_del_char(buf,8);
@@ -141,6 +141,12 @@ void menu_0_processing(void)
       }
       else
       {
+      	//操作超时
+	    	if(menu_event_process(2,MENU_EVT_OP_OUTTIME) == 0)
+	    	{
+					return ;
+	    	}
+	    	
       	GlintStatus++;
         menu_inputchar_glint(SHOW_X_ROW8(5+rt_strlen((const char*)ShowBuf)),SHOW_Y_LINE(2),GlintStatus%2);
       }

@@ -63,6 +63,14 @@ static rt_uint8_t fprint_modify_fun_choose_ui(void)
 				return 0xff;
 			}
 		}
+		else
+		{
+			//操作超时
+    	if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+    	{
+				return ;
+    	}
+		}
 	}
 }
 
@@ -176,6 +184,8 @@ rt_err_t fprint_input_ok_trigger(void *user)
 
 	if(fp_event_process(1,FP_EVNT_NORMAL_MODE) == RT_EOK)
 	{
+		rt_uint16_t *keypos = RT_NULL;
+		
 		#ifdef _LOCAL_H_
 		union alarm_data KeyData;
 
@@ -184,14 +194,37 @@ rt_err_t fprint_input_ok_trigger(void *user)
 	  rt_kprintf("unlock id %d\n",key.KeyPos);
 	  send_local_mail(ALARM_TYPE_LOCK_PROCESS,(time_t)menu_get_cur_date,&KeyData);
 	  #endif
+
+		#ifdef __GPRS_H__
+    //GPRS邮件
+    keypos = rt_calloc(1,sizeof(*keypos));
+    *keypos = key.KeyPos;
+    send_gprs_mail(ALARM_TYPE_CODE_KEY_RIGHT,menu_get_cur_date(),(void *)keypos);
+		#endif
+
+		key_error_alarm_manage(1);
 		rt_mq_send(FpRight_mq,user,sizeof(FPINTF_USER));
 	}
 }
 
+rt_err_t fprint_input_error_trigger(void *user)
+{
+	if(key_error_alarm_manage(0) == RT_TRUE)
+	{
+		#ifdef __GPRSMAILCLASS_H__
+		gprs_key_error_mail(KEY_TYPE_FPRINT);
+		#endif
+		
+		#ifdef _SMS_H_
+    send_sms_mail(ALARM_TYPE_RFID_KEY_ERROR,menu_get_cur_date());
+		#endif
+	}
+}
 //指纹回调函数初始化
 int fprint_call_back_init(void)
 {
 	fp_ok_callback(fprint_input_ok_trigger);
+	fp_error_callback(fprint_input_error_trigger);
 	fp_event_process(0,FP_EVNT_NORMAL_MODE);
 }
 INIT_APP_EXPORT(fprint_call_back_init);
@@ -268,7 +301,11 @@ static void fprint_new_create_ui(void)
       }
       else
       {
-    
+    		//操作超时
+	    	if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+	    	{
+					return ;
+	    	}
       }
     }
 

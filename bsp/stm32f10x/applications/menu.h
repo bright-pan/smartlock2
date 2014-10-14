@@ -4,6 +4,13 @@
 //#include "commfun.h"
 #include "gui.h"
 #include"accountop.h"
+#include "sms.h"
+#include "gprsmailclass.h"
+
+#define MENU_SURE_VALUE					 '*'
+#define MENU_DEL_VALUE           '#'
+#define MENU_UP_VALUE						 '2'
+#define MENU_DOWN_VALUE					 '8'
 
 #define LCD_LINE_MAX_LEN					17							//留出一个结束符的位置
 
@@ -12,6 +19,8 @@
 #define MENU_PHONE_MAX_LEN				12
 
 #define CONFIG_PASSWORD_LEN				6	//配置文件标准密码长度
+
+#define MENU_EVT_OP_OUTTIME				(0X01<<0)//菜单操作超时事件
 
 typedef struct 
 {
@@ -22,6 +31,14 @@ typedef struct
 	rt_uint8_t BackState;						//按下“退回”键时转向的状态索引号
 	void(*CurrentOperate)(void);		//当前状态应该执行的能操作
 }KbdTabStruct;
+
+typedef struct 
+{
+	rt_event_t event;
+}MenuManageDef;
+
+extern MenuManageDef MenuManage;
+
 
 extern rt_uint8_t KeyFuncIndex;
 extern KbdTabStruct	KeyTab[KEY_MAX_MENU_NUM];
@@ -47,4 +64,6 @@ void system_menu_choose(rt_uint8_t menu);
 
 //错误处理
 void menu_error_handle(rt_uint8_t type);
+
+rt_uint8_t menu_event_process(rt_uint8_t mode,rt_uint32_t type);
 #endif

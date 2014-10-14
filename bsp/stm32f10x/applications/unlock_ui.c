@@ -1,6 +1,7 @@
 #include "unlock_ui.h"
 #include "menu.h"
 #include "local.h"
+#include "gprsmailclass.h"
 
 #define PAGE_MAX_SHOW_NUM					4
 
@@ -42,14 +43,14 @@ static void system_enter_menu_ui(rt_uint8_t InPOS)
 		if(i == pos)
 		{
 			gui_display_string(SHOW_X_CENTERED((const char*)SystemEnterMenuText[page*PAGE_MAX_SHOW_NUM+i]),
-												 SHOW_Y_LINE(i),
+												 SHOW_Y_LINE(i+1),
 												 (rt_uint8_t *)SystemEnterMenuText[page*PAGE_MAX_SHOW_NUM+i],
 												 GUI_BLACK);
 		}
 		else
 		{
 			gui_display_string(SHOW_X_CENTERED((const char*)SystemEnterMenuText[page*PAGE_MAX_SHOW_NUM+i]),
-												 SHOW_Y_LINE(i),
+												 SHOW_Y_LINE(i+1),
 												 (rt_uint8_t *)SystemEnterMenuText[page*PAGE_MAX_SHOW_NUM+i],
 												 GUI_WIHIT);
 		}
@@ -79,7 +80,6 @@ static rt_err_t unlock_password_verify(rt_uint8_t *password,rt_int32_t *ps_id)
 	return RT_EOK;
 }
 
-static rt_uint8_t OpenDoorErrorCnt = 0;
 void unlock_process_ui(void)
 {
 	rt_uint8_t buf[8];
@@ -134,8 +134,8 @@ void unlock_process_ui(void)
 	          gui_display_update();
 	          rt_thread_delay(RT_TICK_PER_SECOND);
 	          gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(3),SHOW_X_ROW8(15),SHOW_Y_LINE(4));
-	          OpenDoorErrorCnt++;
-	          if(OpenDoorErrorCnt ==  3)
+	          
+	          if(key_error_alarm_manage(0) ==  RT_TRUE)
 	          {
 							menu_error_handle(3);
 	          }
@@ -149,6 +149,15 @@ void unlock_process_ui(void)
 	          KeyData.lock.operation = LOCK_OPERATION_OPEN;
 	          rt_kprintf("unlock id %d\n",ps_id);
 	          send_local_mail(ALARM_TYPE_LOCK_PROCESS,(time_t)menu_get_cur_date,&KeyData);
+	          
+	          #ifdef __GPRSMAILCLASS_H__
+	          //GPRS邮件
+			      gprs_key_right_mail(ps_id);
+			      #endif
+
+			      #ifdef _SMS_H_				
+            send_sms_mail(ALARM_TYPE_RFID_KEY_ERROR,menu_get_cur_date());
+			      #endif
 	          //新密码是合法的
 	          gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
 	          gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),UNLOCK_UI_TEXT[3],GUI_WIHIT);
@@ -157,7 +166,7 @@ void unlock_process_ui(void)
 						//密码匹配的结果
 	          rt_kprintf("This %d key Open the door success\n",ps_id);
 	          system_menu_choose(1);
-	          OpenDoorErrorCnt = 0;
+	          key_error_alarm_manage(1);
 	          return ;
 	        }
 	      }
@@ -182,6 +191,11 @@ void unlock_process_ui(void)
 	    }
 	    else
 	    {
+	    	//操作超时
+	    	if(menu_event_process(2,MENU_EVT_OP_OUTTIME) == 0)
+	    	{
+					return ;
+	    	}
 	      //闪烁提示
 	      GlintStatus++;
 	      menu_inputchar_glint(SHOW_X_ROW8(PASSWORD_DATA_POS+rt_strlen((const char *)ShowBuf)),SHOW_Y_LINE(1),GlintStatus%2);

@@ -296,7 +296,7 @@ void menu_14_processing(void)
             //输入数量超过8个
           }
         }
-        else if(KeyValue == '*')
+        else if(KeyValue == MENU_SURE_VALUE)
         {
           //检测输入的密码是否合法
           result = add_new_password_check(buf);
@@ -317,7 +317,7 @@ void menu_14_processing(void)
           }
           //新密码输入完成 进入验证。
         }
-        else if(KeyValue == '#')
+        else if(KeyValue == MENU_DEL_VALUE)
         {
           rt_kprintf("删除\nn");
           result = string_del_char(buf,8);
@@ -337,6 +337,11 @@ void menu_14_processing(void)
       }
       else
       {
+      	//操作超时
+	    	if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+	    	{
+					return ;
+	    	}
         //闪烁提示
         GlintStatus++;
         menu_inputchar_glint(SHOW_X_ROW8(rt_strlen((const char *)ShowBuf)),SHOW_Y_LINE(2),GlintStatus%2);
@@ -383,7 +388,7 @@ void menu_14_processing(void)
             //输入数量超过8个
           }
         }
-        else if(KeyValue == '*')
+        else if(KeyValue == MENU_SURE_VALUE)
         {
           //检测输入的密码是否合法
           rt_uint32_t temp;
@@ -438,7 +443,7 @@ void menu_14_processing(void)
           //新密码输入完成 进入验证。
           break;
         }
-        else if(KeyValue == '#')
+        else if(KeyValue == MENU_DEL_VALUE)
         {
           rt_kprintf("删除\nn");
           result = string_del_char(buf,8);
@@ -457,6 +462,11 @@ void menu_14_processing(void)
       }
       else
       {
+      	//操作超时
+	    	if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+	    	{
+					return ;
+	    	}
         //闪烁提示
         GlintStatus++;
         menu_inputchar_glint(SHOW_X_ROW8(rt_strlen((const char *)ShowBuf)),SHOW_Y_LINE(2),GlintStatus%2);
@@ -501,7 +511,7 @@ void menu_15_processing(void)
 			result = gui_key_input(&KeyValue);
 			if(result == RT_EOK)
 			{
-				if(KeyValue == '*')
+				if(KeyValue == MENU_SURE_VALUE)
 				{
 					//采集指纹
 					gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(2),SHOW_X_ROW8(15),SHOW_Y_LINE(3));
@@ -537,7 +547,7 @@ void menu_15_processing(void)
 						break;
 					}
 				}
-				else if(KeyValue == '#')
+				else if(KeyValue == MENU_DEL_VALUE)
 				{
 					gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),MenuCommText[0],GUI_WIHIT);
          	gui_display_update();
@@ -546,7 +556,11 @@ void menu_15_processing(void)
 			}
 			else
 			{
-
+        //操作超时
+        if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+        {
+          return ;
+        }
 			}
 		}
 		rt_thread_delay(1);
@@ -624,7 +638,7 @@ void menu_16_processing(void)
             //输入数量超过8个
           }
         }
-        else if(KeyValue == '*')
+        else if(KeyValue == MENU_SURE_VALUE)
         {
           //检测输入的手机是否合法
           result = add_new_phone_check(buf);
@@ -645,7 +659,7 @@ void menu_16_processing(void)
           }
           //新密码输入完成 进入验证。
         }
-        else if(KeyValue == '#')
+        else if(KeyValue == MENU_DEL_VALUE)
         {
           rt_kprintf("删除\nn");
           result = string_del_char(buf,MENU_PHONE_MAX_LEN);
@@ -664,6 +678,11 @@ void menu_16_processing(void)
       }
       else
       {
+      	//操作超时
+	    	if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+	    	{
+					return ;
+	    	}
         //闪烁提示
         GlintStatus++;
         menu_inputchar_glint(SHOW_X_ROW8(rt_strlen((const char *)buf)),SHOW_Y_LINE(2),GlintStatus%2);
@@ -708,7 +727,7 @@ void menu_16_processing(void)
             //输入数量超过8个
           }
         }
-        else if(KeyValue == '*')
+        else if(KeyValue == MENU_SURE_VALUE)
         {
         	rt_int32_t res;
           //检测输入的手机是否合法
@@ -751,7 +770,7 @@ void menu_16_processing(void)
           }
           //新密码输入完成 进入验证。
         }
-        else if(KeyValue == '#')
+        else if(KeyValue == MENU_DEL_VALUE)
         {
           rt_kprintf("删除\nn");
           result = string_del_char(buf,MENU_PHONE_MAX_LEN);
@@ -770,6 +789,11 @@ void menu_16_processing(void)
       }
       else
       {
+      	//操作超时
+	    	if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+	    	{
+					return ;
+	    	}
         //闪烁提示
         GlintStatus++;
         menu_inputchar_glint(SHOW_X_ROW8(rt_strlen((const char *)buf)),SHOW_Y_LINE(2),GlintStatus%2);
@@ -947,7 +971,7 @@ static void user_list_processing(void)
           user_get_info_continuous(UserInfo,&start_id,PAGE_MAX_SHOW_LINE,0);
         }
       }*/
-      else if(KeyValue == '*')
+      else if(KeyValue == MENU_SURE_VALUE)
       {
         //确定
         rt_kprintf("Choose User:%d\n",CurPage*PAGE_MAX_SHOW_LINE+CurLine);
@@ -956,12 +980,20 @@ static void user_list_processing(void)
         menu_run_sure_process();
         return ;
       }
-      else if(KeyValue == '#')
+      else if(KeyValue == MENU_DEL_VALUE)
       {
         //取消
       }
 
       rt_kprintf("CurPage = %d CurLine = %d\n",CurPage,CurLine);
+    }
+    else
+    {
+			//操作超时
+    	if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+    	{
+				return ;
+    	}
     }
     for(i = 0;i<PAGE_MAX_SHOW_LINE;i++)
 		{
@@ -1016,7 +1048,7 @@ void menu_22_processing(void)
 	        //输入数量超过8个
 	      }
 	    }
-	    else if(KeyValue == '*')
+	    else if(KeyValue == MENU_SURE_VALUE)
 	    {
 	      //检测是否能找到这个人
 	      result = search_user_id_check(buf,&UserPos);
@@ -1035,13 +1067,13 @@ void menu_22_processing(void)
             result = gui_key_input(&KeyValue);
 						if(result == RT_EOK)
 						{
-							if(KeyValue == '*')
+							if(KeyValue == MENU_SURE_VALUE)
 							{
 								//进入浏览界面
 								user_list_processing();
 								return ;
 							}
-							else if(KeyValue == '#')
+							else if(KeyValue == MENU_DEL_VALUE)
 							{
 								//返回键
 								gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(2),SHOW_X_ROW8(16),SHOW_Y_LINE(3));
@@ -1064,7 +1096,7 @@ void menu_22_processing(void)
 	      }
 	      //新密码输入完成 进入验证。
 	    }
-	    else if(KeyValue == '#')
+	    else if(KeyValue == MENU_DEL_VALUE)
 	    {
 	      rt_kprintf("删除\nn");
 	      result = string_del_char(buf,MENU_PHONE_MAX_LEN);
@@ -1083,6 +1115,11 @@ void menu_22_processing(void)
 	  }
 	  else
 	  {
+	  	//操作超时
+    	if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+    	{
+				return ;
+    	}
 	    //闪烁提示
 	    GlintStatus++;
 	    menu_inputchar_glint(SHOW_X_ROW8(rt_strlen((const char *)buf)),SHOW_Y_LINE(1),GlintStatus%2);
@@ -1217,21 +1254,30 @@ rt_err_t menu_input_sure_key(void)
 		result = gui_key_input(&KeyValue);
 		if(RT_EOK == result)
 		{
-				if(KeyValue == '*')
+				if(KeyValue == MENU_SURE_VALUE)
 				{
 					break;
 				}
-				else if(KeyValue == '#')
+				else if(KeyValue == MENU_DEL_VALUE)
 				{
 					break;
 				}
 		}
+		else
+		{
+			//操作超时
+    	if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+    	{
+    		result = RT_ERROR;
+				break ;
+    	}
+		}
 	}
-	if(KeyValue == '*')
+	if(KeyValue == MENU_SURE_VALUE)
 	{
 		result = RT_EOK;
 	}
-	else if(KeyValue == '#')
+	else if(KeyValue == MENU_DEL_VALUE)
 	{
 		result = RT_ERROR;
 	}
@@ -1268,7 +1314,7 @@ static rt_err_t menu_intput_password_two(rt_uint8_t *buf,rt_uint8_t *ShowBuf,rt_
 		      //输入数量超过8个
 		    }
 		  }
-		  else if(KeyValue == '*')
+		  else if(KeyValue == MENU_SURE_VALUE)
 		  {
 		    //检测输入的密码是否合法
 		    rt_uint32_t temp;
@@ -1286,7 +1332,7 @@ static rt_err_t menu_intput_password_two(rt_uint8_t *buf,rt_uint8_t *ShowBuf,rt_
 		      return RT_EOK;
 		    }
 		  }
-		  else if(KeyValue == '#')
+		  else if(KeyValue == MENU_DEL_VALUE)
 		  {
 		    rt_kprintf("删除\nn");
 		    result = string_del_char(buf,8);
@@ -1305,6 +1351,11 @@ static rt_err_t menu_intput_password_two(rt_uint8_t *buf,rt_uint8_t *ShowBuf,rt_
 		}
 		else
 		{
+			//操作超时
+    	if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+    	{
+				return ;
+    	}
 		  //闪烁提示
 		  GlintStatus++;
 		  menu_inputchar_glint(SHOW_X_ROW8(rt_strlen((const char *)ShowBuf)),SHOW_Y_LINE(2),GlintStatus%2);
@@ -1345,7 +1396,7 @@ static rt_err_t menu_input_password_one(rt_uint8_t *buf,rt_uint8_t *ShowBuf)
           //输入数量超过8个
         }
       }
-      else if(KeyValue == '*')
+      else if(KeyValue == MENU_SURE_VALUE)
       {
         //检测输入的密码是否合法
         if(rt_strlen((const char*)buf) < CONFIG_PASSWORD_LEN)
@@ -1366,7 +1417,7 @@ static rt_err_t menu_input_password_one(rt_uint8_t *buf,rt_uint8_t *ShowBuf)
         }
         //新密码输入完成 进入验证。
       }
-      else if(KeyValue == '#')
+      else if(KeyValue == MENU_DEL_VALUE)
       {
         rt_kprintf("删除\nn");
         result = string_del_char(buf,8);
@@ -1384,6 +1435,11 @@ static rt_err_t menu_input_password_one(rt_uint8_t *buf,rt_uint8_t *ShowBuf)
     }
     else
     {
+			//操作超时
+			if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+			{
+					return ;
+			}
       //闪烁提示
       GlintStatus++;
       menu_inputchar_glint(SHOW_X_ROW8(rt_strlen((const char *)ShowBuf)),SHOW_Y_LINE(2),GlintStatus%2);
@@ -1478,12 +1534,12 @@ static rt_err_t menu_input_string_ui1(rt_uint8_t *buf,rt_uint8_t InputLength)
 	          //输入数量超过8个
 	        }
 	      }
-	      else if(KeyValue == '*')
+	      else if(KeyValue == MENU_SURE_VALUE)
 	      {
 					FunResult = RT_EOK;
 					break;
 	      }
-	      else if(KeyValue == '#')
+	      else if(KeyValue == MENU_DEL_VALUE)
 	      {
 	        result = string_del_char(buf,8);
 	        if(result == RT_EOK)
@@ -1501,6 +1557,11 @@ static rt_err_t menu_input_string_ui1(rt_uint8_t *buf,rt_uint8_t InputLength)
 	    }
 	    else
 	    {
+	    	//操作超时
+	    	if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+	    	{
+					return ;
+	    	}
 	      //闪烁提示
 	      GlintStatus++;
 	      menu_inputchar_glint(SHOW_X_ROW8(rt_strlen((const char *)ShowBuf)),SHOW_Y_LINE(2),GlintStatus%2);
@@ -1938,7 +1999,7 @@ void menu_31_processing(void)
             //输入数量超过8个
           }
         }
-        else if(KeyValue == '*')
+        else if(KeyValue == MENU_SURE_VALUE)
         {
           //检测输入的密码是否合法
           result = add_new_password_check(buf);
@@ -1958,7 +2019,7 @@ void menu_31_processing(void)
           }
           //新密码输入完成 进入验证。
         }
-        else if(KeyValue == '#')
+        else if(KeyValue == MENU_DEL_VALUE)
         {
           rt_kprintf("删除\nn");
           result = string_del_char(buf,8);
@@ -2018,7 +2079,7 @@ void menu_31_processing(void)
             //输入数量超过8个
           }
         }
-        else if(KeyValue == '*')
+        else if(KeyValue == MENU_SURE_VALUE)
         {
           //检测输入的密码是否合法
           rt_uint32_t temp;
@@ -2060,7 +2121,7 @@ void menu_31_processing(void)
           //新密码输入完成 进入验证。
           break;
         }
-        else if(KeyValue == '#')
+        else if(KeyValue == MENU_DEL_VALUE)
         {
           rt_kprintf("删除\nn");
           result = string_del_char(buf,8);

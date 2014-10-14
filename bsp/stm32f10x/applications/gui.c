@@ -17,6 +17,7 @@
 #include "gui.h"
 #include "asiic168.h"
 #include "gb1616.h"
+#include "menu.h"
 
 #ifdef USEING_BUZZER_FUN
 #include "buzzer.h"
@@ -91,6 +92,8 @@ rt_err_t gui_key_input(rt_uint8_t *KeyValue)
 			//ÆÁÄ»ÐÝÃß
 			gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);	
 			gui_display_update();
+			//²Ù×÷³¬Ê±
+	    menu_event_process(0,MENU_EVT_OP_OUTTIME);
 		}
 	}
 	
@@ -291,6 +294,7 @@ void gui_china16s(rt_uint8_t x, rt_uint8_t y, rt_uint8_t *s, rt_uint8_t fColor)
 		}
 		else
 		{
+			//rt_kprintf("x:%d y:%d,%s\n",x+l*8,y,s);
 			gui_china16(x+l*8,y,(rt_uint8_t*)s,fColor);
 			s+=2;l+=2;
 		}
