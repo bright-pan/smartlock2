@@ -57,11 +57,16 @@
 #define UART3_TX_GPIO		GPIOB
 #define UART3_RX_PIN		GPIO_Pin_11
 #define UART3_RX_GPIO		GPIOB
-
+/*
 #define UART3_CTS_PIN		GPIO_Pin_13
 #define UART3_CTS_GPIO		GPIOB
 #define UART3_RTS_PIN		GPIO_Pin_14
 #define UART3_RTS_GPIO		GPIOB
+*/
+#define UART3_CTS_PIN		((uint16_t)0x0000)// cts is disable
+#define UART3_CTS_GPIO		((GPIO_TypeDef *)0x00000000)
+#define UART3_RTS_PIN		((uint16_t)0x0000)// rts is disable
+#define UART3_RTS_GPIO		((GPIO_TypeDef *)0x00000000)
 
 #define UART3_REMAP         (((uint32_t)0x00000000))
 

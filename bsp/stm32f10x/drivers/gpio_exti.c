@@ -16,6 +16,7 @@
 #include "untils.h"
 #include "fprint.h"
 #include "gui.h"
+#include "rf433.h"
 
 extern rt_device_t rtc_device;
 
@@ -954,77 +955,6 @@ rt_hw_kb_intr_register(void)
     return 0;
 }
 
-/* gsm_ring device 
-gpio_device gsm_ring_device;
-rt_timer_t gsm_ring_exti_timer = RT_NULL;
-
-void 
-gsm_ring_exti_timeout(void *parameters)
-{
-	rt_device_t device = RT_NULL;
-    uint8_t data = 0;
-
-	device = device_enable(DEVICE_NAME_GSM_RING);
-    
-	if (device != RT_NULL)
-	{
-		rt_device_read(device,0,&data,0);
-		if (data == GSM_RING_STATUS)
-		{
-            rt_kprintf("it is gsm ring!\n");
-		}
-		rt_device_control(device, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0);
-	}
-
-	rt_timer_stop(gsm_ring_exti_timer);
-}
-rt_err_t gsm_ring_rx_ind(rt_device_t dev, rt_size_t size)
-{
-    rt_device_t device = RT_NULL;
-
-    device = rt_device_find(DEVICE_NAME_GSM_RING);
-    RT_ASSERT(device != RT_NULL);
-    rt_device_control(device, RT_DEVICE_CTRL_MASK_EXTI, (void *)0);
-    rt_timer_start(gsm_ring_exti_timer);
-    return RT_EOK;
-}
-
-struct gpio_exti_user_data gsm_ring_user_data =
-{
-   DEVICE_NAME_GSM_RING,
-   GPIOE,
-   GPIO_Pin_14,
-   GPIO_Mode_IPU,
-   GPIO_Speed_50MHz,
-   RCC_APB2Periph_GPIOE |RCC_APB2Periph_AFIO,
-   GPIO_PortSourceGPIOE,
-   GPIO_PinSource14,
-   EXTI_Line14,
-   EXTI_Mode_Interrupt,
-   GSM_RING_EXTI_TRIGGER_MODE,
-   EXTI15_10_IRQn,
-   1,
-   5,
-   gsm_ring_rx_ind,
-};
-
-int rt_hw_gsm_ring_register(void)
-{
-    gpio_device *gpio_device = &gsm_ring_device;
-    struct gpio_exti_user_data *gpio_user_data = &gsm_ring_user_data;
-
-    gpio_device->ops = &gpio_exti_user_ops;
-    rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX), gpio_user_data);
-    gsm_ring_exti_timer = rt_timer_create("g_ring",
-                                            gsm_ring_exti_timeout,
-                                            RT_NULL,
-                                            GSM_RING_INT_INTERVAL,
-                                            RT_TIMER_FLAG_ONE_SHOT | RT_TIMER_FLAG_SOFT_TIMER);
-    rt_device_set_rx_indicate((rt_device_t)gpio_device, gpio_user_data->gpio_exti_rx_indicate);
-    return 0;
-}
-*/
-
 gpio_device gsm_ring_device;
 rt_timer_t gsm_ring_exti_timer = RT_NULL;
 
@@ -1094,7 +1024,86 @@ int rt_hw_gsm_ring_register(void)
     gsm_ring_exti_timer = rt_timer_create("t_ring",
 										 gsm_ring_exti_timeout,
 										 RT_NULL,
-										 SWITCH1_INT_INTERVAL,
+										 GSM_RING_INT_INTERVAL,
+										 RT_TIMER_FLAG_ONE_SHOT | RT_TIMER_FLAG_SOFT_TIMER);
+    rt_device_set_rx_indicate((rt_device_t)gpio_device, gpio_user_data->gpio_exti_rx_indicate);
+
+    return 0;
+}
+
+/* hall device */
+gpio_device hall_device;
+rt_timer_t hall_exti_timer = RT_NULL;
+
+void hall_exti_timeout(void *parameters)
+{
+	rt_device_t device = RT_NULL;
+	uint8_t data;
+
+	device = rt_device_find(DEVICE_NAME_HALL);
+	if (device != RT_NULL)
+	{
+		rt_device_read(device,0,&data,0);
+		if (data == HALL_STATUS)
+		{
+            rt_kprintf("it is HALL!\n");
+			// produce mail
+			//send_alarm_mail(ALARM_TYPE_SWITCH1, ALARM_PROCESS_FLAG_LOCAL, SWITCH1_STATUS, 0);
+            send_rf433_mail(RF433_START, RT_NULL);
+            
+		}
+		rt_device_control(device, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0);
+	}
+
+	rt_timer_stop(hall_exti_timer);
+}
+
+
+rt_err_t hall_rx_ind(rt_device_t dev, rt_size_t size)
+{
+	//gpio_device *gpio = RT_NULL;
+	//gpio = (gpio_device *)dev;
+	rt_device_t device = RT_NULL;
+
+	device = rt_device_find(DEVICE_NAME_HALL);
+	RT_ASSERT(device != RT_NULL);
+	rt_device_control(device, RT_DEVICE_CTRL_MASK_EXTI, (void *)0);
+	rt_timer_start(hall_exti_timer);
+
+	return RT_EOK;
+}
+
+struct gpio_exti_user_data hall_user_data =
+{
+   DEVICE_NAME_HALL,
+   GPIOC,
+   GPIO_Pin_3,
+   GPIO_Mode_IPU,
+   GPIO_Speed_50MHz,
+   RCC_APB2Periph_GPIOC |RCC_APB2Periph_AFIO,
+   GPIO_PortSourceGPIOC,
+   GPIO_PinSource3,
+   EXTI_Line3,
+   EXTI_Mode_Interrupt,
+   HALL_EXTI_TRIGGER_MODE,
+   EXTI3_IRQn,
+   1,
+   5,
+   hall_rx_ind,
+};
+
+int rt_hw_hall_register(void)
+{
+    gpio_device *gpio_device = &hall_device;
+    struct gpio_exti_user_data *gpio_user_data = &hall_user_data;
+
+    gpio_device->ops = &gpio_exti_user_ops;
+
+    rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX), gpio_user_data);
+    hall_exti_timer = rt_timer_create("t_hall",
+										 hall_exti_timeout,
+										 RT_NULL,
+										 HALL_INT_INTERVAL,
 										 RT_TIMER_FLAG_ONE_SHOT | RT_TIMER_FLAG_SOFT_TIMER);
     rt_device_set_rx_indicate((rt_device_t)gpio_device, gpio_user_data->gpio_exti_rx_indicate);
 
@@ -1112,6 +1121,21 @@ EXTI1_IRQHandler(void)
 	{
 		rt_hw_gpio_isr(&fp_touch_device);
 		EXTI_ClearITPendingBit(EXTI_Line1);
+	}
+	/* leave interrupt */
+	rt_interrupt_leave();
+}
+void
+EXTI3_IRQHandler(void)
+{
+	extern void rt_hw_gpio_isr(gpio_device *gpio);
+
+	/* enter interrupt */
+	rt_interrupt_enter();
+	if(EXTI_GetITStatus(EXTI_Line3) == SET)
+	{
+		rt_hw_gpio_isr(&hall_device);
+		EXTI_ClearITPendingBit(EXTI_Line3);
 	}
 	/* leave interrupt */
 	rt_interrupt_leave();
@@ -1192,6 +1216,7 @@ rt_hw_gpio_exti_enable(void)
     device_enable(DEVICE_NAME_GSM_RING);
     device_enable(DEVICE_NAME_BREAK);
     device_enable(DEVICE_NAME_MAG);
+    device_enable(DEVICE_NAME_HALL);
     return 0;
 }
 
@@ -1203,4 +1228,5 @@ INIT_DEVICE_EXPORT(rt_hw_fp_touch_register);
 INIT_DEVICE_EXPORT(rt_hw_gsm_ring_register);
 INIT_DEVICE_EXPORT(rt_hw_break_register);
 INIT_DEVICE_EXPORT(rt_hw_mag_register);
+INIT_DEVICE_EXPORT(rt_hw_hall_register);
 INIT_APP_EXPORT(rt_hw_gpio_exti_enable);

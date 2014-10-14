@@ -49,7 +49,6 @@
 #define DEVICE_NAME_MOTOR_STATUS3 "mt_stat3"
 #define DEVICE_NAME_MOTOR_STATUS4 "mt_stat4"
 */
-
 #define DEVICE_NAME_POWER_FLASH "pwr_fh"
 #define DEVICE_NAME_POWER_MOTOR "pwr_mt"
 #define DEVICE_NAME_POWER_BT "pwr_bt"
@@ -74,6 +73,20 @@
 #define DEVICE_NAME_BT_WK	 "BT_WK"
 #define DEVICE_NAME_BT_LED "BT_LED"
 #define DEVICE_NAME_BT_RST "BT_RST"
+#define DEVICE_NAME_RF_ENABLE "rf_en"
+
+#define DEVICE_NAME_RF_DAT "rf_dat"
+
+struct gpio_pin_user_data
+{
+  const char name[RT_NAME_MAX];
+  GPIO_TypeDef* gpiox;//port
+  rt_uint16_t gpio_pinx;//pin
+  GPIOMode_TypeDef gpio_mode;//mode
+  GPIOSpeed_TypeDef gpio_speed;//speed
+  rt_uint32_t gpio_clock;//clock
+  rt_uint8_t gpio_default_output;
+};
 
 __INLINE uint8_t 
 gpio_pin_input(char *str, rt_uint8_t debug);
