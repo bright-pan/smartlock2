@@ -12,12 +12,11 @@
  ********************************************************************/
 
 #include "sms.h"
-#include "bdcom.h"
 #include "appconfig.h"
-#if(SMS_SEND_ASTRICT_IS == 1)
-//#include "apppubulic.h"
+#include "gsm.h"
+#include "config.h"
 
-#endif
+#define SMS_DEBUG 1
 
 #define SMS_THREAD_PRI  				(SMS_THREAD_PRI_IS) 		//短信线程优先级
 #define SMS_RECV_MAIL_OUTTIME   ((RT_TICK_PER_SECOND)*1)//短信线程接收邮件超时
@@ -761,21 +760,9 @@ sms_pdu_ucs_send(char *dest_address, char *smsc_address, uint16_t *content, uint
 	hex_to_string(send_pdu_string + 2, (uint8_t *)&send_pdu_frame, sms_pdu_length);
 	*(uint16_t *)send_pdu_string = (uint16_t)(send_pdu_frame.TPDU.TP_UDL + sizeof(send_pdu_frame.TPDU) - sizeof(send_pdu_frame.TPDU.TP_UD));
 	//send_ctx_mail(COMM_TYPE_SMS, 0, 0, send_pdu_string, (sms_pdu_length << 1) + 2);
-	{
-		GSM_Mail_p mail;
-
-		mail = (GSM_Mail_p)rt_calloc(1,sizeof(GSM_Mail));
-		mail->ResultSem = rt_sem_create("gsmsms",0,RT_IPC_FLAG_FIFO);
-		RT_ASSERT(mail->ResultSem != RT_NULL);
-		mail->buf = send_pdu_string;
-		mail->BufSize = (sms_pdu_length << 1) + 2;
-		mail->SendMode = 1;
-		mail->type = GSM_MAIL_SMS;
-		//gsm_mail_send(mail);
-		rt_sem_take(mail->ResultSem,RT_WAITING_FOREVER);
-		rt_sem_delete(mail->ResultSem);
-		rt_free(mail);
-	}
+    send_gsm_ctrl_mail(GSM_CTRL_OPEN,RT_NULL,0,1);
+    send_gsm_sms_mail(send_pdu_string, (sms_pdu_length << 1) + 2, 1);
+    send_gsm_ctrl_mail(GSM_CTRL_CLOSE,RT_NULL,0,1);
 	/*
 	gsm_mail_buf.send_mode = GSM_MODE_CMD;
 	gsm_mail_buf.result = &send_result;
@@ -824,6 +811,18 @@ sms_pdu_ucs_send(char *dest_address, char *smsc_address, uint16_t *content, uint
 SMSTimeLag_p TimeOutWindow = RT_NULL;
 
 #endif
+
+int phone_sms_callback(struct phone_head *ph, void *arg1, void *arg2, void *arg3)
+{
+    s32 result = -1;
+    uint16_t *sms_ucs = arg1;
+    uint16_t sms_ucs_length = *(u16 *)arg2;
+    if (ph->account != PHONE_ID_INVALID && ph->auth & PHONE_AUTH_SMS) {
+        sms_pdu_ucs_send(ph->address, smsc, sms_ucs, sms_ucs_length);
+        result = ph->account;
+    }
+    return result;
+}
 
 void
 sms_thread_entry(void *parameter)
@@ -909,6 +908,7 @@ sms_thread_entry(void *parameter)
 				alarm_telephone_counts++;
 			}
             */
+            device_config_phone_index(phone_sms_callback, sms_ucs, &sms_ucs_length);
 			rt_free(sms_ucs);
 			sms_ucs = RT_NULL;
 		}
@@ -936,31 +936,19 @@ send_sms_mail(ALARM_TYPEDEF alarm_type, time_t time)
 	rt_err_t result;
 	//send mail
 	buf.alarm_type = alarm_type;
-	if (!time)
-	{
-		RT_ASSERT(rtc_device != RT_NULL);
-		rt_device_control(rtc_device, RT_DEVICE_CTRL_RTC_GET_TIME, &(buf.time));
-	}
-	else
-	{
+	if (time)
 		buf.time = time;
-	}
-	if (sms_mq != NULL)
-	{
+	else
+        buf.time = sys_cur_date();
+
+	if (sms_mq != NULL) {
 		result = rt_mq_send(sms_mq, &buf, sizeof(SMS_MAIL_TYPEDEF));
 		if (result == -RT_EFULL)
-		{
-#if (defined RT_USING_FINSH) && (defined SMS_DEBUG)
-			rt_kprintf("sms_mq is full!!!\n");
-#endif
-		}
-	}
-	else
-	{
-#if (defined RT_USING_FINSH) && (defined SMS_DEBUG)
-		rt_kprintf("sms_mq is RT_NULL!!!\n");
-#endif
-	}
+            RT_DEBUG_LOG(SMS_DEBUG,("sms_mq is full!!!\n"));
+	} else {
+        RT_DEBUG_LOG(SMS_DEBUG,("sms_mq is RT_NULL!!!\n"));
+    }
+    
 }
 
 int

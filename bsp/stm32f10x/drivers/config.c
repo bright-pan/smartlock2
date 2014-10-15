@@ -1495,6 +1495,30 @@ device_config_key_index(int(*callback)(struct key *, void *arg1, void *arg2, voi
     return result;
 }
 
+s32
+device_config_phone_index(int(*callback)(struct phone_head *, void *arg1, void *arg2, void *arg3), void *arg1, void *arg2)
+{
+    s32 result;
+    u16 i;
+	struct phone_head ph;
+    s32 len;
+
+	result = -ECONFIG_ERROR;
+
+    rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+
+	for (i = 0; i < PHONE_NUMBERS; i++) {
+		if (device_config_get_key_valid(i) > 0) {
+			len = device_config_phone_operate(i, &ph, 0);
+			if (len >= 0) {
+                result = callback(&ph, arg1, arg2, &i);
+			}
+		}
+	}
+	rt_mutex_release(device_config.mutex);
+    return result;
+}
+
 int
 device_config_init(struct device_configure *config)
 {

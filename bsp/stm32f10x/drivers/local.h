@@ -29,9 +29,12 @@ struct lock_data {
     s32 key_id;
     s32 operation;
 };
-
+struct ring_data {
+     u8 phone_call[20];
+};
 union alarm_data{
-    struct lock_data lock; 
+    struct lock_data lock;
+    struct ring_data ring;
 };
 
 typedef struct

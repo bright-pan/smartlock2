@@ -12,6 +12,7 @@
  ********************************************************************/
 
 #include "gsm.h"
+#include "local.h"
 
 #define DEVICE_NAME_GSM_USART "uart3"
 #define TEST_GSM_MODE_PUT_HEX
@@ -1007,10 +1008,13 @@ at_response_process(AT_COMMAND_INDEX_TYPEDEF index, uint8_t *buf, GSM_MAIL_CMD_D
 
 									if (strstr((char *)process_buf + 200, "OK"))
 									{
+                                        union alarm_data data;
 										memset(phone_call, 0, sizeof(phone_call));
 										sscanf((char *)process_buf, "%*[^\"]\"%[^\"]", phone_call);
 										result = AT_RESPONSE_OK;
 										//send_ctx_mail(COMM_TYPE_GSM_PHONE_CALL, 0, 0, (uint8_t *)phone_call, sizeof(phone_call));
+                                        rt_memcpy(&data.ring.phone_call, phone_call, sizeof(phone_call));
+                                        send_local_mail(ALARM_TYPE_GSM_RING, 0, &data);
 									}
 								}
 							}
@@ -1499,9 +1503,9 @@ gsm_thread_entry(void *parameters)
 	GSM_MODE_TYPEDEF send_mode;
 	rt_err_t result;
 	AT_RESPONSE_TYPEDEF at_result = AT_RESPONSE_ERROR;
-    rt_size_t recv_cnts = 0;
+//    rt_size_t recv_cnts = 0;
 //	int8_t send_counts = 0;
-	uint8_t process_buf[512];
+//	uint8_t process_buf[512];
 	uint8_t data;
 
 	device_gsm_usart = device_enable(DEVICE_NAME_GSM_USART);
@@ -1512,7 +1516,7 @@ gsm_thread_entry(void *parameters)
 
 	while (1) {
 
-		result = rt_mq_recv(gsm_mq, &gsm_mail_buf, sizeof(gsm_mail_buf), 5);
+		result = rt_mq_recv(gsm_mq, &gsm_mail_buf, sizeof(gsm_mail_buf), 2*60*100);
 
 		if (result == RT_EOK)
 		{
@@ -1524,12 +1528,14 @@ gsm_thread_entry(void *parameters)
 				{
 					case GSM_CTRL_CLOSE:
 						{
+                            gpio_pin_output(DEVICE_NAME_POWER_GSM, 0,1);
 							if (gsm_setup(DISABLE) == GSM_SETUP_DISABLE_SUCCESS)
 								at_result = AT_RESPONSE_OK;
                             break;
 						}
 					case GSM_CTRL_OPEN:
 						{
+                            gpio_pin_output(DEVICE_NAME_POWER_GSM, 1,1);
 							if (gsm_setup(ENABLE) == GSM_SETUP_ENABLE_SUCCESS && gsm_init_process() == GSM_EOK)
 								at_result = AT_RESPONSE_OK;
                             break;
@@ -1604,11 +1610,14 @@ gsm_thread_entry(void *parameters)
 		}
 		else// time out
 		{
+            gpio_pin_output(DEVICE_NAME_POWER_GSM, 0,1);
+            /*
             process_buf[0] = 0;// asyn comm
             recv_cnts = rt_device_read(device_gsm_usart, 0, process_buf + 1, sizeof(process_buf) - 1);
             //if (recv_cnts > 0)
                 //send_ctx_mail(COMM_TYPE_GPRS, 0, 50, process_buf, recv_cnts+1);
-		}
+            */
+        }
 
 	}
 }

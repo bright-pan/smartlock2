@@ -156,7 +156,7 @@ local_thread_entry(void *parameter)
 {
 	rt_err_t result;
 	LOCAL_MAIL_TYPEDEF local_mail_buf;
-
+    
 	//fprint_module_init();
 	motor_status_sem_init();
 	while (1)
@@ -183,10 +183,20 @@ local_thread_entry(void *parameter)
 					//send_voice_mail(VOICE_TYPE_CCDIR);
 					break;
 				}
-				case ALARM_TYPE_FPRINT_INPUT:
+				case ALARM_TYPE_GSM_RING:
 				{
-					//fprint_unlock_process(&local_mail_buf);
-					
+                    s32 temp;
+                    struct phone_head ph;
+					temp = device_config_phone_verify(local_mail_buf.data.ring.phone_call, 20);
+                    if (temp > 0)
+                    {
+                        if (device_config_phone_operate(temp, &ph, 0) > 0) {
+                            if (ph.account != PHONE_ID_INVALID && ph.auth & PHONE_AUTH_CALL) {
+                                //µç»ú½âËø¡£
+                                lock_operation(LOCK_OPERATION_OPEN, MOTOR_WORK_CUT);
+                            }
+                        }
+                    }
 					break;
 				}
 				case ALARM_TYPE_FPRINT_KEY_ADD:

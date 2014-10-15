@@ -19,6 +19,7 @@
 #include "gpio_pin.h"
 #include "untils.h"
 #include "config.h"
+#include "sms.h"
 
 #define RF433_DEBUG 1
 
@@ -108,7 +109,7 @@ rf433_thread_entry(void *parameter)
 {
 	rt_err_t result;
 	RF433_MAIL_TYPEDEF rf433_mail_buf;
-    u8 temp, i, flag;
+    u8 temp, i, flag = 0;
     TIM2_NVIC_Configuration();
     TIM2_Configuration();
 
@@ -134,7 +135,8 @@ rf433_thread_entry(void *parameter)
                     for (i = 0; i < 15; ++i)
                         temp += rf433_mail_buf.data[i];
                     if (temp == rf433_mail_buf.data[15]) {
-                        device_config_key_verify(KEY_TYPE_RF433, rf433_mail_buf.data, 4);
+                        if (device_config_key_verify(KEY_TYPE_RF433, rf433_mail_buf.data, 4) > 0)
+                            send_sms_mail(ALARM_TYPE_RFID_KEY_SUCCESS, 0);
                     } else {
                         RT_DEBUG_LOG(RF433_DEBUG,("rf433 verify error\n"));
                     }
@@ -156,6 +158,7 @@ rf433_thread_entry(void *parameter)
             if (flag) {
                 rf433_check_stop();
                 gpio_pin_output(DEVICE_NAME_RF_ENABLE, 1, 1);
+                send_sms_mail(ALARM_TYPE_RFID_KEY_ERROR, 0);
                 flag = 0;
             }            
         }

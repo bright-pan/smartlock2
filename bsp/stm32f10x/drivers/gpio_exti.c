@@ -17,6 +17,7 @@
 #include "fprint.h"
 #include "gui.h"
 #include "rf433.h"
+#include "gsm.h"
 
 extern rt_device_t rtc_device;
 
@@ -900,7 +901,10 @@ kb_intr_exti_timeout(void *parameters)
 		{
 			data = kb_read();
             //rt_kprintf("key value : %x\n", data);
-            c = char_remap[bit_to_index(data&0x0fff)];
+            if (data == 0x808)
+                c = 'G';
+            else
+                c = char_remap[bit_to_index(data&0x0fff)];
             RT_DEBUG_LOG(KB_DEBUG,("key value : 0x%x, index :%d, char :%c\n", data, bit_to_index(data&0x0fff), c));
             send_key_value_mail(KB_MAIL_TYPE_INPUT, KB_MODE_NORMAL_AUTH, c);
             //send_kb_mail(KB_MAIL_TYPE_INPUT, KB_MODE_NORMAL_AUTH, c);
@@ -982,6 +986,7 @@ void gsm_ring_exti_timeout(void *parameters)
             rt_kprintf("it is gsm ring!\n");
 			// produce mail
 			//send_alarm_mail(ALARM_TYPE_SWITCH1, ALARM_PROCESS_FLAG_LOCAL, SWITCH1_STATUS, 0);
+            gsm_ring_process();
 		}
 		rt_device_control(device, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0);
 	}

@@ -254,6 +254,8 @@ int
 device_config_file_operate(struct device_configure *config, u8 flag);
 s32 
 device_config_key_index(int(*callback)(struct key *, void *arg1, void *arg2, void *arg3), void *arg1, void *arg2);
+s32
+device_config_phone_index(int(*callback)(struct phone_head *, void *arg1, void *arg2, void *arg3), void *arg1, void *arg2);
 int
 system_init(void);
 
