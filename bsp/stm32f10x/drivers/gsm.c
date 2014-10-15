@@ -1712,7 +1712,8 @@ send_gsm_sms_mail(uint8_t *buf, uint16_t length, uint8_t flag)
 		}		
         else
 		{
-			rt_sem_take(gsm_mail_buf.result_sem, RT_WAITING_FOREVER);
+            if (gsm_mail_buf.result_sem != RT_NULL)
+                rt_sem_take(gsm_mail_buf.result_sem, RT_WAITING_FOREVER);
 		}
 	}
 	else
@@ -1769,7 +1770,8 @@ send_gsm_ctrl_mail(u8 ctrl_cmd, uint8_t *buf, uint16_t length, uint8_t flag)
 		}        
         else
 		{
-			rt_sem_take(gsm_mail_buf.result_sem, RT_WAITING_FOREVER);
+            if (gsm_mail_buf.result_sem != RT_NULL)
+                rt_sem_take(gsm_mail_buf.result_sem, RT_WAITING_FOREVER);
 		}
 	}
 	else
@@ -1841,7 +1843,8 @@ send_gsm_gprs_mail(uint8_t *buf, uint16_t length, uint8_t flag)
 		}        
         else
 		{
-			rt_sem_take(gsm_mail_buf.result_sem, RT_WAITING_FOREVER);
+            if (gsm_mail_buf.result_sem != RT_NULL)
+                rt_sem_take(gsm_mail_buf.result_sem, RT_WAITING_FOREVER);
 		}
 	}
 	else
