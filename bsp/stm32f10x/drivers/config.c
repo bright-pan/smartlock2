@@ -511,7 +511,7 @@ device_config_phone_head_init(struct phone_head *ph, u8 *buf, u8 length)
     rt_memset(ph->address, '\0', sizeof(ph->address));
     rt_memcpy(ph->address, buf, length);
     ph->account = ACCOUNT_ID_INVALID;
-    ph->auth = PHONE_AUTH_INVALID;
+    ph->auth = PHONE_AUTH_SMS;
     ph->updated_time = sys_cur_date();
 }
 /*
@@ -616,6 +616,7 @@ __exit:
     phone_id: 指定手机ID，如果为无效ID则选则最小无效ID。
     buf：手机号码。
     length：账户长度。
+    auth: 权限
     op_time: 操作时间。
     返回：
         -ECONFIG_ERROR， 创建失败。
@@ -624,7 +625,7 @@ __exit:
         >=0, 创建成功的账户ID。
 */
 s32
-device_config_phone_set(u16 phone_id, u8 *buf, u8 length, u32 op_time)
+device_config_phone_set(u16 phone_id, u8 *buf, u8 length, u16 auth, u32 op_time)
 {
     s32 result;
     s32 i;
@@ -643,6 +644,7 @@ device_config_phone_set(u16 phone_id, u8 *buf, u8 length, u32 op_time)
                     len = device_config_phone_verify(buf, length);
                     if (len < 0 || len == i) {
                         rt_memcpy(ph.address, buf, ACCOUNT_NAME_LENGTH);
+                        ph.auth = auth;
                         ph.updated_time = op_time;
                         len = device_config_phone_operate(i, &ph, 1);
                         if (len >= 0)
@@ -1546,7 +1548,6 @@ device_config_file_operate(struct device_configure *config, u8 flag)
 	int fd;
 	int cnts;
 	int result = -ECONFIG_ERROR;
-
 	RT_ASSERT(config!=RT_NULL);
 	RT_ASSERT(config->mutex!=RT_NULL);
 
@@ -1585,6 +1586,70 @@ __exit:
 	return result;
 }
 
+int
+device_config_device_id_operate(u8 *device_id, u8 flag)
+{
+	int fd;
+	int cnts;
+	int result = -ECONFIG_ERROR;
+
+    struct device_configure *config = &device_config;
+	RT_ASSERT(config!=RT_NULL);
+	RT_ASSERT(config->mutex!=RT_NULL);
+
+	rt_mutex_take(config->mutex, RT_WAITING_FOREVER);
+
+
+	if (flag) {
+        if ((fd = open(DEVICE_CONFIG_FILE_NAME,O_RDWR,0x777)) >= 0)
+        {
+            rt_memcpy(config->param.device_id, device_id, 8); 
+            cnts = write(fd, &(config->param), sizeof(config->param));
+            if (cnts == sizeof(config->param))
+                result = cnts;
+            close(fd);
+        }
+
+	} else {
+        rt_memcpy(device_id, config->param.device_id, 8);
+        result = 1;
+	}
+	
+	rt_mutex_release(config->mutex);
+	return result;
+}
+int
+device_config_key0_operate(u8 *key0, u8 flag)
+{
+	int fd;
+	int cnts;
+	int result = -ECONFIG_ERROR;
+
+    struct device_configure *config = &device_config;
+	RT_ASSERT(config!=RT_NULL);
+	RT_ASSERT(config->mutex!=RT_NULL);
+
+	rt_mutex_take(config->mutex, RT_WAITING_FOREVER);
+
+
+	if (flag) {
+        if ((fd = open(DEVICE_CONFIG_FILE_NAME,O_RDWR,0x777)) >= 0)
+        {
+            rt_memcpy(config->param.key0, key0, 8); 
+            cnts = write(fd, &(config->param), sizeof(config->param));
+            if (cnts == sizeof(config->param))
+                result = cnts;
+            close(fd);
+        }
+
+	} else {
+        rt_memcpy(key0, config->param.key0, 8);
+        result = 1;
+	}
+	
+	rt_mutex_release(config->mutex);
+	return result;
+}
 int
 system_init(void)
 {

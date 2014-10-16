@@ -225,7 +225,7 @@ device_config_account_append_key(u16 account_id, u16 key_id, u32 op_time, u8 fla
 s32
 device_config_account_delete(u16 account_id, u32 op_time, u8 flag);
 s32
-device_config_phone_create(u16 phone_id, u8 *buf, u8 len);
+device_config_phone_create(u16 phone_id, u8 *buf, u8 length);
 s32
 device_config_phone_verify(u8 *buf, u16 length);
 s32
