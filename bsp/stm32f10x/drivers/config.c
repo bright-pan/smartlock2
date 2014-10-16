@@ -465,7 +465,31 @@ device_config_key_delete(u16 key_id, u32 op_time, u8 flag)
 	rt_mutex_release(device_config.mutex);
     return result;
 }
+/*
+    计算有效钥匙的数量。
+    返回：
+        -ECONFIG_ERROR，没有获得有效的数据。
+        >=0, 有效数量。
+*/
+s32
+device_config_key_counts(void)
+{
+	s32 result;
+    s32 counts;
+	s32 i;
 
+    counts = 0;
+	result = -ECONFIG_ERROR;
+	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+	for (i = 0; i < KEY_NUMBERS; i++) {
+		if (device_config_get_key_valid(i) > 0) {
+            ++counts;
+		}
+	}
+    result = counts;
+	rt_mutex_release(device_config.mutex);
+	return result;
+}
 /*
     根据电话ID来读取电话信息。
     phone_id: 电话ID
@@ -710,7 +734,31 @@ device_config_phone_delete(u16 phone_id, u32 op_time, u8 flag)
 	rt_mutex_release(device_config.mutex);
     return result;
 }
+/*
+    计算有效手机的数量。
+    返回：
+        -ECONFIG_ERROR，没有获得有效的数据。
+        >=0, 有效数量。
+*/
+s32
+device_config_phone_counts(void)
+{
+	s32 result;
+    s32 counts;
+	s32 i;
 
+    counts = 0;
+	result = -ECONFIG_ERROR;
+	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+	for (i = 0; i < PHONE_NUMBERS; i++) {
+		if (device_config_get_phone_valid(i) > 0) {
+            ++counts;
+		}
+	}
+    result = counts;
+	rt_mutex_release(device_config.mutex);
+	return result;
+}
 /*
     根据账户ID来读取账户信息。
     account_id: 账户ID

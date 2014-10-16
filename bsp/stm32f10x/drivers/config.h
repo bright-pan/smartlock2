@@ -244,8 +244,14 @@ s32
 device_config_account_remove_phone(u16 phone_id);
 s32
 device_config_account_append_phone(u16 account_id, u16 phone_id, u32 op_time, u8 flag);
+int
+device_config_device_id_operate(u8 *device_id, u8 flag);
 s32
 device_config_account_counts(void);
+s32
+device_config_phone_counts(void);
+s32
+device_config_key_counts(void);
 s32
 device_config_phone_operate(u16 phone_id, struct phone_head *ph, u8 flag);
 s32
@@ -258,5 +264,10 @@ s32
 device_config_phone_index(int(*callback)(struct phone_head *, void *arg1, void *arg2, void *arg3), void *arg1, void *arg2);
 int
 system_init(void);
-
+s32
+device_config_account_set(u16 account_id, u8 *name, u8 length, u32 op_time);
+s32
+device_config_key_set(u16 key_id, struct key *new_key, u32 op_time);
+s32
+device_config_phone_set(u16 phone_id, u8 *buf, u8 length, u16 auth, u32 op_time);
 #endif /* _CONFIG_H_ */
