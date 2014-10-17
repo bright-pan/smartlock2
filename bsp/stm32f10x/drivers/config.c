@@ -73,6 +73,10 @@ static struct device_configure device_config = {
 		{
 			{0,}
 		},
+		//event valid map
+		{
+			{0,}
+		},
 	},
 };
 
@@ -116,7 +120,42 @@ device_config_set_key_valid(u16 key_id, u8 value)
     }
     return result;
 }
-
+/*
+    根据事件ID获得事件的有效使用状况。
+    返回：
+        -ECONFIG_ERROR 无法获得。
+        1 有效。
+        0 无效。
+*/
+s32
+device_config_get_event_valid(u16 event_id)
+{
+	s32 result = -ECONFIG_ERROR;
+    if (event_id < EVENT_NUMBERS)
+        result = (device_config.param.ev_map.data[event_id/32] & bits_mask(event_id%32)) ? 1 : 0;
+    return result;
+}
+/*
+    根据事件ID，设置为有效（1），无效状态（0）。
+    返回：
+        -ECONFIG_ERROR 错误。
+        >= 0, 返回id，成功设置。
+*/
+s32
+device_config_set_event_valid(u16 event_id, u8 value)
+{
+    s32 result = -ECONFIG_ERROR;
+	if (event_id < EVENT_NUMBERS) {
+        if (value) {
+            device_config.param.ev_map.data[event_id/32] |= bits_mask(event_id%32);
+        } else {
+            device_config.param.ev_map.data[event_id/32] &= ~bits_mask(event_id%32);
+        }
+        device_config.param.ev_map.updated_time = sys_cur_date();
+        result = event_id;
+    }
+    return result;
+}
 s32
 device_config_get_phone_valid(u16 phone_id)
 {
@@ -239,6 +278,129 @@ device_config_key_operate(u16 key_id, struct key *k, u8 flag)
 	}
 	rt_mutex_release(device_config.mutex);
 	return result;
+}
+/*
+    根据事件ID来读取钥匙信息。
+    event_id: 事件ID
+    e：钥匙信息
+    flag：1，写入；0，读出。
+    返回：
+        -ECONFIG_ERROR，读取出错。
+        >=0, 成功读取的ID。
+*/
+s32
+device_config_event_operate(u16 event_id, struct event *e, u8 flag)
+{
+	s32 fd;
+	s32 result;
+	s32 len;
+
+    result = -ECONFIG_ERROR;
+
+    if (event_id >= EVENT_NUMBERS)
+        return result;
+
+	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+	fd = open(DEVICE_CONFIG_FILE_NAME, O_RDWR, 0x777);
+	if (fd >= 0)
+	{
+		lseek(fd, DEVICE_CONFIG_FILE_EVENT_OFFSET(event_id), SEEK_SET);
+		if (flag)
+			len = write(fd, e, sizeof(*e));
+		else
+			len = read(fd,e, sizeof(*e));
+		if (len == sizeof(*e))
+			result = len;
+		close(fd);
+	}
+	rt_mutex_release(device_config.mutex);
+	return result;
+}
+
+/*
+    创建事件。
+    event_id: 指定ID，
+            这个ID如果被占用，则返回错误；
+            如果是无效ID则自动创建最小可用ID。
+    event_type: 事件类型。参检EVENT_TYPE_ALARM,EVENT_TYPE_UNLOCK，等宏定义。
+    is_updated: 更新标志。
+    ed： 事件数据。
+    返回：
+        -ECONFIG_ERROR， 创建失败。
+        -ECONFIG_FULL, 库已满。
+        -ECONFIG_EXIST, 已存在。
+        >=0, 创建成功的编号。
+*/
+s32
+device_config_event_create(u16 event_id, u16 event_type, u8 is_updated, union event_data *ed)
+{
+    int result;
+    s32 i;
+	struct event e;
+
+	result = -ECONFIG_ERROR;
+    if (event_id >= EVENT_NUMBERS && event_id != EVENT_ID_INVALID)
+        return result;
+	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+    rt_memset(&e, 0, sizeof(e));
+    if (event_id != EVENT_ID_INVALID) {
+        i = event_id;
+        if (!device_config_get_event_valid(i)) {
+            e.head.is_updated = is_updated;
+            e.head.updated_time = sys_cur_date();
+            e.head.event_type = event_type;
+            e.data = *ed;
+            if (device_config_event_operate(i, &e, 1) < 0)
+                goto __exit;
+            device_config_set_event_valid(i, 1);
+            if (device_config_file_operate(&device_config, 1) < 0)
+                goto __exit;
+            result = i;
+        }
+    } else {
+        for (i = 0; i < EVENT_NUMBERS; i++) {
+            if (!device_config_get_event_valid(i)) {
+                e.head.is_updated = is_updated;
+                e.head.updated_time = sys_cur_date();
+                e.head.event_type = event_type;
+                e.data = *ed;
+                if (device_config_event_operate(i, &e, 1) < 0)
+                    goto __exit;
+                device_config_set_event_valid(i, 1);
+                if (device_config_file_operate(&device_config, 1) < 0)
+                    goto __exit;
+                result = i;
+                break;
+            }
+        }
+        if (i == EVENT_NUMBERS)
+            result = -ECONFIG_FULL;
+    }
+__exit:
+	rt_mutex_release(device_config.mutex);
+    return result;
+}
+/*
+    事件删除。
+    event_id: 需要删除的ID。
+    返回：
+        -ECONFIG_ERROR,删除出错。
+        >=0, 删除成功的ID。
+*/
+s32
+device_config_event_delete(u16 event_id)
+{
+    s32 result = -ECONFIG_ERROR;
+    struct event k;
+    if (event_id >= EVENT_NUMBERS)
+        return result;
+    rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+
+    device_config_set_event_valid(event_id, 0);
+    if (device_config_file_operate(&device_config, 1) >= 0)
+        result = event_id;
+	rt_mutex_release(device_config.mutex);
+    return result;
 }
 /*
     检验钥匙的密码是否存在，存在则返回钥匙ID。
@@ -465,6 +627,7 @@ device_config_key_delete(u16 key_id, u32 op_time, u8 flag)
 	rt_mutex_release(device_config.mutex);
     return result;
 }
+
 /*
     计算有效钥匙的数量。
     返回：

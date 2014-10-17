@@ -30,6 +30,14 @@
 #define KEY_MAP_SIZE (KEY_NUMBERS / sizeof(u32))
 #define KEY_ID_INVALID 0xffff
 
+#define EVENT_NUMBERS 10*32 // x32
+#define EVENT_MAP_SIZE (EVENT_NUMBERS / sizeof(u32))
+#define EVENT_ID_INVALID 0xffff
+#define	EVENT_TYPE_INVALID 0
+#define	EVENT_TYPE_ALARM 1
+#define	EVENT_TYPE_UNLOCK 2
+#define	EVENT_TYPE_FAULT 3
+
 #define ACCOUNT_NUMBERS 10*32 // x32
 #define ACCOUNT_KEY_NUMBERS 10
 #define ACCOUNT_PHONE_NUMBERS 10
@@ -105,6 +113,39 @@ struct key {
 	union key_data data;
 };
 
+struct event_head {
+	u8 is_updated;
+    u32 updated_time;
+	u16 event_type;
+};
+
+struct unlock_event {
+    u8 type;
+    u16 account_id;
+    u16 key_id;
+    u32 time;
+};
+struct fault_event {
+    u8 flag;
+    u32 time;
+};
+struct alarm_event {
+    u8 flag;
+    u8 status;
+    u32 time;
+};
+
+union event_data{
+	struct unlock_event unlock;
+	struct fault_event fault;
+	struct alarm_event alarm;
+};
+
+struct event {
+	struct event_head head;
+	union event_data data;
+};
+
 struct account_head {
 
 	u8 is_updated;
@@ -126,6 +167,10 @@ struct key_valid_map {
 
 struct phone_valid_map {
 	u32 data[PHONE_MAP_SIZE];
+    u32 updated_time;
+};
+struct event_valid_map {
+	u32 data[EVENT_MAP_SIZE];
     u32 updated_time;
 };
 
@@ -151,6 +196,7 @@ struct device_parameters {
 	struct account_valid_map av_map;
 	struct key_valid_map kv_map;
 	struct phone_valid_map pv_map;
+	struct event_valid_map ev_map;
 };
 
 #define PAGE_SIZE (512)
@@ -164,7 +210,7 @@ struct device_parameters {
 
 #define DEVICE_CONFIG_FILE_PHONE_BASE (DEVICE_CONFIG_FILE_PARAMETERS_END)
 #define DEVICE_CONFIG_FILE_PHONE_SIZE (PAGE_SIZE_OF(PHONE_NUMBERS * sizeof(struct phone_head)))
-#define DEVICE_CONFIG_FILE_PHONE_END (DEVICE_CONFIG_FILE_PHONE_BASE + DEVICE_CONFIG_FILE_PARAMETERS_SIZE)
+#define DEVICE_CONFIG_FILE_PHONE_END (DEVICE_CONFIG_FILE_PHONE_BASE + DEVICE_CONFIG_FILE_PHONE_SIZE)
 
 #define DEVICE_CONFIG_FILE_PHONE_OFFSET(x) (DEVICE_CONFIG_FILE_PHONE_BASE + ((x) * sizeof(struct phone_head)))
 
@@ -181,6 +227,12 @@ struct device_parameters {
 #define DEVICE_CONFIG_FILE_KEY_OFFSET(x) (DEVICE_CONFIG_FILE_KEY_BASE + ((x) * sizeof(struct key)))
 #define DEVICE_CONFIG_FILE_KEY_DATA_OFFSET(x) (DEVICE_CONFIG_FILE_KEY_BASE + ((x) * sizeof(struct key)) + sizeof(struct key_head))
 
+#define DEVICE_CONFIG_FILE_EVENT_BASE (DEVICE_CONFIG_FILE_KEY_END)
+#define DEVICE_CONFIG_FILE_EVENT_SIZE (PAGE_SIZE_OF(EVENT_NUMBERS * sizeof(struct event)))
+#define DEVICE_CONFIG_FILE_EVENT_END (DEVICE_CONFIG_FILE_EVENT_BASE + DEVICE_CONFIG_FILE_EVENT_SIZE)
+
+#define DEVICE_CONFIG_FILE_EVENT_OFFSET(x) (DEVICE_CONFIG_FILE_EVENT_BASE + ((x) * sizeof(struct event)))
+#define DEVICE_CONFIG_FILE_EVENT_DATA_OFFSET(x) (DEVICE_CONFIG_FILE_EVENT_BASE + ((x) * sizeof(struct event)) + sizeof(struct event_head))
 /*
 #define DEVICE_CONFIG_FILE_KEY_KBOARD_BASE (DEVICE_CONFIG_FILE_KEY_HEAD_BASE)
 #define DEVICE_CONFIG_FILE_KEY_KBOARD_SIZE (PAGE_SIZE_OF(KEY_NUMBERS * sizeof(struct key_kboard_code)))
@@ -270,4 +322,9 @@ s32
 device_config_key_set(u16 key_id, struct key *new_key, u32 op_time);
 s32
 device_config_phone_set(u16 phone_id, u8 *buf, u8 length, u16 auth, u32 op_time);
+
+s32
+device_config_event_delete(u16 event_id);
+s32
+device_config_event_create(u16 event_id, u16 event_type, u8 is_updated, union event_data *ed);
 #endif /* _CONFIG_H_ */
