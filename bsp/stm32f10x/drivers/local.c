@@ -32,13 +32,11 @@
 #define KEY_NOT_PULL_REVOKE_TIME								100*60*30		// 30min
 #define KEY_READ_TIMER_BASE											100					// 1s
 #ifndef  TEST_LOCK_GATE_TIME
-#define LOCK_GATE_TIMER_BASE										1000				// 10s
-#else
-#define LOCK_GATE_TIMER_BASE										100				// 1s debug use
+#define LOCK_GATE_TIMER_BASE										10				  // 10s debug use
 #endif
 #define BATTERY_CHECH_TIMER_BASE								6000				// 1min
 
-#define LOCAL_MAIL_MAX_MSGS 20
+#define LOCAL_MAIL_MAX_MSGS 										20
 void lock_process(LOCAL_MAIL_TYPEDEF *);
 // local msg queue for local alarm
 static rt_mq_t local_mq;
@@ -135,7 +133,7 @@ void motor_status_manage(void)
 	else
 	{
 		MotorManage.LockTime ++;
-		if(MotorManage.LockTime  > 10)
+		if(MotorManage.LockTime  > LOCK_GATE_TIMER_BASE)
 		{
 			//ÉÏËø
 			MotorManage.LockTime  = 0;
@@ -170,21 +168,10 @@ local_thread_entry(void *parameter)
 		{
 			// process mail
             
-            RT_DEBUG_LOG(LOCAL_DEBUG,("receive local mail < time: %d alarm_type: %s >\n",\
+     	RT_DEBUG_LOG(LOCAL_DEBUG,("receive local mail < time: %d alarm_type: %s >\n",\
                             local_mail_buf.time, alarm_help_map[local_mail_buf.alarm_type]));
 			switch (local_mail_buf.alarm_type)
 			{
-				case ALARM_TYPE_SWITCH1:
-					{
-                        RT_DEBUG_LOG(LOCAL_DEBUG,("process alarm switch...\n"));
-						break;
-					}
-				case ALARM_TYPE_CAMERA_IRDASENSOR:
-				{
-					//motor_rotate(RT_FALSE);
-					//send_voice_mail(VOICE_TYPE_CCDIR);
-					break;
-				}
 				case ALARM_TYPE_GSM_RING:
 				{
                     s32 temp;
@@ -221,11 +208,33 @@ local_thread_entry(void *parameter)
         	lock_process(&local_mail_buf);
         	break;
         }
+        case ALARM_TYPE_KEY_ERROR:
+        {
+        	//Ô¿³×´íÎó±¨¾¯
+					gprs_key_error_mail(local_mail_buf.data.key.Type);
+					if(local_mail_buf.data.key.sms == 1)
+					{
+           	send_sms_mail(ALARM_TYPE_SMS_KEY_ERROR,0, RT_NULL, 0, PHONE_AUTH_SMS);
+					}
+					
+					break;
+        }
+        case ALARM_TYPE_KEY_RIGHT:
+        {
+        	//Ô¿³×ÕýÈ·
+					union alarm_data data;
+
+					data.lock.key_id = local_mail_buf.data.key.ID;
+					data.lock.operation = LOCK_OPERATION_OPEN;
+					send_local_mail(ALARM_TYPE_LOCK_PROCESS,0,&data);
+					gprs_key_right_mail(local_mail_buf.data.key.ID);
+					break;
+        }
 				default :
-                {
-                    RT_DEBUG_LOG(LOCAL_DEBUG,("this alarm is not process...\n"));
-                    break;
-                };
+        {
+            RT_DEBUG_LOG(LOCAL_DEBUG,("this alarm is not process...\n"));
+            break;
+        };
 			}
 		}
 		else
@@ -241,26 +250,26 @@ lock_operation(s32 status, u16 pluse)
 {
     if (status == LOCK_OPERATION_CLOSE)
     {
-    	if(motor_status_get() == LOCK_OPERATION_OPEN)
+			#ifdef USEING_BUZZER_FUN
+      buzzer_send_mail(BZ_TYPE_LOCK);
+			#endif
+			if(motor_status_get() == LOCK_OPERATION_OPEN)
     	{
         motor_rotate(pluse);
     		motor_status_set(LOCK_OPERATION_CLOSE);
     	}
-			#ifdef USEING_BUZZER_FUN
-      buzzer_send_mail(BZ_TYPE_LOCK);
-			#endif
     }
     else
     {
-    	if(motor_status_get() == LOCK_OPERATION_CLOSE)
+			#ifdef USEING_BUZZER_FUN
+			buzzer_send_mail(BZ_TYPE_UNLOCK);
+			#endif
+			if(motor_status_get() == LOCK_OPERATION_CLOSE)
     	{
         motor_rotate(-pluse);
         motor_status_set(LOCK_OPERATION_OPEN); 
         motor_status_open_send();
     	}
-			#ifdef USEING_BUZZER_FUN
-			buzzer_send_mail(BZ_TYPE_UNLOCK);
-			#endif
     }
        
 }

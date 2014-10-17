@@ -32,9 +32,18 @@ struct lock_data {
 struct ring_data {
      u8 phone_call[20];
 };
+
+struct keyop_data
+{
+	rt_uint16_t ID;
+	rt_uint8_t  Type;
+	rt_uint8_t 	sms;
+};
+
 union alarm_data{
     struct lock_data lock;
     struct ring_data ring;
+    struct keyop_data  key;
 };
 
 typedef struct
