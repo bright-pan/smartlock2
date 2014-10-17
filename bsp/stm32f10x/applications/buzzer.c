@@ -58,13 +58,14 @@ void buzzer_work(BuzzerType mode)
 		{
 			rt_uint8_t i;
 			
-			for(i = 0 ;i < 4;i++)
+			for(i = 0 ;i < 5;i++)
 			{
 				buzzer_control(80);
-				rt_thread_delay(10);
+				rt_thread_delay(10-i);
 				buzzer_control(10);
-				rt_thread_delay(10);
+				rt_thread_delay(9-i);
 			}
+			rt_thread_delay(120);
 			break;
 		}
 		case BZ_TYPE_UNLOCK:
