@@ -28,6 +28,7 @@ rt_err_t net_phone_add_process(net_recvmsg_p mail)
 	struct phone_head *ph = RT_NULL;
 	rt_uint16_t				PhoneID;
 	rt_uint8_t 				i;
+	rt_int32_t				OpResult;
 	
 	RT_ASSERT(mail != RT_NULL);
 	
@@ -54,18 +55,19 @@ rt_err_t net_phone_add_process(net_recvmsg_p mail)
   }
   RT_DEBUG_LOG(SHOW_NETPHONE_INFO,("\n"));
 	//±£´æÊý¾Ý
-	PhoneID = device_config_phone_set(PhoneID,ph->address,11,ph->updated_time);
+	OpResult = device_config_phone_set(PhoneID,ph->address,11,ph->auth,ph->updated_time);
 	
 	
 
 	rt_free(ph);
-	if(PhoneID < 0)
+	if(OpResult < 0)
 	{
 		RT_DEBUG_LOG(SHOW_NETPHONE_INFO,("Phone add Fail !!!\n"));
 		return RT_ERROR;
 	}
 	
 	RT_DEBUG_LOG(SHOW_NETPHONE_INFO,("Phone add Finish^_^\n"));
+	
 	return RT_EOK;
 }
 

@@ -29,8 +29,8 @@ net_col 				net_order;	//ÐòºÅ
 //ID key0 key1
 net_parameter NetParameterConfig = 
 {
-  {0x99,0x99,0x15,0x10,0x90,0x00,0x01,0x50},
-  {0x12,0x34,0x56,0x78,0x90,0x12,0x34,0x56},
+  {0x99,0x99,0x15,0x10,0x90,0x00,0x01,0x51},
+  {0x12,0x34,0x56,0x78,0x90,0x12,0x34,0x51},
   {0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa}
 };
 
@@ -48,6 +48,8 @@ typedef void
 msg_callback_type1	NetMsg_Recv_handle = RT_NULL;
 msg_callback_type2	NetMsg_Recv_CallBack_Fun = RT_NULL;
 msg_callback_type2	Net_Mail_Heart = RT_NULL;
+msg_callback_type2  NetMsg_thread_init = RT_NULL;
+
 
 void net_config_parameter_set(rt_uint8_t type,rt_uint8_t *data)
 {
@@ -103,6 +105,15 @@ void Net_Mail_Heart_callback(void (*Callback)(void))
 		Net_Mail_Heart = Callback;
 	}
 }
+
+void Net_thread_init_callback(void (*Callback)(void))
+{
+	if(Callback != RT_NULL)
+	{
+		NetMsg_thread_init = Callback;
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////
 
 /*
@@ -2313,6 +2324,10 @@ void netmsg_thread_entry(void *arg)
 {
 	rt_uint32_t  HearTime = 0;
 
+	if(NetMsg_thread_init != RT_NULL)
+  {
+		NetMsg_thread_init();
+  }
   while(1)
   {
     rt_err_t result;
@@ -2455,7 +2470,7 @@ int netmsg_thread_init(void)
 
     return 1;
   }
-
+  
   rt_thread_startup(id);
   return 0;
 }
@@ -2681,9 +2696,43 @@ void fileopentest(void)
 }
 FINSH_FUNCTION_EXPORT(fileopentest,"FileOpenTest");
 
-void net_status(void)
+static void hex_to_string(rt_uint8_t data[],rt_uint8_t hex[],rt_uint8_t num)
+{	
+	const rt_uint8_t asiic[] = "0123456789ABCDEF";
+	rt_uint8_t i;
+
+	for(i = 0;i < num*2;i++)
+	{
+		if(i % 2 == 0)
+		{
+      data[i] = asiic[hex[i/2]/16];
+		}
+		else
+		{
+      data[i] =	asiic[hex[i/2]%16];
+		}
+	}
+}
+
+void net_info(void)
 {
-	rt_kprintf("|------------------------|\n");
+	rt_uint8_t *data = RT_NULL;
+
+	data = rt_calloc(1,20);
+	RT_ASSERT(data != RT_NULL);
+	
+	rt_kprintf("|----------net-information---------------|\n");
+
+	hex_to_string(data,NetParameterConfig.id,8);
+	rt_kprintf("Net device ID   %s\n",data);
+	
+	hex_to_string(data,NetParameterConfig.key0,8);
+	rt_kprintf("Net device key0 %s\n",data);
+	
+	hex_to_string(data,NetParameterConfig.key1,8);
+	rt_kprintf("Net device key0 %s\n",data);
+
+	rt_free(data);
 	if(net_event_process(1,NET_ENVET_ONLINE) == 0)
 	{
 		rt_kprintf("on-line\n");
@@ -2701,7 +2750,7 @@ void net_status(void)
 		rt_kprintf("reconnection\n");
 	}
 }
-FINSH_FUNCTION_EXPORT(net_status,"net current situation ");
+FINSH_FUNCTION_EXPORT(net_info,"net current information");
 
 void date_hex(void)
 {

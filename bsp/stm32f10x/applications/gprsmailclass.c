@@ -12,13 +12,13 @@ void gprs_Key_add_mail(rt_uint16_t pos)
 //钥匙删除
 void gprs_key_del_mail(rt_uint16_t pos)
 {
-		
+	msg_mail_keydelete(pos,net_get_date());
 }
 
 //钥匙正确
 void gprs_key_right_mail(rt_uint16_t pos)
 {
-	GPRS_KeyRightUser_p user = RT_NULL;
+	GPRSUserDef_p				user = RT_NULL;
 	struct key 					*keydata = RT_NULL;
 	
 	user = rt_calloc(1,sizeof(*user));
@@ -29,8 +29,8 @@ void gprs_key_right_mail(rt_uint16_t pos)
 	
 	device_config_key_operate(pos,keydata,0);
 
-	user->keypos = pos;
-	user->keytype = keydata->head.key_type;
+	user->keyright.pos = pos;
+	user->keyright.type = keydata->head.key_type;
 
 	rt_free(keydata);
 	
@@ -40,11 +40,11 @@ void gprs_key_right_mail(rt_uint16_t pos)
 //钥匙错误
 void gprs_key_error_mail(rt_uint8_t type)
 {
-	GPRS_KeyErrorUser_p user = RT_NULL;
+	GPRSUserDef_p  user = RT_NULL;
 
 	user = rt_calloc(1,sizeof(*user));
 
-	user->type = type;
+	user->keyerr.type = type;
 	
 	send_gprs_mail(ALARM_TYPE_KEY_ERROR,net_get_date(),user);
 }
@@ -52,42 +52,52 @@ void gprs_key_error_mail(rt_uint8_t type)
 //账户添加
 void gprs_account_add_mail(rt_uint16_t pos)
 {
-	struct account_head *data;
-	rt_uint8_t 					result;
-	rt_int32_t          ah_result;
-	
-	data = rt_calloc(1,sizeof(*data));
-	
-	ah_result = device_config_account_operate(pos,data,0);
-	if(ah_result < 0)
-	{
-		rt_kprintf("GPRS mail account operate fail >>%s",__FUNCTION__);
-	}
+	GPRSUserDef_p         user = RT_NULL;
+  struct account_head   *ah = RT_NULL;
 
-	result = msg_mail_account_add(pos,data->name,rt_strlen(data->name));
-	if(result == 0)
-	{
-		//成功上传
-		data->is_updated = 1;
-    device_config_account_operate(pos,data,1);
-		rt_kprintf("Account Upload succeed\n");
-	}
-	else
-	{
-		rt_kprintf("Account Upload Fail\n");
-	}
-	rt_free(data);	
+	user = rt_calloc(1,sizeof(*user));
+	ah = rt_calloc(1,sizeof(*ah));
+	
+	device_config_account_operate(pos,ah,0);
+	user->AccountAdd.date = ah->updated_time;
+	user->AccountAdd.pos = pos;
+	rt_memcpy(user->AccountAdd.name,(void *)ah->name,ACCOUNT_NAME_LENGTH);
+	
+	send_gprs_mail(ALARM_TYPE_GPRS_ADD_ACCOUNT,net_get_date(),user);
+
+	rt_free(ah);
 }
 
 //账户删除
 void gprs_account_del_mail(rt_uint16_t pos)
 {
-	
+	msg_mail_account_del(pos,net_get_date());
 }
 
 //手机添加
 void gprs_phone_add_mail(rt_uint16_t pos)
 {
+	GPRSUserDef_p         user = RT_NULL;
+  struct phone_head   	*data = RT_NULL;
 
+	user = rt_calloc(1,sizeof(*user));
+	data = rt_calloc(1,sizeof(*data));
+	
+	device_config_phone_operate(pos,data,0);
+	user->PhoneAdd.pos = pos;
+	user->PhoneAdd.auth = data->auth;
+	user->PhoneAdd.date = data->updated_time;
+	rt_memcpy(user->PhoneAdd.code,(void *)data->address,12);
+	
+	send_gprs_mail(ALARM_TYPE_GPRS_ADD_PHONE,net_get_date(),user);
+
+	rt_free(data);
 }
 //手机删除
+void gprs_phone_del_mail(rt_uint16_t pos)
+{
+	msg_mail_keydelete(pos,net_get_date());
+}
+
+
+

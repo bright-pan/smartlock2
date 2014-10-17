@@ -924,7 +924,7 @@ void net_msg_send_mail(net_msgmail_p mail);
 void Net_Set_MsgRecv_Callback(rt_uint8_t (*Callback)(net_recvmsg_p Mail,void *UserData));
 void Net_NetMsg_thread_callback(void (*Callback)(void));
 void Net_Mail_Heart_callback(void (*Callback)(void));
-
+void Net_thread_init_callback(void (*Callback)(void));
 
 rt_uint8_t net_event_process(rt_uint8_t mode,rt_uint32_t type);
 rt_uint8_t get_msg_new_order(rt_bool_t flag);//获得报文的新序号

@@ -16,26 +16,83 @@
 #include "gprsmailclass.h"
 #include "netmailclass.h"
 
-#define UPDATE_KEY_CNT    60 //钥匙同步周期
+#define UPDATE_KEY_CNT    					60 //钥匙同步周期
+#define UPDATE_FLAG_VALUE 					1
 
 static rt_mq_t gprs_mq = RT_NULL;//gprs data mail 
 
 //手机上传处理
 static void phone_upload_process(rt_uint16_t pos)
 {
+	struct phone_head *data = RT_NULL;
+	rt_int8_t 				op_result;
+	rt_err_t					result;
 
+	if(pos > PHONE_NUMBERS)
+	{
+		rt_kprintf("Pos error %s",__FUNCTION__);
+		return ;
+	}
+	data = rt_calloc(1,sizeof(*data));
+	RT_ASSERT(data != RT_NULL);
+	
+	op_result = device_config_phone_operate(pos,data,0);
+	if(op_result < 0)
+	{
+  	rt_kprintf("GPRS mail phone operate fail >>%s",__FUNCTION__);
+	}
+	result = msg_mail_phoneadd(pos,data->auth,(rt_uint8_t *)data->address,data->updated_time);
+	if(result == RT_EOK)
+	{
+		//手机数据上传成功
+    rt_kprintf("Phone Upload data succeed\n");
+		result = msg_mail_phonebind(pos,data->account,data->updated_time);
+		if(result == RT_EOK)
+		{
+			//手机绑定成功	
+			data->is_update = 1-UPDATE_FLAG_VALUE;
+			device_config_phone_operate(pos,data,1);
+			rt_kprintf("Phone bind succeed\n");
+		}
+	}
+	else
+	{
+		rt_kprintf("Phone Upload Fail\n");		
+	}
+
+	rt_free(data);
 }
 
 //账户上传 
 static void account_upload_process(rt_uint16_t pos)
 {
 	struct account_head *data;
-
-	data = rt_calloc(1,sizeof(*data));
-	device_config_account_operate(pos,data,0);
+	rt_err_t 						result;
+	rt_int8_t           ah_result;
 	
-	rt_free(data);
+	data = rt_calloc(1,sizeof(*data));
+	
+	ah_result = device_config_account_operate(pos,data,0);
+	if(ah_result < 0)
+	{
+		rt_kprintf("GPRS mail account operate fail >>%s",__FUNCTION__);
+	}
+
+	result = msg_mail_account_add(pos,(rt_uint8_t *)data->name,data->updated_time);
+	if(result == RT_EOK)
+	{
+		//成功上传
+		data->is_updated = 1-UPDATE_FLAG_VALUE;
+    device_config_account_operate(pos,data,1);
+		rt_kprintf("Account Upload succeed\n");
+	}
+	else
+	{
+		rt_kprintf("Account Upload Fail\n");
+	}
+	rt_free(data);	
 }
+
 /** 
 @brief  key upload process
 @param  mail :gprs thread mail
@@ -46,7 +103,7 @@ static void key_upload_process(rt_uint16_t UpdatePos)
 {
 	net_keyadd_user *data = RT_NULL;
 	rt_uint16_t 		keypos;
-	rt_bool_t 			result;
+	rt_err_t        result;
 	struct key 			*KeyData = RT_NULL;
 
 	data = rt_calloc(1,sizeof(*data));
@@ -99,7 +156,7 @@ static void key_upload_process(rt_uint16_t UpdatePos)
 		default:
 		{
 			
-			rt_kprintf("Upload key type is error !!!\nfunction:%s line:%d\n",__FUNCTION__, __LINE__);
+			rt_kprintf("pos %d Upload key type is error !!!\nfunction:%s line:%d\n",UpdatePos,__FUNCTION__, __LINE__);
 			rt_free(data);
 			rt_free(KeyData);
 			return ;
@@ -107,11 +164,16 @@ static void key_upload_process(rt_uint16_t UpdatePos)
 	}
 	
 	result = msg_mail_keyadd(data);
-	if(result == RT_TRUE)
+	if(result == RT_EOK)
 	{
-		//标记
-		KeyData->head.is_updated = 1;
-		device_config_key_operate(UpdatePos,KeyData,1);
+		//数据上传成功
+		
+ 		result = msg_mail_keybind(UpdatePos,KeyData->head.account,KeyData->head.updated_time);
+		if(result == RT_EOK)
+		{
+      KeyData->head.is_updated = 1-UPDATE_FLAG_VALUE;
+      device_config_key_operate(UpdatePos,KeyData,1);
+		}
 	}
 
 	rt_free(data->data.data);
@@ -124,14 +186,20 @@ rt_uint16_t get_key_update_pos(void)
 {
 	rt_uint16_t 	i;
 	struct key 		*keydat;
+	rt_int16_t    result;
 
 	keydat = rt_calloc(1,sizeof(*keydat));
-	for(i = 0;i < ACCOUNT_NUMBERS;i++)
+	for(i = 0;i < KEY_NUMBERS;i++)
 	{
-		device_config_key_operate(i,keydat,0);
-		if(keydat->head.is_updated == 0)
+		result = device_config_get_key_valid(i);
+		if(result == 1)
 		{
-			return i;
+			device_config_key_operate(i,keydat,0);
+			if(keydat->head.is_updated == UPDATE_FLAG_VALUE)
+			{
+				rt_free(keydat);
+				return i;
+			}		
 		}
 	}
 	rt_free(keydat);
@@ -148,7 +216,7 @@ void update_key_lib_remote(void)
 {   
 	rt_uint16_t run = KEY_NUMBERS;
 	
-	while(run-- < KEY_NUMBERS);
+	while(run--)
 	{
 		rt_uint16_t pos;
 		
@@ -165,14 +233,21 @@ rt_uint16_t get_phone_update_pos(void)
 {
 	rt_uint16_t 				i;
 	struct phone_head 	*phdata;
-
+	rt_int32_t          result;
+	
 	phdata = rt_calloc(1,sizeof(*phdata));
 	for(i = 0;i < PHONE_NUMBERS;i++)
 	{
-		device_config_phone_operate(i,phdata,0);
-		if(phdata->is_update == 0)
+		result = device_config_get_phone_valid(i);
+		
+		if(result == 1)
 		{
-			return i;
+			device_config_phone_operate(i,phdata,0);
+      if(phdata->is_update == UPDATE_FLAG_VALUE)
+		  {
+		  	rt_free(phdata);
+		    return i;
+		  }
 		}
 	}
 	rt_free(phdata);
@@ -185,14 +260,14 @@ void update_phone_lib_remote(void)
 {
 	rt_uint16_t run = PHONE_NUMBERS;
 	
-	while(run-- < PHONE_NUMBERS);
+	while(run--)
 	{
 		rt_uint16_t pos;
 		
 		pos = get_phone_update_pos();
 		if(pos < PHONE_NUMBERS)
 		{  		
-      //key_upload_process(pos);
+      phone_upload_process(pos);
  		}
 	}
 }
@@ -201,35 +276,42 @@ void update_phone_lib_remote(void)
 rt_uint16_t get_account_update_pos(void)
 {
 	rt_uint16_t 				  i;
+	rt_int16_t            result;
 	struct account_head 	*data;
 
 	data = rt_calloc(1,sizeof(*data));
 	for(i = 0;i < ACCOUNT_NUMBERS;i++)
 	{
-		device_config_account_operate(i,data,0);
-		//if(data->is_update == 0)
+		result = device_config_get_account_valid(i);
+		if(result == 1)
 		{
-			return i;
+			device_config_account_operate(i,data,0);
+      if(data->is_updated == UPDATE_FLAG_VALUE)
+      {
+      	rt_free(data);
+        return i;
+      }
 		}
 	}
 	rt_free(data);
-
 	return ACCOUNT_NUMBERS;
 }
 
 //账户数据远程更新
 void update_account_lib_remote(void)
 {
-	rt_uint16_t run = ACCOUNT_NUMBERS;
-	
-	while(run-- < ACCOUNT_NUMBERS);
+	rt_uint16_t run = device_config_account_counts();
+
+	rt_kprintf("Account num %d\n",run);
+	while(run--) 
 	{
 		rt_uint16_t pos;
 		
 		pos = get_account_update_pos();
-		if(pos < PHONE_NUMBERS)
+		if(pos < ACCOUNT_NUMBERS)
 		{  		
-      //key_upload_process(pos);
+			rt_kprintf("update account %d\n",pos);
+      account_upload_process(pos);
  		}
 	}
 }
@@ -237,26 +319,26 @@ void update_account_lib_remote(void)
 //处理钥匙开门正确邮件
 static void gprs_key_right_mail_process(GPRS_MAIL_TYPEDEF *mail)
 {
-  GPRS_KeyRightUser_p user = RT_NULL;
+  GPRSUserDef_p user = RT_NULL;
 
 	RT_ASSERT(mail != RT_NULL);
 	user = mail->user;
 
-	switch(user->keytype)
+	switch(user->keyerr.type)
 	{
 	  case KEY_TYPE_FPRINT:
 	  {
-	    msg_mail_opendoor(1,user->keypos,mail->time);
+	    msg_mail_opendoor(1,user->keyright.pos,mail->time);
 	    break;
 	  }
 	  case KEY_TYPE_KBOARD:
 	  {
-	    msg_mail_opendoor(2,user->keypos,mail->time);
+	    msg_mail_opendoor(2,user->keyright.pos,mail->time);
 	    break;
 	  }
 	  case KEY_TYPE_RFID:
 	  {
-	    msg_mail_opendoor(4,user->keypos,mail->time);
+	    msg_mail_opendoor(4,user->keyright.pos,mail->time);
 	    break;
 	  }
 	  default:
@@ -269,12 +351,12 @@ static void gprs_key_right_mail_process(GPRS_MAIL_TYPEDEF *mail)
 //处理钥匙开门错误邮件
 static void gprs_key_error_mail_process(GPRS_MAIL_TYPEDEF *mail)
 {
-  GPRS_KeyErrorUser_p user = RT_NULL;
+  GPRSUserDef_p user = RT_NULL;
 
 	RT_ASSERT(mail != RT_NULL);
 	user = mail->user;
 
-	switch(user->type)
+	switch(user->keyerr.type)
 	{
 	  case KEY_TYPE_FPRINT:
 	  {
@@ -299,6 +381,34 @@ static void gprs_key_error_mail_process(GPRS_MAIL_TYPEDEF *mail)
 	  }
 	}	
 }
+
+//账户添加处理
+static void gprs_account_add_mail_process(GPRS_MAIL_TYPEDEF *mail)
+{
+	GPRSUserDef_p  user = RT_NULL;
+	
+	RT_ASSERT(mail != RT_NULL);
+	RT_ASSERT(mail->user != RT_NULL);
+
+	user = mail->user;
+
+	msg_mail_account_add(user->AccountAdd.pos,user->AccountAdd.name,user->AccountAdd.date);
+}
+
+//手机添加处理
+static void gprs_phone_add_mail_process(GPRS_MAIL_TYPEDEF *mail)
+{
+	GPRSUserDef_p  user = RT_NULL;
+	
+	RT_ASSERT(mail != RT_NULL);
+	RT_ASSERT(mail->user != RT_NULL);
+
+	user = mail->user;
+
+	msg_mail_phoneadd(user->PhoneAdd.pos,user->PhoneAdd.auth,user->PhoneAdd.code,user->PhoneAdd.date);
+}
+
+
 /** 
 @brief  gprs thread mail process
 @param  mail :gprs thread mail
@@ -331,55 +441,18 @@ static void gprs_mail_process(GPRS_MAIL_TYPEDEF *mail)
 		case ALARM_TYPE_GPRS_SYS_TIME_UPDATE:
 		{
 			msg_mail_adjust_time();
-		}
-		/*case ALARM_TYPE_CAMERA_IRDASENSOR:
-		{
-			msg_mail_alarm(0,motor_status(),mail->time);
-			
 			break;
 		}
-		case ALARM_TYPE_GPRS_UPLOAD_PIC:
+		case ALARM_TYPE_GPRS_ADD_ACCOUNT:
 		{
-			#if(PIC_UPLOAD_PIC == 1)
-			rt_kprintf("System upload function is close\n");
-			#else
-			net_upload_file(mail->user);
-			#endif
-			
+			gprs_account_add_mail_process(mail);
 			break;
 		}
-		case ALARM_TYPE_FPRINT_KEY_RIGHT:
+		case ALARM_TYPE_GPRS_ADD_PHONE:
 		{
-			rt_uint16_t *KeyPos;
-			
-			RT_ASSERT(mail->user != RT_NULL);
-
-			KeyPos = (rt_uint16_t *)mail->user;
-			msg_mail_opendoor(1,*KeyPos,mail->time);
-
+			gprs_phone_add_mail_process(mail);
 			break;
 		}
-		case ALARM_TYPE_FPRINT_KEY_ADD:
-		{
-			FPrintData *data = RT_NULL;
-			
-			data = mail->user;
-			RT_ASSERT(mail != RT_NULL);
-			key_upload_process(KEY_TYPE_FPRINT,data->KeyMapPos);
-			
-			break;
-		}
-		case ALARM_TYPE_CODE_KEY_ADD:
-		{
-			KEYBOARD_USER_P data = RT_NULL;
-
-			RT_ASSERT(mail != RT_NULL);
-			data = mail->user;
-			key_upload_process(KEY_TYPE_KBOARD,data->KeyPos);
-			
-			break;
-		}
-		*/
 		default:
 		{
 			break;
@@ -419,27 +492,47 @@ void gprs_mail_manage_entry(void* arg)
 		//检测是否在线
 		if(net_event_process(1,NET_ENVET_ONLINE) == 1)
 		{
-			rt_thread_delay(10);
+			mq_result =rt_mq_recv(gprs_mq,&mail,sizeof(GPRS_MAIL_TYPEDEF),100);
+			if(mq_result == RT_EOK)
+			{
+				rt_kprintf("Network disconnection GPRS mail lost!!!\n");
+			}
 			flag = 0;
 			
 			continue;
 		}
 		else
 		{
-			if(flag == 0)
+			/*if(flag == 0)
 			{
         send_gprs_mail(ALARM_TYPE_GPRS_SYS_TIME_UPDATE,0,RT_NULL);
         flag = 1;
-			}
+			}*/
 		}
 
+		/*//测试报文
+		{
+			account_upload_process(0);
+			key_upload_process(0);
+			msg_mail_keybind(0,0,net_get_date());
+			//phone_upload_process(0);
+		}*/
 		//更新钥匙 手机号 
 		if(count++ > UPDATE_KEY_CNT)
 		{
 			count = 0;
+			rt_kprintf("update start\n");
+			rt_kprintf("update account data...\n");
+			update_account_lib_remote();
+			
+			rt_kprintf("update key data...\n");
       update_key_lib_remote();
+      
+			rt_kprintf("update phone data...\n");
+      update_phone_lib_remote();
+      rt_kprintf("update end\n");
 		}
-
+		
 		//处理邮件
 		mq_result = rt_mq_recv(gprs_mq,&mail,sizeof(GPRS_MAIL_TYPEDEF),100);
 		if(mq_result == RT_EOK)

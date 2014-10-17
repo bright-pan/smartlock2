@@ -159,7 +159,7 @@ INIT_APP_EXPORT(set_heart_callback);
 /*
 功能:设置报文邮件
 */
-rt_uint8_t msg_mail_alarm(rt_uint8_t alarm,rt_uint8_t LockStatus,rt_uint32_t time)
+rt_err_t msg_mail_alarm(rt_uint8_t alarm,rt_uint8_t LockStatus,rt_uint32_t time)
 {
 	rt_uint8_t result;
 	net_msgmail_p mail = RT_NULL;
@@ -198,13 +198,13 @@ rt_uint8_t msg_mail_alarm(rt_uint8_t alarm,rt_uint8_t LockStatus,rt_uint32_t tim
 	RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 
-	return result;
+  return (result == 0)?RT_EOK:RT_ERROR;
 }
 
 /*
 功能:设置故障报警
 */
-rt_uint8_t msg_mail_fault(rt_uint8_t fault,rt_uint32_t time)
+rt_err_t msg_mail_fault(rt_uint8_t fault,rt_uint32_t time)
 {
 	rt_uint8_t result;
 	net_msgmail_p mail = RT_NULL;
@@ -241,13 +241,13 @@ rt_uint8_t msg_mail_fault(rt_uint8_t fault,rt_uint32_t time)
 	RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 
-	return result;
+  return (result == 0)?RT_EOK:RT_ERROR;
 }
 
 /*
 功能:钥匙开启
 */
-rt_uint8_t msg_mail_opendoor(rt_uint8_t type,rt_uint16_t key,rt_uint32_t time)
+rt_err_t msg_mail_opendoor(rt_uint8_t type,rt_uint16_t key,rt_uint32_t time)
 {
 	rt_uint8_t result;
 	net_msgmail_p mail = RT_NULL;
@@ -285,13 +285,13 @@ rt_uint8_t msg_mail_opendoor(rt_uint8_t type,rt_uint16_t key,rt_uint32_t time)
 	RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 
-	return result;
+  return (result == 0)?RT_EOK:RT_ERROR;
 }
 
 /*
 功能:电池报警
 */
-rt_uint8_t msg_mail_battery(rt_uint8_t status,rt_uint8_t capacity,rt_uint32_t time)
+rt_err_t msg_mail_battery(rt_uint8_t status,rt_uint8_t capacity,rt_uint32_t time)
 {
 	rt_uint8_t result;
 	net_msgmail_p mail = RT_NULL;
@@ -330,13 +330,13 @@ rt_uint8_t msg_mail_battery(rt_uint8_t status,rt_uint8_t capacity,rt_uint32_t ti
 	RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 
-	return result;
+  return (result == 0)?RT_EOK:RT_ERROR;
 }
 
 /*
 功能:时间同步
 */
-rt_uint8_t msg_mail_adjust_time(void)
+rt_err_t msg_mail_adjust_time(void)
 {
 	rt_uint8_t result;
 	net_msgmail_p mail = RT_NULL;
@@ -372,13 +372,13 @@ rt_uint8_t msg_mail_adjust_time(void)
 	RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 
-	return result;
+  return (result == 0)?RT_EOK:RT_ERROR;
 }
 
 /*
 功能:用户告警参数
 */
-rt_uint8_t msg_mail_alarmarg(rt_uint8_t Type,rt_uint8_t arg)
+rt_err_t msg_mail_alarmarg(rt_uint8_t Type,rt_uint8_t arg)
 {
 	rt_uint8_t result;
 	net_msgmail_p mail = RT_NULL;
@@ -415,13 +415,13 @@ rt_uint8_t msg_mail_alarmarg(rt_uint8_t Type,rt_uint8_t arg)
 	RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 
-	return result;
+  return (result == 0)?RT_EOK:RT_ERROR;
 }
 
 /*
 功能:终端手机添加
 */
-rt_bool_t msg_mail_phoneadd(rt_uint16_t PhID,rt_uint16_t flag,rt_uint8_t buf[],rt_uint32_t date)
+rt_err_t msg_mail_phoneadd(rt_uint16_t PhID,rt_uint16_t flag,rt_uint8_t buf[],rt_uint32_t date)
 {
 	rt_uint8_t result;
 	net_msgmail_p mail = RT_NULL;
@@ -463,7 +463,7 @@ rt_bool_t msg_mail_phoneadd(rt_uint16_t PhID,rt_uint16_t flag,rt_uint8_t buf[],r
 	RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 
-	return (result == 0)?RT_TRUE:RT_FALSE;
+  return (result == 0)?RT_EOK:RT_ERROR;
 }
 
 /*
@@ -502,7 +502,7 @@ void msg_mail_phoneadd_ack(net_recvmsg_p RMail,rt_uint8_t result)
 /*
 功能:终端手机添加
 */
-rt_bool_t msg_mail_phondel(rt_uint16_t PhID,rt_uint32_t date)
+rt_err_t msg_mail_phondel(rt_uint16_t PhID,rt_uint32_t date)
 {
 	rt_uint8_t result;
 	net_msgmail_p mail = RT_NULL;
@@ -542,7 +542,7 @@ rt_bool_t msg_mail_phondel(rt_uint16_t PhID,rt_uint32_t date)
 	RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 
-	return (result == 0)?RT_TRUE:RT_FALSE;
+  return (result == 0)?RT_EOK:RT_ERROR;
 }
 
 /*
@@ -582,7 +582,7 @@ void msg_mail_phonedel_ack(net_recvmsg_p RMail,rt_uint8_t result)
 /*
 功能:终端添加钥匙
 */
-rt_bool_t msg_mail_keyadd(net_keyadd_user *KeyData)
+rt_err_t msg_mail_keyadd(net_keyadd_user *KeyData)
 {
 	rt_uint8_t result;
 	net_msgmail_p mail = RT_NULL;
@@ -618,7 +618,7 @@ rt_bool_t msg_mail_keyadd(net_keyadd_user *KeyData)
 	RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 
-	return (result == 0)?RT_TRUE:RT_FALSE;
+  return (result == 0)?RT_EOK:RT_ERROR;
 }
 
 /*
@@ -655,7 +655,7 @@ void msg_mail_keyadd_ack(net_recvmsg_p RMail,rt_uint8_t result)
 	rt_free(mail);
 }
 
-rt_uint8_t msg_mail_keydelete(rt_uint16_t pos)
+rt_err_t msg_mail_keydelete(rt_uint16_t pos,rt_uint32_t date)
 {
 	rt_uint8_t result;
 	net_msgmail_p mail = RT_NULL;
@@ -681,6 +681,8 @@ rt_uint8_t msg_mail_keydelete(rt_uint16_t pos)
 	//设置私有数据
 	pos = net_rev16(pos);
 	rt_memcpy(UserData->data.pos,&pos,2);
+	date = net_rev32(date);
+	rt_memcpy(UserData->data.date,&date,4);
 	
 	//发送邮件
   net_msg_send_mail(mail);
@@ -695,7 +697,7 @@ rt_uint8_t msg_mail_keydelete(rt_uint16_t pos)
 	RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 
-	return result;
+  return (result == 0)?RT_EOK:RT_ERROR;
 }
 
 /*
@@ -869,7 +871,7 @@ void msg_mail_fileack(net_recvmsg_p RMail,rt_uint8_t Fresult)
 /*
 功能:账户添加
 */
-rt_uint8_t msg_mail_account_add(rt_int16_t account_pos,rt_uint8_t *name,rt_uint32_t date)
+rt_err_t msg_mail_account_add(rt_int16_t account_pos,rt_uint8_t *name,rt_uint32_t date)
 {
 	rt_uint8_t result;
 	net_msgmail_p mail = RT_NULL;
@@ -912,7 +914,7 @@ rt_uint8_t msg_mail_account_add(rt_int16_t account_pos,rt_uint8_t *name,rt_uint3
 	RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 
-	return result;
+  return (result == 0)?RT_EOK:RT_ERROR;
 }
 
 
@@ -953,7 +955,7 @@ void msg_mail_account_add_ack(net_recvmsg_p RMail,rt_uint8_t result)
 /*
 功能:账户删除
 */
-rt_uint8_t msg_mail_account_del(rt_int16_t account_pos,rt_uint32_t date)
+rt_err_t msg_mail_account_del(rt_int16_t account_pos,rt_uint32_t date)
 {
 	rt_uint8_t result;
 	net_msgmail_p mail = RT_NULL;
@@ -995,7 +997,7 @@ rt_uint8_t msg_mail_account_del(rt_int16_t account_pos,rt_uint32_t date)
 	RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 
-	return result;
+  return (result == 0)?RT_EOK:RT_ERROR;
 }
 
   
@@ -1036,7 +1038,7 @@ void msg_mail_account_del_ack(net_recvmsg_p RMail,rt_uint8_t result)
 /*
 功能:钥匙绑定
 */
-rt_uint8_t msg_mail_keybind(rt_uint16_t key_pos,rt_uint16_t account_pos,rt_uint32_t date)
+rt_err_t msg_mail_keybind(rt_uint16_t key_pos,rt_uint16_t account_pos,rt_uint32_t date)
 {
 	rt_uint8_t result;
 	net_msgmail_p mail = RT_NULL;
@@ -1082,7 +1084,7 @@ rt_uint8_t msg_mail_keybind(rt_uint16_t key_pos,rt_uint16_t account_pos,rt_uint3
 	RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 
-	return result;
+  return (result == 0)?RT_EOK:RT_ERROR;
 }
 
 /*
@@ -1121,7 +1123,7 @@ void msg_mail_keybind_ack(net_recvmsg_p RMail,rt_uint8_t result)
 /*
 功能:电话绑定
 */
-rt_uint8_t msg_mail_phonebind(rt_uint16_t phone_pos,rt_uint16_t account_pos,rt_uint32_t date)
+rt_err_t msg_mail_phonebind(rt_uint16_t phone_pos,rt_uint16_t account_pos,rt_uint32_t date)
 {
 	rt_uint8_t result;
 	net_msgmail_p mail = RT_NULL;
@@ -1167,7 +1169,7 @@ rt_uint8_t msg_mail_phonebind(rt_uint16_t phone_pos,rt_uint16_t account_pos,rt_u
 	RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 
-	return result;
+  return (result == 0)?RT_EOK:RT_ERROR;
 }
 
 /*
@@ -1507,17 +1509,44 @@ static void net_msg_thread_process(void)
 	#endif
 }
 
-int InitNetRecvFun(void)
+
+void Net_Param_Init(void)
 {
+	rt_uint8_t *data;
+	rt_uint8_t i;
+	
+	rt_kprintf("Net param ID KEY0 set>>>>\n");
+	data = rt_calloc(1,9);
+	RT_ASSERT(data != RT_NULL);
+	
+	device_config_device_id_operate(data,0);
+	for(i = 0 ; i < 8;i++)
+	{
+		rt_kprintf("%x",data[i]);
+	}
+	net_config_parameter_set(1,data);
+	rt_memset(data,0,9);
+	device_config_key0_operate(data,0);
+	rt_kprintf("\n");
+	for(i = 0 ; i < 8;i++)
+	{
+		rt_kprintf("%x",data[i]);
+	}
+	net_config_parameter_set(2,data);
+}
+
+int net_protocol_init_set(void)
+{
+	//设置接收处理
 	Net_Set_MsgRecv_Callback(net_message_recv_process);
+	//设置线程处理
 	Net_NetMsg_thread_callback(net_msg_thread_process);
+
+	//设置 ID  key0
+	Net_thread_init_callback(Net_Param_Init);
 	return 0;
 }
-INIT_APP_EXPORT(InitNetRecvFun);
-
-
-
-
+INIT_APP_EXPORT(net_protocol_init_set);
 
 
 
