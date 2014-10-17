@@ -115,7 +115,7 @@ struct account_head {
 };
 
 struct account_valid_map {
-	u32 data[KEY_MAP_SIZE];
+	u32 data[ACCOUNT_MAP_SIZE];
     u32 updated_time;
 };
 
