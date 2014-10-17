@@ -69,9 +69,9 @@ rt_err_t send_key_value_mail(uint16_t type, KB_MODE_TYPEDEF mode, uint8_t c)
 
 rt_err_t gui_key_input(rt_uint8_t *KeyValue)
 {
-	rt_err_t result;
-	KB_MAIL_TYPEDEF mail;
-	static rt_uint8_t cnt = 0;
+	rt_err_t            result;
+	KB_MAIL_TYPEDEF     mail;
+	static rt_uint8_t   SleepCnt = 0;//休眠计数
 	
 	rt_memset(&mail, 0, sizeof(mail));
 
@@ -83,14 +83,15 @@ rt_err_t gui_key_input(rt_uint8_t *KeyValue)
 	result = rt_mq_recv(key_mq, &mail, sizeof(mail),RT_TICK_PER_SECOND);
 	if(result == RT_EOK)
 	{
+		//按键声音
 		#ifdef USEING_BUZZER_FUN
     buzzer_send_mail(BZ_TYPE_KEY);
     #endif
-    cnt = 0;
+    SleepCnt = 0;
+    //GSM启动触发
     if(mail.c == KEY_START_RING_VALUE)
     {
     	#ifdef _GSM_H_
-    	send_gsm_ctrl_mail(GSM_CTRL_OPEN,RT_NULL,0,0);
     	send_local_mail(ALARM_TYPE_GSM_RING_REQUEST,0,RT_NULL);
     	#endif
 			result = RT_ERROR;
@@ -98,8 +99,8 @@ rt_err_t gui_key_input(rt_uint8_t *KeyValue)
 	}
 	else
 	{
-		cnt++;
-		if(cnt > 12)
+		SleepCnt++;
+		if(SleepCnt > 12)
 		{
 			//屏幕休眠
 			gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);	

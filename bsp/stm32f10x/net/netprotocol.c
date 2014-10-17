@@ -181,8 +181,8 @@ rt_bool_t net_mail_crc16_check(net_recvmsg_p Mail)
 
 	Mail->lenmap.bype = net_rev16(Mail->lenmap.bype);
 
-	RT_DEBUG_LOG(SHOW_CRC16_INIF,("Right CRC16 = %04X\n",CRC16Right));
-	RT_DEBUG_LOG(SHOW_CRC16_INIF,("Cur   CRC16 = %04X\n",CurCRC16));
+	RT_DEBUG_LOG(SHOW_CRC16_INIF,("Remote  CRC16 = %04X\n",CRC16Right));
+	RT_DEBUG_LOG(SHOW_CRC16_INIF,("Local   CRC16 = %04X\n",CurCRC16));
 	if(CurCRC16 == CRC16Right)
 	{
 		return RT_TRUE;

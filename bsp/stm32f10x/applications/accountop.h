@@ -73,5 +73,8 @@ rt_uint32_t menu_get_cur_date(void);
 
 //修改指纹
 rt_err_t user_modify_fprint(rt_uint16_t KeyPos,rt_uint32_t outtime);
+
+//创建超级用户
+void admin_create(void);
 #endif
 
