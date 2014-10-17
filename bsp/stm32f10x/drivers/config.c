@@ -1546,7 +1546,7 @@ device_config_key_index(int(*callback)(struct key *, void *arg1, void *arg2, voi
 }
 
 s32
-device_config_phone_index(int(*callback)(struct phone_head *, void *arg1, void *arg2, void *arg3), void *arg1, void *arg2)
+device_config_phone_index(int(*callback)(struct phone_head *, void *arg1, void *arg2, void *arg3), void *arg1, void *arg2, void *arg3)
 {
     s32 result;
     u16 i;
@@ -1561,7 +1561,7 @@ device_config_phone_index(int(*callback)(struct phone_head *, void *arg1, void *
 		if (device_config_get_key_valid(i) > 0) {
 			len = device_config_phone_operate(i, &ph, 0);
 			if (len >= 0) {
-                result = callback(&ph, arg1, arg2, &i);
+                result = callback(&ph, arg1, arg2, arg3);
 			}
 		}
 	}

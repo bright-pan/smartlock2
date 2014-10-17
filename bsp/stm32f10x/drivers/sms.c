@@ -195,13 +195,84 @@ const ALARM_TYPEDEF PictureSMS[] =
 
   尊敬的用户，你的门钥没有拔取，请注意安全
   0x5C0A,0x656C,0x7684,0x7528,0x6237,0xFF0C,0x4F60,0x7684,0x95E8,0x94A5,0x6CA1,0x6709,0x62D4,0x53D6,0xFF0C,0x8BF7,0x6CE8,0x610F,0x5B89,0x5168
-*/
+  
+    密码错3次: 您的智能锁密码已错误输入3次，可能存在恶意操作，请注意安全！
+    0x60a8,0x7684,0x667a,0x80fd,0x9501,0x5bc6,0x7801,0x5df2,0x9519,0x8bef,0x8f93,0x5165,0x33,0x6b21,0xff0c,0x53ef,0x80fd,0x5b58,0x5728,0x6076,0x610f,0x64cd,0x4f5c,0xff0c,0x8bf7,0x6ce8,0x610f,0x5b89,0x5168,0xff01
+    指纹错3次: 您的智能锁指纹已错误输入3次，可能存在恶意操作，请注意安全！
+    0x60a8,0x7684,0x667a,0x80fd,0x9501,0x6307,0x7eb9,0x5df2,0x9519,0x8bef,0x8f93,0x5165,0x33,0x6b21,0xff0c,0x53ef,0x80fd,0x5b58,0x5728,0x6076,0x610f,0x64cd,0x4f5c,0xff0c,0x8bf7,0x6ce8,0x610f,0x5b89,0x5168,0xff01
+    钥匙孔盖：您的智能锁已启用电子钥匙方式开门，电子钥匙读取错误，可能存在恶意开锁，请注意安全！
+    0x60a8,0x7684,0x667a,0x80fd,0x9501,0x5df2,0x542f,0x7528,0x7535,0x5b50,0x94a5,0x5319,0x65b9,0x5f0f,0x5f00,0x95e8,0xff0c,0x7535,0x5b50,0x94a5,0x5319,0x8bfb,0x53d6,0x9519,0x8bef,0xff0c,0x53ef,0x80fd,0x5b58,0x5728,0x6076,0x610f,0x5f00,0x9501,0xff0c,0x8bf7,0x6ce8,0x610f,0x5b89,0x5168,0xff01
+    门外的客人已激活电话开门模式，请回拨此号码开门，本次电话开门时间5分钟内有效！
+    0x95e8,0x5916,0x7684,0x5ba2,0x4eba,0x5df2,0x6fc0,0x6d3b,0x7535,0x8bdd,0x5f00,0x95e8,0x6a21,0x5f0f,0xff0c,0x8bf7,0x56de,0x62e8,0x6b64,0x53f7,0x7801,0x5f00,0x95e8,0xff0c,0x672c,0x6b21,0x7535,0x8bdd,0x5f00,0x95e8,0x65f6,0x95f4,0x35,0x5206,0x949f,0x5185,0x6709,0x6548,0xff01
+    您已通过电话成功开锁，手机号为：
+    0x60a8,0x5df2,0x901a,0x8fc7,0x7535,0x8bdd,0x6210,0x529f,0x5f00,0x9501,0xff0c,0x624b,0x673a,0x53f7,0x4e3a,0xff1a
+    */
 
 const static uint16_t
 NUM_UCS_MAP[16] = {
 
 	0x0030,0x0031,0x0032,0x0033,0x0034,
 	0x0035,0x0036,0x0037,0x0038,0x0039
+};
+const static uint16_t
+sms_content_rf433_error[] = {
+    0x60a8,0x7684,0x667a,0x80fd,
+    0x9501,0x5df2,0x542f,0x7528,
+    0x7535,0x5b50,0x94a5,0x5319,
+    0x65b9,0x5f0f,0x5f00,0x95e8,
+    0xff0c,0x7535,0x5b50,0x94a5,
+    0x5319,0x8bfb,0x53d6,0x9519,
+    0x8bef,0xff0c,0x53ef,0x80fd,
+    0x5b58,0x5728,0x6076,0x610f,
+    0x5f00,0x9501,0xff0c,0x8bf7,
+    0x6ce8,0x610f,0x5b89,0x5168,
+    0xff01
+    
+};
+const static uint16_t
+sms_content_key_error[] = {
+    0x60a8,0x7684,0x667a,0x80fd,
+    0x9501,0x5bc6,0x7801,0x5df2,
+    0x9519,0x8bef,0x8f93,0x5165,
+    0x0033,0x6b21,0xff0c,0x53ef,
+    0x80fd,0x5b58,0x5728,0x6076,
+    0x610f,0x64cd,0x4f5c,0xff0c,
+    0x8bf7,0x6ce8,0x610f,0x5b89,
+    0x5168,0xff01
+};
+const static uint16_t
+sms_content_fprint_error[] = {
+    0x60a8,0x7684,0x667a,0x80fd,
+    0x9501,0x6307,0x7eb9,0x5df2,
+    0x9519,0x8bef,0x8f93,0x5165,
+    0x0033,0x6b21,0xff0c,0x53ef,
+    0x80fd,0x5b58,0x5728,0x6076,
+    0x610f,0x64cd,0x4f5c,0xff0c,
+    0x8bf7,0x6ce8,0x610f,0x5b89,
+    0x5168,0xff01
+    
+};
+const static uint16_t
+sms_content_req_in_phone_call[] = {
+    0x95e8,0x5916,0x7684,0x5ba2,
+    0x4eba,0x5df2,0x6fc0,0x6d3b,
+    0x7535,0x8bdd,0x5f00,0x95e8,
+    0x6a21,0x5f0f,0xff0c,0x8bf7,
+    0x56de,0x62e8,0x6b64,0x53f7,
+    0x7801,0x5f00,0x95e8,0xff0c,
+    0x672c,0x6b21,0x7535,0x8bdd,
+    0x5f00,0x95e8,0x65f6,0x95f4,
+    0x35,0x5206,0x949f,0x5185,
+    0x6709,0x6548,0xff01
+};
+const static uint16_t
+sms_content_rep_in_phone_call[] = {
+
+    0x60a8,0x5df2,0x901a,0x8fc7,
+    0x7535,0x8bdd,0x6210,0x529f,
+    0x5f00,0x9501,0xff0c,0x624b,
+    0x673a,0x53f7,0x4e3a,0xff1a
+    
 };
 
 const static uint16_t
@@ -356,7 +427,7 @@ typedef struct {
 
 }SMS_DATA_TYPEDEF;
 
-SMS_DATA_TYPEDEF sms_data[50];
+static SMS_DATA_TYPEDEF sms_data[70];
 
 #if(SMS_SEND_ASTRICT_IS == 1)
 
@@ -557,7 +628,7 @@ static rt_uint32_t sms_timeout_value_get(ALARM_TYPEDEF type)
  *
  */
 static void
-sms_data_init(SMS_DATA_TYPEDEF sms_data[])
+sms_data_init(void)
 {
 	//lock shell
 	sms_data[ALARM_TYPE_LOCK_SHELL].data = sms_content_lock_shell;
@@ -602,6 +673,22 @@ sms_data_init(SMS_DATA_TYPEDEF sms_data[])
 	// motor fault
 	sms_data[ALARM_TYPE_MOTOR_FAULT].data = sms_content_motor_fault;
 	sms_data[ALARM_TYPE_MOTOR_FAULT].length = sizeof(sms_content_motor_fault) / sizeof(uint16_t);
+	// rf433 error
+	sms_data[ALARM_TYPE_SMS_RF433_ERROR].data = sms_content_rf433_error;
+	sms_data[ALARM_TYPE_SMS_RF433_ERROR].length = sizeof(sms_content_rf433_error) / sizeof(uint16_t);
+	// fprint error
+	sms_data[ALARM_TYPE_SMS_FPRINT_ERROR].data = sms_content_fprint_error;
+	sms_data[ALARM_TYPE_SMS_FPRINT_ERROR].length = sizeof(sms_content_fprint_error) / sizeof(uint16_t);
+	// key error
+	sms_data[ALARM_TYPE_SMS_KEY_ERROR].data = sms_content_key_error;
+	sms_data[ALARM_TYPE_SMS_KEY_ERROR].length = sizeof(sms_content_key_error) / sizeof(uint16_t);
+	// success unlock in phone call unlock
+	sms_data[ALARM_TYPE_SMS_REQ_IN_PHONE_CALL].data = sms_content_req_in_phone_call;
+	sms_data[ALARM_TYPE_SMS_REQ_IN_PHONE_CALL].length = sizeof(sms_content_req_in_phone_call) / sizeof(uint16_t);
+
+	// REQUEST in phone call unlock
+	sms_data[ALARM_TYPE_SMS_REP_IN_PHONE_CALL].data = sms_content_rep_in_phone_call;
+	sms_data[ALARM_TYPE_SMS_REP_IN_PHONE_CALL].length = sizeof(sms_content_rep_in_phone_call) / sizeof(uint16_t);
 }
 
 
@@ -616,7 +703,6 @@ sms_time_ucs(const struct tm *tm_time,
 			 uint16_t *time_ucs, uint16_t *length)
 {
 	uint16_t year;
-	uint16_t *time_ucs_bk = time_ucs;
 
 	*length += prefix_length;
 	while (prefix_length-- > 0)
@@ -662,9 +748,19 @@ sms_time_ucs(const struct tm *tm_time,
 		*time_ucs++ = *suffix++;
 	}
 
-	return time_ucs_bk;
+	return time_ucs;
 }
-
+static uint16_t *
+sms_num_ucs(u8 *buf, u16 buf_length,
+            uint16_t *time_ucs, uint16_t *length)
+{
+    
+	*length += buf_length;
+    while (buf_length--) {
+        *time_ucs++ = NUM_UCS_MAP[*buf++ - 0x30];
+    }
+	return time_ucs;
+}
 
 static void
 sms_pdu_phone_address_init(uint8_t *octet, const char *phone_address)
@@ -738,7 +834,7 @@ sms_pdu_ucs_send(char *dest_address, char *smsc_address, uint16_t *content, uint
 	{
 		length = 70;
 	}
-
+    send_gsm_ctrl_mail(GSM_CTRL_OPEN,RT_NULL,0,1);
 	//send_pdu_frame = (SMS_SEND_PDU_FRAME *)rt_malloc(sizeof(SMS_SEND_PDU_FRAME));
 	memset(&send_pdu_frame, 0, sizeof(SMS_SEND_PDU_FRAME));
 
@@ -760,9 +856,8 @@ sms_pdu_ucs_send(char *dest_address, char *smsc_address, uint16_t *content, uint
 	hex_to_string(send_pdu_string + 2, (uint8_t *)&send_pdu_frame, sms_pdu_length);
 	*(uint16_t *)send_pdu_string = (uint16_t)(send_pdu_frame.TPDU.TP_UDL + sizeof(send_pdu_frame.TPDU) - sizeof(send_pdu_frame.TPDU.TP_UD));
 	//send_ctx_mail(COMM_TYPE_SMS, 0, 0, send_pdu_string, (sms_pdu_length << 1) + 2);
-    send_gsm_ctrl_mail(GSM_CTRL_OPEN,RT_NULL,0,1);
     send_gsm_sms_mail(send_pdu_string, (sms_pdu_length << 1) + 2, 1);
-    send_gsm_ctrl_mail(GSM_CTRL_CLOSE,RT_NULL,0,1);
+    //send_gsm_ctrl_mail(GSM_CTRL_CLOSE,RT_NULL,0,1);
 	/*
 	gsm_mail_buf.send_mode = GSM_MODE_CMD;
 	gsm_mail_buf.result = &send_result;
@@ -817,7 +912,8 @@ int phone_sms_callback(struct phone_head *ph, void *arg1, void *arg2, void *arg3
     s32 result = -1;
     uint16_t *sms_ucs = arg1;
     uint16_t sms_ucs_length = *(u16 *)arg2;
-    if (ph->account != PHONE_ID_INVALID && ph->auth & PHONE_AUTH_SMS) {
+    uint16_t auth = *(u16 *)arg3;
+    if (ph->account != PHONE_ID_INVALID && ph->auth & auth) {
         sms_pdu_ucs_send(ph->address, smsc, sms_ucs, sms_ucs_length);
         result = ph->account;
     }
@@ -829,7 +925,7 @@ sms_thread_entry(void *parameter)
 {
 	rt_err_t result;
 	struct tm *tm_time;
-	uint8_t alarm_telephone_counts = 0;
+	//uint8_t alarm_telephone_counts = 0;
 	uint16_t *sms_ucs, *sms_ucs_bk, sms_ucs_length;
 	const uint16_t *temp_ucs;
 	uint16_t temp_ucs_length;
@@ -840,7 +936,7 @@ sms_thread_entry(void *parameter)
 	RT_ASSERT(TimeOutWindow != RT_NULL);
 #endif
 	// initial sms data
-	sms_data_init(sms_data);
+	sms_data_init();
 
 	while (1)
 	{
@@ -851,6 +947,7 @@ sms_thread_entry(void *parameter)
 												SMS_RECV_MAIL_OUTTIME);
 		if (result == RT_EOK)
 		{
+            /*
 			#if(SMS_SEND_ASTRICT_IS == 1)
 			if(find_sms_node(TimeOutWindow,sms_mail_buf.alarm_type) == RT_TRUE)
 			{
@@ -865,9 +962,9 @@ sms_thread_entry(void *parameter)
 				add_new_node(TimeOutWindow,sms_mail_buf.alarm_type,AlarmTimeOut);
 			}
 			#endif
-			
+			*/
 #if (defined RT_USING_FINSH) && (defined SMS_DEBUG)
-			rt_kprintf("\nreceive sms mail < time: %d alarm_type: %s >\n", sms_mail_buf.time, alarm_help_map[sms_mail_buf.alarm_type]);
+			rt_kprintf("\nreceive sms mail < time: %d alarm_type: %s, %d >\n", sms_mail_buf.time, alarm_help_map[sms_mail_buf.alarm_type], sms_mail_buf.alarm_type);
 #endif
 			// sms content process
 			sms_ucs_length = 0;
@@ -882,11 +979,13 @@ sms_thread_entry(void *parameter)
 			{
 				*sms_ucs_bk++ = *temp_ucs++;
 			}
+            if (sms_mail_buf.alarm_type == ALARM_TYPE_SMS_REP_IN_PHONE_CALL && sms_mail_buf.buf != RT_NULL && sms_mail_buf.length != 0)
+                sms_ucs_bk = sms_num_ucs(sms_mail_buf.buf, sms_mail_buf.length, sms_ucs_bk, &sms_ucs_length);
 			// sms time process
 			tm_time = localtime(&sms_mail_buf.time);
 			tm_time->tm_year += 1900;
 			tm_time->tm_mon += 1;
-			sms_time_ucs(tm_time,
+			sms_ucs_bk = sms_time_ucs(tm_time,
 						 sms_content_time_prefix, sizeof(sms_content_time_prefix)/sizeof(uint16_t),
 						 sms_content_time_suffix, sizeof(sms_content_time_suffix)/sizeof(uint16_t),
 						 sms_ucs_bk,
@@ -908,7 +1007,8 @@ sms_thread_entry(void *parameter)
 				alarm_telephone_counts++;
 			}
             */
-            device_config_phone_index(phone_sms_callback, sms_ucs, &sms_ucs_length);
+
+            device_config_phone_index(phone_sms_callback, sms_ucs, &sms_ucs_length, &sms_mail_buf.auth);
 			rt_free(sms_ucs);
 			sms_ucs = RT_NULL;
 		}
@@ -929,20 +1029,22 @@ sms_thread_entry(void *parameter)
 
 
 void
-send_sms_mail(ALARM_TYPEDEF alarm_type, time_t time)
+send_sms_mail(ALARM_TYPEDEF alarm_type, time_t time, u8 *buf, u16 length, u16 auth)
 {
-	SMS_MAIL_TYPEDEF buf;
+	SMS_MAIL_TYPEDEF mail;
 	extern rt_device_t rtc_device;
 	rt_err_t result;
 	//send mail
-	buf.alarm_type = alarm_type;
+	mail.alarm_type = alarm_type;
 	if (time)
-		buf.time = time;
+		mail.time = time;
 	else
-        buf.time = sys_cur_date();
-
+        mail.time = sys_cur_date();
+    mail.buf = buf;
+    mail.length = length;
+    mail.auth = auth;
 	if (sms_mq != NULL) {
-		result = rt_mq_send(sms_mq, &buf, sizeof(SMS_MAIL_TYPEDEF));
+		result = rt_mq_send(sms_mq, &mail, sizeof(SMS_MAIL_TYPEDEF));
 		if (result == -RT_EFULL)
             RT_DEBUG_LOG(SMS_DEBUG,("sms_mq is full!!!\n"));
 	} else {

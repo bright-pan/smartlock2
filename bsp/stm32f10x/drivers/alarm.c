@@ -33,6 +33,7 @@ const char *alarm_help_map[] = {
 	"ALARM_TYPE_CAMERA_IRDASENSOR", // camera irda sensor
 	"ALARM_TYPE_MOTOR_STATUS", // motor status sensor
 	"ALARM_TYPE_BATTERY_WORKING_20M",
+    
 	"ALARM_TYPE_BATTERY_REMAIN_50P",
 	"ALARM_TYPE_BATTERY_REMAIN_20P",
 	"ALARM_TYPE_BATTERY_REMAIN_5P",
@@ -43,8 +44,9 @@ const char *alarm_help_map[] = {
 	"ALARM_TYPE_FPRINT_KEY_ERRO",
 	"ALARM_TYPE_CODE_KEY_ADD",     //ÃÜÂëÌí¼Ó
 	"ALARM_TYPE_CODE_KEY_ERROR",   //ÃÜÂë´íÎó
-	"ALARM_TYPE_CODE_KEY_RIGHT",   //ÕýÈ·ÃÜÂë¿ªËø
-	"ALARM_TYPE_RFID_KEY_ERROR",// rfid key detect error alarm type 14
+	
+    "ALARM_TYPE_CODE_KEY_RIGHT",   //ÕýÈ·ÃÜÂë¿ªËø
+    "ALARM_TYPE_RFID_KEY_ERROR",// rfid key detect error alarm type 14
 	"ALARM_TYPE_RFID_KEY_SUCCESS",// rfid key detect success alarm type
 	"ALARM_TYPE_RFID_KEY_PLUGIN",// rfid key detect plugin alarm type
 	"ALARM_TYPE_RFID_FAULT",
@@ -53,8 +55,9 @@ const char *alarm_help_map[] = {
 	"ALARM_TYPE_POWER_FAULT",
 	"ALARM_TYPE_GPRS_AUTH",
 	"ALARM_TYPE_GPRS_HEART",
-	"ALARM_TYPE_GPRS_LIST_TELEPHONE",
-	"ALARM_TYPE_GPRS_LIST_RFID_KEY",
+	
+    "ALARM_TYPE_GPRS_LIST_TELEPHONE",
+    "ALARM_TYPE_GPRS_LIST_RFID_KEY",
 	"ALARM_TYPE_GPRS_SET_TELEPHONE_SUCCESS",
 	"ALARM_TYPE_GPRS_SET_TELEPHONE_FAILURE",
 	"ALARM_TYPE_GPRS_SET_RFID_KEY_SUCCESS",
@@ -63,8 +66,9 @@ const char *alarm_help_map[] = {
 	"ALARM_TYPE_GPRS_SET_USER_PARAMETERS_SUCCESS",
 	"ALARM_TYPE_GPRS_SET_USER_PARAMETERS_FAILURE",//31
 	"ALARM_TYPE_GPRS_SYS_TIME_UPDATE",
+    
 	"ALARM_TYPE_GPRS_SET_TIME_SUCCESS",
-	"ALARM_TYPE_GPRS_SET_TIME_FAILURE",
+    "ALARM_TYPE_GPRS_SET_TIME_FAILURE",
 	"ALARM_TYPE_GPRS_SET_KEY0_SUCCESS",
 	"ALARM_TYPE_GPRS_SET_KEY0_FAILURE",
 	"ALARM_TYPE_GPRS_SET_HTTP_SUCCESS",
@@ -73,8 +77,21 @@ const char *alarm_help_map[] = {
 	"ALARM_TYPE_GPRS_SEND_PIC_DATA",
 	"ALARM_TYPE_GPRS_SLEEP",
 	"ALARM_TYPE_GPRS_WAKE_UP",
+    
 	"ALARM_TYPE_GPRS_CAMERA_OP",
-	"ALARM_TYPE_BUTTON_ADJUST_IR"
+    "ALARM_TYPE_BUTTON_ADJUST_IR",
+    "ALARM_TYPE_LOCK_PROCESS",
+    "ALARM_TYPE_KEY_ADD",
+    "ALARM_TYPE_KEY_DEL",
+    "ALARM_TYPE_KEY_RIGHT",
+    "ALARM_TYPE_KEY_ERROR",
+    "ALARM_TYPE_SMS_RF433_ERROR",
+    "ALARM_TYPE_SMS_KEY_ERROR",
+    "ALARM_TYPE_SMS_FPRINT_ERROR",//60
+
+    "ALARM_TYPE_SMS_REQ_IN_PHONE_CALL",
+    "ALARM_TYPE_SMS_REP_IN_PHONE_CALL",
+    "ALARM_TYPE_GSM_RING_REQUEST",
 };
 
 void alarm_thread_entry(void *parameter)
@@ -100,10 +117,12 @@ void alarm_thread_entry(void *parameter)
 			   rt_kprintf("mail is not need\n");
 			   continue;
 			   }*/
+            /*
 			if (alarm_mail_buf.alarm_process_flag & ALARM_PROCESS_FLAG_SMS)
 			{
                 send_sms_mail(alarm_mail_buf.alarm_type,alarm_mail_buf.time);
 			}
+            */
 			if (alarm_mail_buf.alarm_process_flag & ALARM_PROCESS_FLAG_GPRS)
 			{
 

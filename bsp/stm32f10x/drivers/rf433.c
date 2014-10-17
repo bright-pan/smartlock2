@@ -135,8 +135,9 @@ rf433_thread_entry(void *parameter)
                     for (i = 0; i < 15; ++i)
                         temp += rf433_mail_buf.data[i];
                     if (temp == rf433_mail_buf.data[15]) {
-                        if (device_config_key_verify(KEY_TYPE_RF433, rf433_mail_buf.data, 4) > 0)
-                            send_sms_mail(ALARM_TYPE_RFID_KEY_SUCCESS, 0);
+                        if (device_config_key_verify(KEY_TYPE_RF433, rf433_mail_buf.data, 4) > 0) {
+                            //send_sms_mail(ALARM_TYPE_RFID_KEY_SUCCESS, 0, RT_NULL, 0);
+                        }
                     } else {
                         RT_DEBUG_LOG(RF433_DEBUG,("rf433 verify error\n"));
                     }
@@ -158,9 +159,9 @@ rf433_thread_entry(void *parameter)
             if (flag) {
                 rf433_check_stop();
                 gpio_pin_output(DEVICE_NAME_RF_ENABLE, 1, 1);
-                send_sms_mail(ALARM_TYPE_RFID_KEY_ERROR, 0);
+                send_sms_mail(ALARM_TYPE_SMS_RF433_ERROR, 0, RT_NULL, 0, PHONE_AUTH_SMS);
                 flag = 0;
-            }            
+            }
         }
     }
 }

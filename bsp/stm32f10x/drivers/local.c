@@ -19,6 +19,7 @@
 #include "untils.h"
 #include "config.h"
 #include "gpio_pwm.h"
+#include "sms.h"
 
 #ifdef USEING_BUZZER_FUN
 #include "buzzer.h"
@@ -151,6 +152,7 @@ void motor_status_sem_init(void)
 		RT_ASSERT(MotorManage.StatusSem );
 	}
 }
+
 void
 local_thread_entry(void *parameter)
 {
@@ -187,16 +189,25 @@ local_thread_entry(void *parameter)
 				{
                     s32 temp;
                     struct phone_head ph;
-					temp = device_config_phone_verify(local_mail_buf.data.ring.phone_call, 20);
-                    if (temp > 0)
+                    rt_memset(&ph, 0, sizeof(ph));
+                    rt_memcpy(ph.address, "86", 2);
+                    rt_memcpy(ph.address+2, local_mail_buf.data.ring.phone_call, rt_strlen(local_mail_buf.data.ring.phone_call));
+					temp = device_config_phone_verify(ph.address, 20);
+                    if (temp >= 0)
                     {
-                        if (device_config_phone_operate(temp, &ph, 0) > 0) {
-                            if (ph.account != PHONE_ID_INVALID && ph.auth & PHONE_AUTH_CALL) {
+                        if (device_config_phone_operate(temp, &ph, 0) >= 0) {
+                            if (ph.account != PHONE_ID_INVALID && ph.auth & PHONE_AUTH_SMS) {
                                 //µç»ú½âËø¡£
                                 lock_operation(LOCK_OPERATION_OPEN, MOTOR_WORK_CUT);
+                                send_sms_mail(ALARM_TYPE_SMS_REP_IN_PHONE_CALL, 0, ph.address, 13, PHONE_AUTH_SMS);
                             }
                         }
                     }
+					break;
+				}
+				case ALARM_TYPE_GSM_RING_REQUEST:
+				{
+                    send_sms_mail(ALARM_TYPE_SMS_REQ_IN_PHONE_CALL, 0, RT_NULL, 0, PHONE_AUTH_SMS);
 					break;
 				}
 				case ALARM_TYPE_FPRINT_KEY_ADD:
@@ -365,5 +376,6 @@ void lock_unlock(rt_uint8_t mode,rt_uint32_t time)
 	lock_operation(mode,time);
 }
 FINSH_FUNCTION_EXPORT(lock_unlock,"lock_unlock(rt_uint8_t mode)");
+FINSH_FUNCTION_EXPORT(send_local_mail,"send_local_mail");
 
 #endif
