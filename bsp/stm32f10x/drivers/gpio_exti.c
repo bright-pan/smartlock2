@@ -885,22 +885,27 @@ ERROR:
 void 
 kb_intr_exti_timeout(void *parameters)
 {
-	rt_device_t device = RT_NULL;
-    
+	rt_device_t device = RT_NULL;    
     uint16_t data = 0;
-    //static uint8_t error_detect = 0;
-//    rt_size_t size;
     uint8_t c;
 
 	device = device_enable(DEVICE_NAME_KB_INTR);
     
 	if (device != RT_NULL)
 	{
-		rt_device_read(device,0,&data,0);
-		if (data == KB_INTR_STATUS) // rfid key is plugin
-		{
-			data = kb_read();
-            //rt_kprintf("key value : %x\n", data);
+		rt_device_read(device,0,&c,0);
+		if (c == KB_INTR_STATUS) {
+            data = kb_read();
+            while(1) {
+                rt_device_read(device,0,&c,0);
+                if (c == KB_INTR_STATUS) {
+                    data |= kb_read();
+                } else {
+                    break;
+                }
+                            
+            }
+			//rt_kprintf("key value : %x\n", data);
             if (data == 0x808)
                 c = 'G';
             else
