@@ -208,17 +208,21 @@ rt_err_t fprint_input_ok_trigger(void *user)
 }
 
 rt_err_t fprint_input_error_trigger(void *user)
-{
+{	
+  union alarm_data data;		
+
+  data.key.ID = KEY_TYPE_INVALID;
+	data.key.Type = KEY_TYPE_FPRINT;
+	//计数累加
 	if(key_error_alarm_manage(0) == RT_TRUE)
 	{
-		#ifdef __GPRSMAILCLASS_H__
-		gprs_key_error_mail(KEY_TYPE_FPRINT);
-		#endif
-		
-		#ifdef _SMS_H_
-    send_sms_mail(ALARM_TYPE_RFID_KEY_ERROR,menu_get_cur_date());
-		#endif
+		data.key.sms = 1;
 	}
+	else
+	{
+		data.key.sms = 0;
+	}
+  send_local_mail(ALARM_TYPE_KEY_ERROR,0,&data);	
 }
 //指纹回调函数初始化
 int fprint_call_back_init(void)

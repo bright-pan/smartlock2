@@ -68,6 +68,9 @@ static MotorDevDef MotorManage =
 
 void lock_operation(s32 status, u16 pluse);
 
+//报警管理
+//错误计数累加  1
+//清除计数      0
 rt_bool_t key_error_alarm_manage(rt_uint8_t mode)
 {
 	switch(mode)
@@ -386,5 +389,16 @@ void lock_unlock(rt_uint8_t mode,rt_uint32_t time)
 }
 FINSH_FUNCTION_EXPORT(lock_unlock,"lock_unlock(rt_uint8_t mode)");
 FINSH_FUNCTION_EXPORT(send_local_mail,"send_local_mail");
+
+void system_info(void)
+{
+	extern void bt_info(void);
+	extern void net_info(void);
+	//报警计数
+	rt_kprintf("KeyErrorData.ErrorCnt >>>>>>>>>>> %d\n",KeyErrorData.ErrorCnt);
+	net_info();
+	bt_info();
+}
+FINSH_FUNCTION_EXPORT(system_info,"show system info");
 
 #endif
