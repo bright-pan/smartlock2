@@ -39,7 +39,7 @@ static struct device_configure device_config = {
 		{0x9C,0x9E,0x11,0x36,0xD3,0x64,0xAF,0xA9},
 		//key0
 		//{0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa},
-		{0x01,0x02,0x03,0x04,0x05,0x06,0x99,0x99},
+		{0x12,0x34,0x56,0x78,0x90,0x12,0x34,0x56},
 		//key1
 		//{0x00,0x00,0xCB,0x17,0x62,0x2F,0x7A,0xC5},
 		{0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa,0xaa},
@@ -1442,6 +1442,7 @@ device_config_account_append_phone(u16 account_id, u16 phone_id, u32 op_time, u8
                                 }
                                 ph.account = account_id;
                                 ph.updated_time = op_time;
+                                ph.is_update = 0;
                                 device_config_phone_operate(phone_id, &ph, 1);
                                 ah.phone[pos] = phone_id;
                                 ah.is_updated = 0;
@@ -1455,6 +1456,7 @@ device_config_account_append_phone(u16 account_id, u16 phone_id, u32 op_time, u8
                             }
                             ph.account = account_id;
                             ph.updated_time = sys_cur_date();
+                            ph.is_update = 1;
                             device_config_phone_operate(phone_id, &ph, 1);
                             ah.phone[pos] = phone_id;
                             ah.is_updated = 1;
@@ -1719,6 +1721,7 @@ void device_config_phone_display(u16 phone_id)
 	struct phone_head ph;
 	device_config_phone_operate(phone_id, &ph, 0);
     rt_kprintf("phone_is_valid = %d\n", device_config_get_phone_valid(phone_id));
+  rt_kprintf("phone_is_update = 0x%x\n", ph.is_update);
 	rt_kprintf("phone_account = 0x%x\n", ph.account);
 	rt_kprintf("phone_auth = 0x%x\n", ph.auth);
 	rt_kprintf("phone_address = %s\n", ph.address);
