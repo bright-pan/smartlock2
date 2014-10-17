@@ -808,12 +808,37 @@ void menu_16_processing(void)
   //gui_display_update();
 }
 
+static void update_account_new_data(rt_uint16_t pos)
+{	
+	rt_uint8_t           i;
+	struct account_head  *data = RT_NULL;
+	
+	data = rt_calloc(1,sizeof(*data));
+	RT_ASSERT(data != RT_NULL);
+
+	//上传账户
+	gprs_account_add_mail(pos);
+	device_config_account_operate(pos,data,0);
+	for(i = 0;i< ACCOUNT_KEY_NUMBERS;i++)
+	{
+		if(data->key[i] != KEY_ID_INVALID)
+		{
+			//上传新增钥匙
+			gprs_Key_add_mail(data->key[i]);
+		}
+	}
+	for(i=0;i < ACCOUNT_PHONE_NUMBERS;i++)
+	{
+		//上传电话
+    gprs_account_add_mail(data->phone[i]);
+	}
+}
 //保存并退出
 void menu_17_processing(void)
 {
 	rt_uint8_t *buf;
 	rt_int32_t CurUserPos;
-
+	
 	gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
 	CurUserPos = account_cur_pos_get();
 
@@ -828,6 +853,7 @@ void menu_17_processing(void)
 	gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),SaveEixtText[2],GUI_WIHIT);
   gui_display_update();
   account_add_exit(RT_TRUE);
+  update_account_new_data(CurUserPos);
 }
 
 void menu_18_processing(void)

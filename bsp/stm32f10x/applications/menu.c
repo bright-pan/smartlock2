@@ -26,7 +26,7 @@ fun1 cur_run_processing = RT_NULL;
 
 
 //菜单列表
-KbdTabStruct	KeyTab[KEY_MAX_MENU_NUM] = 
+const KbdTabStruct	KeyTab[KEY_MAX_MENU_NUM] = 
 {
 	//顶层
 	{0,0,0,1,0,menu_0_processing},//登陆界面
@@ -44,12 +44,12 @@ KbdTabStruct	KeyTab[KEY_MAX_MENU_NUM] =
 	{7,6,6,7,2,menu_7_processing},//系统参数
 
 	//四级
-	{8,9,13,14,13,menu_8_processing},//新增密码 >>同时创建账号
-	{9,10,8,15,13,menu_9_processing},//新增指纹
-	{10,11,9,16,13,menu_10_processing},//新增手机
-	{11,12,10,17,13,menu_11_processing},//保存退出
+	{8,9,13,14,11,menu_8_processing},//新增密码 >>同时创建账号
+	{9,10,8,15,11,menu_9_processing},//新增指纹
+	{10,11,9,16,11,menu_10_processing},//新增手机
+	{11,13,10,17,10,menu_11_processing},//保存退出
 	{12,13,11,18,12,menu_12_processing},//查看信息
-	{13,8,12,19,13,menu_13_processing},//退出
+	{13,8,11,19,13,menu_13_processing},//退出
 
 	//五级
 	{14,14,14,14,8,menu_14_processing},//录入密码
@@ -80,6 +80,8 @@ KbdTabStruct	KeyTab[KEY_MAX_MENU_NUM] =
 	//三级菜单
 	//{32,4,5,33,1,menu_32_processing},//管理员修改
 	//{33,33,33,33,32,menu_33_processing},//管理员密码修改
+
+	//三级目录
 };
 
 //系统进入菜单
@@ -385,7 +387,6 @@ void menu_error_handle(rt_uint8_t type)
 			//密码错误
 			#ifdef USEING_BUZZER_FUN
 			buzzer_send_mail(BZ_TYPE_ERROR3);
-			gprs_key_error_mail(KEY_TYPE_KBOARD);
 			#endif
 			break;
 		}

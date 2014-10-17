@@ -6,6 +6,7 @@
 #include"accountop.h"
 #include "sms.h"
 #include "gprsmailclass.h"
+#include "local.h"
 
 #define MENU_SURE_VALUE					 '*'
 #define MENU_DEL_VALUE           '#'
@@ -41,7 +42,7 @@ extern MenuManageDef MenuManage;
 
 
 extern rt_uint8_t KeyFuncIndex;
-extern KbdTabStruct	KeyTab[KEY_MAX_MENU_NUM];
+extern const KbdTabStruct	KeyTab[KEY_MAX_MENU_NUM];
 extern void(*current_operation_index)(void);
 
 void key_input_processing(void);

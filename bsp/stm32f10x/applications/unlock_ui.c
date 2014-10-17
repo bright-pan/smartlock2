@@ -129,35 +129,36 @@ void unlock_process_ui(void)
 	        if(result != RT_EOK)
 	        {
 	          //密码不合法
+	          union alarm_data data;
+						data.key.ID = KEY_TYPE_INVALID;
+						data.key.Type = KEY_TYPE_KBOARD;
+						
 	          menu_error_handle(1);
 	          gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),UNLOCK_UI_TEXT[2],GUI_WIHIT);
 	          gui_display_update();
 	          rt_thread_delay(RT_TICK_PER_SECOND);
 	          gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(3),SHOW_X_ROW8(15),SHOW_Y_LINE(4));
-	          
+
 	          if(key_error_alarm_manage(0) ==  RT_TRUE)
 	          {
+	          	data.key.sms = 1;
 							menu_error_handle(3);
 	          }
+	          else
+	          {
+							data.key.sms = 0;
+	          }
+	          send_local_mail(ALARM_TYPE_KEY_ERROR,0,&data);
 	          break;
 	        }
 	        else
 	        {
-	        	union alarm_data KeyData;
+	        	union alarm_data data;
 	        	
-	          KeyData.lock.key_id = ps_id;
-	          KeyData.lock.operation = LOCK_OPERATION_OPEN;
-	          rt_kprintf("unlock id %d\n",ps_id);
-	          send_local_mail(ALARM_TYPE_LOCK_PROCESS,(time_t)menu_get_cur_date,&KeyData);
-	          
-	          #ifdef __GPRSMAILCLASS_H__
-	          //GPRS邮件
-			      gprs_key_right_mail(ps_id);
-			      #endif
-
-			      #ifdef _SMS_H_				
-            send_sms_mail(ALARM_TYPE_RFID_KEY_ERROR,menu_get_cur_date());
-			      #endif
+          	data.key.ID = ps_id;
+						data.key.Type = KEY_TYPE_KBOARD;
+	          send_local_mail(ALARM_TYPE_KEY_RIGHT,0,&data);
+			     
 	          //新密码是合法的
 	          gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
 	          gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),UNLOCK_UI_TEXT[3],GUI_WIHIT);

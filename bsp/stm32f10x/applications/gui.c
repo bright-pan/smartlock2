@@ -18,10 +18,14 @@
 #include "asiic168.h"
 #include "gb1616.h"
 #include "menu.h"
+#include "gsm.h"
 
 #ifdef USEING_BUZZER_FUN
 #include "buzzer.h"
 #endif
+
+
+#define KEY_START_RING_VALUE				'G'
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //key api
 static rt_mq_t key_mq;
@@ -83,6 +87,14 @@ rt_err_t gui_key_input(rt_uint8_t *KeyValue)
     buzzer_send_mail(BZ_TYPE_KEY);
     #endif
     cnt = 0;
+    if(mail.c == KEY_START_RING_VALUE)
+    {
+    	#ifdef _GSM_H_
+    	send_gsm_ctrl_mail(GSM_CTRL_OPEN,RT_NULL,0,0);
+    	send_local_mail(ALARM_TYPE_GSM_RING_REQUEST,0,RT_NULL);
+    	#endif
+			result = RT_ERROR;
+    }
 	}
 	else
 	{
