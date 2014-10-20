@@ -30,6 +30,7 @@ void gprs_key_right_mail(rt_uint16_t pos)
 	device_config_key_operate(pos,keydata,0);
 
 	user->keyright.pos = pos;
+
 	user->keyright.type = keydata->head.key_type;
 
 	rt_free(keydata);

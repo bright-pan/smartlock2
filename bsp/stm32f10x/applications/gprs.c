@@ -119,7 +119,7 @@ static void key_upload_process(rt_uint16_t UpdatePos)
   keypos = net_rev16(keypos);
   rt_memcpy(data->data.col,&keypos,2);
 
-	data->data.type = KeyData->head.key_type;
+	data->data.type = KeyData->head.key_type-1;//注意由于本地数据定义与协议不匹配所以-1
   net_uint32_copy_string(data->data.createt,KeyData->head.updated_time);
 	data->data.accredit = 0;
 
@@ -167,7 +167,6 @@ static void key_upload_process(rt_uint16_t UpdatePos)
 	if(result == RT_EOK)
 	{
 		//数据上传成功
-		
  		result = msg_mail_keybind(UpdatePos,KeyData->head.account,KeyData->head.updated_time);
 		if(result == RT_EOK)
 		{
@@ -187,9 +186,10 @@ rt_uint16_t get_key_update_pos(void)
 	rt_uint16_t 	i;
 	struct key 		*keydat;
 	rt_int16_t    result;
+	rt_int32_t   maxnum = device_config_key_counts();
 
 	keydat = rt_calloc(1,sizeof(*keydat));
-	for(i = 0;i < KEY_NUMBERS;i++)
+	for(i = 0;i < maxnum;i++)
 	{
 		result = device_config_get_key_valid(i);
 		if(result == 1)
@@ -214,7 +214,7 @@ rt_uint16_t get_key_update_pos(void)
 */
 void update_key_lib_remote(void)
 {   
-	rt_uint16_t run = KEY_NUMBERS;
+	rt_uint16_t run = device_config_key_counts();
 	
 	while(run--)
 	{
@@ -234,9 +234,9 @@ rt_uint16_t get_phone_update_pos(void)
 	rt_uint16_t 				i;
 	struct phone_head 	*phdata;
 	rt_int32_t          result;
-	
+	rt_int32_t         maxnum = device_config_phone_counts();
 	phdata = rt_calloc(1,sizeof(*phdata));
-	for(i = 0;i < PHONE_NUMBERS;i++)
+	for(i = 0;i < maxnum;i++)
 	{
 		result = device_config_get_phone_valid(i);
 		
@@ -258,7 +258,7 @@ rt_uint16_t get_phone_update_pos(void)
 //手机号码库远程更新
 void update_phone_lib_remote(void)
 {
-	rt_uint16_t run = PHONE_NUMBERS;
+	rt_uint16_t run = device_config_phone_counts();
 	
 	while(run--)
 	{
@@ -278,9 +278,10 @@ rt_uint16_t get_account_update_pos(void)
 	rt_uint16_t 				  i;
 	rt_int16_t            result;
 	struct account_head 	*data;
+	rt_int32_t           maxnum = device_config_account_counts();
 
 	data = rt_calloc(1,sizeof(*data));
-	for(i = 0;i < ACCOUNT_NUMBERS;i++)
+	for(i = 0;i < maxnum;i++)
 	{
 		result = device_config_get_account_valid(i);
 		if(result == 1)
@@ -324,7 +325,7 @@ static void gprs_key_right_mail_process(GPRS_MAIL_TYPEDEF *mail)
 	RT_ASSERT(mail != RT_NULL);
 	user = mail->user;
 
-	switch(user->keyerr.type)
+	switch(user->keyright.type)
 	{
 	  case KEY_TYPE_FPRINT:
 	  {
@@ -343,6 +344,7 @@ static void gprs_key_right_mail_process(GPRS_MAIL_TYPEDEF *mail)
 	  }
 	  default:
 	  {
+	  	rt_kprintf("Key right process type error!!!\n");
 	    break;
 	  }
 	}
@@ -481,10 +483,10 @@ void gprs_mail_delete(GPRS_MAIL_TYPEDEF *mail)
 */
 void gprs_mail_manage_entry(void* arg)
 {
-	rt_err_t mq_result;
-	rt_uint8_t flag = 0;
+	rt_err_t 					mq_result;
+	rt_uint8_t 				login_flag = 0;
 	GPRS_MAIL_TYPEDEF mail;
-	rt_uint32_t count = UPDATE_KEY_CNT - 1;
+	rt_uint32_t 			count;
 	
 	rt_kprintf("mail manage thread run\n");
 	while(1)
@@ -497,17 +499,18 @@ void gprs_mail_manage_entry(void* arg)
 			{
 				rt_kprintf("Network disconnection GPRS mail lost!!!\n");
 			}
-			flag = 0;
+			login_flag = 0;
 			
 			continue;
 		}
 		else
 		{
-			/*if(flag == 0)
+			if(login_flag == 0)
 			{
-        send_gprs_mail(ALARM_TYPE_GPRS_SYS_TIME_UPDATE,0,RT_NULL);
-        flag = 1;
-			}*/
+				count = UPDATE_KEY_CNT - 1;
+        //send_gprs_mail(ALARM_TYPE_GPRS_SYS_TIME_UPDATE,0,RT_NULL);
+        login_flag = 1;
+			}
 		}
 
 		/*//测试报文

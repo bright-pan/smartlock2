@@ -55,7 +55,7 @@ rt_err_t net_phone_add_process(net_recvmsg_p mail)
   }
   RT_DEBUG_LOG(SHOW_NETPHONE_INFO,("\n"));
 	//±£´æÊı¾İ
-	OpResult = device_config_phone_set(PhoneID,ph->address,11,ph->auth,ph->updated_time);
+	OpResult = device_config_phone_set(PhoneID,(u8 *)ph->address,11,ph->auth,ph->updated_time);
 	
 	
 

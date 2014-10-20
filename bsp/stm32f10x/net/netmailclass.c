@@ -8,6 +8,7 @@
 #include "netfile.h"
 #include "stdlib.h"
 #include "netprotocol.h"
+#include "config.h"
 
 
 //#include "untils.h"
@@ -655,6 +656,7 @@ void msg_mail_keyadd_ack(net_recvmsg_p RMail,rt_uint8_t result)
 	rt_free(mail);
 }
 
+//Ô¿³×É¾³ý
 rt_err_t msg_mail_keydelete(rt_uint16_t pos,rt_uint32_t date)
 {
 	rt_uint8_t result;

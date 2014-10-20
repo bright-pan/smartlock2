@@ -2,6 +2,8 @@
 #define __GPRSMAILCLASS_H__
 #include "gprs.h"
 #include "config.h"
+#include "netprotocol.h"
+#include "netmailclass.h"
 
 void gprs_Key_add_mail(rt_uint16_t pos);
 
