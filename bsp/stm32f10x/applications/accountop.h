@@ -76,5 +76,11 @@ rt_err_t user_modify_fprint(rt_uint16_t KeyPos,rt_uint32_t outtime);
 
 //创建超级用户
 void admin_create(void);
+
+//设置当前操作的账户
+rt_err_t account_set_use(rt_int32_t id);
+
+//删除当前用户
+rt_err_t account_cur_delete(void);
 #endif
 

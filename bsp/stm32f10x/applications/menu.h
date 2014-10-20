@@ -22,6 +22,7 @@
 #define CONFIG_PASSWORD_LEN				6	//配置文件标准密码长度
 
 #define MENU_EVT_OP_OUTTIME				(0X01<<0)//菜单操作超时事件
+#define MENU_EVT_FREEZE						(0X01<<1)//菜单操作超时事件
 
 typedef struct 
 {
@@ -67,4 +68,7 @@ void system_menu_choose(rt_uint8_t menu);
 void menu_error_handle(rt_uint8_t type);
 
 rt_uint8_t menu_event_process(rt_uint8_t mode,rt_uint32_t type);
+
+//输入确定键处理
+rt_err_t menu_input_sure_key(rt_uint32_t OutTime);
 #endif

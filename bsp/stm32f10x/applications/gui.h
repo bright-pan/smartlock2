@@ -28,7 +28,7 @@ typedef enum {
 #define GUI_WIHIT			0
 #define GUI_BLACK			1
 
-#define SHOW_X_CENTERED(A)				(((LCD_X_MAX-(rt_strlen(A)*8))/2))			
+#define SHOW_X_CENTERED(A)				(((LCD_X_MAX-(rt_strlen((const char *)A)*8))/2))			
 #define SHOW_Y_LINE(A)						((A)*16)	
 #define SHOW_X_ROW8(A)						((A)*8)
 #define SHOW_X_ROW16(A)						((A)*16)

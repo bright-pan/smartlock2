@@ -26,6 +26,7 @@
 
 
 #define KEY_START_RING_VALUE				'G'
+#define UI_SLEEP_TIME               20
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //key api
 static rt_mq_t key_mq;
@@ -100,7 +101,7 @@ rt_err_t gui_key_input(rt_uint8_t *KeyValue)
 	else
 	{
 		SleepCnt++;
-		if(SleepCnt > 12)
+		if(SleepCnt > UI_SLEEP_TIME)
 		{
 			//屏幕休眠
 			gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);	
@@ -133,7 +134,7 @@ void gui_line(rt_uint8_t x1,rt_uint8_t y1,rt_uint8_t x2,rt_uint8_t y2,rt_uint8_t
 {  
 	rt_uint8_t t;  
 	rt_uint8_t xerr=0,yerr=0,delta_x,delta_y,distance;  
-	rt_uint8_t incx,incy;  
+	rt_int8_t incx,incy;  
 	rt_uint8_t row,col;  
 	delta_x = x2-x1;//计算坐标增量  
 	delta_y = y2-y1;  

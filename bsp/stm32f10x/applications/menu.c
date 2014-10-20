@@ -484,3 +484,58 @@ rt_uint8_t menu_event_process(rt_uint8_t mode,rt_uint32_t type)
 }
 
 
+//按键输入确定键
+rt_err_t menu_input_sure_key(rt_uint32_t OutTime)
+{	
+	rt_err_t result;
+	rt_uint8_t KeyValue;
+	rt_tick_t start_t,outtime_t;
+
+	start_t = rt_tick_get();
+	while(1)
+	{
+		if(outtime_t > 0)
+		{
+			outtime_t = rt_tick_get();
+			if(outtime_t - start_t > OutTime)
+			{
+				result = RT_ERROR;
+				break;
+			}
+		}
+		result = gui_key_input(&KeyValue);
+		if(RT_EOK == result)
+		{
+				if(KeyValue == MENU_SURE_VALUE)
+				{
+					break;
+				}
+				else if(KeyValue == MENU_DEL_VALUE)
+				{
+					break;
+				}
+		}
+		else
+		{
+			//操作超时
+    	if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+    	{
+    		result = RT_ERROR;
+				break ;
+    	}
+		}
+	}
+	if(KeyValue == MENU_SURE_VALUE)
+	{
+		result = RT_EOK;
+	}
+	else if(KeyValue == MENU_DEL_VALUE)
+	{
+		result = RT_ERROR;
+	}
+
+	return result;
+}
+
+
+

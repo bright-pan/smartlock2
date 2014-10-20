@@ -106,10 +106,12 @@ void menu_0_processing(void)
           rt_kprintf("核对密码\n");
           result =  admin_password_check(buf);
           if(result == RT_EOK)
-          {
+          {	
+          	//管理员登陆成功
             KeyFuncIndex = KeyTab[ KeyFuncIndex].SureState;
             current_operation_index = KeyTab[KeyFuncIndex].CurrentOperate;
             current_operation_index();
+            send_local_mail(ALARM_TYPE_SYSTEM_UNFREEZE,0,RT_NULL);
             return ;
           }
           else
@@ -118,7 +120,8 @@ void menu_0_processing(void)
             menu_error_handle(1);
             gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(3),SHOW_LAND_UI_PS_ERR,GUI_WIHIT);
             gui_display_update();
-            rt_thread_delay(RT_TICK_PER_SECOND);
+            menu_input_sure_key(RT_TICK_PER_SECOND);
+            //rt_thread_delay(RT_TICK_PER_SECOND);
             //密码错误3次报警
             if(key_error_alarm_manage(0) ==  RT_TRUE)
 	          {

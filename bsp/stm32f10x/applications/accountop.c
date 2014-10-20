@@ -3,6 +3,11 @@
 #include "fprint.h"
 
 #define USEING_DEBUG_ACCOP		0
+
+
+s32
+device_config_account_remove_key(u16 key_id);
+
 typedef struct
 {
 	rt_int16_t AccountPos;
@@ -80,6 +85,7 @@ rt_err_t account_valid_check(rt_int32_t pos)
 	return RT_EOK;
 }
 
+//删除当前用户
 rt_err_t account_cur_delete(void)
 {
 	rt_int32_t  result;
@@ -238,7 +244,7 @@ rt_err_t user_phone_add_check(rt_uint8_t *phone)
 	rt_int32_t pos;
 	rt_uint8_t len;
 
-	len = rt_strlen(phone);
+	len = rt_strlen((const char *)phone);
 	RT_ASSERT(phone != RT_NULL);
 	pos = device_config_phone_verify(phone,len);
 	RT_DEBUG_LOG(USEING_DEBUG_ACCOP,("%s This Phone pos %d len %d\n",phone,pos,len));
@@ -579,7 +585,7 @@ rt_uint32_t account_cur_pos_get(void)
 void admin_create(void)
 {
 	rt_int32_t result;
-	rt_int32_t keypos;
+	//rt_int32_t keypos;
 
 	result = device_config_account_next_valid(0,1);
 	if(result == 0)
@@ -671,7 +677,7 @@ void show_account(rt_uint8_t id)
 			if(ah.key[i] != KEY_ID_INVALID)
 			{
 				struct key  *buf;
-				rt_uint8_t j;
+				//rt_uint8_t j;
 
 				buf = rt_calloc(1,sizeof(struct key));
 				

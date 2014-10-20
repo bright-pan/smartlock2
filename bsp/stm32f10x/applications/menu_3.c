@@ -46,7 +46,7 @@ void menu_20_processing(void)
 	device_config_device_id_operate(id,0);
 	id = rt_calloc(1,9);
 	hex_to_string(buf,id,8);
-	gui_display_string(SHOW_X_ROW8(rt_strlen(LocalDevInofText[0])),SHOW_Y_LINE(0),buf,GUI_WIHIT);
+	gui_display_string(SHOW_X_ROW8(rt_strlen((const char *)LocalDevInofText[0])),SHOW_Y_LINE(0),buf,GUI_WIHIT);
 	rt_free(id);
   //œ‘ æ¿∂—¿MAC
 	gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(1),LocalDevInofText[1],GUI_WIHIT);
@@ -59,7 +59,7 @@ void menu_20_processing(void)
 		rt_device_open(dev,RT_DEVICE_OFLAG_OPEN);
 	}
 	rt_device_control(dev,4,buf);
-	gui_display_string(SHOW_X_ROW8(rt_strlen(LocalDevInofText[1])),SHOW_Y_LINE(1),buf,GUI_WIHIT);
+	gui_display_string(SHOW_X_ROW8(rt_strlen((const char *)LocalDevInofText[1])),SHOW_Y_LINE(1),buf,GUI_WIHIT);
   gui_display_update();
  	rt_free(buf);
 }

@@ -125,19 +125,18 @@ static const rt_uint8_t MenuUserModifyList1[MENU_USER_MODIFY_TYPE_NUM][8*2] =
 };
 
 
-
+#ifdef USEING_MODIF_UI
 static const rt_uint8_t UserModifyText[][8*2] = 
 {
 	{"密码数量:"},
 	{"当前序号:"},
 };
-
 static const rt_uint8_t AdminModifyText[][8*2] =
 {
 	{"管理员密码修改"},
 	{"新密码:"},
 };
-
+#endif
 static const rt_uint8_t PasswordModifyText[][8*2] =
 {
 	{"当前用户编号:"},
@@ -888,7 +887,7 @@ rt_err_t search_user_id_check(rt_uint8_t *buf,rt_uint8_t *user)
 	
 	return RT_EOK;
 }
-static rt_uint8_t ModifyUserPos;
+//static rt_uint8_t ModifyUserPos;
 
 #define PAGE_MAX_SHOW_LINE	4
 static void user_list_processing(void)
@@ -896,11 +895,11 @@ static void user_list_processing(void)
 	rt_uint8_t KeyValue;
 	rt_err_t	 result;
 	rt_uint8_t buf[LCD_LINE_MAX_LEN];
-	rt_uint8_t ShowStart = 0;
+	//rt_uint8_t ShowStart = 0;
 	rt_int8_t CurLine = 0;
 	rt_uint8_t UserMaxNum = 100;
 	rt_int32_t Page;
-	rt_uint8_t CurPage;
+	rt_int8_t CurPage;
 	rt_int32_t surplus;
 	UserInfoDef UserInfo[PAGE_MAX_SHOW_LINE];
 	rt_int32_t start_id = 0;
@@ -930,7 +929,7 @@ static void user_list_processing(void)
     result = gui_key_input(&KeyValue);
     if(result == RT_EOK)
     {
-      if(KeyValue == '8')
+      if(KeyValue == MENU_UP_VALUE)
       {
         //上
         if(CurPage >= 0)
@@ -955,7 +954,7 @@ static void user_list_processing(void)
           }
         }
       }
-      else if(KeyValue == '0')
+      else if(KeyValue == MENU_DOWN_VALUE)
       {
         //下
         CurLine++;
@@ -963,7 +962,7 @@ static void user_list_processing(void)
         {
         	if(CurPage*PAGE_MAX_SHOW_LINE+CurLine < UserMaxNum)
         	{
-        		rt_int32_t tmp;
+        		//rt_int32_t tmp;
 
         		if(CurPage == 0)
         		{
@@ -1001,7 +1000,7 @@ static void user_list_processing(void)
       {
         //确定
         rt_kprintf("Choose User:%d\n",CurPage*PAGE_MAX_SHOW_LINE+CurLine);
-        ModifyUserPos = CurPage*PAGE_MAX_SHOW_LINE+CurLine;
+        //ModifyUserPos = CurPage*PAGE_MAX_SHOW_LINE+CurLine;
         account_set_use(CurPage*PAGE_MAX_SHOW_LINE+CurLine);
         menu_run_sure_process();
         return ;
@@ -1026,7 +1025,7 @@ static void user_list_processing(void)
 			rt_uint8_t color = GUI_WIHIT;
 			
 			rt_memset(buf,0,LCD_LINE_MAX_LEN);
-			rt_sprintf(buf,"%03d",UserInfo[i].id);
+			rt_sprintf((char *)buf,"%03d",(const char *)UserInfo[i].id);
 			if(CurLine == i)
 			{
 				color = GUI_BLACK;
@@ -1034,7 +1033,7 @@ static void user_list_processing(void)
 			gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(i),buf,color);
 			
 			rt_memset(buf,0,LCD_LINE_MAX_LEN);
-			rt_strncpy(buf,UserInfo[i].name,LCD_LINE_MAX_LEN);
+			rt_strncpy((char *)buf,(const char *)UserInfo[i].name,LCD_LINE_MAX_LEN);
 			gui_display_string(SHOW_X_ROW16(4),SHOW_Y_LINE(i),buf,GUI_WIHIT);
 		}
     gui_display_update();
@@ -1054,7 +1053,7 @@ void menu_22_processing(void)
 
   gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(0),UserSearchText[0],GUI_WIHIT);
   gui_display_update();
-  rt_memset(buf,0,LCD_LINE_MAX_LEN);
+  rt_memset((void *)buf,0,LCD_LINE_MAX_LEN);
  	while(1)
 	{
 		result = gui_key_input(&KeyValue);
@@ -1113,7 +1112,7 @@ void menu_22_processing(void)
 	      {
 	        //如果能找到这个人进入修改界面
 	        
-	        ModifyUserPos = UserPos;
+	        //ModifyUserPos = UserPos;
 
 	        account_set_use(UserPos);
 	        menu_run_sure_process();
@@ -1269,48 +1268,6 @@ void menu_input_new_password_ui(rt_uint8_t *old_password)
 	
 }
 
-//按键输入确定键
-rt_err_t menu_input_sure_key(void)
-{	
-	rt_err_t result;
-	rt_uint8_t KeyValue;
-	
-	while(1)
-	{
-		result = gui_key_input(&KeyValue);
-		if(RT_EOK == result)
-		{
-				if(KeyValue == MENU_SURE_VALUE)
-				{
-					break;
-				}
-				else if(KeyValue == MENU_DEL_VALUE)
-				{
-					break;
-				}
-		}
-		else
-		{
-			//操作超时
-    	if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
-    	{
-    		result = RT_ERROR;
-				break ;
-    	}
-		}
-	}
-	if(KeyValue == MENU_SURE_VALUE)
-	{
-		result = RT_EOK;
-	}
-	else if(KeyValue == MENU_DEL_VALUE)
-	{
-		result = RT_ERROR;
-	}
-
-	return result;
-}
-
 static rt_err_t menu_intput_password_two(rt_uint8_t *buf,rt_uint8_t *ShowBuf,rt_uint8_t *password)
 {
 	rt_uint8_t GlintStatus;
@@ -1380,7 +1337,7 @@ static rt_err_t menu_intput_password_two(rt_uint8_t *buf,rt_uint8_t *ShowBuf,rt_
 			//操作超时
     	if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
     	{
-				return ;
+				return RT_ETIMEOUT;
     	}
 		  //闪烁提示
 		  GlintStatus++;
@@ -1464,7 +1421,7 @@ static rt_err_t menu_input_password_one(rt_uint8_t *buf,rt_uint8_t *ShowBuf)
 			//操作超时
 			if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
 			{
-					return ;
+					return RT_ETIMEOUT;
 			}
       //闪烁提示
       GlintStatus++;
@@ -1586,7 +1543,7 @@ static rt_err_t menu_input_string_ui1(rt_uint8_t *buf,rt_uint8_t InputLength)
 	    	//操作超时
 	    	if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
 	    	{
-					return ;
+					break ;
 	    	}
 	      //闪烁提示
 	      GlintStatus++;
@@ -1612,6 +1569,7 @@ static rt_uint8_t password_modify_fun_chonse(rt_uint8_t *buf,rt_int32_t *KeyPos)
 	rt_err_t result;
 	rt_uint8_t CurUserPos;
 #if 1
+  CurUserPos++;
   CurUserPos = account_cur_pos_get();
 
  	if(rt_strlen((const char*)buf) < CONFIG_PASSWORD_LEN)
@@ -1619,7 +1577,7 @@ static rt_uint8_t password_modify_fun_chonse(rt_uint8_t *buf,rt_int32_t *KeyPos)
 		//输入旧密码为空
 		gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PasswordModifyText[4],GUI_WIHIT);
 		gui_display_update();
-		menu_input_sure_key();
+		menu_input_sure_key(0);
 		gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(3),SHOW_X_ROW8(15),SHOW_Y_LINE(4));
 		return 4;
 	}
@@ -1631,7 +1589,7 @@ static rt_uint8_t password_modify_fun_chonse(rt_uint8_t *buf,rt_int32_t *KeyPos)
 		gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PasswordModifyText[10],GUI_WIHIT);
 		gui_display_update();
 
-		if(menu_input_sure_key() == RT_EOK)
+		if(menu_input_sure_key(0) == RT_EOK)
 		{
 			//确定新增
 			return 1;
@@ -1645,7 +1603,7 @@ static rt_uint8_t password_modify_fun_chonse(rt_uint8_t *buf,rt_int32_t *KeyPos)
 	else
 	{
 		//已经存在的密码
-	  rt_uint8_t save = 1;
+	  //rt_uint8_t save = 1;
 	  
 		//旧密码ID
 		*KeyPos = key_pos_get_password(buf);
@@ -1657,7 +1615,7 @@ static rt_uint8_t password_modify_fun_chonse(rt_uint8_t *buf,rt_int32_t *KeyPos)
 			gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PasswordModifyText[2],GUI_WIHIT);
 			gui_display_update();
 
-			if(menu_input_sure_key() == RT_EOK)
+			if(menu_input_sure_key(0) == RT_EOK)
 			{
 				//确定修改
 				return 2;
@@ -1677,6 +1635,7 @@ static rt_uint8_t password_modify_fun_chonse(rt_uint8_t *buf,rt_int32_t *KeyPos)
 		}
 	}
 #endif
+  return 4;
 }
 
 //密码修改GUI
@@ -1806,7 +1765,7 @@ MENU2_INPUT_PASSWORD_ONE:
 				}
 				gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PasswordModifyText[11],GUI_WIHIT);
 				gui_display_update();
-				result = menu_input_sure_key();
+				result = menu_input_sure_key(0);
 				if(result == RT_EOK)
 				{
 					//删除
@@ -1815,7 +1774,7 @@ MENU2_INPUT_PASSWORD_ONE:
 					{
 						gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PasswordModifyText[12],GUI_WIHIT);
 						gui_display_update();
-						menu_input_sure_key();
+						menu_input_sure_key(0);
 						goto MENU_INPUT_PASSWORD_OLD;
 					}
 					else
@@ -1847,7 +1806,7 @@ MENU2_INPUT_PASSWORD_ONE:
       {
       	gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),MenuCommText[0],GUI_WIHIT);
       	gui_display_update();
-      	result = menu_input_sure_key();
+      	result = menu_input_sure_key(0);
       	if(result == RT_EOK)
       	{
           gui_display_update();
@@ -2195,7 +2154,7 @@ void config_test(void)
 	user_num = device_config_account_counts();
 	rt_kprintf("user num:%d\n",user_num);
 
-	key_num = device_config_account_key_counts();
+	key_num = device_config_account_key_counts(0);
 	rt_kprintf("user key:%d\n",key_num);
 
 	key_num = device_config_account_next_valid(11,0);

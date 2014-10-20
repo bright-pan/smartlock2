@@ -2,7 +2,7 @@
 #include "fprint.h"
 #include "local.h"
 #define ADMIN_DATA_POS						0
-
+#include "menu_2.h"
 
 
 
@@ -68,7 +68,7 @@ static rt_uint8_t fprint_modify_fun_choose_ui(void)
 			//操作超时
     	if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
     	{
-				return ;
+				return 0xff;
     	}
 		}
 	}
@@ -205,6 +205,8 @@ rt_err_t fprint_input_ok_trigger(void *user)
 		key_error_alarm_manage(1);
 		rt_mq_send(FpRight_mq,user,sizeof(FPINTF_USER));
 	}
+  
+  return RT_EOK;
 }
 
 rt_err_t fprint_input_error_trigger(void *user)
@@ -223,6 +225,8 @@ rt_err_t fprint_input_error_trigger(void *user)
 		data.key.sms = 0;
 	}
   send_local_mail(ALARM_TYPE_KEY_ERROR,0,&data);	
+  
+  return RT_EOK;
 }
 //指纹回调函数初始化
 int fprint_call_back_init(void)
@@ -230,6 +234,8 @@ int fprint_call_back_init(void)
 	fp_ok_callback(fprint_input_ok_trigger);
 	fp_error_callback(fprint_input_error_trigger);
 	fp_event_process(0,FP_EVNT_NORMAL_MODE);
+  
+  return 0;
 }
 INIT_APP_EXPORT(fprint_call_back_init);
 
@@ -350,7 +356,7 @@ static void fprint_modify_ui(void)
     //读空指纹
     result = rt_mq_recv(FpRight_mq,&FpKeyDat,sizeof(FPINTF_USER),RT_WAITING_NO);
     
-		result = menu_input_sure_key();
+		result = menu_input_sure_key(0);
 		if(result == RT_ERROR)
 		{			
       rt_free(ShowBuf);
@@ -369,7 +375,7 @@ static void fprint_modify_ui(void)
 		gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(1),FprintModifyText[10],GUI_WIHIT);
 		gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(2),FprintModifyText[9],GUI_WIHIT);
 		gui_display_update();
-		result = menu_input_sure_key();
+		result = menu_input_sure_key(0);
 		
 		if(result == RT_ERROR)
 		{	
