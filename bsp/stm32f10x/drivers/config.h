@@ -322,9 +322,12 @@ s32
 device_config_key_set(u16 key_id, struct key *new_key, u32 op_time);
 s32
 device_config_phone_set(u16 phone_id, u8 *buf, u8 length, u16 auth, u32 op_time);
-
 s32
 device_config_event_delete(u16 event_id);
 s32
 device_config_event_create(u16 event_id, u16 event_type, u8 is_updated, union event_data *ed);
+s32
+device_config_account_key_counts(u16 account_id);
+s32
+device_config_account_counts(void);
 #endif /* _CONFIG_H_ */

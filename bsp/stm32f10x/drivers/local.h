@@ -22,9 +22,10 @@
 #include <stm32f10x.h>
 #include "alarm.h"
 
-#define LOCK_OPERATION_OPEN  0
-#define LOCK_OPERATION_CLOSE 1
+#define LOCK_OPERATION_OPEN                   0
+#define LOCK_OPERATION_CLOSE                  1
 
+#define LOCAL_EVT_SYSTEM_FREEZE               (0X01<<0)
 struct lock_data {
     s32 key_id;
     s32 operation;
@@ -53,18 +54,8 @@ typedef struct
     union alarm_data data;
 }LOCAL_MAIL_TYPEDEF;
 
-typedef struct
-{
-	rt_uint8_t key[4];
-}GPRS_MAIL_USER;
 
-/*
-extern GPRS_MAIL_USER gprs_mail_user;
-
-extern rt_timer_t lock_gate_timer;
-extern rt_timer_t battery_switch_timer;
-*/
-void local_thread_entry(void *parameter);
+rt_uint8_t local_event_process(rt_uint8_t mode,rt_uint32_t type);
 
 void send_local_mail(ALARM_TYPEDEF alarm_type, time_t time, union alarm_data *data);
 

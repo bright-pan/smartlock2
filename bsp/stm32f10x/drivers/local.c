@@ -20,7 +20,7 @@
 #include "config.h"
 #include "gpio_pwm.h"
 #include "sms.h"
-
+#include "gprsmailclass.h"
 #ifdef USEING_BUZZER_FUN
 #include "buzzer.h"
 #endif
@@ -65,8 +65,97 @@ static MotorDevDef MotorManage =
 	LOCK_OPERATION_OPEN,
 	0,
 };
+static rt_event_t   local_evt = RT_NULL;
 
 void lock_operation(s32 status, u16 pluse);
+
+/*
+功能:local线程中事件
+参数:mode 模式  type 事件类型
+返回: -------------------------
+		 |模式 |成功|失败|功能    |
+		 |0    |0   |1   |发送事件|
+		 |1    |0   |1   |收到事件|
+		 |2    |0   |1   |清除事件|
+		 --------------------------
+*/
+rt_uint8_t local_event_process(rt_uint8_t mode,rt_uint32_t type)
+{
+	rt_uint32_t value;
+	rt_err_t    result;
+	rt_uint8_t  return_data = 1;
+	
+	//net_evt_mutex_op(RT_TRUE);
+
+	if(local_evt == RT_NULL)
+	{
+    local_evt = rt_event_create("local",RT_IPC_FLAG_FIFO);
+    RT_ASSERT(local_evt != RT_NULL);
+	}
+	switch(mode)
+	{
+		case 0:	//set event 
+		{
+			result = rt_event_send(local_evt,type);
+			if(result == RT_EOK)
+			{
+				return_data = 0;
+			}
+			break;
+		}
+		case 1:	//get event 
+		{
+			result = rt_event_recv(local_evt,
+			                       type,
+			                       RT_EVENT_FLAG_OR,
+			                       RT_WAITING_NO,&value);
+			if(result == RT_EOK)
+			{
+				return_data = 0;
+			}
+			else if(result == -RT_ETIMEOUT)
+			{
+				return_data = 1;
+			}
+			break;
+		}
+		case 2://clean event
+		{
+			result = rt_event_recv(local_evt,
+			                       type,
+			                       RT_EVENT_FLAG_OR | 
+			                       RT_EVENT_FLAG_CLEAR,
+			                       RT_WAITING_NO,&value);
+			if(result == RT_EOK)
+			{
+				return_data = 0;
+			}
+			break;
+		}
+    case 3://clean all event 
+    {
+      result = rt_event_recv(local_evt,
+                             0xffffffff,
+                             RT_EVENT_FLAG_OR | 
+                             RT_EVENT_FLAG_CLEAR,
+                             RT_WAITING_NO,&value);
+      if(result == RT_EOK)
+      {
+        return_data = 0;
+      }
+      break;
+    }
+    default:
+    {
+			break;
+    }
+	}
+
+	//net_evt_mutex_op(RT_FALSE);
+	return return_data;
+}
+
+
 
 //报警管理
 //错误计数累加  1
@@ -81,6 +170,8 @@ rt_bool_t key_error_alarm_manage(rt_uint8_t mode)
 			KeyErrorData.ErrorCnt++;
 			if(KeyErrorData.ErrorCnt > 3)
 			{
+				//发送冻结事件
+				send_local_mail(ALARM_TYPE_SYSTEM_FREEZE,0,RT_NULL);
 				return RT_TRUE;
 			}
 			break;
@@ -208,8 +299,19 @@ local_thread_entry(void *parameter)
 				}
         case ALARM_TYPE_LOCK_PROCESS: 
         {
-        	lock_process(&local_mail_buf);
-        	break;
+        	rt_uint8_t freeze;
+        	
+        	freeze == local_event_process(1,LOCAL_EVT_SYSTEM_FREEZE);
+        	if(freeze == 0)
+        	{
+						//被冻结
+						lock_operation(LOCK_OPERATION_CLOSE,MOTOR_WORK_CUT);
+        	}
+        	else
+        	{						
+            lock_process(&local_mail_buf);
+        	}
+         	break;
         }
         case ALARM_TYPE_KEY_ERROR:
         {
@@ -231,6 +333,20 @@ local_thread_entry(void *parameter)
 					data.lock.operation = LOCK_OPERATION_OPEN;
 					send_local_mail(ALARM_TYPE_LOCK_PROCESS,0,&data);
 					gprs_key_right_mail(local_mail_buf.data.key.ID);
+					break;
+        }
+        case ALARM_TYPE_SYSTEM_FREEZE:
+        {
+        	//系统冻结
+        	rt_kprintf("Key Error System Freeze!!!\n");
+        	local_event_process(0,LOCAL_EVT_SYSTEM_FREEZE);
+					break;
+        }
+        case ALARM_TYPE_SYSTEM_UNFREEZE:
+        {
+					//系统解冻
+					rt_kprintf("Admin Login ");
+					local_event_process(2,LOCAL_EVT_SYSTEM_FREEZE);
 					break;
         }
 				default :
