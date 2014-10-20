@@ -40,6 +40,7 @@ struct gpio_exti_user_data
     rt_uint8_t nvic_preemption_priority;
     rt_uint8_t nvic_subpriority;
     rt_err_t (*gpio_exti_rx_indicate)(rt_device_t dev, rt_size_t size);//callback function for int
+    rt_timer_t timer;
 };
 
 /*
@@ -200,66 +201,52 @@ struct rt_gpio_ops gpio_exti_user_ops=
 //IO端口配置结构体变量
 static void gpio_config(void)
 {
-GPIO_InitTypeDef GPIO_InitStructure;
-RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB |
-RCC_APB2Periph_GPIOC | RCC_APB2Periph_GPIOD |
-RCC_APB2Periph_GPIOE, ENABLE);
-GPIO_InitStructure.GPIO_Pin = GPIO_Pin_All;
-GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
-GPIO_Init(GPIOA, &GPIO_InitStructure);
-GPIO_Init(GPIOB, &GPIO_InitStructure);
-//GPIO_Init(GPIOC, &GPIO_InitStructure);
-GPIO_Init(GPIOD, &GPIO_InitStructure);
-GPIO_Init(GPIOE, &GPIO_InitStructure);
+    GPIO_InitTypeDef GPIO_InitStructure;
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB |
+    RCC_APB2Periph_GPIOC | RCC_APB2Periph_GPIOD |
+    RCC_APB2Periph_GPIOE, ENABLE);
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_All;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
+    GPIO_Init(GPIOB, &GPIO_InitStructure);
+    //GPIO_Init(GPIOC, &GPIO_InitStructure);
+    GPIO_Init(GPIOD, &GPIO_InitStructure);
+    GPIO_Init(GPIOE, &GPIO_InitStructure);
 
-RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB |
-//RCC_APB2Periph_GPIOC | RCC_APB2Periph_GPIOD | RCC_APB2Periph_GPIOE, DISABLE);
-RCC_APB2Periph_GPIOD | RCC_APB2Periph_GPIOE, DISABLE);
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB |
+    //RCC_APB2Periph_GPIOC | RCC_APB2Periph_GPIOD | RCC_APB2Periph_GPIOE, DISABLE);
+    RCC_APB2Periph_GPIOD | RCC_APB2Periph_GPIOE, DISABLE);
 
     }
 /* switch1 device */
 gpio_device switch1_device;
-rt_timer_t switch1_exti_timer = RT_NULL;
 
 void switch1_exti_timeout(void *parameters)
 {
-	rt_device_t device = RT_NULL;
-	uint8_t data;
+	gpio_device *gpio = (gpio_device *)parameters;
+    struct gpio_exti_user_data *gpio_user_data = gpio->parent.user_data;
 
-	device = rt_device_find(DEVICE_NAME_SWITCH1);
-	if (device != RT_NULL)
-	{
-		rt_device_read(device,0,&data,0);
-		if (data == SWITCH1_STATUS)
-		{
-            rt_kprintf("it is switch1 detect!\n");
-            gpio_pin_output(DEVICE_NAME_POWER_FLASH,0,0);
-            gpio_pin_output(DEVICE_NAME_POWER_MOTOR,0,0);
-            gpio_pin_output(DEVICE_NAME_POWER_BT,0,0);
-            gpio_pin_output(DEVICE_NAME_POWER_FRONT,0,0);
-            gpio_pin_output(DEVICE_NAME_POWER_GSM,0,0);
-            gpio_config();
-            PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFI);
-			// produce mail
-			//send_alarm_mail(ALARM_TYPE_SWITCH1, ALARM_PROCESS_FLAG_LOCAL, SWITCH1_STATUS, 0);
-		}
-		rt_device_control(device, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0);
-	}
-
-	rt_timer_stop(switch1_exti_timer);
+	gpio->ops->control(gpio, RT_DEVICE_CTRL_MASK_EXTI, (void *)0); 
+    if (gpio->ops->intput(gpio) == SWITCH1_STATUS)
+    {
+        rt_kprintf("it is switch1 detect!\n");
+        gpio_pin_output(DEVICE_NAME_POWER_FLASH,0,0);
+        gpio_pin_output(DEVICE_NAME_POWER_MOTOR,0,0);
+        gpio_pin_output(DEVICE_NAME_POWER_BT,0,0);
+        gpio_pin_output(DEVICE_NAME_POWER_FRONT,0,0);
+        gpio_pin_output(DEVICE_NAME_POWER_GSM,0,0);
+        gpio_config();
+        PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFI);
+    }
+	gpio->ops->control(gpio, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0); 
+	rt_timer_stop(gpio_user_data->timer);
 }
 
 
 rt_err_t switch1_rx_ind(rt_device_t dev, rt_size_t size)
 {
-	//gpio_device *gpio = RT_NULL;
-	//gpio = (gpio_device *)dev;
-	rt_device_t device = RT_NULL;
-
-	device = rt_device_find(DEVICE_NAME_SWITCH1);
-	RT_ASSERT(device != RT_NULL);
-	rt_device_control(device, RT_DEVICE_CTRL_MASK_EXTI, (void *)0);
-	rt_timer_start(switch1_exti_timer);
+    struct gpio_exti_user_data *gpio_user_data = ((gpio_device *)dev)->parent.user_data;
+	rt_timer_start(gpio_user_data->timer);
 
 	return RT_EOK;
 }
@@ -291,9 +278,9 @@ int rt_hw_switch1_register(void)
     gpio_device->ops = &gpio_exti_user_ops;
 
     rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX), gpio_user_data);
-    switch1_exti_timer = rt_timer_create("t_sw1",
+    gpio_user_data->timer = rt_timer_create("t_sw1",
 										 switch1_exti_timeout,
-										 RT_NULL,
+										 gpio_device,
 										 SWITCH1_INT_INTERVAL,
 										 RT_TIMER_FLAG_ONE_SHOT | RT_TIMER_FLAG_SOFT_TIMER);
     rt_device_set_rx_indicate((rt_device_t)gpio_device, gpio_user_data->gpio_exti_rx_indicate);
@@ -302,58 +289,36 @@ int rt_hw_switch1_register(void)
 }
 /* switch2 device */
 gpio_device switch2_device;
-rt_timer_t switch2_exti_timer = RT_NULL;
 
 void switch2_exti_timeout(void *parameters)
 {
+	gpio_device *gpio = (gpio_device *)parameters;
+    struct gpio_exti_user_data *gpio_user_data = gpio->parent.user_data;
 
-	//time_t time;
+	gpio->ops->control(gpio, RT_DEVICE_CTRL_MASK_EXTI, (void *)0); 
+    if (gpio->ops->intput(gpio) == SWITCH2_STATUS)
+    {
+        rt_kprintf("it is key2 detect!\n");
 
-	rt_device_t device = RT_NULL;
-	uint8_t data;
-
-	device = rt_device_find(DEVICE_NAME_SWITCH2);
-	if (device != RT_NULL)
-	{
-		rt_device_read(device,0,&data,0);
-		if (data == SWITCH2_STATUS) // rfid key is plugin
-		{
-
-            rt_kprintf("it is key2 detect!\n");
-
-            rt_enter_critical();
-            gpio_pin_output(DEVICE_NAME_POWER_FLASH,0,0);
-            gpio_pin_output(DEVICE_NAME_POWER_MOTOR,0,0);
-            gpio_pin_output(DEVICE_NAME_POWER_BT,0,0);
-            gpio_pin_output(DEVICE_NAME_POWER_FRONT,0,0);
-            gpio_pin_output(DEVICE_NAME_POWER_GSM,0,0);
-            gpio_config();
-            PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFI);
-            rt_exit_critical();
-			// produce mail
-
-			//rt_device_control(rtc_device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
-
-			// send mail
-			//send_alarm_mail(ALARM_TYPE_RFID_switch2, ALARM_PROCESS_FLAG_LOCAL, RFID_switch2_STATUS, time);
-		}
-		rt_device_control(device, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0);
-	}
-
-	rt_timer_stop(switch2_exti_timer);
+        rt_enter_critical();
+        gpio_pin_output(DEVICE_NAME_POWER_FLASH,0,0);
+        gpio_pin_output(DEVICE_NAME_POWER_MOTOR,0,0);
+        gpio_pin_output(DEVICE_NAME_POWER_BT,0,0);
+        gpio_pin_output(DEVICE_NAME_POWER_FRONT,0,0);
+        gpio_pin_output(DEVICE_NAME_POWER_GSM,0,0);
+        gpio_config();
+        PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFI);
+        rt_exit_critical();
+    }
+	gpio->ops->control(gpio, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0); 
+	rt_timer_stop(gpio_user_data->timer);
 }
 
 
 rt_err_t switch2_rx_ind(rt_device_t dev, rt_size_t size)
 {
-	//gpio_device *gpio = RT_NULL;
-	//gpio = (gpio_device *)dev;
-	rt_device_t device = RT_NULL;
-
-	device = rt_device_find(DEVICE_NAME_SWITCH2);
-	RT_ASSERT(device != RT_NULL);
-	rt_device_control(device, RT_DEVICE_CTRL_MASK_EXTI, (void *)0);
-	rt_timer_start(switch2_exti_timer);
+    struct gpio_exti_user_data *gpio_user_data = ((gpio_device *)dev)->parent.user_data;
+	rt_timer_start(gpio_user_data->timer);
 
 	return RT_EOK;
 }
@@ -385,9 +350,9 @@ int rt_hw_switch2_register(void)
     gpio_device->ops = &gpio_exti_user_ops;
 
     rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX), gpio_user_data);
-    switch2_exti_timer = rt_timer_create("t_sw2",
+    gpio_user_data->timer = rt_timer_create("t_sw2",
 										 switch2_exti_timeout,
-										 RT_NULL,
+										 gpio_device,
 										 SWITCH2_INT_INTERVAL,
 										 RT_TIMER_FLAG_ONE_SHOT | RT_TIMER_FLAG_SOFT_TIMER);
     rt_device_set_rx_indicate((rt_device_t)gpio_device, gpio_user_data->gpio_exti_rx_indicate);
@@ -480,46 +445,27 @@ int rt_hw_switch3_register(void)
 
 /* gpio break */
 gpio_device break_device;
-rt_timer_t break_exti_timer = RT_NULL;
 
 void break_exti_timeout(void *parameters)
 {
+	gpio_device *gpio = (gpio_device *)parameters;
+    struct gpio_exti_user_data *gpio_user_data = gpio->parent.user_data;
 
-	//time_t time;
+	gpio->ops->control(gpio, RT_DEVICE_CTRL_MASK_EXTI, (void *)0); 
+    if (gpio->ops->intput(gpio) == BREAK_STATUS)
+    {
+        rt_kprintf("it is BREAK detect!\n");
+    }
+	gpio->ops->control(gpio, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0); 
+	rt_timer_stop(gpio_user_data->timer);
 
-	rt_device_t device = RT_NULL;
-	uint8_t data;
-
-	device = rt_device_find(DEVICE_NAME_BREAK);
-	if (device != RT_NULL)
-	{
-		rt_device_read(device,0,&data,0);
-		if (data == BREAK_STATUS) // rfid key is plugin
-		{
-            rt_kprintf("it is BREAK detect!\n");
-			// produce mail
-			//rt_device_control(rtc_device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
-
-			// send mail
-			//send_alarm_mail(ALARM_TYPE_RFID_switch2, ALARM_PROCESS_FLAG_LOCAL, RFID_switch2_STATUS, time);
-		}
-		rt_device_control(device, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0);
-	}
-
-	rt_timer_stop(break_exti_timer);
 }
 
 
 rt_err_t break_rx_ind(rt_device_t dev, rt_size_t size)
 {
-	//gpio_device *gpio = RT_NULL;
-	//gpio = (gpio_device *)dev;
-	rt_device_t device = RT_NULL;
-
-	device = rt_device_find(DEVICE_NAME_BREAK);
-	RT_ASSERT(device != RT_NULL);
-	rt_device_control(device, RT_DEVICE_CTRL_MASK_EXTI, (void *)0);
-	rt_timer_start(break_exti_timer);
+    struct gpio_exti_user_data *gpio_user_data = ((gpio_device *)dev)->parent.user_data;
+	rt_timer_start(gpio_user_data->timer);
 
 	return RT_EOK;
 }
@@ -551,9 +497,9 @@ int rt_hw_break_register(void)
     gpio_device->ops = &gpio_exti_user_ops;
 
     rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX), gpio_user_data);
-    break_exti_timer = rt_timer_create("t_brk",
+    gpio_user_data->timer = rt_timer_create("t_brk",
 										 break_exti_timeout,
-										 RT_NULL,
+										 gpio_device,
 										 BREAK_INT_INTERVAL,
 										 RT_TIMER_FLAG_ONE_SHOT | RT_TIMER_FLAG_SOFT_TIMER);
     rt_device_set_rx_indicate((rt_device_t)gpio_device, gpio_user_data->gpio_exti_rx_indicate);
@@ -563,46 +509,26 @@ int rt_hw_break_register(void)
 
 /* gpio mag */
 gpio_device mag_device;
-rt_timer_t mag_exti_timer = RT_NULL;
 
 void mag_exti_timeout(void *parameters)
 {
+	gpio_device *gpio = (gpio_device *)parameters;
+    struct gpio_exti_user_data *gpio_user_data = gpio->parent.user_data;
 
-	//time_t time;
-
-	rt_device_t device = RT_NULL;
-	uint8_t data;
-
-	device = rt_device_find(DEVICE_NAME_MAG);
-	if (device != RT_NULL)
-	{
-		rt_device_read(device,0,&data,0);
-		if (data == MAG_STATUS) // rfid key is plugin
-		{
-            rt_kprintf("it is MAG detect!\n");
-			// produce mail
-			//rt_device_control(rtc_device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
-
-			// send mail
-			//send_alarm_mail(ALARM_TYPE_RFID_switch2, ALARM_PROCESS_FLAG_LOCAL, RFID_switch2_STATUS, time);
-		}
-		rt_device_control(device, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0);
-	}
-
-	rt_timer_stop(mag_exti_timer);
+	gpio->ops->control(gpio, RT_DEVICE_CTRL_MASK_EXTI, (void *)0); 
+    if (gpio->ops->intput(gpio) == MAG_STATUS)
+    {
+        rt_kprintf("it is MAG detect!\n");
+    }
+	gpio->ops->control(gpio, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0); 
+	rt_timer_stop(gpio_user_data->timer);
 }
 
 
 rt_err_t mag_rx_ind(rt_device_t dev, rt_size_t size)
 {
-	//gpio_device *gpio = RT_NULL;
-	//gpio = (gpio_device *)dev;
-	rt_device_t device = RT_NULL;
-
-	device = rt_device_find(DEVICE_NAME_MAG);
-	RT_ASSERT(device != RT_NULL);
-	rt_device_control(device, RT_DEVICE_CTRL_MASK_EXTI, (void *)0);
-	rt_timer_start(mag_exti_timer);
+    struct gpio_exti_user_data *gpio_user_data = ((gpio_device *)dev)->parent.user_data;
+	rt_timer_start(gpio_user_data->timer);
 
 	return RT_EOK;
 }
@@ -634,9 +560,9 @@ int rt_hw_mag_register(void)
     gpio_device->ops = &gpio_exti_user_ops;
 
     rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX), gpio_user_data);
-    mag_exti_timer = rt_timer_create("t_mag",
+    gpio_user_data->timer = rt_timer_create("t_mag",
 										 mag_exti_timeout,
-										 RT_NULL,
+										 gpio_device,
 										 MAG_INT_INTERVAL,
 										 RT_TIMER_FLAG_ONE_SHOT | RT_TIMER_FLAG_SOFT_TIMER);
     rt_device_set_rx_indicate((rt_device_t)gpio_device, gpio_user_data->gpio_exti_rx_indicate);
@@ -646,47 +572,26 @@ int rt_hw_mag_register(void)
 
 /* fp_touch device */
 gpio_device fp_touch_device;
-rt_timer_t fp_touch_exti_timer = RT_NULL;
 
 void fp_touch_exti_timeout(void *parameters)
 {
+	gpio_device *gpio = (gpio_device *)parameters;
+    struct gpio_exti_user_data *gpio_user_data = gpio->parent.user_data;
 
-	//time_t time;
-
-	rt_device_t device = RT_NULL;
-	uint8_t data;
-
-	device = rt_device_find(DEVICE_NAME_FP_TOUCH);
-	if (device != RT_NULL)
-	{
-		rt_device_read(device,0,&data,0);
-		if (data == FP_TOUCH_STATUS) // rfid key is plugin
-		{
-            rt_kprintf("it is fprint touch!\n");
-            fp_inform();
-			// produce mail
-			//rt_device_control(rtc_device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
-
-			// send mail
-			//send_alarm_mail(ALARM_TYPE_RFID_switch2, ALARM_PROCESS_FLAG_LOCAL, RFID_switch2_STATUS, time);
-		}
-		rt_device_control(device, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0);
-	}
-
-	rt_timer_stop(fp_touch_exti_timer);
+	gpio->ops->control(gpio, RT_DEVICE_CTRL_MASK_EXTI, (void *)0); 
+    if (gpio->ops->intput(gpio) == FP_TOUCH_STATUS)
+    {
+        rt_kprintf("it is fprint touch!\n");
+        fp_inform();
+    }
+	gpio->ops->control(gpio, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0); 
+	rt_timer_stop(gpio_user_data->timer);
 }
-
 
 rt_err_t fp_touch_rx_ind(rt_device_t dev, rt_size_t size)
 {
-	//gpio_device *gpio = RT_NULL;
-	//gpio = (gpio_device *)dev;
-	rt_device_t device = RT_NULL;
-
-	device = rt_device_find(DEVICE_NAME_FP_TOUCH);
-	RT_ASSERT(device != RT_NULL);
-	rt_device_control(device, RT_DEVICE_CTRL_MASK_EXTI, (void *)0);
-	rt_timer_start(fp_touch_exti_timer);
+    struct gpio_exti_user_data *gpio_user_data = ((gpio_device *)dev)->parent.user_data;
+	rt_timer_start(gpio_user_data->timer);
 
 	return RT_EOK;
 }
@@ -718,9 +623,9 @@ int rt_hw_fp_touch_register(void)
     gpio_device->ops = &gpio_exti_user_ops;
 
     rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX), gpio_user_data);
-    fp_touch_exti_timer = rt_timer_create("t_fpt",
+    gpio_user_data->timer = rt_timer_create("t_fpt",
 										 fp_touch_exti_timeout,
-										 RT_NULL,
+										 gpio_device,
 										 FP_TOUCH_INT_INTERVAL,
 										 RT_TIMER_FLAG_ONE_SHOT | RT_TIMER_FLAG_SOFT_TIMER);
     rt_device_set_rx_indicate((rt_device_t)gpio_device, gpio_user_data->gpio_exti_rx_indicate);
@@ -730,7 +635,6 @@ int rt_hw_fp_touch_register(void)
 
 /* kb_intr device */
 gpio_device kb_intr_device;
-rt_timer_t kb_intr_exti_timer = RT_NULL;
 
 __STATIC_INLINE uint8_t 
 bit_to_index(uint16_t data)
@@ -767,24 +671,6 @@ __STATIC_INLINE uint16_t
 kb_read(void)
 {
     uint16_t data = 0;
-    /*
-    rt_device_t dev_in1 = RT_NULL;
-    rt_device_t dev_in2 = RT_NULL;
-    rt_device_t dev_in3 = RT_NULL;
-    rt_device_t dev_sc1 = RT_NULL;
-    rt_device_t dev_sc2 = RT_NULL;
-    rt_device_t dev_sc3 = RT_NULL;
-
-    dev_sc1 = device_enable(DEVICE_NAME_KB_SC1);
-    dev_sc2 = device_enable(DEVICE_NAME_KB_SC2);
-    dev_sc3 = device_enable(DEVICE_NAME_KB_SC3);
-    
-    
-    dev_in1 = device_enable(DEVICE_NAME_KB_IN1);
-    dev_in2 = device_enable(DEVICE_NAME_KB_IN2);
-    dev_in3 = device_enable(DEVICE_NAME_KB_IN3);
-    */
-
     if (!gpio_pin_input(DEVICE_NAME_KB_IN1, KB_DEBUG))
     {
         gpio_pin_output(DEVICE_NAME_KB_SC1,1, KB_DEBUG);
@@ -885,54 +771,40 @@ ERROR:
 void 
 kb_intr_exti_timeout(void *parameters)
 {
-	rt_device_t device = RT_NULL;    
+	gpio_device *gpio = (gpio_device *)parameters;
+    struct gpio_exti_user_data *gpio_user_data = gpio->parent.user_data;
     uint16_t data = 0;
     uint8_t c;
 
-	device = device_enable(DEVICE_NAME_KB_INTR);
-    
-	if (device != RT_NULL)
-	{
-		rt_device_read(device,0,&c,0);
-		if (c == KB_INTR_STATUS) {
-            data = kb_read();
-            while(1) {
-                rt_device_read(device,0,&c,0);
-                if (c == KB_INTR_STATUS) {
-                    data |= kb_read();
-                } else {
-                    break;
-                }
-                            
+	gpio->ops->control(gpio, RT_DEVICE_CTRL_MASK_EXTI, (void *)0);  
+    if (gpio->ops->intput(gpio) == KB_INTR_STATUS) {
+        data = kb_read();
+        while(1) {
+            if (gpio->ops->intput(gpio) == KB_INTR_STATUS) {
+                data |= kb_read();
+            } else {
+                break;
             }
-			//rt_kprintf("key value : %x\n", data);
-            if (data == 0x808)
-                c = 'G';
-            else
-                c = char_remap[bit_to_index(data&0x0fff)];
-            RT_DEBUG_LOG(KB_DEBUG,("key value : 0x%x, index :%d, char :%c\n", data, bit_to_index(data&0x0fff), c));
-            send_key_value_mail(KB_MAIL_TYPE_INPUT, KB_MODE_NORMAL_AUTH, c);
-            //send_kb_mail(KB_MAIL_TYPE_INPUT, KB_MODE_NORMAL_AUTH, c);
-		}
-		rt_device_control(device, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0);
-	}
-
-	rt_timer_stop(kb_intr_exti_timer);
+        }
+        //rt_kprintf("key value : %x\n", data);
+        if (data == 0x808)
+            c = 'G';
+        else
+            c = char_remap[bit_to_index(data&0x0fff)];
+        RT_DEBUG_LOG(KB_DEBUG,("key value : 0x%x, index :%d, char :%c\n", data, bit_to_index(data&0x0fff), c));
+        send_key_value_mail(KB_MAIL_TYPE_INPUT, KB_MODE_NORMAL_AUTH, c);
+        //send_kb_mail(KB_MAIL_TYPE_INPUT, KB_MODE_NORMAL_AUTH, c);
+    }
+    gpio->ops->control(gpio, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0); 
+	rt_timer_stop(gpio_user_data->timer);
 }
 
 
 rt_err_t 
 kb_intr_rx_ind(rt_device_t dev, rt_size_t size)
 {
-	//gpio_device *gpio = RT_NULL;
-	//gpio = (gpio_device *)dev;
-	rt_device_t device = RT_NULL;
-
-	device = rt_device_find(DEVICE_NAME_KB_INTR);
-	RT_ASSERT(device != RT_NULL);
-	rt_device_control(device, RT_DEVICE_CTRL_MASK_EXTI, (void *)0);
-	rt_timer_start(kb_intr_exti_timer);
-
+    struct gpio_exti_user_data *gpio_user_data = ((gpio_device *)dev)->parent.user_data;
+	rt_timer_start(gpio_user_data->timer);
 	return RT_EOK;
 }
 
@@ -964,9 +836,9 @@ rt_hw_kb_intr_register(void)
     gpio_device->ops = &gpio_exti_user_ops;
 
     rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX), gpio_user_data);
-    kb_intr_exti_timer = rt_timer_create("t_kintr",
+    gpio_user_data->timer = rt_timer_create("t_kintr",
 									 kb_intr_exti_timeout,
-									 RT_NULL,
+									 gpio_device,
 									 KB_INTR_INT_INTERVAL,
 									 RT_TIMER_FLAG_ONE_SHOT | RT_TIMER_FLAG_SOFT_TIMER);
     rt_device_set_rx_indicate((rt_device_t)gpio_device, gpio_user_data->gpio_exti_rx_indicate);
@@ -975,42 +847,29 @@ rt_hw_kb_intr_register(void)
 }
 
 gpio_device gsm_ring_device;
-rt_timer_t gsm_ring_exti_timer = RT_NULL;
 
 void gsm_ring_exti_timeout(void *parameters)
 {
-	rt_device_t device = RT_NULL;
-	uint8_t data;
+	gpio_device *gpio = (gpio_device *)parameters;
+    struct gpio_exti_user_data *gpio_user_data = gpio->parent.user_data;
 
-	device = rt_device_find(DEVICE_NAME_GSM_RING);
-	if (device != RT_NULL)
-	{
-		rt_device_read(device,0,&data,0);
-		if (data == GSM_RING_STATUS)
-		{
-            rt_kprintf("it is gsm ring!\n");
-			// produce mail
-			//send_alarm_mail(ALARM_TYPE_SWITCH1, ALARM_PROCESS_FLAG_LOCAL, SWITCH1_STATUS, 0);
-            gsm_ring_process();
-		}
-		rt_device_control(device, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0);
-	}
-
-	rt_timer_stop(gsm_ring_exti_timer);
+	gpio->ops->control(gpio, RT_DEVICE_CTRL_MASK_EXTI, (void *)0); 
+    if (gpio->ops->intput(gpio) == GSM_RING_STATUS)
+    {
+        rt_kprintf("it is gsm ring!\n");
+        // produce mail
+        //send_alarm_mail(ALARM_TYPE_SWITCH1, ALARM_PROCESS_FLAG_LOCAL, SWITCH1_STATUS, 0);
+        gsm_ring_process();
+    }
+	gpio->ops->control(gpio, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0); 
+	rt_timer_stop(gpio_user_data->timer);
 }
 
 
 rt_err_t gsm_ring_rx_ind(rt_device_t dev, rt_size_t size)
 {
-	//gpio_device *gpio = RT_NULL;
-	//gpio = (gpio_device *)dev;
-	rt_device_t device = RT_NULL;
-
-	device = rt_device_find(DEVICE_NAME_GSM_RING);
-	RT_ASSERT(device != RT_NULL);
-	rt_device_control(device, RT_DEVICE_CTRL_MASK_EXTI, (void *)0);
-	rt_timer_start(gsm_ring_exti_timer);
-
+    struct gpio_exti_user_data *gpio_user_data = ((gpio_device *)dev)->parent.user_data;
+	rt_timer_start(gpio_user_data->timer);
 	return RT_EOK;
 }
 
@@ -1041,9 +900,9 @@ int rt_hw_gsm_ring_register(void)
     gpio_device->ops = &gpio_exti_user_ops;
 
     rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX), gpio_user_data);
-    gsm_ring_exti_timer = rt_timer_create("t_ring",
+    gpio_user_data->timer = rt_timer_create("t_ring",
 										 gsm_ring_exti_timeout,
-										 RT_NULL,
+										 gpio_device,
 										 GSM_RING_INT_INTERVAL,
 										 RT_TIMER_FLAG_ONE_SHOT | RT_TIMER_FLAG_SOFT_TIMER);
     rt_device_set_rx_indicate((rt_device_t)gpio_device, gpio_user_data->gpio_exti_rx_indicate);
@@ -1053,42 +912,29 @@ int rt_hw_gsm_ring_register(void)
 
 /* hall device */
 gpio_device hall_device;
-rt_timer_t hall_exti_timer = RT_NULL;
 
 void hall_exti_timeout(void *parameters)
-{
-	rt_device_t device = RT_NULL;
-	uint8_t data;
+{    
+	gpio_device *gpio = (gpio_device *)parameters;
+    struct gpio_exti_user_data *gpio_user_data = gpio->parent.user_data;
 
-	device = rt_device_find(DEVICE_NAME_HALL);
-	if (device != RT_NULL)
-	{
-		rt_device_read(device,0,&data,0);
-		if (data == HALL_STATUS)
-		{
+	gpio->ops->control(gpio, RT_DEVICE_CTRL_MASK_EXTI, (void *)0); 
+    if (gpio->ops->intput(gpio) == HALL_STATUS)
+    {
             rt_kprintf("it is HALL!\n");
 			// produce mail
 			//send_alarm_mail(ALARM_TYPE_SWITCH1, ALARM_PROCESS_FLAG_LOCAL, SWITCH1_STATUS, 0);
             send_rf433_mail(RF433_START, RT_NULL);
-            
-		}
-		rt_device_control(device, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0);
-	}
-
-	rt_timer_stop(hall_exti_timer);
+    }
+	gpio->ops->control(gpio, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0); 
+	rt_timer_stop(gpio_user_data->timer);
 }
 
 
 rt_err_t hall_rx_ind(rt_device_t dev, rt_size_t size)
 {
-	//gpio_device *gpio = RT_NULL;
-	//gpio = (gpio_device *)dev;
-	rt_device_t device = RT_NULL;
-
-	device = rt_device_find(DEVICE_NAME_HALL);
-	RT_ASSERT(device != RT_NULL);
-	rt_device_control(device, RT_DEVICE_CTRL_MASK_EXTI, (void *)0);
-	rt_timer_start(hall_exti_timer);
+    struct gpio_exti_user_data *gpio_user_data = ((gpio_device *)dev)->parent.user_data;
+	rt_timer_start(gpio_user_data->timer);
 
 	return RT_EOK;
 }
@@ -1120,9 +966,9 @@ int rt_hw_hall_register(void)
     gpio_device->ops = &gpio_exti_user_ops;
 
     rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX), gpio_user_data);
-    hall_exti_timer = rt_timer_create("t_hall",
+    gpio_user_data->timer = rt_timer_create("t_hall",
 										 hall_exti_timeout,
-										 RT_NULL,
+										 gpio_device,
 										 HALL_INT_INTERVAL,
 										 RT_TIMER_FLAG_ONE_SHOT | RT_TIMER_FLAG_SOFT_TIMER);
     rt_device_set_rx_indicate((rt_device_t)gpio_device, gpio_user_data->gpio_exti_rx_indicate);
