@@ -1723,7 +1723,7 @@ device_config_phone_index(int(*callback)(struct phone_head *, void *arg1, void *
     rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 
 	for (i = 0; i < PHONE_NUMBERS; i++) {
-		if (device_config_get_key_valid(i) > 0) {
+		if (device_config_get_phone_valid(i) > 0) {
 			len = device_config_phone_operate(i, &ph, 0);
 			if (len >= 0) {
                 result = callback(&ph, arg1, arg2, arg3);
