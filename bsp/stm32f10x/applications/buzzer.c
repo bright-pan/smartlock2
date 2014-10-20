@@ -7,13 +7,17 @@ static rt_mq_t  BZ_mq = RT_NULL;
 
 rt_err_t buzzer_send_mail(BuzzerType type)
 {
+  rt_err_t result;
+  
 	if(BZ_mq == RT_NULL)
 	{
     BZ_mq = rt_mq_create("buzzer",sizeof(BuzzerType),10,RT_IPC_FLAG_FIFO);
     RT_ASSERT(BZ_mq != RT_NULL);
 	}
 
-	rt_mq_send(BZ_mq,&type,sizeof(BuzzerType));
+	result = rt_mq_send(BZ_mq,&type,sizeof(BuzzerType));
+  
+  return result;
 }
 
 //·äÃùÆ÷¹¦ÄÜº¯Êý
