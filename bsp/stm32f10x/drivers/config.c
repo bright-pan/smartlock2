@@ -1733,7 +1733,29 @@ device_config_phone_index(int(*callback)(struct phone_head *, void *arg1, void *
 	rt_mutex_release(device_config.mutex);
     return result;
 }
+s32
+device_config_event_index(int(*callback)(struct event *, void *arg1), void *arg1)
+{
+    s32 result;
+    u16 i;
+	struct event evt;
+    s32 len;
 
+	result = -ECONFIG_ERROR;
+
+    rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+
+	for (i = 0; i < EVENT_NUMBERS; i++) {
+		if (device_config_get_event_valid(i) > 0) {
+			len = device_config_event_operate(i, &evt, 0);
+			if (len >= 0) {
+                result = callback(&evt, arg1);
+			}
+		}
+	}
+	rt_mutex_release(device_config.mutex);
+    return result;
+}
 int
 device_config_init(struct device_configure *config)
 {
