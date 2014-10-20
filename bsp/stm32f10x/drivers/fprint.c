@@ -1115,8 +1115,10 @@ fprint_thread_entry(void *parameters)
 						break;
 					}
 				case FPRINT_CMD_ENROLL:
-					{
+					{	
                         static uint16_t template_id = 0;
+
+                        rt_thread_delay(RT_TICK_PER_SECOND);
                         rt_memset(&req_data, 0, sizeof(req_data));
                         rt_memset(&rep_data, 0, sizeof(rep_data));
                         error = fprint_verify(&req_data, &rep_data);
@@ -1154,6 +1156,7 @@ fprint_thread_entry(void *parameters)
                 case FPRINT_CMD_GET_TEMPLATE:
 					{
                         static uint16_t template_id = 0;
+                        
                         rt_memset(&req_data, 0, sizeof(req_data));
                         rt_memset(&rep_data, 0, sizeof(rep_data));
                         error = fprint_verify(&req_data, &rep_data);
@@ -1228,6 +1231,8 @@ fprint_thread_entry(void *parameters)
                         static uint16_t f_detect = 0;
                         static uint16_t r_detect = 0;
                         static uint16_t template_id = 0;
+
+                        rt_thread_delay(RT_TICK_PER_SECOND/2);
                         error = fprint_verify(&req_data, &rep_data);
                         if (error == FPRINT_EOK) {
                             //union alarm_data data;
