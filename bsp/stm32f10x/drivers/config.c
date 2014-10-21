@@ -95,8 +95,11 @@ s32
 device_config_get_key_valid(u16 key_id)
 {
 	s32 result = -ECONFIG_ERROR;
-    if (key_id < KEY_NUMBERS)
+    if (key_id < KEY_NUMBERS) {
+        rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
         result = (device_config.param.kv_map.data[key_id/32] & bits_mask(key_id%32)) ? 1 : 0;
+        rt_mutex_release(device_config.mutex);
+    }
     return result;
 }
 /*
@@ -110,12 +113,14 @@ device_config_set_key_valid(u16 key_id, u8 value)
 {
     s32 result = -ECONFIG_ERROR;
 	if (key_id < KEY_NUMBERS) {
+        rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
         if (value) {
             device_config.param.kv_map.data[key_id/32] |= bits_mask(key_id%32);
         } else {
             device_config.param.kv_map.data[key_id/32] &= ~bits_mask(key_id%32);
         }
         device_config.param.kv_map.updated_time = sys_cur_date();
+        rt_mutex_release(device_config.mutex);
         result = key_id;
     }
     return result;
@@ -131,8 +136,11 @@ s32
 device_config_get_event_valid(u16 event_id)
 {
 	s32 result = -ECONFIG_ERROR;
-    if (event_id < EVENT_NUMBERS)
+    if (event_id < EVENT_NUMBERS) {
+        rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
         result = (device_config.param.ev_map.data[event_id/32] & bits_mask(event_id%32)) ? 1 : 0;
+        rt_mutex_release(device_config.mutex);
+    }
     return result;
 }
 /*
@@ -146,12 +154,14 @@ device_config_set_event_valid(u16 event_id, u8 value)
 {
     s32 result = -ECONFIG_ERROR;
 	if (event_id < EVENT_NUMBERS) {
+        rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
         if (value) {
             device_config.param.ev_map.data[event_id/32] |= bits_mask(event_id%32);
         } else {
             device_config.param.ev_map.data[event_id/32] &= ~bits_mask(event_id%32);
         }
         device_config.param.ev_map.updated_time = sys_cur_date();
+        rt_mutex_release(device_config.mutex);
         result = event_id;
     }
     return result;
@@ -160,9 +170,12 @@ s32
 device_config_get_phone_valid(u16 phone_id)
 {
 	s32 result = -ECONFIG_ERROR;
-    if (phone_id < PHONE_NUMBERS)
+    if (phone_id < PHONE_NUMBERS) {
+        rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
         result = (device_config.param.pv_map.data[phone_id/32] & bits_mask(phone_id%32)) ? 1 : 0;
-	return result;
+        rt_mutex_release(device_config.mutex);
+    }
+    return result;
 }
 
 s32
@@ -170,12 +183,14 @@ device_config_set_phone_valid(u16 phone_id, u8 value)
 {
     s32 result = -ECONFIG_ERROR;
 	if (phone_id < PHONE_NUMBERS) {
+        rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
         if (value) {
             device_config.param.pv_map.data[phone_id/32] |= bits_mask(phone_id%32);
         } else {
             device_config.param.pv_map.data[phone_id/32] &= ~bits_mask(phone_id%32);
         }
         device_config.param.pv_map.updated_time = sys_cur_date();
+        rt_mutex_release(device_config.mutex);
         result = phone_id;
     }
     return result;
@@ -185,9 +200,12 @@ s32
 device_config_get_account_valid(u16 account_id)
 {
 	s32 result = -ECONFIG_ERROR;
-    if (account_id < ACCOUNT_NUMBERS)
+    if (account_id < ACCOUNT_NUMBERS) {
+        rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
         result = (device_config.param.av_map.data[account_id/32] & bits_mask(account_id%32)) ? 1 : 0;
-	return result;
+        rt_mutex_release(device_config.mutex);
+    }
+    return result;
 }
 
 s32
@@ -195,12 +213,14 @@ device_config_set_account_valid(u16 account_id, u8 value)
 {
     s32 result = -ECONFIG_ERROR;
 	if(account_id < ACCOUNT_NUMBERS) {
+        rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
         if (value) {
             device_config.param.av_map.data[account_id/32] |= bits_mask(account_id%32);
         } else {
             device_config.param.av_map.data[account_id/32] &= ~bits_mask(account_id%32);
         }
         device_config.param.av_map.updated_time = sys_cur_date();
+        rt_mutex_release(device_config.mutex);
         result = account_id;
     }
     return result;
