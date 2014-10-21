@@ -332,4 +332,6 @@ s32
 device_config_account_counts(void);
 s32
 device_config_event_index(int(*callback)(struct event *, void *arg1), void *arg1);
+s32
+device_config_account_index(int(*callback)(struct account_head *, u16 account_id, void *args), void *args);
 #endif /* _CONFIG_H_ */

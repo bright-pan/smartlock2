@@ -361,7 +361,6 @@ device_config_event_create(u16 event_id, u16 event_type, u8 is_updated, union ev
 	result = -ECONFIG_ERROR;
     if (event_id >= EVENT_NUMBERS && event_id != EVENT_ID_INVALID)
         return result;
-	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
     rt_memset(&e, 0, sizeof(e));
     if (event_id != EVENT_ID_INVALID) {
         i = event_id;
@@ -397,7 +396,6 @@ device_config_event_create(u16 event_id, u16 event_type, u8 is_updated, union ev
             result = -ECONFIG_FULL;
     }
 __exit:
-	rt_mutex_release(device_config.mutex);
     return result;
 }
 /*
@@ -414,12 +412,9 @@ device_config_event_delete(u16 event_id)
     struct event k;
     if (event_id >= EVENT_NUMBERS)
         return result;
-    rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
-
     device_config_set_event_valid(event_id, 0);
     if (device_config_file_operate(&device_config, 1) >= 0)
         result = event_id;
-	rt_mutex_release(device_config.mutex);
     return result;
 }
 /*
@@ -440,8 +435,6 @@ device_config_key_verify(u16 key_type, const u8 *buf, u16 length)
     s32 len;
 
 	result = -ECONFIG_ERROR;
-
-    rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
     k = rt_malloc(sizeof(*k));
     if (k == RT_NULL)
         goto __exit;
@@ -461,7 +454,6 @@ device_config_key_verify(u16 key_type, const u8 *buf, u16 length)
 	}
 __exit:
     rt_free(k);
-	rt_mutex_release(device_config.mutex);
     return result;
 }
 /*
@@ -505,7 +497,6 @@ device_config_key_create(u16 key_id, u16 key_type, void *buf, u16 length)
 	result = -ECONFIG_ERROR;
     if (key_id >= KEY_NUMBERS && key_id != KEY_ID_INVALID)
         return result;
-	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
     rt_memset(&k, 0, sizeof(k));
     i = device_config_get_key_code_size(key_type);
     length = length > i ? i :length; 
@@ -543,7 +534,6 @@ device_config_key_create(u16 key_id, u16 key_type, void *buf, u16 length)
 		result = -ECONFIG_EXIST;
 	}
 __exit:
-	rt_mutex_release(device_config.mutex);
     return result;
 }
 
@@ -556,8 +546,6 @@ device_config_key_set(u16 key_id, struct key *new_key, u32 op_time)
     s32 len;
 
 	result = -ECONFIG_ERROR;
-
-    rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
     
     rt_memset(&k, 0, sizeof(k));
     i = key_id;
@@ -602,7 +590,6 @@ device_config_key_set(u16 key_id, struct key *new_key, u32 op_time)
             result = len;
         }
     }
-	rt_mutex_release(device_config.mutex);
     return result;
 }
 
@@ -622,7 +609,6 @@ device_config_key_delete(u16 key_id, u32 op_time, u8 flag)
     struct key k;
     if (key_id >= KEY_NUMBERS)
         return result;
-    rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
     if (flag) {
         if (device_config_get_key_valid(key_id) > 0 && 
             device_config_key_operate(key_id, &k, 0) >= 0) {
@@ -644,7 +630,6 @@ device_config_key_delete(u16 key_id, u32 op_time, u8 flag)
                 result = key_id;
         }
     }
-	rt_mutex_release(device_config.mutex);
     return result;
 }
 
@@ -663,14 +648,12 @@ device_config_key_counts(void)
 
     counts = 0;
 	result = -ECONFIG_ERROR;
-	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 	for (i = 0; i < KEY_NUMBERS; i++) {
 		if (device_config_get_key_valid(i) > 0) {
             ++counts;
 		}
 	}
     result = counts;
-	rt_mutex_release(device_config.mutex);
 	return result;
 }
 /*
@@ -743,7 +726,6 @@ device_config_phone_verify(u8 *buf, u16 length)
 
     rt_memset(temp, '\0', PHONE_ADDRESS_LENGTH);
     rt_memcpy(temp, buf, length);
-	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 	for (i = 0; i < PHONE_NUMBERS; i++) {
 		if (device_config_get_phone_valid(i)) {
 			len = device_config_phone_operate(i, &ph, 0);
@@ -755,7 +737,6 @@ device_config_phone_verify(u8 *buf, u16 length)
 			}
 		}
 	}
-	rt_mutex_release(device_config.mutex);
 	return result;
 }
 
@@ -780,7 +761,6 @@ device_config_phone_create(u16 phone_id, u8 *buf, u8 length)
     result = -ECONFIG_ERROR;
 	if ((phone_id >= PHONE_NUMBERS && phone_id != PHONE_ID_INVALID) || length > PHONE_ADDRESS_LENGTH)
         return result;
-	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
     rt_memset(temp, '\0', PHONE_ADDRESS_LENGTH);
     rt_memcpy(temp, buf, length);
 	if (device_config_phone_verify(temp, PHONE_ADDRESS_LENGTH) < 0) {
@@ -815,7 +795,6 @@ device_config_phone_create(u16 phone_id, u8 *buf, u8 length)
 		result = -ECONFIG_EXIST;
 	}
 __exit:
-	rt_mutex_release(device_config.mutex);
     return result;
 }
 /*
@@ -842,7 +821,6 @@ device_config_phone_set(u16 phone_id, u8 *buf, u8 length, u16 auth, u32 op_time)
     result = -ECONFIG_ERROR;
 	if (phone_id >= PHONE_NUMBERS || length > PHONE_ADDRESS_LENGTH)
         return result;
-    rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
     i = phone_id;
     if (device_config_get_phone_valid(i) > 0) {
             len = device_config_phone_operate(i, &ph, 0);
@@ -869,7 +847,6 @@ device_config_phone_set(u16 phone_id, u8 *buf, u8 length, u16 auth, u32 op_time)
             result = len;
         }
     }
-	rt_mutex_release(device_config.mutex);
     return result;
 }
 /*
@@ -891,7 +868,6 @@ device_config_phone_delete(u16 phone_id, u32 op_time, u8 flag)
     if (phone_id >= PHONE_NUMBERS)
         return result;
 
-    rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
     if (flag) {
         if (device_config_get_phone_valid(phone_id) > 0 && 
             device_config_phone_operate(phone_id, &ph, 0) >= 0) {
@@ -913,8 +889,6 @@ device_config_phone_delete(u16 phone_id, u32 op_time, u8 flag)
                 result = phone_id;
         }
     }
-    
-	rt_mutex_release(device_config.mutex);
     return result;
 }
 /*
@@ -932,14 +906,12 @@ device_config_phone_counts(void)
 
     counts = 0;
 	result = -ECONFIG_ERROR;
-	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 	for (i = 0; i < PHONE_NUMBERS; i++) {
 		if (device_config_get_phone_valid(i) > 0) {
             ++counts;
 		}
 	}
     result = counts;
-	rt_mutex_release(device_config.mutex);
 	return result;
 }
 /*
@@ -999,7 +971,6 @@ device_config_account_verify(u8 *name, u16 length)
         return result;
     rt_memset(temp, '\0', ACCOUNT_NAME_LENGTH);
     rt_memcpy(temp, name, length);
-	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 	for (i = 0; i < ACCOUNT_NUMBERS; i++) {
 		if (device_config_get_account_valid(i) > 0) {
 			len = device_config_account_operate(i, &ah, 0);
@@ -1011,7 +982,6 @@ device_config_account_verify(u8 *name, u16 length)
 			}
 		}
 	}
-	rt_mutex_release(device_config.mutex);
 	return result;
 }
 /*
@@ -1035,7 +1005,6 @@ device_config_account_next_key_pos(u16 account_id, u8 key_pos, u8 flag)
 	if (account_id >= ACCOUNT_NUMBERS || key_pos >= ACCOUNT_KEY_NUMBERS)
         return result;
 
-	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
     if (device_config_get_account_valid(account_id) > 0) {
         len = device_config_account_operate(i, &ah, 0);
         if (len >= 0) {
@@ -1054,7 +1023,6 @@ device_config_account_next_key_pos(u16 account_id, u8 key_pos, u8 flag)
             }
         }
     }
-	rt_mutex_release(device_config.mutex);
 	return result;
 }
 
@@ -1079,7 +1047,6 @@ device_config_account_key_counts(u16 account_id)
 	if (account_id >= ACCOUNT_NUMBERS)
         return result;
 
-	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
     if (device_config_get_account_valid(account_id) > 0) {
         len = device_config_account_operate(i, &ah, 0);
         if (len >= 0) {
@@ -1090,7 +1057,6 @@ device_config_account_key_counts(u16 account_id)
             result = counts;
         }
     }
-	rt_mutex_release(device_config.mutex);
 	return result;
 }
 /*
@@ -1111,7 +1077,6 @@ device_config_account_next_valid(u16 account_id, u8 flag)
     if (account_id >= ACCOUNT_NUMBERS)
         return result;
 
-	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
     if (flag) {
         for (i = account_id; i < ACCOUNT_NUMBERS; ++i) {
             if (device_config_get_account_valid(i) > 0) {
@@ -1127,7 +1092,6 @@ device_config_account_next_valid(u16 account_id, u8 flag)
             }
         }
     }
-	rt_mutex_release(device_config.mutex);
 	return result;
 }
 /*
@@ -1145,14 +1109,12 @@ device_config_account_counts(void)
 
     counts = 0;
 	result = -ECONFIG_ERROR;
-	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 	for (i = 0; i < ACCOUNT_NUMBERS; i++) {
 		if (device_config_get_account_valid(i) > 0) {
             ++counts;
 		}
 	}
     result = counts;
-	rt_mutex_release(device_config.mutex);
 	return result;
 }
 void
@@ -1191,7 +1153,6 @@ device_config_account_create(u16 account_id, u8 *name, u8 length)
 	if ((account_id >= ACCOUNT_NUMBERS && account_id != ACCOUNT_ID_INVALID) || length > ACCOUNT_NAME_LENGTH)
         return result;
 
-    rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
     if (account_id == ACCOUNT_ID_INVALID) {
         if (name != RT_NULL) {
             rt_memset(temp, '\0', ACCOUNT_NAME_LENGTH);
@@ -1270,7 +1231,6 @@ device_config_account_create(u16 account_id, u8 *name, u8 length)
         }
     }
 __exit:
-	rt_mutex_release(device_config.mutex);
     return result;
 }
 /*
@@ -1296,7 +1256,6 @@ device_config_account_set(u16 account_id, u8 *name, u8 length, u32 op_time)
 
     result = -ECONFIG_ERROR;
 
-    rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
     i = account_id;
     if (device_config_get_account_valid(i) > 0) {
             len = device_config_account_operate(i, &ah, 0);
@@ -1321,7 +1280,6 @@ device_config_account_set(u16 account_id, u8 *name, u8 length, u32 op_time)
     } else {
         result = device_config_account_create(i, name, length);
     }
-	rt_mutex_release(device_config.mutex);
     return result;
 }
 
@@ -1343,7 +1301,6 @@ device_config_account_delete(u16 account_id, u32 op_time, u8 flag)
     if (account_id >= ACCOUNT_NUMBERS)
         return result;
 
-    rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
     result = device_config_account_operate(account_id, &ah, 0);
     if (result >= 0) {
         if (flag) {
@@ -1374,7 +1331,6 @@ device_config_account_delete(u16 account_id, u32 op_time, u8 flag)
                 result = account_id;
         }
     }
-	rt_mutex_release(device_config.mutex);
     return result;
 }
 
@@ -1391,10 +1347,12 @@ device_config_account_get_invalid_key_pos(struct account_head *ah)
 
 	result = -ECONFIG_ERROR;
 	for (i = 0; i < ACCOUNT_KEY_NUMBERS; ++i) {
+        rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 		if (ah->key[i] == KEY_ID_INVALID) {
 			result = i;
 			break;
 		}
+        rt_mutex_release(device_config.mutex);
 	}
 	return result;
 }
@@ -1412,10 +1370,12 @@ device_config_account_get_key_pos(struct account_head *ah, u16 key_id)
 
 	result = -ECONFIG_ERROR;
 	for (i = 0; i < ACCOUNT_KEY_NUMBERS; ++i) {
+        rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 		if (ah->key[i] == key_id) {
 			result = i;
 			break;
 		}
+        rt_mutex_release(device_config.mutex);
 	}
 	return result;
 }
@@ -1443,7 +1403,6 @@ device_config_account_append_key(u16 account_id, u16 key_id, u32 op_time, u8 fla
 	if (account_id >= ACCOUNT_NUMBERS || key_id >= KEY_NUMBERS)
         return result;
 
-	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 	if (device_config_get_account_valid(account_id) > 0 &&
 		device_config_account_operate(account_id, &ah, 0) >= 0) {
 			pos = device_config_account_get_key_pos(&ah, key_id);
@@ -1490,7 +1449,6 @@ device_config_account_append_key(u16 account_id, u16 key_id, u32 op_time, u8 fla
 				result = -ECONFIG_EXIST;
 			}
 	}
-	rt_mutex_release(device_config.mutex);
 //__exit:
 	return result;
 }
@@ -1515,7 +1473,6 @@ device_config_account_remove_key(u16 key_id)
 	if (key_id >= KEY_NUMBERS)
         return result;
 
-	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 	if (device_config_get_key_valid(key_id) > 0 &&
 		device_config_key_operate(key_id, &k, 0) >= 0) {
 		/* key has valid account */
@@ -1537,7 +1494,6 @@ device_config_account_remove_key(u16 key_id)
             result = key_id;
         }
 	}
-	rt_mutex_release(device_config.mutex);
 //__exit:
 	return result;
 }
@@ -1555,10 +1511,12 @@ device_config_account_get_invalid_phone_pos(struct account_head *ah)
 
 	result = -ECONFIG_ERROR;
 	for (i = 0; i < ACCOUNT_PHONE_NUMBERS; ++i) {
+        rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 		if (ah->phone[i] == PHONE_ID_INVALID) {
 			result = i;
 			break;
 		}
+        rt_mutex_release(device_config.mutex);
 	}
 	return result;
 }
@@ -1576,10 +1534,12 @@ device_config_account_get_phone_pos(struct account_head *ah, u16 phone_id)
 
 	result = -ECONFIG_ERROR;
 	for (i = 0; i < ACCOUNT_PHONE_NUMBERS; ++i) {
+        rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 		if (ah->phone[i] == phone_id) {
 			result = i;
 			break;
 		}
+        rt_mutex_release(device_config.mutex);
 	}
 	return result;
 }
@@ -1608,7 +1568,6 @@ device_config_account_append_phone(u16 account_id, u16 phone_id, u32 op_time, u8
 	if (account_id >= ACCOUNT_NUMBERS || phone_id >= KEY_NUMBERS)
         return result;
 
-	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 	if (device_config_get_account_valid(account_id) >= 0 &&
 		device_config_account_operate(account_id, &ah, 0) >= 0) {
 			pos = device_config_account_get_phone_pos(&ah, phone_id);
@@ -1655,7 +1614,6 @@ device_config_account_append_phone(u16 account_id, u16 phone_id, u32 op_time, u8
 				result = -ECONFIG_EXIST;
 			}
 	}
-	rt_mutex_release(device_config.mutex);
 //__exit:
 	return result;
 }
@@ -1680,7 +1638,6 @@ device_config_account_remove_phone(u16 phone_id)
 	if (phone_id >= PHONE_NUMBERS)
         return result;
 
-	rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 	if (device_config_get_phone_valid(phone_id) &&
 		device_config_phone_operate(phone_id, &ph, 0) >= 0) {
 		/* phone has valid account */
@@ -1700,7 +1657,6 @@ device_config_account_remove_phone(u16 phone_id)
             result = phone_id;
         }
 	}
-	rt_mutex_release(device_config.mutex);
 //__exit:
 	return result;
 }
@@ -1716,8 +1672,6 @@ device_config_key_index(int(*callback)(struct key *, void *arg1, void *arg2, voi
 
 	result = -ECONFIG_ERROR;
 
-    rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
-
 	for (i = 0; i < KEY_NUMBERS; i++) {
 		if (device_config_get_key_valid(i) > 0) {
 			len = device_config_key_operate(i, &k, 0);
@@ -1726,7 +1680,6 @@ device_config_key_index(int(*callback)(struct key *, void *arg1, void *arg2, voi
 			}
 		}
 	}
-	rt_mutex_release(device_config.mutex);
     return result;
 }
 
@@ -1741,13 +1694,9 @@ device_config_phone_index(int(*callback)(struct phone_head *, void *arg1, void *
 	result = -ECONFIG_ERROR;
 
 	for (i = 0; i < PHONE_NUMBERS; i++) {
-        rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
         len = device_config_get_phone_valid(i);
-        rt_mutex_release(device_config.mutex);
 		if (len > 0) {
-            rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 			len = device_config_phone_operate(i, &ph, 0);
-            rt_mutex_release(device_config.mutex);
 			if (len >= 0) {
                 result = callback(&ph, arg1, arg2, arg3);
 			}
@@ -1755,6 +1704,29 @@ device_config_phone_index(int(*callback)(struct phone_head *, void *arg1, void *
 	}
     return result;
 }
+
+s32
+device_config_account_index(int(*callback)(struct account_head *, u16 account_id, void *args), void *args)
+{
+    s32 result;
+    u16 i;
+	struct account_head ah;
+    s32 len;
+
+	result = -ECONFIG_ERROR;
+
+	for (i = 0; i < ACCOUNT_NUMBERS; i++) {
+        len = device_config_get_account_valid(i);
+		if (len > 0) {
+			len = device_config_account_operate(i, &ah, 0);
+			if (len >= 0) {
+                result = callback(&ah, i, args);
+			}
+		}
+	}
+    return result;
+}
+
 s32
 device_config_event_index(int(*callback)(struct event *, void *arg1), void *arg1)
 {
@@ -1765,22 +1737,15 @@ device_config_event_index(int(*callback)(struct event *, void *arg1), void *arg1
 
 	result = -ECONFIG_ERROR;
 
-    rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
-
 	for (i = 0; i < EVENT_NUMBERS; i++) {
-        rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
         len = device_config_get_event_valid(i);
-        rt_mutex_release(device_config.mutex);
 		if (len > 0) {
-            rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 			len = device_config_event_operate(i, &evt, 0);
-            rt_mutex_release(device_config.mutex);
 			if (len >= 0) {
                 result = callback(&evt, arg1);
 			}
 		}
 	}
-	rt_mutex_release(device_config.mutex);
     return result;
 }
 int
