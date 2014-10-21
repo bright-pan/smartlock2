@@ -1720,17 +1720,19 @@ device_config_phone_index(int(*callback)(struct phone_head *, void *arg1, void *
 
 	result = -ECONFIG_ERROR;
 
-    rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
-
 	for (i = 0; i < PHONE_NUMBERS; i++) {
-		if (device_config_get_phone_valid(i) > 0) {
+        rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+        len = device_config_get_phone_valid(i);
+        rt_mutex_release(device_config.mutex);
+		if (len > 0) {
+            rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 			len = device_config_phone_operate(i, &ph, 0);
+            rt_mutex_release(device_config.mutex);
 			if (len >= 0) {
                 result = callback(&ph, arg1, arg2, arg3);
 			}
 		}
 	}
-	rt_mutex_release(device_config.mutex);
     return result;
 }
 s32
@@ -1746,8 +1748,13 @@ device_config_event_index(int(*callback)(struct event *, void *arg1), void *arg1
     rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 
 	for (i = 0; i < EVENT_NUMBERS; i++) {
-		if (device_config_get_event_valid(i) > 0) {
+        rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+        len = device_config_get_event_valid(i);
+        rt_mutex_release(device_config.mutex);
+		if (len > 0) {
+            rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 			len = device_config_event_operate(i, &evt, 0);
+            rt_mutex_release(device_config.mutex);
 			if (len >= 0) {
                 result = callback(&evt, arg1);
 			}
