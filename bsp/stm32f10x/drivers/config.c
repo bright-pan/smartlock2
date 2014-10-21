@@ -409,7 +409,7 @@ s32
 device_config_event_delete(u16 event_id)
 {
     s32 result = -ECONFIG_ERROR;
-    struct event k;
+    
     if (event_id >= EVENT_NUMBERS)
         return result;
     device_config_set_event_valid(event_id, 0);
@@ -1519,7 +1519,7 @@ device_config_account_get_invalid_phone_pos(struct account_head *ah)
         rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 		temp = ah->phone[i];
         rt_mutex_release(device_config.mutex);
-		if (ah->phone[i] == PHONE_ID_INVALID) {
+		if (temp == PHONE_ID_INVALID) {
 			result = i;
 			break;
 		}
@@ -1544,7 +1544,7 @@ device_config_account_get_phone_pos(struct account_head *ah, u16 phone_id)
         rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
 		temp = ah->phone[i];
         rt_mutex_release(device_config.mutex);
-		if (ah->phone[i] == phone_id) {
+		if (temp == phone_id) {
 			result = i;
 			break;
 		}
