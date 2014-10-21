@@ -1344,15 +1344,17 @@ device_config_account_get_invalid_key_pos(struct account_head *ah)
 {
 	s32 result;
 	s32 i;
+    u16 temp;
 
 	result = -ECONFIG_ERROR;
 	for (i = 0; i < ACCOUNT_KEY_NUMBERS; ++i) {
         rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
-		if (ah->key[i] == KEY_ID_INVALID) {
+		temp = ah->key[i];
+        rt_mutex_release(device_config.mutex);
+        if (temp == KEY_ID_INVALID) {
 			result = i;
 			break;
 		}
-        rt_mutex_release(device_config.mutex);
 	}
 	return result;
 }
@@ -1367,15 +1369,17 @@ device_config_account_get_key_pos(struct account_head *ah, u16 key_id)
 {
 	s32 result;
 	s32 i;
+    u16 temp;
 
 	result = -ECONFIG_ERROR;
 	for (i = 0; i < ACCOUNT_KEY_NUMBERS; ++i) {
         rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
-		if (ah->key[i] == key_id) {
+		temp = ah->key[i];
+        rt_mutex_release(device_config.mutex);
+		if (temp == key_id) {
 			result = i;
 			break;
 		}
-        rt_mutex_release(device_config.mutex);
 	}
 	return result;
 }
@@ -1508,15 +1512,17 @@ device_config_account_get_invalid_phone_pos(struct account_head *ah)
 {
 	s32 result;
 	s32 i;
+    u16 temp;
 
 	result = -ECONFIG_ERROR;
 	for (i = 0; i < ACCOUNT_PHONE_NUMBERS; ++i) {
         rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+		temp = ah->phone[i];
+        rt_mutex_release(device_config.mutex);
 		if (ah->phone[i] == PHONE_ID_INVALID) {
 			result = i;
 			break;
 		}
-        rt_mutex_release(device_config.mutex);
 	}
 	return result;
 }
@@ -1531,15 +1537,17 @@ device_config_account_get_phone_pos(struct account_head *ah, u16 phone_id)
 {
 	s32 result;
 	s32 i;
-
+    u16 temp;
+    
 	result = -ECONFIG_ERROR;
-	for (i = 0; i < ACCOUNT_PHONE_NUMBERS; ++i) {
+	for (i = 0; i < ACCOUNT_PHONE_NUMBERS; ++i) {        
         rt_mutex_take(device_config.mutex, RT_WAITING_FOREVER);
+		temp = ah->phone[i];
+        rt_mutex_release(device_config.mutex);
 		if (ah->phone[i] == phone_id) {
 			result = i;
 			break;
 		}
-        rt_mutex_release(device_config.mutex);
 	}
 	return result;
 }
