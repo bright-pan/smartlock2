@@ -135,7 +135,8 @@ rf433_thread_entry(void *parameter)
                     for (i = 0; i < 15; ++i)
                         temp += rf433_mail_buf.data[i];
                     if (temp == rf433_mail_buf.data[15]) {
-                        if (device_config_key_verify(KEY_TYPE_RF433, rf433_mail_buf.data, 4) > 0) {
+                        temp = device_config_key_verify(KEY_TYPE_RF433, rf433_mail_buf.data, 4);
+                        if (temp >= 0) {
                             //send_sms_mail(ALARM_TYPE_RFID_KEY_SUCCESS, 0, RT_NULL, 0);
                         }
                     } else {
