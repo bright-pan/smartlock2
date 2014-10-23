@@ -300,6 +300,11 @@ rt_err_t rt_timer_start(rt_timer_t timer)
     RT_ASSERT(timer != RT_NULL);
     if (timer->parent.flag & RT_TIMER_FLAG_ACTIVATED)
         return -RT_ERROR;
+#ifdef RT_USING_TIMER_SOFT
+    if ((timer->parent.flag & RT_TIMER_FLAG_SOFT_TIMER) &&
+        (timer_thread.stat == RT_THREAD_READY))
+        return -RT_ERROR;
+#endif
 
     RT_OBJECT_HOOK_CALL(rt_object_take_hook, (&(timer->parent)));
 
@@ -605,7 +610,6 @@ void rt_soft_timer_check(void)
 
     RT_DEBUG_LOG(RT_DEBUG_TIMER, ("software timer check leave\n"));
 }
-
 /* system timer thread entry */
 static void rt_thread_timer_entry(void *parameter)
 {
