@@ -220,7 +220,30 @@ static void gpio_config(void)
     }
 /* switch1 device */
 gpio_device switch1_device;
-
+static GPIO_TypeDef gpio_bk[7];
+static RCC_TypeDef rcc_bk;
+static void 
+gpio_backup(void) {
+    gpio_bk[0] = *GPIOA;
+    gpio_bk[1] = *GPIOB;
+    gpio_bk[2] = *GPIOC;
+    gpio_bk[3] = *GPIOD;
+    gpio_bk[4] = *GPIOE;
+    gpio_bk[5] = *GPIOF;
+    gpio_bk[6] = *GPIOG;
+    rcc_bk = *RCC;
+}
+static void 
+gpio_restore(void) {
+    *GPIOA = gpio_bk[0];
+    *GPIOB = gpio_bk[1];
+    *GPIOC = gpio_bk[2];
+    *GPIOD = gpio_bk[3];
+    *GPIOE = gpio_bk[4];
+    *GPIOF = gpio_bk[5];
+    *GPIOG = gpio_bk[6];
+    *RCC = rcc_bk;
+}
 void switch1_exti_timeout(void *parameters)
 {
 	gpio_device *gpio = (gpio_device *)parameters;
@@ -230,13 +253,17 @@ void switch1_exti_timeout(void *parameters)
     if (gpio->ops->intput(gpio) == SWITCH1_STATUS)
     {
         rt_kprintf("it is switch1 detect!\n");
+        gpio_backup();
+        /*
         gpio_pin_output(DEVICE_NAME_POWER_FLASH,0,0);
         gpio_pin_output(DEVICE_NAME_POWER_MOTOR,0,0);
         gpio_pin_output(DEVICE_NAME_POWER_BT,0,0);
         gpio_pin_output(DEVICE_NAME_POWER_FRONT,0,0);
         gpio_pin_output(DEVICE_NAME_POWER_GSM,0,0);
+        */
         gpio_config();
-        PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFI);
+        gpio_restore();
+        //PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFI);
     }
 	gpio->ops->control(gpio, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0); 
 	rt_timer_stop(gpio_user_data->timer);
@@ -301,6 +328,7 @@ void switch2_exti_timeout(void *parameters)
         rt_kprintf("it is key2 detect!\n");
 
         rt_enter_critical();
+        gpio_backup();
         gpio_pin_output(DEVICE_NAME_POWER_FLASH,0,0);
         gpio_pin_output(DEVICE_NAME_POWER_MOTOR,0,0);
         gpio_pin_output(DEVICE_NAME_POWER_BT,0,0);
@@ -772,14 +800,15 @@ void
 kb_intr_exti_timeout(void *parameters)
 {
 	gpio_device *gpio = (gpio_device *)parameters;
-    struct gpio_exti_user_data *gpio_user_data = gpio->parent.user_data;
+    //struct gpio_exti_user_data *gpio_user_data = gpio->parent.user_data;
     uint16_t data = 0;
     uint8_t c;
+    s32 i;
 
-	gpio->ops->control(gpio, RT_DEVICE_CTRL_MASK_EXTI, (void *)0);  
+	//gpio->ops->control(gpio, RT_DEVICE_CTRL_MASK_EXTI, (void *)0);  
     if (gpio->ops->intput(gpio) == KB_INTR_STATUS) {
         data = kb_read();
-        while(1) {
+        for (i = 0; i < 20000; i++) {
             if (gpio->ops->intput(gpio) == KB_INTR_STATUS) {
                 data |= kb_read();
             } else {
@@ -791,12 +820,12 @@ kb_intr_exti_timeout(void *parameters)
             c = 'G';
         else
             c = char_remap[bit_to_index(data&0x0fff)];
-        RT_DEBUG_LOG(KB_DEBUG,("key value : 0x%x, index :%d, char :%c\n", data, bit_to_index(data&0x0fff), c));
+        //RT_DEBUG_LOG(KB_DEBUG,("key value : 0x%x, index :%d, char :%c\n", data, bit_to_index(data&0x0fff), c));
         send_key_value_mail(KB_MAIL_TYPE_INPUT, KB_MODE_NORMAL_AUTH, c);
         //send_kb_mail(KB_MAIL_TYPE_INPUT, KB_MODE_NORMAL_AUTH, c);
     }
-    gpio->ops->control(gpio, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0); 
-	rt_timer_stop(gpio_user_data->timer);
+    //gpio->ops->control(gpio, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0); 
+	//rt_timer_stop(gpio_user_data->timer);
 }
 
 
@@ -1021,6 +1050,7 @@ EXTI9_5_IRQHandler(void)
         EXTI_ClearITPendingBit(EXTI_Line7);
         SystemInit();
         SystemCoreClockUpdate();
+        gpio_restore();
     }
 
 	if(EXTI_GetITStatus(EXTI_Line6) == SET)
@@ -1085,7 +1115,6 @@ rt_hw_gpio_exti_enable(void)
     device_enable(DEVICE_NAME_HALL);
     return 0;
 }
-
 INIT_DEVICE_EXPORT(rt_hw_switch1_register);
 INIT_DEVICE_EXPORT(rt_hw_switch2_register);
 //INIT_DEVICE_EXPORT(rt_hw_switch3_register);
@@ -1096,3 +1125,19 @@ INIT_DEVICE_EXPORT(rt_hw_break_register);
 INIT_DEVICE_EXPORT(rt_hw_mag_register);
 INIT_DEVICE_EXPORT(rt_hw_hall_register);
 INIT_APP_EXPORT(rt_hw_gpio_exti_enable);
+
+#ifdef RT_USING_FINSH
+#include <finsh.h>
+void kb_intr_test(int cnts, int delay)
+{
+    int i;
+    for (i = 0; i < cnts; ++i) {
+        if (rt_timer_start(kb_intr_user_data.timer) != -RT_EOK)
+            rt_kprintf("timer start error \n");
+    
+        delay_us(delay);
+    }
+}
+FINSH_FUNCTION_EXPORT(kb_intr_test, kb_intr_test[cnts]);
+
+#endif
