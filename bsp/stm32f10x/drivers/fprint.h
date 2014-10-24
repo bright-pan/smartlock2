@@ -19,6 +19,18 @@
 #include <rtthread.h>
 #include <stm32f10x.h>
 
+typedef enum {
+
+	FPRINT_EOK,
+	FPRINT_EERROR,
+	FPRINT_ERESPONSE,
+	FPRINT_EEXIST,
+    FPRINT_ENO_DETECTED,
+	FPRINT_EINVALID,
+    FPRINT_EEXCEPTION,
+
+}FPRINT_ERROR_TYPEDEF;
+
 typedef  rt_err_t (*fprint_call_back)(void *user);
 
 typedef struct

@@ -66,18 +66,7 @@ static const u16 fprint_param_data_size_map[] = {
 #define FPRINT_FRAME_ERR_SUCCESS 0x00
 #define FPRINT_FRAME_ERR_FAIL 0x01
 #define FPRINT_FRAME_ERR_FP_NOT_DETECTED 0x02
-
-typedef enum {
-
-	FPRINT_EOK,
-	FPRINT_EERROR,
-	FPRINT_ERESPONSE,
-	FPRINT_EEXIST,
-    FPRINT_ENO_DETECTED,
-	FPRINT_EINVALID,
-    FPRINT_EEXCEPTION,
-
-}FPRINT_ERROR_TYPEDEF;
+#define FPRINT_FRAME_ERR_NO_SEARCH 0x09
 
 typedef enum {
 
@@ -889,7 +878,7 @@ fprint_frame_process(uint8_t cmd, FPRINT_FRAME_REQ_DATA_TYPEDEF *req_data, FPRIN
             }
         case FPRINT_FRAME_CMD_SEARCH:
             {
-                if (rep_data->rep_search.result == FPRINT_FRAME_ERR_SUCCESS) {
+                if (rep_data->rep_search.result == FPRINT_FRAME_ERR_SUCCESS || rep_data->rep_search.result == FPRINT_FRAME_ERR_NO_SEARCH) {
                     error  = FPRINT_EOK;
 
                 }
@@ -1103,7 +1092,7 @@ fprint_thread_entry(void *parameters)
 
     error = FPRINT_EERROR;
     
-    fprint_init(buf, &req_data, &rep_data);
+    //fprint_init(buf, &req_data, &rep_data);
 	while (1)
 	{
 		result = rt_mq_recv(fprint_mq, &fprint_mail, sizeof(fprint_mail), 500);
