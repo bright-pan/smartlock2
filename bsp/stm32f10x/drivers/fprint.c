@@ -1446,7 +1446,7 @@ fp_verify(void)
 
     for (i = 0; i < 100; ++i) {
         if (gpio_pin_input(DEVICE_NAME_FP_TOUCH, 0)) {
-            result = send_fp_mail(FPRINT_CMD_VERIFY, RT_NULL, RT_NULL, 0, 0);
+            result = send_fp_mail(FPRINT_CMD_VERIFY, RT_NULL, RT_NULL, 0, 1);
             if (result == FPRINT_EOK)
                 break;
         } else {
