@@ -21,6 +21,7 @@
 
 static rt_mq_t gprs_mq = RT_NULL;//gprs data mail 
 
+
 //手机上传处理
 static void phone_upload_process(rt_uint16_t pos)
 {
@@ -153,6 +154,10 @@ static void key_upload_process(rt_uint16_t UpdatePos)
 			rt_memcpy(data->data.data,KeyData->data.rfid.code,data->DataLen);
 			break;
 		}
+		case KEY_TYPE_RF433:
+		{
+			break;
+		};
 		default:
 		{
 			
@@ -197,8 +202,12 @@ rt_uint16_t get_key_update_pos(void)
 			device_config_key_operate(i,keydat,0);
 			if(keydat->head.is_updated == UPDATE_FLAG_VALUE)
 			{
-				rt_free(keydat);
-				return i;
+				//433钥匙不需要上传
+				if(keydat->head.key_type != KEY_TYPE_RF433)
+				{
+          rt_free(keydat);
+          return i;
+				}
 			}		
 		}
 	}
@@ -317,29 +326,108 @@ void update_account_lib_remote(void)
 	}
 }
 
+//更新智能锁数据库
+static void update_smartlock_database(void)
+{
+  rt_kprintf("update start\n");
+  rt_kprintf("update account data...\n");
+  update_account_lib_remote();
+  
+  rt_kprintf("update key data...\n");
+  update_key_lib_remote();
+  
+  rt_kprintf("update phone data...\n");
+  update_phone_lib_remote();
+  rt_kprintf("update end\n");
+}
+
+//设置数据库中数据更新标志位
+static void set_database_all_update(rt_uint8_t flag)
+{
+  rt_uint16_t           i;
+	rt_int16_t            result;
+	struct account_head   *data;
+	struct phone_head 	  *phdata;
+	struct key 		        *keydat;
+	rt_int32_t           	maxnum;
+
+	data = rt_calloc(1,sizeof(*data));
+	maxnum = device_config_account_counts();
+	for(i = 0;i < maxnum;i++)
+	{
+	  result = device_config_get_account_valid(i);
+	  if(result == 1)
+	  {
+	    device_config_account_operate(i,data,0);
+			data->is_updated = flag;		
+	    device_config_account_operate(i,data,1);
+	  }
+	}
+	rt_free(data);
+
+	maxnum = device_config_phone_counts();
+	phdata = rt_calloc(1,sizeof(*phdata));
+	for(i = 0;i < maxnum;i++)
+	{
+	  result = device_config_get_phone_valid(i);
+	  
+	  if(result == 1)
+	  {
+	    device_config_phone_operate(i,phdata,0);
+			phdata->is_update = flag;
+	    device_config_phone_operate(i,phdata,1);
+	  }
+	}
+	rt_free(phdata);
+
+  maxnum = device_config_key_counts();
+	keydat = rt_calloc(1,sizeof(*keydat));
+	for(i = 0;i < maxnum;i++)
+	{
+		result = device_config_get_key_valid(i);
+		if(result == 1)
+		{
+			device_config_key_operate(i,keydat,0);
+			keydat->head.is_updated = flag;
+			device_config_key_operate(i,keydat,1);
+		}
+	}
+	rt_free(keydat);
+}
+
 //处理钥匙开门正确邮件
 static void gprs_key_right_mail_process(GPRS_MAIL_TYPEDEF *mail)
 {
   GPRSUserDef_p user = RT_NULL;
-
+	struct key    *keydat;
+	
 	RT_ASSERT(mail != RT_NULL);
 	user = mail->user;
-
+	keydat = rt_calloc(1,sizeof(*keydat));
+	RT_ASSERT(keydat != RT_NULL);
+	
+	device_config_key_operate(user->keyright.pos,keydat,0);
+	
 	switch(user->keyright.type)
 	{
 	  case KEY_TYPE_FPRINT:
 	  {
-	    msg_mail_opendoor(1,user->keyright.pos,mail->time);
+	    msg_mail_opendoor(1,keydat->head.account,user->keyright.pos,mail->time);
 	    break;
 	  }
 	  case KEY_TYPE_KBOARD:
 	  {
-	    msg_mail_opendoor(2,user->keyright.pos,mail->time);
+	    msg_mail_opendoor(2,keydat->head.account,user->keyright.pos,mail->time);
 	    break;
 	  }
 	  case KEY_TYPE_RFID:
 	  {
-	    msg_mail_opendoor(4,user->keyright.pos,mail->time);
+	    msg_mail_opendoor(4,keydat->head.account,user->keyright.pos,mail->time);
+	    break;
+	  }
+	  case KEY_TYPE_RF433:
+	  {
+			msg_mail_opendoor(5,keydat->head.account,user->keyright.pos,mail->time);
 	    break;
 	  }
 	  default:
@@ -348,6 +436,8 @@ static void gprs_key_right_mail_process(GPRS_MAIL_TYPEDEF *mail)
 	    break;
 	  }
 	}
+
+	rt_free(keydat);
 }
 
 //处理钥匙开门错误邮件
@@ -476,6 +566,98 @@ void gprs_mail_delete(GPRS_MAIL_TYPEDEF *mail)
 	}
 }
 
+//保存没有上传的记录
+void gprs_local_mail_save(GPRS_MAIL_TYPEDEF *mail)
+{
+	union event_data *data = RT_NULL;
+	GPRSUserDef_p    user = RT_NULL;
+	
+	data = rt_calloc(1,sizeof(*data));
+	RT_ASSERT(data != RT_NULL);
+
+	switch(mail->alarm_type)
+	{
+		case ALARM_TYPE_KEY_ERROR:
+		{	
+			RT_ASSERT(mail->user != RT_NULL);
+			user = mail->user;
+
+			switch(user->keyerr.type)
+			{
+				case KEY_TYPE_FPRINT:
+				{
+					data->alarm.flag = 7;
+					break;
+				}
+				case KEY_TYPE_KBOARD:
+				{
+					data->alarm.flag = 8;
+					break;
+				}
+				default:
+				{
+					break;
+				}
+			}
+			data->alarm.status = motor_status_get();
+			data->alarm.time  = mail->time;
+			device_config_event_create(EVENT_ID_INVALID,EVENT_TYPE_ALARM,1,data);		
+			break;
+		}
+		case ALARM_TYPE_KEY_RIGHT:
+		{
+			struct key *keydat = RT_NULL;
+			
+			keydat = rt_calloc(1,sizeof(*keydat));
+			RT_ASSERT(keydat != RT_NULL);
+			
+			device_config_key_operate(user->keyright.pos,keydat,0);
+			data->unlock.account_id = keydat->head.account;
+			data->unlock.key_id = user->keyright.pos;
+			data->unlock.time = mail->time;
+			data->unlock.type = keydat->head.key_type-1;
+			device_config_event_create(EVENT_ID_INVALID,EVENT_TYPE_UNLOCK,1,data);	
+			break;
+		}
+		default:
+		{
+			break;
+		}
+	}
+	rt_free(data);
+}
+
+//重发记录
+int gprs_local_mail_resend(struct event *data, void *user)
+{
+	switch(data->head.event_type)
+	{
+		case EVENT_TYPE_ALARM:
+		{
+			if(data->head.is_updated == 1)
+			{
+        msg_mail_alarm(data->data.alarm.flag,data->data.alarm.status,data->data.alarm.time);
+			}
+			
+			break;
+		}
+		case EVENT_TYPE_UNLOCK:
+		{
+			if(data->head.is_updated == 1)
+			{
+        msg_mail_opendoor(data->data.unlock.type,data->data.unlock.account_id,data->data.unlock.key_id,data->data.unlock.time);
+			}
+			break;
+		}
+		default:
+		{
+			rt_kprintf("Read resend type is error\n");
+			break;
+		}
+	}
+	return 0;
+}
+
 /** 
 @brief  gprs thread entry
 @param  *arg
@@ -497,7 +679,7 @@ void gprs_mail_manage_entry(void* arg)
 			mq_result =rt_mq_recv(gprs_mq,&mail,sizeof(GPRS_MAIL_TYPEDEF),100);
 			if(mq_result == RT_EOK)
 			{
-				rt_kprintf("Network disconnection GPRS mail lost!!!\n");
+				gprs_local_mail_save(&mail);
 			}
 			login_flag = 0;
 			
@@ -507,33 +689,19 @@ void gprs_mail_manage_entry(void* arg)
 		{
 			if(login_flag == 0)
 			{
+				send_gprs_mail(ALARM_TYPE_GPRS_SYS_TIME_UPDATE,0,RT_NULL);
+				set_database_all_update(1);
 				count = UPDATE_KEY_CNT - 1;
-        //send_gprs_mail(ALARM_TYPE_GPRS_SYS_TIME_UPDATE,0,RT_NULL);
+				device_config_event_index(gprs_local_mail_resend,RT_NULL);
         login_flag = 1;
 			}
 		}
-
-		/*//测试报文
-		{
-			account_upload_process(0);
-			key_upload_process(0);
-			msg_mail_keybind(0,0,net_get_date());
-			//phone_upload_process(0);
-		}*/
 		//更新钥匙 手机号 
 		if(count++ > UPDATE_KEY_CNT)
 		{
 			count = 0;
-			rt_kprintf("update start\n");
-			rt_kprintf("update account data...\n");
-			update_account_lib_remote();
-			
-			rt_kprintf("update key data...\n");
-      update_key_lib_remote();
-      
-			rt_kprintf("update phone data...\n");
-      update_phone_lib_remote();
-      rt_kprintf("update end\n");
+
+			update_smartlock_database();
 		}
 		
 		//处理邮件
@@ -542,6 +710,7 @@ void gprs_mail_manage_entry(void* arg)
 		{
 			rt_kprintf("receive gprs mail < time: %d alarm_type: %s >\n",\
 					   		mail.time, alarm_help_map[mail.alarm_type]);
+			gprs_local_mail_save(&mail);
 			gprs_mail_process(&mail);
 			gprs_mail_delete(&mail);
 		}
@@ -603,6 +772,25 @@ void send_gprs_mail(ALARM_TYPEDEF AlarmType,time_t time,void *user)
 #include <finsh.h>
 
 FINSH_FUNCTION_EXPORT(send_gprs_mail,"(type,time,user)send gprs thread mail");
+
+void test_int(void)
+{
+	rt_int8_t cmd1;
+	rt_uint8_t cmd2;
+
+	cmd1 = 0x8b;
+	cmd2 = 0x8b;
+
+	rt_kprintf("int cmd1 = 0x8b; uint cmd2 = 0x8b;\n");
+	
+	rt_kprintf("int  %d = %x\n",cmd1,cmd1);
+	
+	rt_kprintf("uint %d = %x\n",cmd2,cmd2);
+
+	
+	rt_kprintf("uint %d = %d = %x\n",cmd1,cmd2,cmd2);
+}
+FINSH_FUNCTION_EXPORT(test_int,"int test");
 
 #endif
 

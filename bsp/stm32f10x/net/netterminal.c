@@ -47,7 +47,6 @@ rt_err_t net_motor_Control(net_recvmsg_p mail)
 
 		KeyData.lock.key_id = 0;
 	  KeyData.lock.operation = 0;
-	  //rt_kprintf("unlock id %d\n",ps_id);
 	  send_local_mail(ALARM_TYPE_LOCK_PROCESS,(time_t)net_get_date(),&KeyData);
 	}
 	
@@ -62,7 +61,7 @@ rt_err_t net_motor_Control(net_recvmsg_p mail)
 */
 rt_err_t net_set_system_time(net_recvmsg_p mail)
 {
-	/*rt_uint32_t CurrentTime;
+	rt_uint32_t CurrentTime;
 	rt_device_t dev = RT_NULL;
 	
 	RT_ASSERT(mail != RT_NULL);
@@ -87,7 +86,7 @@ rt_err_t net_set_system_time(net_recvmsg_p mail)
 		RT_DEBUG_LOG(SHOW_TM_DEBUG_IFNO,("Timing Result :%d\n",mail->data.timing.result));
 		
 		return RT_ERROR;
-	}*/
+	}
 	
 	return RT_EOK;
 }

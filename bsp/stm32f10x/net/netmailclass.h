@@ -6,7 +6,7 @@
 #define USEING_KEY_API
 //#define USEING_SYS_UPDATE
 //#define USEING_SYSCONFIG_API
-//#define USEING_SYS_TIME_API
+#define USEING_SYS_TIME_API
 //#define USEING_CAMERA_API
 //#define USEING_FILE_API
 #define USEING_PHONE_API
@@ -41,7 +41,7 @@ void net_mail_heart(void);
 
 rt_err_t msg_mail_alarm(rt_uint8_t alarm,rt_uint8_t LockStatus,rt_uint32_t time);
 rt_err_t msg_mail_fault(rt_uint8_t fault,rt_uint32_t time);
-rt_err_t msg_mail_opendoor(rt_uint8_t type,rt_uint16_t key,rt_uint32_t time);
+rt_err_t msg_mail_opendoor(rt_uint8_t type,rt_uint16_t account,rt_uint16_t key,rt_uint32_t time);
 rt_err_t msg_mail_battery(rt_uint8_t status,rt_uint8_t capacity,rt_uint32_t time);
 rt_err_t msg_mail_adjust_time(void);
 rt_err_t msg_mail_alarmarg(rt_uint8_t Type,rt_uint8_t arg);

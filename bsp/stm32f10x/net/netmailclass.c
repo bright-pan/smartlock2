@@ -248,7 +248,7 @@ rt_err_t msg_mail_fault(rt_uint8_t fault,rt_uint32_t time)
 /*
 功能:钥匙开启
 */
-rt_err_t msg_mail_opendoor(rt_uint8_t type,rt_uint16_t key,rt_uint32_t time)
+rt_err_t msg_mail_opendoor(rt_uint8_t type,rt_uint16_t account,rt_uint16_t key,rt_uint32_t time)
 {
 	rt_uint8_t result;
 	net_msgmail_p mail = RT_NULL;
@@ -271,6 +271,7 @@ rt_err_t msg_mail_opendoor(rt_uint8_t type,rt_uint16_t key,rt_uint32_t time)
   mail->col.byte = get_msg_new_order(RT_TRUE);
 	//设置私有数据
 	UserData->opendoor.type = type;
+	net_uint16_copy_string(UserData->opendoor.account,account);
 	net_uint16_copy_string(UserData->opendoor.key,key);
 	net_uint32_copy_string(UserData->opendoor.time,time);
 	//发送邮件
@@ -1652,9 +1653,13 @@ void msg_test(rt_uint8_t cmd)
 
 			net_uint16_copy_string(KeyData->data.col,11);
 			net_uint32_copy_string(KeyData->data.createt,net_get_date());
+			net_uint32_copy_string(KeyData->data.start_t,net_get_date());
+			net_uint32_copy_string(KeyData->data.stop_t,net_get_date()+1*60);
 			KeyData->data.type = 2;
 			KeyData->DataLen = 6;
 			KeyData->data.data = rt_calloc(1,KeyData->DataLen);
+			KeyData->data.accredit = 1;
+			
 			rt_memcpy(KeyData->data.data,"456789",6);
 			msg_mail_keyadd(KeyData);
 			rt_free(KeyData);
@@ -1673,7 +1678,7 @@ void msg_test(rt_uint8_t cmd)
 		}
 		case 3:
 		{
-			msg_mail_opendoor(2,11,net_get_date());
+			msg_mail_opendoor(2,1,11,net_get_date());
 			break;
 		}
 		case 4:
