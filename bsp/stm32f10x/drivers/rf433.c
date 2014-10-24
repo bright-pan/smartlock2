@@ -20,6 +20,7 @@
 #include "untils.h"
 #include "config.h"
 #include "sms.h"
+#include "local.h"
 
 #define RF433_DEBUG 1
 
@@ -138,6 +139,14 @@ rf433_thread_entry(void *parameter)
                         temp = device_config_key_verify(KEY_TYPE_RF433, rf433_mail_buf.data, 4);
                         if (temp >= 0) {
                             //send_sms_mail(ALARM_TYPE_RFID_KEY_SUCCESS, 0, RT_NULL, 0);
+														union alarm_data *data;
+                            flag = 0;
+														data = rt_calloc(1,sizeof(*data));
+														data->key.ID = temp;
+														data->key.Type = KEY_TYPE_RF433;
+														data->key.sms = 0;
+														send_local_mail(ALARM_TYPE_KEY_RIGHT,0,data);
+														rt_free(data);
                         }
                     } else {
                         RT_DEBUG_LOG(RF433_DEBUG,("rf433 verify error\n"));
@@ -327,7 +336,7 @@ rt_rf433_init(void)
     // init local thread
     rf433_thread = rt_thread_create("rf433",
 									rf433_thread_entry, RT_NULL,
-									512, 102, 5);
+									1024, 102, 5);
     if (rf433_thread == RT_NULL)
         return -1;
 

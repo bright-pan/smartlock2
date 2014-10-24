@@ -47,6 +47,12 @@ rt_err_t net_account_del_process(net_recvmsg_p mail)
 	//½âÎöÍøÂçÊý¾Ý
 	net_string_copy_uint16(&AccountID,remote->pos);
 	net_string_copy_uint32(&OpTime,remote->date);
+
+	if(AccountID == 0)
+	{
+    RT_DEBUG_LOG(SHOW_NETPHONE_INFO,("Not Del Admin Account\n"));
+    return RT_ERROR;
+	}
 	
   RT_DEBUG_LOG(SHOW_NETPHONE_INFO,("Account Del Data Info:>>>>>>\n"));
   RT_DEBUG_LOG(SHOW_NETPHONE_INFO,("AccountID = %x\n",AccountID));

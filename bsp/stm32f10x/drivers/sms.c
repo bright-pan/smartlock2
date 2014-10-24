@@ -913,8 +913,18 @@ int phone_sms_callback(struct phone_head *ph, void *arg1, void *arg2, void *arg3
     uint16_t *sms_ucs = arg1;
     uint16_t sms_ucs_length = *(u16 *)arg2;
     uint16_t auth = *(u16 *)arg3;
+		uint8_t  phcode[14] = "86";
+		if(ph->address[0] == '8' && ph->address[1] == '6')
+		{
+     	rt_memcpy((void *)phcode,ph->address,11);
+		}
+		else
+		{
+      rt_memcpy((void *)&phcode[2],ph->address,11);
+		}
+    
     if (ph->account != PHONE_ID_INVALID && ph->auth & auth) {
-        sms_pdu_ucs_send(ph->address, smsc, sms_ucs, sms_ucs_length);
+        sms_pdu_ucs_send(phcode, smsc, sms_ucs, sms_ucs_length);
         result = ph->account;
     }
     return result;

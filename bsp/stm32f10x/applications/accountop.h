@@ -30,6 +30,8 @@ rt_uint32_t user_valid_password_num(void);
 
 rt_uint32_t user_valid_fprint_num(void);
 
+rt_int32_t user_vaild_key_num(void);
+
 rt_err_t user_add_fprint(rt_uint32_t outtime);
 
 rt_err_t user_phone_add_check(rt_uint8_t *phone);

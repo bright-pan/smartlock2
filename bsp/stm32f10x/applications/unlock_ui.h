@@ -18,7 +18,8 @@
 #define __UNLOCK_UI_H__
 #include "rtthread.h"
 
-void unlock_process_ui(void);
+rt_err_t unlock_process_ui(void);
+void unlock_process_ui1(void);
 void system_menu1_show(void);
 void system_menu2_show(void);
 void system_manage_processing(void);

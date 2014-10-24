@@ -24,6 +24,7 @@
 #ifdef USEING_BUZZER_FUN
 #include "buzzer.h"
 #endif
+#include "rf433.h"
 
 #define LOCAL_DEBUG 1
 
@@ -40,6 +41,7 @@
 void lock_process(LOCAL_MAIL_TYPEDEF *);
 // local msg queue for local alarm
 static rt_mq_t local_mq;
+static rt_uint16_t AutoLockTime = LOCK_GATE_TIMER_BASE;
 
 
 typedef struct
@@ -211,13 +213,17 @@ void motor_status_open_send(void)
 	rt_sem_release(MotorManage.StatusSem );
 	MotorManage.LockTime = 0;
 }
-
+static void motor_locktime_set(rt_uint16_t value)
+{
+  MotorManage.LockTime = value;
+}
 void motor_status_manage(void)
 {
 	rt_err_t result;
 	
 	if(MotorManage.LockTime == 0)
-	{
+	{	
+		//上次的开始过程结束后再一次收到开门信号
     result = rt_sem_take(MotorManage.StatusSem ,RT_WAITING_NO);
     if(result == RT_EOK)
     {
@@ -227,7 +233,7 @@ void motor_status_manage(void)
 	else
 	{
 		MotorManage.LockTime ++;
-		if(MotorManage.LockTime  > LOCK_GATE_TIMER_BASE)
+		if(MotorManage.LockTime  > AutoLockTime)
 		{
 			//上锁
 			MotorManage.LockTime  = 0;
@@ -301,10 +307,11 @@ local_thread_entry(void *parameter)
         {
         	rt_uint8_t freeze;
         	
-        	freeze == local_event_process(1,LOCAL_EVT_SYSTEM_FREEZE);
+        	freeze = local_event_process(1,LOCAL_EVT_SYSTEM_FREEZE);
         	if(freeze == 0)
         	{
 						//被冻结
+						rt_kprintf("system is freeze !!! run lock \n");
 						lock_operation(LOCK_OPERATION_CLOSE,MOTOR_WORK_CUT);
         	}
         	else
@@ -316,12 +323,17 @@ local_thread_entry(void *parameter)
         case ALARM_TYPE_KEY_ERROR:
         {
         	//钥匙错误报警
+        	union alarm_data data;
+        	
 					gprs_key_error_mail(local_mail_buf.data.key.Type);
 					if(local_mail_buf.data.key.sms == 1)
 					{
            	send_sms_mail(ALARM_TYPE_SMS_KEY_ERROR,0, RT_NULL, 0, PHONE_AUTH_SMS);
 					}
-					
+
+					data.lock.key_id = 0;
+					data.lock.operation = LOCK_OPERATION_CLOSE;
+					send_local_mail(ALARM_TYPE_LOCK_PROCESS,0,&data);
 					break;
         }
         case ALARM_TYPE_KEY_RIGHT:
@@ -329,10 +341,17 @@ local_thread_entry(void *parameter)
         	//钥匙正确
 					union alarm_data data;
 
+					if(local_mail_buf.data.key.Type == ALARM_TYPE_KEY_RIGHT)
+					{
+						//433 钥匙
+            gprs_key_right_mail(local_mail_buf.data.key.ID);
+						break;
+					}
 					data.lock.key_id = local_mail_buf.data.key.ID;
 					data.lock.operation = LOCK_OPERATION_OPEN;
 					send_local_mail(ALARM_TYPE_LOCK_PROCESS,0,&data);
 					gprs_key_right_mail(local_mail_buf.data.key.ID);
+					motor_locktime_set(1);
 					break;
         }
         case ALARM_TYPE_SYSTEM_FREEZE:
@@ -492,8 +511,15 @@ rt_local_init(void)
 
 INIT_APP_EXPORT(rt_local_init);
 
+void system_autolock_time_set(rt_uint16_t value)
+{
+	AutoLockTime = value;
+}
 
-
+rt_uint16_t system_autolock_time_get(void)
+{
+	return AutoLockTime;
+}
 
 
 #ifdef RT_USING_FINSH
@@ -510,11 +536,42 @@ void system_info(void)
 {
 	extern void bt_info(void);
 	extern void net_info(void);
+	
 	//报警计数
-	rt_kprintf("KeyErrorData.ErrorCnt >>>>>>>>>>> %d\n",KeyErrorData.ErrorCnt);
+	rt_kprintf("NET manage info:\n");
 	net_info();
+	rt_kprintf(">>>NET END\n");
+	rt_kprintf("BT manage info:\n");
 	bt_info();
+	rt_kprintf(">>>BT END\n");
+	rt_kprintf("Door manage info:\n");
+	if(MotorManage.Status == LOCK_OPERATION_OPEN)
+	{
+		rt_kprintf("Now Door Status is Open \n");
+	}
+	else
+	{
+		rt_kprintf("Now Door Status is Close\n");
+	}
+	rt_kprintf("MotorManage.LockTime = %d\n",MotorManage.LockTime);
+	rt_kprintf("KeyErrorData.ErrorCnt = %d\n",KeyErrorData.ErrorCnt);
+	rt_kprintf(">>>DOOR END\n");
 }
 FINSH_FUNCTION_EXPORT(system_info,"show system info");
+
+void rf433_test(void)
+{
+	send_rf433_mail(RF433_START, RT_NULL);
+}
+FINSH_FUNCTION_EXPORT(rf433_test,"RF433 test");
+void timer_test_entry(void *arg)
+{
+	rt_kprintf("timer  run \n");
+}
+void timer_test(void)
+{
+	rt_timer_start(rt_timer_create("test",timer_test_entry,RT_NULL,10,RT_TIMER_FLAG_ONE_SHOT));
+}
+FINSH_FUNCTION_EXPORT(timer_test,test timer);
 
 #endif

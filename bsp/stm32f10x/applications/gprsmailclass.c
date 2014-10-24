@@ -32,7 +32,7 @@ void gprs_key_right_mail(rt_uint16_t pos)
 	user->keyright.pos = pos;
 
 	user->keyright.type = keydata->head.key_type;
-
+	rt_kprintf("right ID %d type %d\n",user->keyright.pos,user->keyright.type);
 	rt_free(keydata);
 	
 	send_gprs_mail(ALARM_TYPE_KEY_RIGHT,net_get_date(),user);

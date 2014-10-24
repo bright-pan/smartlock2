@@ -314,6 +314,72 @@ int rt_hw_switch1_register(void)
 
     return 0;
 }
+
+void btled_exti_timeout(void *parameters)
+{
+	gpio_device *gpio = (gpio_device *)parameters;
+    struct gpio_exti_user_data *gpio_user_data = gpio->parent.user_data;
+
+	gpio->ops->control(gpio, RT_DEVICE_CTRL_MASK_EXTI, (void *)0); 
+    if (gpio->ops->intput(gpio) == BT_LED_STATUS)
+    {
+        rt_kprintf("it is BT LED detect!\n");
+
+        //PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFI);
+    }
+	gpio->ops->control(gpio, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0); 
+	rt_timer_stop(gpio_user_data->timer);
+}
+
+
+rt_err_t btled_rx_ind(rt_device_t dev, rt_size_t size)
+{
+    struct gpio_exti_user_data *gpio_user_data = ((gpio_device *)dev)->parent.user_data;
+	rt_timer_start(gpio_user_data->timer);
+
+	return RT_EOK;
+}
+
+struct gpio_exti_user_data btled_user_data =
+{
+	DEVICE_NAME_BT_LED,
+	GPIOC,
+	GPIO_Pin_9,
+	GPIO_Mode_IPU,
+	GPIO_Speed_50MHz,
+	RCC_APB2Periph_GPIOC |RCC_APB2Periph_AFIO,
+	GPIO_PortSourceGPIOC,
+	GPIO_PinSource9,
+	EXTI_Line9,
+	EXTI_Mode_Interrupt,
+	BT_LED_EXTI_TRIGGER_MODE,
+	EXTI9_5_IRQn,
+	1,
+	5,
+	btled_rx_ind,
+};
+
+gpio_device btled_device;
+
+int rt_hw_bt_led_register(void)
+{
+    gpio_device *gpio_device = &btled_device;
+    struct gpio_exti_user_data *gpio_user_data = &btled_user_data;
+
+    gpio_device->ops = &gpio_exti_user_ops;
+
+    rt_hw_gpio_register(gpio_device, gpio_user_data->name, (RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX), gpio_user_data);
+    gpio_user_data->timer = rt_timer_create("bt_led",
+										 btled_exti_timeout,
+										 gpio_device,
+										 BT_LED_INT_INTERVAL,
+										 RT_TIMER_FLAG_ONE_SHOT | RT_TIMER_FLAG_SOFT_TIMER);
+    rt_device_set_rx_indicate((rt_device_t)gpio_device, gpio_user_data->gpio_exti_rx_indicate);
+
+    return 0;
+}
+
+
 /* switch2 device */
 gpio_device switch2_device;
 
@@ -1058,13 +1124,13 @@ EXTI9_5_IRQHandler(void)
 		rt_hw_gpio_isr(&switch2_device);
 		EXTI_ClearITPendingBit(EXTI_Line6);
 	}
-    /*
+    
 	if(EXTI_GetITStatus(EXTI_Line9) == SET)
 	{
-		rt_hw_gpio_isr(&switch3_device);
+		rt_hw_gpio_isr(&btled_device);
 		EXTI_ClearITPendingBit(EXTI_Line9);
 	}
-    */
+    
     // keyboard interrupt
 	if(EXTI_GetITStatus(EXTI_Line8) == SET)
 	{
@@ -1117,6 +1183,8 @@ rt_hw_gpio_exti_enable(void)
 }
 INIT_DEVICE_EXPORT(rt_hw_switch1_register);
 INIT_DEVICE_EXPORT(rt_hw_switch2_register);
+INIT_DEVICE_EXPORT(rt_hw_bt_led_register);
+
 //INIT_DEVICE_EXPORT(rt_hw_switch3_register);
 INIT_DEVICE_EXPORT(rt_hw_kb_intr_register);
 INIT_DEVICE_EXPORT(rt_hw_fp_touch_register);

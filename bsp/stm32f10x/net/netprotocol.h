@@ -144,7 +144,8 @@ typedef struct
 //开门记录
 typedef struct 
 {
-  rt_uint8_t type;      //开门方式    
+  rt_uint8_t type;      //开门方式   
+  rt_uint8_t account[2];//用户编号
   rt_uint8_t key[2];    //钥匙编号
   rt_uint8_t time[4];   //开门时间
 }net_opendoor;
