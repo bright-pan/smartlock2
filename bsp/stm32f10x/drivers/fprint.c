@@ -20,6 +20,7 @@
 #include "gpio_pin.h"
 #include "gpio_pwm.h"
 #include "local.h"
+#include "gpio_exti.h"
 
 #define FPRINT_MAIL_MAX_MSGS 10
 
@@ -1125,30 +1126,32 @@ fprint_thread_entry(void *parameters)
                         rt_memset(&rep_data, 0, sizeof(rep_data));
                         error = fprint_verify(&req_data, &rep_data);
                         if (error == FPRINT_EOK) {
-                            reverse((uint8_t *)&template_id, rep_data.rep_search.template_id, 2);
-                            RT_DEBUG_LOG(FPRINT_DEBUG, ("fprint verify is exist, %d\n", template_id - FPRINT_TEMPLATE_OFFSET));
-                            error = FPRINT_EEXIST;
-                        } else {
-                            error = fprint_enroll(buf,&req_data, &rep_data);
-                            if (error == FPRINT_EOK) {
-                                temp = device_config_key_create(*fprint_mail.key_id, KEY_TYPE_FPRINT, buf, sizeof(buf));
-                                if (temp < 0) {
-                                    RT_DEBUG_LOG(FPRINT_DEBUG, ("the finger print key create failure! error: %d\n", temp));
-                                    error = FPRINT_EERROR;
-                                } else {
-                                    // store fprint template to template_id
-                                    rt_memset(&req_data, 0, sizeof(req_data));
-                                    rt_memset(&rep_data, 0, sizeof(rep_data));
-                                    temp += FPRINT_TEMPLATE_OFFSET;
-                                    reverse(req_data.req_store_char.template_id, (uint8_t *)&temp, 2);
-                                    req_data.req_store_char.buf_id = 1;
-                                    error = fprint_frame_process(FPRINT_FRAME_CMD_STORE_CHAR,
-                                                                    &req_data, &rep_data);
-                                    if (error == FPRINT_EOK) {
-                                        if (fprint_mail.buf != RT_NULL)
-                                            rt_memcpy(fprint_mail.buf, buf, 512);
-                                        if (fprint_mail.key_id != RT_NULL)
-                                            *fprint_mail.key_id = (uint16_t)temp;
+                            if (rep_data.rep_search.result == 0x00) {
+                                reverse((uint8_t *)&template_id, rep_data.rep_search.template_id, 2);
+                                RT_DEBUG_LOG(FPRINT_DEBUG, ("fprint verify is exist, %d\n", template_id - FPRINT_TEMPLATE_OFFSET));
+                                error = FPRINT_EEXIST;
+                            } else if (rep_data.rep_search.result == 0x09){
+                                error = fprint_enroll(buf,&req_data, &rep_data);
+                                if (error == FPRINT_EOK) {
+                                    temp = device_config_key_create(*fprint_mail.key_id, KEY_TYPE_FPRINT, buf, sizeof(buf));
+                                    if (temp < 0) {
+                                        RT_DEBUG_LOG(FPRINT_DEBUG, ("the finger print key create failure! error: %d\n", temp));
+                                        error = FPRINT_EERROR;
+                                    } else {
+                                        // store fprint template to template_id
+                                        rt_memset(&req_data, 0, sizeof(req_data));
+                                        rt_memset(&rep_data, 0, sizeof(rep_data));
+                                        temp += FPRINT_TEMPLATE_OFFSET;
+                                        reverse(req_data.req_store_char.template_id, (uint8_t *)&temp, 2);
+                                        req_data.req_store_char.buf_id = 1;
+                                        error = fprint_frame_process(FPRINT_FRAME_CMD_STORE_CHAR,
+                                                                        &req_data, &rep_data);
+                                        if (error == FPRINT_EOK) {
+                                            if (fprint_mail.buf != RT_NULL)
+                                                rt_memcpy(fprint_mail.buf, buf, 512);
+                                            if (fprint_mail.key_id != RT_NULL)
+                                                *fprint_mail.key_id = (uint16_t)temp;
+                                        }
                                     }
                                 }
                             }
@@ -1233,24 +1236,40 @@ fprint_thread_entry(void *parameters)
                         static uint16_t f_detect = 0;
                         static uint16_t r_detect = 0;
                         static uint16_t template_id = 0;
-
-                        rt_thread_delay(RT_TICK_PER_SECOND/2);
                         error = fprint_verify(&req_data, &rep_data);
                         if (error == FPRINT_EOK) {
                             //union alarm_data data;
-                            reverse((uint8_t *)&template_id, rep_data.rep_search.template_id, 2);
-                            RT_DEBUG_LOG(FPRINT_DEBUG, ("fprint verify is exist, %d\n", template_id - FPRINT_TEMPLATE_OFFSET));
+                            if (rep_data.rep_search.result == 0x00) {
+                                reverse((uint8_t *)&template_id, rep_data.rep_search.template_id, 2);
+                                RT_DEBUG_LOG(FPRINT_DEBUG, ("fprint verify is exist, %d\n", template_id - FPRINT_TEMPLATE_OFFSET));
 
-                            //data.lock.key_id = template_id - FPRINT_TEMPLATE_OFFSET;
-                            //data.lock.operation = GATE_UNLOCK;
-                            //send_local_mail(ALARM_TYPE_LOCK_PROCESS, 0, &data);
-                            if(fprintf_ok_fun != RT_NULL)
-                            {
-                                FPINTF_USER key;
+                                //data.lock.key_id = template_id - FPRINT_TEMPLATE_OFFSET;
+                                //data.lock.operation = GATE_UNLOCK;
+                                //send_local_mail(ALARM_TYPE_LOCK_PROCESS, 0, &data);
+                                if(fprintf_ok_fun != RT_NULL)
+                                {
+                                    FPINTF_USER key;
 
-                                key.KeyPos = template_id - FPRINT_TEMPLATE_OFFSET;
-                                rt_kprintf("key pos : %d\n", key.KeyPos);
-                                fprintf_ok_fun((void *)&key);
+                                    key.KeyPos = template_id - FPRINT_TEMPLATE_OFFSET;
+                                    rt_kprintf("key pos : %d\n", key.KeyPos);
+                                    fprintf_ok_fun((void *)&key);
+                                }
+                            }
+                            if (rep_data.rep_search.result == 0x09) {
+                                if (f_detect++ > 20) {
+
+                                    RT_DEBUG_LOG(FPRINT_DEBUG, ("fprint verify is no search\n"));
+                                    if(fprintf_error_fun != RT_NULL)
+                                    {
+                                        FPINTF_USER key;
+
+                                        key.KeyPos = 0xffff;
+                                        fprintf_error_fun((void *)&key);
+                                    }
+                                    f_detect = 0;
+                                }
+                            } else {
+                                f_detect = 0;
                             }
 
                         }
@@ -1261,27 +1280,9 @@ fprint_thread_entry(void *parameters)
                                 fprintf_null_fun(RT_NULL);
                             }
                         }
-                        if (error == FPRINT_EERROR) {
-
-                            if (f_detect++) {
-
-                            } else {
-
-                                RT_DEBUG_LOG(FPRINT_DEBUG, ("fprint verify is error\n"));
-                                if(fprintf_error_fun != RT_NULL)
-                                {
-                                    FPINTF_USER key;
-
-                                    key.KeyPos = 0xffff;
-                                    fprintf_error_fun((void *)&key);
-                                }
-                            }
-                        } else {
-                            f_detect = 0;
-                        }
-                        if (error == FPRINT_ERESPONSE) {
+                        if (error == FPRINT_ERESPONSE || error == FPRINT_EERROR) {
                             if (r_detect++ > 1000) {
-                                RT_DEBUG_LOG(FPRINT_DEBUG, ("fprint has no response , may be fault!\n"));
+                                RT_DEBUG_LOG(FPRINT_DEBUG, ("fprint has no response or error, may be fault!\n"));
                                 fprint_init(buf, &req_data, &rep_data);
                                 r_detect = 0;
                             }
@@ -1392,14 +1393,21 @@ fp_enroll(uint16_t *key_id, uint8_t *buf, uint32_t timeout)
 {
     rt_err_t error;
     int result = -1;
-    
+    int i;
     RT_ASSERT(key_id != RT_NULL);
 
     enroll_flag = 1;
     error = rt_sem_take(s_fprint, timeout);
     if (error == RT_EOK) {
-        if (send_fp_mail(FPRINT_CMD_ENROLL, key_id, buf, 0, 1) == FPRINT_EOK)
-            result = *key_id;
+        for (i = 0; i < 100; ++i) {
+            if (gpio_pin_input(DEVICE_NAME_FP_TOUCH, 0)) {
+                result = send_fp_mail(FPRINT_CMD_ENROLL, key_id, buf, 0, 1);
+                if (result != FPRINT_EERROR)
+                    break;
+            } else {
+                rt_thread_delay(10);
+            }
+        }
     }
     enroll_flag = 0;
     return result;
@@ -1417,6 +1425,7 @@ fp_get_template(uint8_t *buf, uint32_t timeout)
         if (send_fp_mail(FPRINT_CMD_GET_TEMPLATE, RT_NULL, buf, 0, 1) == FPRINT_EOK)
             result = 1;
     }
+    
     enroll_flag = 0;
     return result;
 }
@@ -1444,8 +1453,17 @@ int
 fp_verify(void)
 {
     int result = -1;
-    if (send_fp_mail(FPRINT_CMD_VERIFY, RT_NULL, RT_NULL, 0, 0) == FPRINT_EOK)
-        result = 0;
+    int i;
+
+    for (i = 0; i < 100; ++i) {
+        if (gpio_pin_input(DEVICE_NAME_FP_TOUCH, 0)) {
+            result = send_fp_mail(FPRINT_CMD_VERIFY, RT_NULL, RT_NULL, 0, 0);
+            if (result == FPRINT_EOK)
+                break;
+        } else {
+            rt_thread_delay(10);
+        }
+    }
     return result;
 }
 
