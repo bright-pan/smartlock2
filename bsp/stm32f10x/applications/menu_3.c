@@ -43,13 +43,14 @@ void menu_20_processing(void)
   gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
 	//œ‘ æID
   gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(0),LocalDevInofText[0],GUI_WIHIT);
-	device_config_device_id_operate(id,0);
+	
 	id = rt_calloc(1,9);
+	device_config_device_id_operate(id,0);
 	hex_to_string(buf,id,8);
-	gui_display_string(SHOW_X_ROW8(rt_strlen((const char *)LocalDevInofText[0])),SHOW_Y_LINE(0),buf,GUI_WIHIT);
+	gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(1),buf,GUI_WIHIT);
 	rt_free(id);
   //œ‘ æ¿∂—¿MAC
-	gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(1),LocalDevInofText[1],GUI_WIHIT);
+	gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),LocalDevInofText[1],GUI_WIHIT);
 
 			
 	dev = rt_device_find("Blooth");
@@ -59,7 +60,7 @@ void menu_20_processing(void)
 		rt_device_open(dev,RT_DEVICE_OFLAG_OPEN);
 	}
 	rt_device_control(dev,4,buf);
-	gui_display_string(SHOW_X_ROW8(rt_strlen((const char *)LocalDevInofText[1])),SHOW_Y_LINE(1),buf,GUI_WIHIT);
+	gui_display_string(SHOW_X_ROW8(rt_strlen((const char *)LocalDevInofText[1])),SHOW_Y_LINE(2),buf,GUI_WIHIT);
   gui_display_update();
  	rt_free(buf);
 }

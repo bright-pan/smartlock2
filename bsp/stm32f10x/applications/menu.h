@@ -7,11 +7,14 @@
 #include "sms.h"
 #include "gprsmailclass.h"
 #include "local.h"
+#include "FprintHandle.h"
 
 #define MENU_SURE_VALUE					 '*'
 #define MENU_DEL_VALUE           '#'
 #define MENU_UP_VALUE						 '2'
 #define MENU_DOWN_VALUE					 '8'
+
+#define USEING_SYSTEM_SHOW_STYLE1        
 
 #define LCD_LINE_MAX_LEN					17							//留出一个结束符的位置
 
@@ -22,7 +25,7 @@
 #define CONFIG_PASSWORD_LEN				6	//配置文件标准密码长度
 
 #define MENU_EVT_OP_OUTTIME				(0X01<<0)//菜单操作超时事件
-#define MENU_EVT_FREEZE						(0X01<<1)//菜单操作超时事件
+#define MENU_EVT_FREEZE						(0X01<<1)//
 
 typedef struct 
 {

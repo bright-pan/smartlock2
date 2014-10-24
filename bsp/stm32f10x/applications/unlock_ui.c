@@ -80,7 +80,7 @@ static rt_err_t unlock_password_verify(rt_uint8_t *password,rt_int32_t *ps_id)
 	return RT_EOK;
 }
 
-void unlock_process_ui(void)
+rt_err_t unlock_process_ui(void)
 {
 	rt_uint8_t buf[8];
 	rt_uint8_t ShowBuf[8];
@@ -120,7 +120,7 @@ void unlock_process_ui(void)
 	          //输入数量超过8个
 	        }
 	      }
-	      else if(KeyValue == '*')
+	      else if(KeyValue == MENU_SURE_VALUE)
 	      {
 	      	rt_int32_t ps_id;
 	      	
@@ -149,7 +149,7 @@ void unlock_process_ui(void)
 							data.key.sms = 0;
 	          }
 	          send_local_mail(ALARM_TYPE_KEY_ERROR,0,&data);
-	          break;
+	          return RT_ERROR;
 	        }
 	        else
 	        {
@@ -163,15 +163,17 @@ void unlock_process_ui(void)
 	          gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
 	          gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),UNLOCK_UI_TEXT[3],GUI_WIHIT);
 	          gui_display_update();
-
+						menu_input_sure_key(RT_TICK_PER_SECOND);
 						//密码匹配的结果
 	          rt_kprintf("This %d key Open the door success\n",ps_id);
+	          #ifndef USEING_SYSTEM_SHOW_STYLE1
 	          system_menu_choose(1);
+	          #endif
 	          key_error_alarm_manage(1);
-	          return ;
+	          return RT_EOK;
 	        }
 	      }
-	      else if(KeyValue == '#')
+	      else if(KeyValue == MENU_DEL_VALUE)
 	      {
 	        rt_kprintf("删除\nn");
 	        result = string_del_char(buf,8);
@@ -185,9 +187,15 @@ void unlock_process_ui(void)
 	        {
 	          gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),UNLOCK_UI_TEXT[4],GUI_WIHIT);
 	          gui_display_update();
-	         	return ;
+	         	return RT_EOK;
 	        }
 	      }
+	      #ifdef USEING_SYSTEM_SHOW_STYLE1
+	      else if(KeyValue == KEY_ENTRY_SYS_MANAGE)
+	      {
+					system_menu_choose(1);
+	      }
+	      #endif
 	      gui_display_update(); 
 	    }
 	    else
@@ -195,7 +203,7 @@ void unlock_process_ui(void)
 	    	//操作超时
 	    	if(menu_event_process(2,MENU_EVT_OP_OUTTIME) == 0)
 	    	{
-					return ;
+					return RT_ETIMEOUT;
 	    	}
 	      //闪烁提示
 	      GlintStatus++;
@@ -204,6 +212,11 @@ void unlock_process_ui(void)
 	    }
 	  }
 	}
+}
+
+void unlock_process_ui1(void)
+{
+	unlock_process_ui();
 }
 
 

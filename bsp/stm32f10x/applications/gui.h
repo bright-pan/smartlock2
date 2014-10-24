@@ -4,6 +4,10 @@
 #include "rtthread.h"
 #include "board.h"
 
+#define KEY_START_RING_VALUE				'G'
+#define KEY_ENTRY_SYS_MANAGE        'A'
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //°´¼ü½Ó¿Ú
 #define KB_MAIL_TYPE_INPUT 1
@@ -33,7 +37,9 @@ typedef enum {
 #define SHOW_X_ROW8(A)						((A)*8)
 #define SHOW_X_ROW16(A)						((A)*16)
 
+void gui_sleep_time_set(rt_uint8_t value);
 
+rt_uint8_t gui_sleep_time_get(void);
 
 rt_err_t send_key_value_mail(uint16_t type, KB_MODE_TYPEDEF mode, uint8_t c);
 

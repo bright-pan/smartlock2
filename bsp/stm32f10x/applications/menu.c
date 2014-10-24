@@ -7,6 +7,8 @@
 #include "buzzer.h"
 #endif
 
+
+
 #define SHOW_GLINT_CH							"_"
 
 typedef void (*fun1)(void);
@@ -41,15 +43,15 @@ const KbdTabStruct	KeyTab[KEY_MAX_MENU_NUM] =
 	{5,4,4,22,1,menu_5_processing},//用户修改
 	
 	{6,7,7,20,2,menu_6_processing},//系统信息
-	{7,6,6,7,2,menu_7_processing},//系统参数
+	{7,6,6,33,2,menu_7_processing},//系统参数
 
 	//四级
 	{8,9,13,14,11,menu_8_processing},//新增密码 >>同时创建账号
 	{9,10,8,15,11,menu_9_processing},//新增指纹
 	{10,11,9,16,11,menu_10_processing},//新增手机
-	{11,13,10,17,10,menu_11_processing},//保存退出
+	{11,12,10,17,10,menu_11_processing},//保存退出
 	{12,13,11,18,12,menu_12_processing},//查看信息
-	{13,8,11,19,13,menu_13_processing},//退出
+	{13,8,12,19,13,menu_13_processing},//退出
 
 	//五级
 	{14,14,14,14,8,menu_14_processing},//录入密码
@@ -61,7 +63,7 @@ const KbdTabStruct	KeyTab[KEY_MAX_MENU_NUM] =
 
 	//四级
 	{20,20,20,20,6,menu_20_processing},//显示本机信息
-	{21,21,21,21,7,menu_21_processing},//显示本机信息
+	{21,21,21,33,7,menu_21_processing},//显示本机信息
 
 	{22,22,22,23,5,menu_22_processing},//用户搜索界面
 
@@ -69,18 +71,21 @@ const KbdTabStruct	KeyTab[KEY_MAX_MENU_NUM] =
 	{23,24,27,28,26,menu_23_processing},//修改密码
 	{24,25,23,29,26,menu_24_processing},//修改指纹
 	{25,26,24,30,26,menu_25_processing},//修改电话
-	{26,27,25,5,26,menu_26_processing},//保存退出
+	{26,27,25,32,26,menu_26_processing},//保存退出
 	{27,23,26,31,27,menu_27_processing},//退出
 	
 	{28,23,24,25,23,menu_28_processing},//修改密码处理
 	{29,23,24,25,24,menu_29_processing},//修改指纹处理
 	{30,23,24,25,25,menu_30_processing},//修改电话处理
 	{31,31,31,5,26,menu_31_processing},//删除用户处理
+  {32,32,32,5,26,menu_32_processing},//保存退出
 
 	//三级菜单
-	//{32,4,5,33,1,menu_32_processing},//管理员修改
-	//{33,33,33,33,32,menu_33_processing},//管理员密码修改
+	{33,34,34,35,7,menu_33_processing},  //自动休眠
+	{34,33,33,36,7,menu_34_processing},//自动上锁
 
+	{35,35,35,33,33,menu_35_processing},//自动休眠时间设置
+  {36,36,36,34,34,menu_36_processing},//自动上锁时间设置
 	//三级目录
 };
 
@@ -93,7 +98,7 @@ KbdTabStruct	SystemMenu[SYSTEM_ENTER_MENU_NUM] =
 {
   {0,1,1,2,0,system_menu1_show},//显示开锁
   {1,0,0,3,1,system_menu2_show},//系统管理
-  {2,2,2,2,0,unlock_process_ui},//开锁
+  {2,2,2,2,0,unlock_process_ui1},//开锁
   {3,3,3,3,1,system_manage_processing},//进入系统管理
 };
 
@@ -230,20 +235,55 @@ void system_manage_ui_processing(void)
 	}
 }
 
+#ifdef USEING_SYSTEM_SHOW_STYLE1
+
+void system_unlock_process(void)
+{
+  rt_err_t result;
+  
+  result = unlock_process_ui();
+  if(result == RT_EOK)
+  {
+    //解锁成功
+    system_unlock_process();
+  }
+}
+
+void system_login_ui(void)
+{
+	rt_err_t result;
+	rt_uint8_t KeyValue;
+	
+	result = gui_key_input(&KeyValue);
+	if (result == RT_EOK) 
+	{
+    system_unlock_process();
+	}
+	else
+	{
+		//操作超时
+	  if(menu_event_process(2,MENU_EVT_OP_OUTTIME) == 0)
+	  {
+	    system_menu_choose(0);
+	  }
+	}
+}
 void system_menu_choose(rt_uint8_t menu)
 {
 	switch(menu)
 	{
 		case 0:
 		{
+			//开门
 			SystemFuncIndex = 0;
 			KeyFuncIndex = 0;
 			System_menu_index = RT_NULL;
-			cur_run_processing = system_entry_ui_processing;
+			cur_run_processing = system_login_ui;
 			break;
 		}
 		case 1:
 		{
+			//系统管理
 			KeyFuncIndex = 0;
 			SystemFuncIndex = 0;
 			current_operation_index = RT_NULL;
@@ -261,6 +301,42 @@ void system_menu_choose(rt_uint8_t menu)
 		}
 	}
 }
+
+#else
+void system_menu_choose(rt_uint8_t menu)
+{
+	switch(menu)
+	{
+		case 0:
+		{
+			//开门
+			SystemFuncIndex = 0;
+			KeyFuncIndex = 0;
+			System_menu_index = RT_NULL;
+			cur_run_processing = system_entry_ui_processing;
+			break;
+		}
+		case 1:
+		{
+			//系统管理
+			KeyFuncIndex = 0;
+			SystemFuncIndex = 0;
+			current_operation_index = RT_NULL;
+			cur_run_processing = system_manage_ui_processing;
+
+			//KeyFuncIndex = KeyTab[ KeyFuncIndex].SureState;
+			current_operation_index = KeyTab[KeyFuncIndex].CurrentOperate;
+			current_operation_index();
+			break;
+		}
+		default:
+		{
+			cur_run_processing = system_entry_ui_processing;
+			break;
+		}
+	}
+}
+#endif
 
 void key_input_processing_init(void)
 {
@@ -494,7 +570,7 @@ rt_err_t menu_input_sure_key(rt_uint32_t OutTime)
 	start_t = rt_tick_get();
 	while(1)
 	{
-		if(outtime_t > 0)
+		if(OutTime > 0)
 		{
 			outtime_t = rt_tick_get();
 			if(outtime_t - start_t > OutTime)

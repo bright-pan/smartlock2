@@ -371,6 +371,29 @@ rt_int32_t user_valid_phone_num(void)
 	return num;
 }
 
+rt_int32_t user_vaild_key_num(void)
+{
+	rt_uint16_t i;
+	rt_uint32_t num = 0;
+	struct account_head ah;
+  struct key *key = RT_NULL;
+
+	key = rt_calloc(1,sizeof(struct key));
+	RT_ASSERT(key != RT_NULL);
+	
+	device_config_account_operate(AccountUse.AccountPos, &ah, 0);
+	for(i=0;i<ACCOUNT_KEY_NUMBERS;i++)
+	{
+		if(ah.key[i] != KEY_ID_INVALID)
+		{
+      num++;
+		}
+	}
+	
+	rt_free(key);
+	return num;
+
+}
 //获得当前用的指纹个数
 rt_uint32_t user_valid_fprint_num(void)
 {
@@ -581,10 +604,12 @@ rt_uint32_t account_cur_pos_get(void)
 	return AccountUse.AccountPos;
 }
 
+
 //创建超级用户
 void admin_create(void)
 {
 	rt_int32_t result;
+	rt_uint8_t rf433data[] = {0xff,0xff,0xff,0xff};
 	//rt_int32_t keypos;
 
 	result = device_config_account_next_valid(0,1);
@@ -599,6 +624,27 @@ void admin_create(void)
 	  {
 	  	rt_kprintf("Administrator create OK\n");
 	  	result = device_config_key_create(KEY_ID_INVALID,KEY_TYPE_KBOARD,"123456",6);
+			if(result >= 0)
+			{
+				rt_kprintf("Administrator key Create OK\n");
+				
+				result = device_config_account_append_key(0,result,menu_get_cur_date(),0);
+				if(result >= 0)
+				{
+					rt_kprintf("Administrator append OK\n");
+				}
+				else
+				{
+          rt_kprintf("Admin append Fail\n");
+          RT_ASSERT(RT_NULL == RT_NULL);
+				}
+			}
+			else
+			{
+        rt_kprintf("Admin key create Fail\n");
+        RT_ASSERT(RT_NULL == RT_NULL);
+			}
+			result = device_config_key_create(KEY_ID_INVALID,KEY_TYPE_RF433,rf433data,4);
 			if(result >= 0)
 			{
 				rt_kprintf("Administrator key Create OK\n");
@@ -719,14 +765,13 @@ FINSH_FUNCTION_EXPORT(show_account,show user info);
 void all_account(rt_uint8_t mode)
 {
 	rt_uint32_t i;
+	rt_uint32_t maxnum;
 
-	for(i=0;i<ACCOUNT_NUMBERS;i++)
+	maxnum = device_config_account_counts();
+	for(i=0;i<maxnum;i++)
 	{
-		struct account_head ah;
-
 		if(mode == 0)
 		{
-      device_config_account_operate(i, &ah, 0);
       if(device_config_get_account_valid(i) > 0)
       {
         show_account(i);

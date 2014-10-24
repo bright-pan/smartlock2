@@ -32,7 +32,11 @@ void menu_29_processing(void);
 void menu_30_processing(void);
 
 void menu_31_processing(void);
-//void menu_33_processing(void);
+void menu_32_processing(void);
+void menu_33_processing(void);
+void menu_34_processing(void);
+void menu_35_processing(void);
+void menu_36_processing(void);
 #endif
 
 

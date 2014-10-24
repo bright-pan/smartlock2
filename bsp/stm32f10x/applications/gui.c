@@ -24,8 +24,6 @@
 #include "buzzer.h"
 #endif
 
-
-#define KEY_START_RING_VALUE				'G'
 #define UI_SLEEP_TIME               20
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //key api
@@ -35,6 +33,18 @@ typedef struct {
 	KB_MODE_TYPEDEF mode;
 	uint8_t c;
 }KB_MAIL_TYPEDEF;
+
+static volatile rt_uint8_t GUISleepTime = UI_SLEEP_TIME;
+
+void gui_sleep_time_set(rt_uint8_t value)
+{
+	GUISleepTime = value;
+}
+
+rt_uint8_t gui_sleep_time_get(void)
+{
+	return GUISleepTime;
+}
 
 rt_err_t send_key_value_mail(uint16_t type, KB_MODE_TYPEDEF mode, uint8_t c)
 {
@@ -89,19 +99,32 @@ rt_err_t gui_key_input(rt_uint8_t *KeyValue)
     buzzer_send_mail(BZ_TYPE_KEY);
     #endif
     SleepCnt = 0;
-    //GSM启动触发
-    if(mail.c == KEY_START_RING_VALUE)
+
+    switch(mail.c)
     {
-    	#ifdef _GSM_H_
-    	send_local_mail(ALARM_TYPE_GSM_RING_REQUEST,0,RT_NULL);
-    	#endif
-			result = RT_ERROR;
+			case KEY_ENTRY_SYS_MANAGE:
+			{
+				//触发进入系统管理界面
+				
+				break;
+			}
+			case KEY_START_RING_VALUE:
+			{
+				//触发接电话功能
+				send_local_mail(ALARM_TYPE_GSM_RING_REQUEST,0,RT_NULL);
+				result = RT_ERROR;
+				break;
+			}
+			default:
+			{
+				break;
+			}
     }
 	}
 	else
 	{
 		SleepCnt++;
-		if(SleepCnt > UI_SLEEP_TIME)
+		if(SleepCnt > GUISleepTime)
 		{
 			//屏幕休眠
 			gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);	
@@ -315,4 +338,24 @@ void gui_china16s(rt_uint8_t x, rt_uint8_t y, rt_uint8_t *s, rt_uint8_t fColor)
 	}	
 }
 
+
+
+
+
+
+
+
+
+
+
+
+#ifdef RT_USING_FINSH
+#include <finsh.h>
+
+void GUI_KeyInput(rt_uint8_t value)
+{
+	send_key_value_mail(KB_MAIL_TYPE_INPUT, KB_MODE_NORMAL_AUTH, value);
+}
+FINSH_FUNCTION_EXPORT(GUI_KeyInput,"Input analog buttons");
+#endif
 
