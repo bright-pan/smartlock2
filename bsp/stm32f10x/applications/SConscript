@@ -20,6 +20,7 @@ KeyModifyUI.c
 buzzer.c
 gprs.c
 gprsmailclass.c
+FprintHandle.c
 """)
 
 CPPPATH = [cwd, str(Dir('#'))]
