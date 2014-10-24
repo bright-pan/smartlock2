@@ -71,7 +71,7 @@
 #define DEVICE_NAME_KB_SC4 "kb_sc4"
 
 #define DEVICE_NAME_BT_WK	 "BT_WK"
-#define DEVICE_NAME_BT_LED "BT_LED"
+//#define DEVICE_NAME_BT_LED "BT_LED"
 #define DEVICE_NAME_BT_RST "BT_RST"
 #define DEVICE_NAME_RF_ENABLE "rf_en"
 

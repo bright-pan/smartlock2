@@ -960,7 +960,7 @@ int rt_hw_bluetooth_wk_register(void)
 INIT_DEVICE_EXPORT(rt_hw_bluetooth_wk_register);
 
 
-struct gpio_pin_user_data  bluetooth_led=
+/*struct gpio_pin_user_data  bluetooth_led=
 {
 	DEVICE_NAME_BT_LED,
 	GPIOC,
@@ -982,7 +982,7 @@ int rt_hw_bluetooth_led_register(void)
 	return 0;
 }
 INIT_DEVICE_EXPORT(rt_hw_bluetooth_led_register);
-
+*/
 struct gpio_pin_user_data  bluetooth_rst=
 {
 	DEVICE_NAME_BT_RST,
