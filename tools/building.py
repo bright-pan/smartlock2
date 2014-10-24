@@ -12,24 +12,44 @@ Env = None
 
 class Win32Spawn:
     def spawn(self, sh, escape, cmd, args, env):
+        # deal with the cmd build-in commands which cannot be used in
+        # subprocess.Popen
+        if cmd == 'del':
+            for f in args[1:]:
+                try:
+                    os.remove(f)
+                except Exception as e:
+                    print 'Error removing file: %s' % e
+                    return -1
+            return 0
+
         import subprocess
 
         newargs = string.join(args[1:], ' ')
         cmdline = cmd + " " + newargs
         startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
-        proc = subprocess.Popen(cmdline, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE, startupinfo=startupinfo, shell = False)
-        data, err = proc.communicate()
-        rv = proc.wait()
-        if data:
-            print data
-        if err:
-            print err
+        # Make sure the env is constructed by strings
+        _e = {k: str(v) for k, v in env.items()}
 
-        if rv:
-            return rv
-        return 0
+        # Windows(tm) CreateProcess does not use the env passed to it to find
+        # the executables. So we have to modify our own PATH to make Popen
+        # work.
+        old_path = os.environ['PATH']
+        os.environ['PATH'] = _e['PATH']
+
+        try:
+            proc = subprocess.Popen(cmdline, env=_e,
+                    startupinfo=startupinfo, shell=False)
+        except Exception as e:
+            print 'Error in calling:\n%s' % cmdline
+            print 'Exception: %s: %s' % (e, os.strerror(e.errno))
+            return e.errno
+        finally:
+            os.environ['PATH'] = old_path
+
+        return proc.wait()
 
 def PrepareBuilding(env, root_directory, has_libcpu=False, remove_components = []):
     import SCons.cpp
@@ -59,11 +79,11 @@ def PrepareBuilding(env, root_directory, has_libcpu=False, remove_components = [
         env['LIBDIRPREFIX'] = '--userlibpath '
 
     # patch for win32 spawn
-    if env['PLATFORM'] == 'win32' and rtconfig.PLATFORM == 'gcc':
+    if env['PLATFORM'] == 'win32':
         win32_spawn = Win32Spawn()
         win32_spawn.env = env
         env['SPAWN'] = win32_spawn.spawn
-    
+
     if env['PLATFORM'] == 'win32':
         os.environ['PATH'] = rtconfig.EXEC_PATH + ";" + os.environ['PATH']
     else:
@@ -145,7 +165,7 @@ def PrepareBuilding(env, root_directory, has_libcpu=False, remove_components = [
     AddOption('--target',
                       dest='target',
                       type='string',
-                      help='set target project: mdk/iar/vs')
+                      help='set target project: mdk/iar/vs/ua')
 
     #{target_name:(CROSS_TOOL, PLATFORM)}
     tgt_dict = {'mdk':('keil', 'armcc'),
@@ -153,7 +173,8 @@ def PrepareBuilding(env, root_directory, has_libcpu=False, remove_components = [
                 'iar':('iar', 'iar'),
                 'vs':('msvc', 'cl'),
                 'vs2012':('msvc', 'cl'),
-                'cb':('keil', 'armcc')}
+                'cb':('keil', 'armcc'),
+                'ua':('keil', 'armcc')}
     tgt_name = GetOption('target')
     if tgt_name:
         # --target will change the toolchain settings which clang-analyzer is
@@ -209,16 +230,24 @@ def PrepareBuilding(env, root_directory, has_libcpu=False, remove_components = [
     return objs
 
 def PrepareModuleBuilding(env, root_directory):
-    import SCons.cpp
     import rtconfig
 
-    global BuildOptions
-    global Projects
     global Env
     global Rtt_Root
 
     Env = env
     Rtt_Root = root_directory
+
+    # add build/clean library option for library checking 
+    AddOption('--buildlib', 
+              dest='buildlib', 
+              type='string',
+              help='building library of a component')
+    AddOption('--cleanlib', 
+              dest='cleanlib', 
+              action='store_true',
+              default=False,
+              help='clean up the library by --buildlib')
 
     # add program path
     env.PrependENVPath('PATH', rtconfig.EXEC_PATH)
@@ -284,11 +313,6 @@ def MergeGroup(src_group, group):
         else:
             src_group['LIBPATH'] = group['LIBPATH']
 
-    if src_group.has_key('LIBS'):
-        print src_group['LIBS']
-    if src_group.has_key('LIBS'):
-        print src_group['LIBPATH']
-
 def DefineGroup(name, src, depend, **parameters):
     global Env
     if not GetDepend(depend):
@@ -327,9 +351,11 @@ def DefineGroup(name, src, depend, **parameters):
 
     # check whether exist group library
     if not GetOption('buildlib') and os.path.exists(os.path.join(group['path'], GroupLibFullName(name, Env))):
-        Env.Append(LIBS = [GroupLibName(name, Env)])
         group['src'] = []
-        Env.Append(LIBPATH = [GetCurrentDir()])
+        if group.has_key('LIBS'): group['LIBS'] = group['LIBS'] + [GroupLibName(name, Env)]
+        else : group['LIBS'] = [GroupLibName(name, Env)]
+        if group.has_key('LIBPATH'): group['LIBPATH'] = group['LIBPATH'] + [GetCurrentDir()]
+        else : group['LIBPATH'] = [GetCurrentDir()]
 
     if group.has_key('LIBS'):
         Env.Append(LIBS = group['LIBS'])
@@ -409,28 +435,19 @@ def DoBuilding(target, objects):
 
                 break
     else:
-        # merge the repeated items in the Env
-        if Env.has_key('CPPPATH')   : Env['CPPPATH'] = list(set(Env['CPPPATH']))
-        if Env.has_key('CPPDEFINES'): Env['CPPDEFINES'] = list(set(Env['CPPDEFINES']))
-        if Env.has_key('LIBPATH')   : Env['LIBPATH'] = list(set(Env['LIBPATH']))
-        if Env.has_key('LIBS')      : Env['LIBS'] = list(set(Env['LIBS']))
-
         program = Env.Program(target, objects)
 
     EndBuilding(target, program)
 
 def EndBuilding(target, program = None):
     import rtconfig
-    from keil import MDKProject
-    from keil import MDK4Project
-    from iar import IARProject
-    from vs import VSProject
-    from vs2012 import VS2012Project
-    from codeblocks import CBProject
 
     Env.AddPostAction(target, rtconfig.POST_ACTION)
 
     if GetOption('target') == 'mdk':
+        from keil import MDKProject
+        from keil import MDK4Project
+
         template = os.path.isfile('template.Uv2')
         if template:
             MDKProject('project.Uv2', Projects)
@@ -442,20 +459,30 @@ def EndBuilding(target, program = None):
                 print 'No template project file found.'
 
     if GetOption('target') == 'mdk4':
+        from keil import MDKProject
+        from keil import MDK4Project
         MDK4Project('project.uvproj', Projects)
 
     if GetOption('target') == 'iar':
+        from iar import IARProject
         IARProject('project.ewp', Projects) 
 
     if GetOption('target') == 'vs':
+        from vs import VSProject
         VSProject('project.vcproj', Projects, program)
 
     if GetOption('target') == 'vs2012':
+        from vs2012 import VS2012Project
         VS2012Project('project.vcxproj', Projects, program)
 
     if GetOption('target') == 'cb':
+        from codeblocks import CBProject
         CBProject('project.cbp', Projects, program)
 
+    if GetOption('target') == 'ua':
+        from ua import PrepareUA
+        PrepareUA(Projects, Rtt_Root, str(Dir('#')))
+    
     if GetOption('copy') and program != None:
         MakeCopy(program)
     if GetOption('copy-header') and program != None:
@@ -466,6 +493,9 @@ def EndBuilding(target, program = None):
         CscopeDatabase(Projects)
 
 def SrcRemove(src, remove):
+    if not src:
+        return
+
     if type(src[0]) == type('str'):
         for item in src:
             if os.path.basename(item) in remove:

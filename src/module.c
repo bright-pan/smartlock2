@@ -242,7 +242,7 @@ static int rt_module_arm_relocate(struct rt_module *module,
     return 0;
 }
 
-static void rt_module_init_object_container(struct rt_module *module)
+void rt_module_init_object_container(struct rt_module *module)
 {
     RT_ASSERT(module != RT_NULL);
 
@@ -920,7 +920,7 @@ static void module_main_entry(void* parameter)
  *
  * @return the module object
  */
-rt_module_t rt_module_do_main(const char *name, void *module_ptr, char* cmd_line, int line_size)
+rt_module_t rt_module_do_main(const char *name, void *module_ptr, const char* cmd_line, int line_size)
 {
 	rt_module_t module;
 
@@ -1125,7 +1125,7 @@ rt_module_t rt_module_open(const char *path)
  *
  * @return the module object
  */
-rt_module_t rt_module_exec_cmd(const char *path, char* cmd_line, int size)
+rt_module_t rt_module_exec_cmd(const char *path, const char* cmd_line, int size)
 {
     struct stat s;
     int fd, length;
