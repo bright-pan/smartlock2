@@ -173,6 +173,7 @@ static rt_size_t rt_eeprom_read(rt_device_t dev,
     tmp++;
     pos+=2;
   }
+
   if(size % 2 != 0)
   {
     STMFLASH_Read(FLASH_EEPROM_ADDR+pos,&data,1);
