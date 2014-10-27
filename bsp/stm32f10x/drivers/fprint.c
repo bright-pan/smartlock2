@@ -496,7 +496,7 @@ fprint_frame_send(uint8_t cmd, FPRINT_FRAME_HEAD_TYPEDEF *frame_head,
     cs = __REV16(cs);
 	rt_device_write(fprint_device, 0, &cs, 2);
 
-#if (defined RT_USING_FINSH) && (defined FPRINT_DEBUG == 1)
+#if (defined RT_USING_FINSH) && (FPRINT_DEBUG == 1)
 	rt_kprintf("\nfprint send :---------------------\n");
 	print_hex((uint8_t *)frame_head, sizeof(*frame_head));
 	print_hex((uint8_t *)req_data + data_offset, data_length);
@@ -594,7 +594,7 @@ fprint_frame_recv_data(uint8_t *buf, uint16_t size)
         recv_cnts = rt_device_read(fprint_device, 0, (uint8_t *)&check, 2);
         if (recv_cnts < 2)
             goto error_process;
-#if (defined RT_USING_FINSH) && (defined FPRINT_DEBUG == 1)
+#if (defined RT_USING_FINSH) && (FPRINT_DEBUG == 1)
         rt_kprintf("\nfprint recv :---------------------\n");
         print_hex((uint8_t *)&head, sizeof(head));
         print_hex((uint8_t *)buf+data_offset, data_length);
@@ -661,7 +661,7 @@ fprint_frame_send_data(void *buffer, uint16_t size)
         cs = __REV16(cs);
         rt_device_write(fprint_device, 0, &cs, 2);
 
-#if (defined RT_USING_FINSH) && (defined FPRINT_DEBUG == 1)
+#if (defined RT_USING_FINSH) && (FPRINT_DEBUG == 1)
         rt_kprintf("\nfprint send :---------------------\n");
         print_hex((uint8_t *)&head, sizeof(head));
         print_hex((uint8_t *)buf + data_offset, data_length);
@@ -726,7 +726,7 @@ fprint_frame_recv(uint8_t cmd, FPRINT_FRAME_HEAD_TYPEDEF *frame_head,
 	{
 		error = FPRINT_EOK;
 	}
-#if (defined RT_USING_FINSH) && (defined FPRINT_DEBUG == 1)
+#if (defined RT_USING_FINSH) && (FPRINT_DEBUG == 1)
 	rt_kprintf("\nfprint recv :---------------------\n");
 	print_hex((uint8_t *)frame_head, sizeof(*frame_head));
 	print_hex((uint8_t *)rep_data, data_length);
