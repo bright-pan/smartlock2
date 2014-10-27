@@ -267,7 +267,7 @@ typedef union
 typedef enum
 {
 	GSM_EOK,
-	GSM_ERROR,
+	GSM_EERROR,
 }GSM_ERROR_TYPEDEF;
 
 typedef enum {
