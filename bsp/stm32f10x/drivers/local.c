@@ -466,18 +466,18 @@ void lock_process(LOCAL_MAIL_TYPEDEF *local_mail)
 void
 send_local_mail(ALARM_TYPEDEF alarm_type, time_t time, union alarm_data *data)
 {
-	LOCAL_MAIL_TYPEDEF buf;
+	LOCAL_MAIL_TYPEDEF mail;
 	rt_err_t result;
 	//send mail
-	buf.alarm_type = alarm_type;
+	mail.alarm_type = alarm_type;
 	if (time) {
-		buf.time = time;
+		mail.time = time;
 	} else {
-        buf.time = sys_cur_date();
+        mail.time = sys_cur_date();
 	}
-    buf.data = *data;
+    mail.data = *data;
 	if (local_mq != NULL) {
-		result = rt_mq_send(local_mq, &buf, sizeof(LOCAL_MAIL_TYPEDEF));
+		result = rt_mq_send(local_mq, &mail, sizeof(LOCAL_MAIL_TYPEDEF));
 		if (result == -RT_EFULL) {
             RT_DEBUG_LOG(LOCAL_DEBUG,("local_mq is full!!!\n"));
 		}
