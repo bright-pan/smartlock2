@@ -759,7 +759,14 @@ static const uint8_t char_remap[16] = {
     '9', '6', '3',
     '?', '?', '?',
 };
-
+static const uint8_t char_long_remap[16] = {
+    '?',
+    'S', '7', '4',
+    '1', '0', '8',
+    '5', '2', 'G',
+    '9', '6', '3',
+    '?', '?', '?',
+};
 
 __STATIC_INLINE uint16_t
 kb_read(void)
@@ -867,30 +874,39 @@ kb_intr_exti_timeout(void *parameters)
 {
 	gpio_device *gpio = (gpio_device *)parameters;
     //struct gpio_exti_user_data *gpio_user_data = gpio->parent.user_data;
-    uint16_t data = 0;
+    uint16_t data,data2;
     uint8_t c;
-    s32 i;
+    s32 i, cnts = 0;
 
-	//gpio->ops->control(gpio, RT_DEVICE_CTRL_MASK_EXTI, (void *)0);  
+	gpio->ops->control(gpio, RT_DEVICE_CTRL_MASK_EXTI, (void *)0);
     if (gpio->ops->intput(gpio) == KB_INTR_STATUS) {
         data = kb_read();
         for (i = 0; i < 20000; i++) {
             if (gpio->ops->intput(gpio) == KB_INTR_STATUS) {
-                data |= kb_read();
-            } else {
+                data2 = kb_read();
+                if (data2) {
+                    if (data == data2)
+                        cnts++;
+                    else {
+                        if (cnts > 500)
+                            data = data2;
+                        cnts = 0;
+                    }
+                }
+            } else if (cnts > 500){
                 break;
             }
         }
         //rt_kprintf("key value : %x\n", data);
-        if (data == 0x808)
-            c = 'G';
-        else
-            c = char_remap[bit_to_index(data&0x0fff)];
-        //RT_DEBUG_LOG(KB_DEBUG,("key value : 0x%x, index :%d, char :%c\n", data, bit_to_index(data&0x0fff), c));
+            if (cnts < 5000)
+                c = char_remap[bit_to_index(data&0x0fff)];
+            else
+                c = char_long_remap[bit_to_index(data&0x0fff)];
+        RT_DEBUG_LOG(0,("key value : 0x%x, index :%d, char :%c\n", data, bit_to_index(data&0x0fff), c));
         send_key_value_mail(KB_MAIL_TYPE_INPUT, KB_MODE_NORMAL_AUTH, c);
         //send_kb_mail(KB_MAIL_TYPE_INPUT, KB_MODE_NORMAL_AUTH, c);
     }
-    //gpio->ops->control(gpio, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0); 
+    gpio->ops->control(gpio, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0);
 	//rt_timer_stop(gpio_user_data->timer);
 }
 

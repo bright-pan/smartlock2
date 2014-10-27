@@ -65,7 +65,7 @@
 */
 #define KB_INTR_EXTI_TRIGGER_MODE EXTI_Trigger_Falling
 #define KB_INTR_STATUS 0
-#define KB_INTR_INT_INTERVAL 1
+#define KB_INTR_INT_INTERVAL 10
 
 #define FP_TOUCH_EXTI_TRIGGER_MODE EXTI_Trigger_Rising
 #define FP_TOUCH_STATUS 1
