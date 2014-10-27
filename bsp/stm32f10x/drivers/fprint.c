@@ -24,7 +24,7 @@
 
 #define FPRINT_MAIL_MAX_MSGS 10
 
-#define FPRINT_DEBUG 1
+#define FPRINT_DEBUG 0
 #define DEVICE_NAME_FPRINT "uart2"
 #define FPRINT_TEMPLATE_OFFSET 0 // 0 <= offset <= 999
 #define FPRINT_TEMPLATE_SIZE (1000 - 1) // 1 <= offset <= 2000
@@ -89,6 +89,7 @@ typedef struct {
     uint16_t size;
 	rt_sem_t result_sem;
 	FPRINT_ERROR_TYPEDEF *result;
+    uint8_t flag;
 
 }FPRINT_MAIL_TYPEDEF;
 
@@ -495,7 +496,7 @@ fprint_frame_send(uint8_t cmd, FPRINT_FRAME_HEAD_TYPEDEF *frame_head,
     cs = __REV16(cs);
 	rt_device_write(fprint_device, 0, &cs, 2);
 
-#if (defined RT_USING_FINSH) && (defined FPRINT_DEBUG)
+#if (defined RT_USING_FINSH) && (FPRINT_DEBUG == 1)
 	rt_kprintf("\nfprint send :---------------------\n");
 	print_hex((uint8_t *)frame_head, sizeof(*frame_head));
 	print_hex((uint8_t *)req_data + data_offset, data_length);
@@ -593,7 +594,7 @@ fprint_frame_recv_data(uint8_t *buf, uint16_t size)
         recv_cnts = rt_device_read(fprint_device, 0, (uint8_t *)&check, 2);
         if (recv_cnts < 2)
             goto error_process;
-#if (defined RT_USING_FINSH) && (defined FPRINT_DEBUG)
+#if (defined RT_USING_FINSH) && (FPRINT_DEBUG == 1)
         rt_kprintf("\nfprint recv :---------------------\n");
         print_hex((uint8_t *)&head, sizeof(head));
         print_hex((uint8_t *)buf+data_offset, data_length);
@@ -660,7 +661,7 @@ fprint_frame_send_data(void *buffer, uint16_t size)
         cs = __REV16(cs);
         rt_device_write(fprint_device, 0, &cs, 2);
 
-#if (defined RT_USING_FINSH) && (defined FPRINT_DEBUG)
+#if (defined RT_USING_FINSH) && (FPRINT_DEBUG == 1)
         rt_kprintf("\nfprint send :---------------------\n");
         print_hex((uint8_t *)&head, sizeof(head));
         print_hex((uint8_t *)buf + data_offset, data_length);
@@ -725,7 +726,7 @@ fprint_frame_recv(uint8_t cmd, FPRINT_FRAME_HEAD_TYPEDEF *frame_head,
 	{
 		error = FPRINT_EOK;
 	}
-#if (defined RT_USING_FINSH) && (defined FPRINT_DEBUG)
+#if (defined RT_USING_FINSH) && (FPRINT_DEBUG == 1)
 	rt_kprintf("\nfprint recv :---------------------\n");
 	print_hex((uint8_t *)frame_head, sizeof(*frame_head));
 	print_hex((uint8_t *)rep_data, data_length);
@@ -1092,7 +1093,7 @@ fprint_thread_entry(void *parameters)
 
     error = FPRINT_EERROR;
     
-    //fprint_init(buf, &req_data, &rep_data);
+    fprint_init(buf, &req_data, &rep_data);
 	while (1)
 	{
 		result = rt_mq_recv(fprint_mq, &fprint_mail, sizeof(fprint_mail), 500);
@@ -1245,7 +1246,7 @@ fprint_thread_entry(void *parameters)
                                 }
                             }
                             if (rep_data.rep_search.result == 0x09) {
-                                if (f_detect++ > 20) {
+                                if (f_detect++ > 3) {
 
                                     RT_DEBUG_LOG(FPRINT_DEBUG, ("fprint verify is no search\n"));
                                     if(fprintf_error_fun != RT_NULL)
@@ -1286,8 +1287,11 @@ fprint_thread_entry(void *parameters)
 						break;
 					}
 			}
-            if (fprint_mail.result_sem != RT_NULL) {
+            if (fprint_mail.result != RT_NULL)
                 *fprint_mail.result = error;
+            else
+                *fprint_mail.result = FPRINT_EOK;
+            if (fprint_mail.flag && fprint_mail.result_sem != RT_NULL) {
                 rt_sem_release(fprint_mail.result_sem);
             }
 		}
@@ -1318,6 +1322,7 @@ send_fp_mail(FPRINT_CMD_TYPEDEF cmd, uint16_t *key_id, uint8_t *buf, uint16_t si
 		mail.key_id = key_id;
         mail.size = size;
         mail.buf = buf;
+        mail.flag = flag;
 		result = rt_mq_send(fprint_mq, &mail, sizeof(mail));
 		if (result == -RT_EFULL)
 		{
@@ -1325,17 +1330,18 @@ send_fp_mail(FPRINT_CMD_TYPEDEF cmd, uint16_t *key_id, uint8_t *buf, uint16_t si
 		}
 		else
 		{
-            if (flag)
+            if (flag && (mail.result_sem != RT_NULL))
                 rt_sem_take(mail.result_sem, RT_WAITING_FOREVER);
             RT_DEBUG_LOG(FPRINT_DEBUG, ("send result is %d\n", *mail.result));
 		}
-        if (flag)
-            rt_sem_delete(mail.result_sem);
+
 	}
 	else
 	{
         RT_DEBUG_LOG(FPRINT_DEBUG, ("fprint_mq is null!!!\n"));
 	}
+    if (flag && (mail.result_sem != RT_NULL))
+        rt_sem_delete(mail.result_sem);
 	return error;
 }
 
@@ -1389,7 +1395,7 @@ fp_enroll(uint16_t *key_id, uint8_t *buf, uint32_t timeout)
     error = rt_sem_take(s_fprint, timeout);
     if (error == RT_EOK) {
         for (i = 0; i < 100; ++i) {
-            if (gpio_pin_input(DEVICE_NAME_FP_TOUCH, 0)) {
+            if (gpio_pin_input(DEVICE_NAME_FP_TOUCH, 0) == FP_TOUCH_STATUS) {
                 result = send_fp_mail(FPRINT_CMD_ENROLL, key_id, buf, 0, 1);
                 if (result != FPRINT_EERROR)
                     break;
@@ -1443,9 +1449,9 @@ fp_verify(void)
 {
     int result = -1;
     int i;
-
+    
     for (i = 0; i < 100; ++i) {
-        if (gpio_pin_input(DEVICE_NAME_FP_TOUCH, 0)) {
+        if (gpio_pin_input(DEVICE_NAME_FP_TOUCH, 0) == FP_TOUCH_STATUS) {
             result = send_fp_mail(FPRINT_CMD_VERIFY, RT_NULL, RT_NULL, 0, 1);
             if (result == FPRINT_EOK)
                 break;
@@ -1453,6 +1459,7 @@ fp_verify(void)
             rt_thread_delay(10);
         }
     }
+    
     return result;
 }
 

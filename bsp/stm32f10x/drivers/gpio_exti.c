@@ -676,7 +676,8 @@ void fp_touch_exti_timeout(void *parameters)
     if (gpio->ops->intput(gpio) == FP_TOUCH_STATUS)
     {
         rt_kprintf("it is fprint touch!\n");
-        fp_inform();
+        //fp_inform();
+        send_alarm_mail(ALARM_TYPE_FPRINT_INFORM, 0, 0, 0);
     }
 	gpio->ops->control(gpio, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0); 
 	rt_timer_stop(gpio_user_data->timer);

@@ -17,7 +17,10 @@
 #include "local.h"
 #include "untils.h"
 #include "sms.h"
+#include "config.h"
+#include "fprint.h"
 
+#define ALARM_DEBUG 1
 
 #define ALARM_MAIL_MAX_MSGS 20
 static rt_mq_t alarm_mq = RT_NULL;
@@ -96,6 +99,7 @@ const char *alarm_help_map[] = {
 	"ALARM_TYPE_GPRS_ADD_PHONE",
 	"ALARM_TYPE_SYSTEM_FREEZE",
 	"ALARM_TYPE_SYSTEM_UNFREEZE",
+    "ALARM_TYPE_FPRINT_INFORM",
 };
 
 void alarm_thread_entry(void *parameter)
@@ -115,35 +119,16 @@ void alarm_thread_entry(void *parameter)
 			rt_kprintf("receive alarm mail < time: %d alarm_type: %s >\n",
 					   alarm_mail_buf.time, alarm_help_map[alarm_mail_buf.alarm_type]);
 #endif
-			/* this is mail is not need
-			   if(alarm_mail_filer(alarm_mail_buf.alarm_type) == RT_FALSE)
-			   {
-			   rt_kprintf("mail is not need\n");
-			   continue;
-			   }*/
-            /*
-			if (alarm_mail_buf.alarm_process_flag & ALARM_PROCESS_FLAG_SMS)
-			{
-                send_sms_mail(alarm_mail_buf.alarm_type,alarm_mail_buf.time);
-			}
-            */
-			if (alarm_mail_buf.alarm_process_flag & ALARM_PROCESS_FLAG_GPRS)
-			{
-
-			}
-			//if (alarm_mail_buf.alarm_process_flag & ALARM_PROCESS_FLAG_MMS)
-			{
-				/* produce mail */
-				//mms_mail_buf.time = alarm_mail_buf.time;
-				//mms_mail_buf.alarm_type = alarm_mail_buf.alarm_type;
-				/* send to mms_mq */
-				//rt_mq_send(mms_mq, &mms_mail_buf, sizeof(MMS_MAIL_TYPEDEF));
-			}
-			if (alarm_mail_buf.alarm_process_flag & ALARM_PROCESS_FLAG_LOCAL)
-			{
-				//produce mail
-                //send_local_mail(alarm_mail_buf.alarm_type,alarm_mail_buf.time);
-			}
+            switch (alarm_mail_buf.alarm_type)
+            {
+                case ALARM_TYPE_FPRINT_INFORM: {
+                    fp_inform();
+                    break;
+                }
+                default : {
+                    break;
+                }
+            }
 		}/* msg receive error */
 	}
 }
@@ -155,13 +140,10 @@ void send_alarm_mail(ALARM_TYPEDEF alarm_type, ALARM_PROCESS_FLAG_TYPEDEF alarm_
 	rt_err_t result;
 
 	mail.alarm_type = alarm_type;
-	if (!time)
-	{
-		rt_device_control(rtc_device, RT_DEVICE_CTRL_RTC_GET_TIME, &(mail.time));
-	}
-	else
-	{
+	if (time) {
 		mail.time = time;
+	} else {
+        mail.time = sys_cur_date();
 	}
 	mail.alarm_process_flag = alarm_process_flag;
 	mail.gpio_value = gpio_value;
@@ -170,16 +152,12 @@ void send_alarm_mail(ALARM_TYPEDEF alarm_type, ALARM_PROCESS_FLAG_TYPEDEF alarm_
 		result = rt_mq_send(alarm_mq, &mail, sizeof(mail));
 		if (result == -RT_EFULL)
 		{
-#if (defined RT_USING_FINSH) && (defined ALARM_DEBUG)
-			rt_kprintf("alarm_mq is full!!!\n");
-#endif
+            RT_DEBUG_LOG(ALARM_DEBUG,("alarm_mq is full!!!\n"));
 		}
 	}
 	else
 	{
-#if (defined RT_USING_FINSH) && (defined ALARM_DEBUG)
-		rt_kprintf("alarm_mq is RT_NULL!!!\n");
-#endif
+            RT_DEBUG_LOG(ALARM_DEBUG,("alarm_mq is RT_NULL!!!\n"));
 	}
 }
 
