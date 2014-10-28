@@ -83,8 +83,8 @@
 #define GSM_RING_STATUS 0
 #define GSM_RING_INT_INTERVAL 100
 
-#define HALL_EXTI_TRIGGER_MODE EXTI_Trigger_Falling
-#define HALL_STATUS 0
+#define HALL_EXTI_TRIGGER_MODE EXTI_Trigger_Rising
+#define HALL_STATUS 1
 #define HALL_INT_INTERVAL 100
 
 #define BT_LED_EXTI_TRIGGER_MODE EXTI_Trigger_Falling

@@ -17,6 +17,7 @@
 #include "stm32f10x.h"
 #include "rf433.h"
 #include "gpio_pin.h"
+#include "gpio_exti.h"
 #include "untils.h"
 #include "config.h"
 #include "sms.h"
@@ -172,8 +173,9 @@ rf433_thread_entry(void *parameter)
         } else {
             if (flag) {
                 rf433_check_stop();
-                gpio_pin_output(DEVICE_NAME_RF_ENABLE, 1, 1);
-                send_sms_mail(ALARM_TYPE_SMS_RF433_ERROR, 0, RT_NULL, 0, PHONE_AUTH_SMS);
+                gpio_pin_output(DEVICE_NAME_RF_ENABLE, 1, RF433_DEBUG);
+                if (gpio_pin_input(DEVICE_NAME_HALL, RF433_DEBUG) == HALL_STATUS)
+                    send_sms_mail(ALARM_TYPE_SMS_RF433_ERROR, 0, RT_NULL, 0, PHONE_AUTH_SMS);
                 flag = 0;
             }
         }
@@ -208,6 +210,8 @@ rf433_dat_check(void *parameters)
     u8 b, i = 0;
     u8 dat, byte = 0;
     u8 data[16] = {0,};
+    if (gpio_pin_input(DEVICE_NAME_HALL, 0) != HALL_STATUS)
+        return;
     //等一次跳变到来
     START_TIME;
     MASK_TIME;
