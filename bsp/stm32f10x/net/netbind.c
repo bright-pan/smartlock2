@@ -21,7 +21,7 @@ rt_err_t net_bind_key_process(net_recvmsg_p mail)
   RT_DEBUG_LOG(SHOW_NETPHONE_INFO,("KeyID			 %04x\n",KeyID));
   RT_DEBUG_LOG(SHOW_NETPHONE_INFO,("OpTime     %04x\n",OpTime));
 
-	OpResult = device_config_account_append_key(KeyID,AccountID,OpTime,1);
+	OpResult = device_config_account_append_key(AccountID,KeyID,OpTime,1);
 	if(OpResult < 0)
 	{
     RT_DEBUG_LOG(SHOW_NETPHONE_INFO,("Bind Key Fail %d\n",OpResult));
@@ -52,7 +52,7 @@ rt_err_t net_bind_phone_process(net_recvmsg_p mail)
 	RT_DEBUG_LOG(SHOW_NETPHONE_INFO,("KeyID      %04x\n",PhoneID));
 	RT_DEBUG_LOG(SHOW_NETPHONE_INFO,("OpTime     %04x\n",OpTime));
 
-	OpResult = device_config_account_append_phone(PhoneID,AccountID,OpTime,1);
+	OpResult = device_config_account_append_phone(AccountID,PhoneID,OpTime,1);
 	if(OpResult < 0)
 	{
     RT_DEBUG_LOG(SHOW_NETPHONE_INFO,("Bind Phone Fail %d\n",OpResult));
