@@ -1036,7 +1036,9 @@ void hall_exti_timeout(void *parameters)
             rt_kprintf("it is HALL!\n");
 			// produce mail
 			//send_alarm_mail(ALARM_TYPE_SWITCH1, ALARM_PROCESS_FLAG_LOCAL, SWITCH1_STATUS, 0);
-            send_rf433_mail(RF433_START, RT_NULL);
+
+			send_key_value_mail(KB_MAIL_TYPE_INPUT, KB_MODE_NORMAL_AUTH, '#');
+			send_rf433_mail(RF433_START, RT_NULL);
     }
 	gpio->ops->control(gpio, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0); 
 	rt_timer_stop(gpio_user_data->timer);
