@@ -23,7 +23,6 @@ void unlock_process_ui1(void);
 void system_menu1_show(void);
 void system_menu2_show(void);
 void system_manage_processing(void);
-
-
+rt_bool_t fprint_unlock_result_show(void);
 #endif
 

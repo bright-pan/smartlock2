@@ -9,8 +9,8 @@
 #include "local.h"
 #include "FprintHandle.h"
 
-#define MENU_SURE_VALUE					 '*'
-#define MENU_DEL_VALUE           '#'
+#define MENU_SURE_VALUE					 '#'
+#define MENU_DEL_VALUE           '*'
 #define MENU_UP_VALUE						 '2'
 #define MENU_DOWN_VALUE					 '8'
 
@@ -26,6 +26,8 @@
 
 #define MENU_EVT_OP_OUTTIME				(0X01<<0)//菜单操作超时事件
 #define MENU_EVT_FREEZE						(0X01<<1)//
+#define MENU_EVT_FP_UNLOCK        (0X01<<2)//指纹解锁成功
+#define MENU_EVT_FP_ERROR         (0X01<<3)//指纹失败
 
 typedef struct 
 {

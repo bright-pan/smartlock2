@@ -11,7 +11,7 @@
 
 static const rt_uint8_t UNLOCK_UI_TEXT[][LCD_LINE_MAX_LEN] =
 {
-	{"请输入钥匙"},
+	{"请输入密码"},
 	{"密码 :"},
 	{"密码错误"},
 	{"开锁成功"},
@@ -22,6 +22,13 @@ static const rt_uint8_t SystemEnterMenuText[][LCD_LINE_MAX_LEN] =
 {
 	{"开>>>>锁"},
 	{"系统管理"},
+};
+
+//指纹解锁UI
+static const rt_uint8_t FpUnlockUIText[][LCD_LINE_MAX_LEN] = 
+{
+	{"指纹解锁成功!"},
+	{"指纹错误"},
 };
 
 #define SYSTEM_ENTER_MENU_NUM						2	//菜单的最大个数
@@ -92,7 +99,7 @@ rt_err_t unlock_process_ui(void)
 
 	  gui_display_string(SHOW_X_CENTERED(UNLOCK_UI_TEXT[0]),SHOW_Y_LINE(0),UNLOCK_UI_TEXT[0],GUI_WIHIT);
 
-	  gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(1),UNLOCK_UI_TEXT[1],GUI_WIHIT);
+	  gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),UNLOCK_UI_TEXT[1],GUI_WIHIT);
 
 	  gui_display_update(); 
 	  rt_memset(buf,0,8);
@@ -112,8 +119,8 @@ rt_err_t unlock_process_ui(void)
 	        if(result == RT_EOK)
 	        {
 	          string_hide_string((const rt_uint8_t *)buf,ShowBuf,SHOW_PW_HIDE_CH,8);
-	          gui_clear(SHOW_X_ROW8(PASSWORD_DATA_POS),SHOW_Y_LINE(1),SHOW_X_ROW8(15),SHOW_Y_LINE(2));
-	          gui_display_string(SHOW_X_ROW8(PASSWORD_DATA_POS),SHOW_Y_LINE(1),ShowBuf,GUI_WIHIT);
+	          gui_clear(SHOW_X_ROW8(PASSWORD_DATA_POS),SHOW_Y_LINE(2),SHOW_X_ROW8(15),SHOW_Y_LINE(3));
+	          gui_display_string(SHOW_X_ROW8(PASSWORD_DATA_POS),SHOW_Y_LINE(2),ShowBuf,GUI_WIHIT);
 	        }
 	        else
 	        {
@@ -126,6 +133,10 @@ rt_err_t unlock_process_ui(void)
 	      	
 	        //检测输入的密码是否合法
 	        result = unlock_password_verify(buf,&ps_id);
+	        if(result == RT_EOK)
+	        {
+						result = key_permission_check(ps_id);
+	        }
 	        if(result != RT_EOK)
 	        {
 	          //密码不合法
@@ -136,7 +147,7 @@ rt_err_t unlock_process_ui(void)
 	          menu_error_handle(1);
 	          gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),UNLOCK_UI_TEXT[2],GUI_WIHIT);
 	          gui_display_update();
-	          rt_thread_delay(RT_TICK_PER_SECOND);
+	          menu_input_sure_key(RT_TICK_PER_SECOND);
 	          gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(3),SHOW_X_ROW8(15),SHOW_Y_LINE(4));
 
 	          if(key_error_alarm_manage(0) ==  RT_TRUE)
@@ -149,7 +160,7 @@ rt_err_t unlock_process_ui(void)
 							data.key.sms = 0;
 	          }
 	          send_local_mail(ALARM_TYPE_KEY_ERROR,0,&data);
-	          return RT_ERROR;
+	          break;
 	        }
 	        else
 	        {
@@ -161,7 +172,7 @@ rt_err_t unlock_process_ui(void)
 			     
 	          //新密码是合法的
 	          gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
-	          gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),UNLOCK_UI_TEXT[3],GUI_WIHIT);
+	          gui_display_string(SHOW_X_CENTERED(UNLOCK_UI_TEXT[3]),SHOW_Y_LINE(2),UNLOCK_UI_TEXT[3],GUI_WIHIT);
 	          gui_display_update();
 						menu_input_sure_key(RT_TICK_PER_SECOND);
 						//密码匹配的结果
@@ -180,8 +191,8 @@ rt_err_t unlock_process_ui(void)
 	        if(result == RT_EOK)
 	        {
 	          string_hide_string((const rt_uint8_t *)buf,ShowBuf,SHOW_PW_HIDE_CH,8);
-	          gui_clear(SHOW_X_ROW8(PASSWORD_DATA_POS),SHOW_Y_LINE(1),SHOW_X_ROW8(15),SHOW_Y_LINE(2));
-	          gui_display_string(SHOW_X_ROW8(PASSWORD_DATA_POS),SHOW_Y_LINE(1),ShowBuf,GUI_WIHIT);
+	          gui_clear(SHOW_X_ROW8(PASSWORD_DATA_POS),SHOW_Y_LINE(2),SHOW_X_ROW8(15),SHOW_Y_LINE(3));
+	          gui_display_string(SHOW_X_ROW8(PASSWORD_DATA_POS),SHOW_Y_LINE(2),ShowBuf,GUI_WIHIT);
 	        }
 	        else
 	        {
@@ -194,12 +205,15 @@ rt_err_t unlock_process_ui(void)
 	      else if(KeyValue == KEY_ENTRY_SYS_MANAGE)
 	      {
 					system_menu_choose(1);
+					return RT_ERROR;
 	      }
 	      #endif
 	      gui_display_update(); 
 	    }
 	    else
 	    {
+	    	rt_bool_t fpshowresult;
+	    	
 	    	//操作超时
 	    	if(menu_event_process(2,MENU_EVT_OP_OUTTIME) == 0)
 	    	{
@@ -207,8 +221,14 @@ rt_err_t unlock_process_ui(void)
 	    	}
 	      //闪烁提示
 	      GlintStatus++;
-	      menu_inputchar_glint(SHOW_X_ROW8(PASSWORD_DATA_POS+rt_strlen((const char *)ShowBuf)),SHOW_Y_LINE(1),GlintStatus%2);
+	      menu_inputchar_glint(SHOW_X_ROW8(PASSWORD_DATA_POS+rt_strlen((const char *)ShowBuf)),SHOW_Y_LINE(2),GlintStatus%2);
 	      gui_display_update();
+	      //指纹处理结果显示
+	      fpshowresult = fprint_unlock_result_show();
+				if(fpshowresult == RT_TRUE)
+	      {
+					return RT_EOK;
+	      }
 	    }
 	  }
 	}
@@ -223,5 +243,36 @@ void unlock_process_ui1(void)
 void system_manage_processing(void)
 {
 	system_menu_choose(1);
+}
+
+//指纹开锁结果显示
+//返回 RT_TRUE:表示有指纹输入
+//返回 RT_TRUE:表示没有指纹输入
+rt_bool_t fprint_unlock_result_show(void)
+{
+	if(menu_event_process(2,MENU_EVT_FP_UNLOCK) == 0)
+	{
+		//显示指纹解锁成功
+		gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+		gui_display_string(SHOW_X_CENTERED(FpUnlockUIText[0]),SHOW_Y_LINE(2),FpUnlockUIText[0],GUI_WIHIT);
+		gui_display_update();
+		menu_input_sure_key(RT_TICK_PER_SECOND);
+		gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+
+		return RT_TRUE;
+	}
+	else if(menu_event_process(2,MENU_EVT_FP_ERROR) == 0)
+	{
+		//显示指纹解锁错误
+		gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+		gui_display_string(SHOW_X_CENTERED(FpUnlockUIText[1]),SHOW_Y_LINE(2),FpUnlockUIText[1],GUI_WIHIT);
+		gui_display_update();
+		menu_input_sure_key(RT_TICK_PER_SECOND);	
+		gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+
+		return RT_TRUE;
+	}
+
+	return RT_FALSE;
 }
 

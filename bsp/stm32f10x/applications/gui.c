@@ -24,7 +24,7 @@
 #include "buzzer.h"
 #endif
 
-#define UI_SLEEP_TIME               20
+#define UI_SLEEP_TIME               30
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //key api
 static rt_mq_t key_mq;
@@ -94,6 +94,7 @@ rt_err_t gui_key_input(rt_uint8_t *KeyValue)
 	result = rt_mq_recv(key_mq, &mail, sizeof(mail),RT_TICK_PER_SECOND);
 	if(result == RT_EOK)
 	{
+    rt_kprintf("key recv value %c\n",mail.c);
 		//°´¼üÉùÒô
 		#ifdef USEING_BUZZER_FUN
     buzzer_send_mail(BZ_TYPE_KEY);

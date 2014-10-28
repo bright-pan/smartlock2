@@ -23,6 +23,8 @@
 #define PHONE_STAND_LEN						11
 #define ADMIN_DATA_POS						0
 
+#define AOTU_LOCK_MIN_TIME				3//自动上锁时间
+
 #define STRING_BT_MAC							"MAC:"
 #define STRING_DEVICE_ID					"ID :"
 
@@ -554,6 +556,7 @@ void menu_15_processing(void)
 					if(result == RT_EOK)
 					{
 						//指纹采集成功
+						menu_error_handle(2);
 						gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(2),SHOW_X_ROW8(15),SHOW_Y_LINE(3));
 						gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),MenuCommText[1],GUI_WIHIT);
 						gui_display_update();
@@ -2136,7 +2139,11 @@ void menu_36_processing(void)
 			}	
 			else if(data == MENU_DOWN_VALUE)
 			{
-				LockTime--;
+				if(LockTime > AOTU_LOCK_MIN_TIME)
+				{
+          LockTime--;
+				}
+				
 			}
 			rt_sprintf(ShowBuf,"<  %03d  >",LockTime);
   		gui_display_string(SHOW_X_CENTERED(ShowBuf),SHOW_Y_LINE(2),ShowBuf,GUI_WIHIT);

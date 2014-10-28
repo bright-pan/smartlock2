@@ -5,7 +5,7 @@
 #include "board.h"
 
 #define KEY_START_RING_VALUE				'G'
-#define KEY_ENTRY_SYS_MANAGE        'A'
+#define KEY_ENTRY_SYS_MANAGE        'S'
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

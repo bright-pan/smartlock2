@@ -351,6 +351,7 @@ void key_input_processing_init(void)
 void key_input_processing(void)
 {
 	cur_run_processing();
+	fprint_unlock_result_show();
 }
 
 //菜单运行确定按钮处理函数
@@ -449,6 +450,7 @@ void menu_error_handle(rt_uint8_t type)
 	{
 		case 1:
 		{
+			//输入错误或操作失败
 			#ifdef USEING_BUZZER_FUN
 			buzzer_send_mail(BZ_TYPE_ERROR1);
 			#endif
@@ -456,6 +458,8 @@ void menu_error_handle(rt_uint8_t type)
 		}
 		case 2:
 		{
+			//操作成功
+			buzzer_send_mail(BZ_TYPE_OPOK);
 			break;
 		}
 		case 3:
