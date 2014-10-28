@@ -33,7 +33,7 @@
 #define KEY_NOT_PULL_REVOKE_TIME								100*60*30		// 30min
 #define KEY_READ_TIMER_BASE											100					// 1s
 #ifndef  TEST_LOCK_GATE_TIME
-#define LOCK_GATE_TIMER_BASE										10				  // 10s debug use
+#define LOCK_GATE_TIMER_BASE										5				   // 5s debug use
 #endif
 #define BATTERY_CHECH_TIMER_BASE								6000				// 1min
 
@@ -65,7 +65,7 @@ static MotorDevDef MotorManage =
 {
 	RT_NULL,
 	LOCK_OPERATION_OPEN,
-	0,
+	LOCK_GATE_TIMER_BASE-3,
 };
 static rt_event_t   local_evt = RT_NULL;
 
@@ -170,7 +170,7 @@ rt_bool_t key_error_alarm_manage(rt_uint8_t mode)
 		{	
 			//计数
 			KeyErrorData.ErrorCnt++;
-			if(KeyErrorData.ErrorCnt > 3)
+			if(KeyErrorData.ErrorCnt == 3)
 			{
 				//发送冻结事件
 				send_local_mail(ALARM_TYPE_SYSTEM_FREEZE,0,RT_NULL);
@@ -351,6 +351,7 @@ local_thread_entry(void *parameter)
 					data.lock.operation = LOCK_OPERATION_OPEN;
 					send_local_mail(ALARM_TYPE_LOCK_PROCESS,0,&data);
 					gprs_key_right_mail(local_mail_buf.data.key.ID);
+					
 					motor_locktime_set(1);
 					break;
         }
