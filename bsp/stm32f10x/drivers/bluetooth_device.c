@@ -874,13 +874,33 @@ void bluetooth_thread_entry(void *arg)
 	      else
 	      {
 	        //连接被动断开
-	        if(bluetooth->work_status == BT_MODULE_DATA_MODE)
+          rt_uint8_t status = 0;
+					rt_uint8_t run = 10;
+	        while(run--)
+	        {
+            rt_device_read(bluetooth->led_dev,0,&gpio_status,1);
+            if(gpio_status != BT_NOW_CONNECT)
+						{	
+							status++;
+						}
+						rt_thread_delay(1);
+	        }
+	        if((bluetooth->work_status == BT_MODULE_DATA_MODE) && (status > 5))
 	        {
 	        	rt_kprintf("Bluetooth Server Disconnected \n");
 						if(bluetooth_passivity_disconnect(bluetooth) != RT_EOK)
 						{
 							//break;
 						}
+						rt_kprintf("bluetooth->work_status = %d\n",bluetooth->work_status);
+	        }
+	        else
+	        {
+	        	//数据模式信号抖动
+	        	if(bluetooth->work_status == BT_MODULE_DATA_MODE)
+	        	{
+              rt_kprintf("Bluetooth Status Pin instability \n");
+	        	}
 	        }
 	      }
 	      rt_thread_delay(1);
