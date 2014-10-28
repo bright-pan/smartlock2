@@ -334,7 +334,7 @@ void btled_exti_timeout(void *parameters)
 
 rt_err_t btled_rx_ind(rt_device_t dev, rt_size_t size)
 {
-    struct gpio_exti_user_data *gpio_user_data = ((gpio_device *)dev)->parent.user_data;
+	struct gpio_exti_user_data *gpio_user_data = ((gpio_device *)dev)->parent.user_data;
 	rt_timer_start(gpio_user_data->timer);
 
 	return RT_EOK;
@@ -1037,7 +1037,7 @@ void hall_exti_timeout(void *parameters)
 			// produce mail
 			//send_alarm_mail(ALARM_TYPE_SWITCH1, ALARM_PROCESS_FLAG_LOCAL, SWITCH1_STATUS, 0);
 
-			send_key_value_mail(KB_MAIL_TYPE_INPUT, KB_MODE_NORMAL_AUTH, '#');
+			//send_key_value_mail(KB_MAIL_TYPE_INPUT, KB_MODE_NORMAL_AUTH, '#');
 			send_rf433_mail(RF433_START, RT_NULL);
     }
 	gpio->ops->control(gpio, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0); 
