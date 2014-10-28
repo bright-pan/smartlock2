@@ -28,6 +28,7 @@ gpio_pwm.c
 gsm.c
 gpio_adc.c
 rf433.c
+eeprom.c
 """)
 
 # add Ethernet drvers.
