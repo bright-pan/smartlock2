@@ -82,7 +82,7 @@ void buzzer_work(BuzzerType mode)
 		case BZ_TYPE_INIT:
 		{
 			buzzer_pwm_set(600);
-			buzzer_control(800);
+			buzzer_control(900);
 			buzzer_pwm_set(500);
 			break;
 		}
@@ -112,9 +112,16 @@ void buzzer_work(BuzzerType mode)
 			}
 			break;
 		}
-
+		case BZ_TYPE_OPOK:
+		{
+			buzzer_pwm_set(400);
+			buzzer_control(500);
+			buzzer_pwm_set(500);
+			break;
+		}
 		default:
 		{
+			rt_kprintf("buzzer type is error!!!\n");
 			break;
 		}
 	}
@@ -151,7 +158,7 @@ int buzzer_thread_init(void)
 	
   thread_id = rt_thread_create("buzzer",
 		                           buzzer_thread_entry, 
-		                           RT_NULL,256,103, 5);//优先级不能太高
+		                           RT_NULL,512,103, 5);//优先级不能太高
   if(thread_id != RT_NULL)
   {
     rt_thread_startup(thread_id);
