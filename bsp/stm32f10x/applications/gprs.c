@@ -670,7 +670,6 @@ void gprs_mail_manage_entry(void* arg)
 	GPRS_MAIL_TYPEDEF mail;
 	rt_uint32_t 			count;
 	
-	rt_kprintf("mail manage thread run\n");
 	while(1)
 	{
 		//ºÏ≤‚ «∑Ò‘⁄œﬂ
@@ -691,7 +690,7 @@ void gprs_mail_manage_entry(void* arg)
 			{
 				send_gprs_mail(ALARM_TYPE_GPRS_SYS_TIME_UPDATE,0,RT_NULL);
 				set_database_all_update(1);
-				count = UPDATE_KEY_CNT - 1;
+				count = UPDATE_KEY_CNT;
 				device_config_event_index(gprs_local_mail_resend,RT_NULL);
         login_flag = 1;
 			}
