@@ -344,6 +344,7 @@ local_thread_entry(void *parameter)
 					if(local_mail_buf.data.key.Type == ALARM_TYPE_KEY_RIGHT)
 					{
 						//433 Ô¿³×
+						rt_kprintf("This is RF433 GPRS Mail\n");
             gprs_key_right_mail(local_mail_buf.data.key.ID);
 						break;
 					}
