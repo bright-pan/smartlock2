@@ -562,6 +562,7 @@ void gprs_mail_delete(GPRS_MAIL_TYPEDEF *mail)
 	RT_ASSERT(mail != RT_NULL);
 	if(mail->user != RT_NULL)
 	{
+		rt_kprintf("Delete GPRS Mail User");
 		rt_free(mail->user);
 	}
 }
@@ -617,6 +618,8 @@ void gprs_local_mail_save(GPRS_MAIL_TYPEDEF *mail)
 			data->unlock.time = mail->time;
 			data->unlock.type = keydat->head.key_type-1;
 			device_config_event_create(EVENT_ID_INVALID,EVENT_TYPE_UNLOCK,1,data);	
+
+			rt_free(keydat);
 			break;
 		}
 		default:
