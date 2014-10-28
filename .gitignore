@@ -30,3 +30,5 @@ project.eww
 project.uvgui.Administrator
 /bsp/stm32f10x/cmd-gcc.bat
 /bsp/stm32f10x/cmd-gcc.bat
+/bsp/stm32f10x/run.bat
+/bsp/stm32f10x/OpenProject.bat

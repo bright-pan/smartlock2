@@ -127,6 +127,9 @@ rt_err_t fprint_input_ok_trigger(void *user)
 	  KeyData.key.Type = KEY_TYPE_FPRINT;
 	  send_local_mail(ALARM_TYPE_KEY_RIGHT,(time_t)menu_get_cur_date,&KeyData);
 
+		//发送解锁事件给UI
+		menu_event_process(0,MENU_EVT_FP_UNLOCK);
+		
     //错误次数管理
 		key_error_alarm_manage(1);
 	}
@@ -155,6 +158,7 @@ rt_err_t fprint_input_error_trigger(void *user)
 	{
 		data.key.sms = 0;
 	}
+	menu_event_process(0,MENU_EVT_FP_ERROR);
   send_local_mail(ALARM_TYPE_KEY_ERROR,0,&data);	
   
   return RT_EOK;
