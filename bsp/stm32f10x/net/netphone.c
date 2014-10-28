@@ -57,12 +57,10 @@ rt_err_t net_phone_add_process(net_recvmsg_p mail)
 	//±£´æÊý¾Ý
 	OpResult = device_config_phone_set(PhoneID,(u8 *)ph->address,11,ph->auth,ph->updated_time);
 	
-	
-
 	rt_free(ph);
 	if(OpResult < 0)
 	{
-		RT_DEBUG_LOG(SHOW_NETPHONE_INFO,("Phone add Fail !!!\n"));
+		RT_DEBUG_LOG(SHOW_NETPHONE_INFO,("Phone add Fail %d!!!\n",OpResult));
 		return RT_ERROR;
 	}
 	
