@@ -1223,7 +1223,7 @@ fprint_thread_entry(void *parameters)
 					}
 				case FPRINT_CMD_VERIFY:
 					{
-                        static uint16_t f_detect = 0;
+//                        static uint16_t f_detect = 0;
                         static uint16_t r_detect = 0;
                         static uint16_t template_id = 0;
                         error = fprint_verify(&req_data, &rep_data);
@@ -1246,22 +1246,15 @@ fprint_thread_entry(void *parameters)
                                 }
                             }
                             if (rep_data.rep_search.result == 0x09) {
-                                if (f_detect++ > 3) {
+                                RT_DEBUG_LOG(FPRINT_DEBUG, ("fprint verify is no search\n"));
+                                if(fprintf_error_fun != RT_NULL)
+                                {
+                                    FPINTF_USER key;
 
-                                    RT_DEBUG_LOG(FPRINT_DEBUG, ("fprint verify is no search\n"));
-                                    if(fprintf_error_fun != RT_NULL)
-                                    {
-                                        FPINTF_USER key;
-
-                                        key.KeyPos = 0xffff;
-                                        fprintf_error_fun((void *)&key);
-                                    }
-                                    f_detect = 0;
+                                    key.KeyPos = 0xffff;
+                                    fprintf_error_fun((void *)&key);
                                 }
-                            } else {
-                                f_detect = 0;
                             }
-
                         }
                         if (error == FPRINT_ENO_DETECTED) {
                             RT_DEBUG_LOG(FPRINT_DEBUG, ("fprint verify is no detected\n"));
