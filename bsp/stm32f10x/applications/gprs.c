@@ -679,9 +679,10 @@ void gprs_mail_manage_entry(void* arg)
 			if(mq_result == RT_EOK)
 			{
 				gprs_local_mail_save(&mail);
+				gprs_mail_delete(&mail);//สอทลืสิด
 			}
 			login_flag = 0;
-			
+
 			continue;
 		}
 		else
