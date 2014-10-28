@@ -754,9 +754,9 @@ bit_to_index(uint16_t data)
 
 static const uint8_t char_remap[16] = {
     '?',
-    '*', '7', '4',
+    '#', '7', '4',
     '1', '0', '8',
-    '5', '2', '#',
+    '5', '2', '*',
     '9', '6', '3',
     '?', '?', '?',
 };
@@ -1189,8 +1189,8 @@ EXTI15_10_IRQHandler(void)
 static int 
 rt_hw_gpio_exti_enable(void)
 {
-    device_enable(DEVICE_NAME_SWITCH1);
-    device_enable(DEVICE_NAME_SWITCH2);
+    //device_enable(DEVICE_NAME_SWITCH1);
+    //device_enable(DEVICE_NAME_SWITCH2);
     //device_enable(DEVICE_NAME_SWITCH3);
     device_enable(DEVICE_NAME_KB_INTR);
     device_enable(DEVICE_NAME_FP_TOUCH);
@@ -1200,8 +1200,8 @@ rt_hw_gpio_exti_enable(void)
     device_enable(DEVICE_NAME_HALL);
     return 0;
 }
-INIT_DEVICE_EXPORT(rt_hw_switch1_register);
-INIT_DEVICE_EXPORT(rt_hw_switch2_register);
+//INIT_DEVICE_EXPORT(rt_hw_switch1_register);
+//INIT_DEVICE_EXPORT(rt_hw_switch2_register);
 INIT_DEVICE_EXPORT(rt_hw_bt_led_register);
 
 //INIT_DEVICE_EXPORT(rt_hw_switch3_register);

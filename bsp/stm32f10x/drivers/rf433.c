@@ -24,12 +24,14 @@
 
 #define RF433_DEBUG 1
 
-static volatile u32 time_out; // ms 计时变量
-static volatile u32 time_cnt;
+static volatile s32 time_out; // ms 计时变量
+static volatile s32 time_cnt;
 
 #define RF_DAT GPIO_ReadInputDataBit(user->gpiox,user->gpio_pinx)
 #define START_TIME  RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2 , ENABLE);TIM_Cmd(TIM2, ENABLE)
 #define STOP_TIME  TIM_Cmd(TIM2, DISABLE);RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2 , DISABLE)
+#define UNMASK_TIME TIM_ITConfig(TIM2,TIM_IT_Update,ENABLE)
+#define MASK_TIME TIM_ITConfig(TIM2,TIM_IT_Update,DISABLE)
 
 #define RF433_MAIL_MAX_MSGS 1
 
@@ -110,7 +112,8 @@ rf433_thread_entry(void *parameter)
 {
 	rt_err_t result;
 	RF433_MAIL_TYPEDEF rf433_mail_buf;
-    u8 temp, i, flag = 0;
+    u8 sum, i, flag = 0;
+    s32 temp;
     TIM2_NVIC_Configuration();
     TIM2_Configuration();
 
@@ -132,21 +135,22 @@ rf433_thread_entry(void *parameter)
                 }
 				case RF433_VERIFY:
 				{
-                    temp = 0;
+                    sum = 0;
                     for (i = 0; i < 15; ++i)
-                        temp += rf433_mail_buf.data[i];
-                    if (temp == rf433_mail_buf.data[15]) {
+                        sum += rf433_mail_buf.data[i];
+                    if (sum == rf433_mail_buf.data[15]) {
+                        RT_DEBUG_LOG(RF433_DEBUG,("accept rf433\n"));
                         temp = device_config_key_verify(KEY_TYPE_RF433, rf433_mail_buf.data, 4);
                         if (temp >= 0) {
                             //send_sms_mail(ALARM_TYPE_RFID_KEY_SUCCESS, 0, RT_NULL, 0);
-														union alarm_data *data;
+                            union alarm_data *data;
                             flag = 0;
-														data = rt_calloc(1,sizeof(*data));
-														data->key.ID = temp;
-														data->key.Type = KEY_TYPE_RF433;
-														data->key.sms = 0;
-														send_local_mail(ALARM_TYPE_KEY_RIGHT,0,data);
-														rt_free(data);
+                            data = rt_calloc(1,sizeof(*data));
+                            data->key.ID = temp;
+                            data->key.Type = KEY_TYPE_RF433;
+                            data->key.sms = 0;
+                            send_local_mail(ALARM_TYPE_KEY_RIGHT,0,data);
+                            rt_free(data);
                         }
                     } else {
                         RT_DEBUG_LOG(RF433_DEBUG,("rf433 verify error\n"));
@@ -206,50 +210,58 @@ rf433_dat_check(void *parameters)
     u8 data[16] = {0,};
     //等一次跳变到来
     START_TIME;
+    MASK_TIME;
     time_out=100;//超时设定1ms
+    time_cnt=0;
+    UNMASK_TIME;
+    
     if(RF_DAT)
         while(RF_DAT)
         {
-            if(time_out==0)
+            if(time_out<=0)
                 goto __exit;
         }
     else
         while(!RF_DAT)
         {
-            if(time_out==0)
+            if(time_out<=0)
                 goto __exit;
         }
 
 
     //抓一个完整的高脉冲或低脉冲
-    time_out=100;//超时设定
+    MASK_TIME;
+    time_out=100;//超时设定1ms
     time_cnt=0;
+    UNMASK_TIME;
     if(RF_DAT)
         while(RF_DAT)  {
-            if(time_out==0)
+            if(time_out<=0)
                 goto __exit;
         }
     else
         while(!RF_DAT)
         {
-            if(time_out==0)
+            if(time_out<=0)
                 goto __exit;
         }
     //此时time_cnt内就是脉冲宽度了。
     if((time_cnt>60)||(time_cnt<40))
         goto __exit;
     //抓一个完整的高脉冲或低脉冲
-    time_out=100;//超时设定
+    MASK_TIME;
+    time_out=100;//超时设定1ms
     time_cnt=0;
+    UNMASK_TIME;
     if(RF_DAT)
         while(RF_DAT)  {
-            if(time_out==0)
+            if(time_out<=0)
                 goto __exit;
         }
     else
         while(!RF_DAT)
         {
-            if(time_out==0)
+            if(time_out<=0)
                 goto __exit;
         }
     //此时time_cnt内就是脉冲宽度了。
@@ -259,16 +271,18 @@ rf433_dat_check(void *parameters)
     //这里继续判断引导码，直到抓到1000us的low pulse
     while (1)
     {
-        time_out=110;//超时设定
+        MASK_TIME;
+        time_out=110;//超时设定1ms
         time_cnt=0;
+        UNMASK_TIME;
         if(RF_DAT)
-            while((dat = RF_DAT))  {
-                if(time_out==0)
+            while((dat = RF_DAT) == 1)  {
+                if(time_out<=0)
                     goto __exit;
             }
         else
-            while(!(dat = RF_DAT)) {
-                if(time_out==0)
+            while((dat = RF_DAT) == 0) {
+                if(time_out<=0)
                     goto __exit;
             }
         //此时time_cnt内就是脉冲宽度了。
@@ -284,11 +298,13 @@ rf433_dat_check(void *parameters)
         byte = 0;
         for (i = 0; i < 8; ++i)
         {
-            time_out=110;//超时设定
+            MASK_TIME;
+            time_out=110;//超时设定1ms
             time_cnt=0;
+            UNMASK_TIME;
             if(RF_DAT)
-                while((dat = RF_DAT))  {
-                    if(time_out==0)
+                while((dat = RF_DAT) == 1)  {
+                    if(time_out<=0)
                         goto __exit;
                 }
             else
@@ -299,16 +315,16 @@ rf433_dat_check(void *parameters)
                     goto __exit;
                 } else {
                     if(!RF_DAT)
-                        while(!(dat = RF_DAT)) {
-                            if(time_out==0)
+                        while((dat = RF_DAT) == 0) {
+                            if(time_out<=0)
                                 break;
 						}
                 }
             } else {
                 byte |= 1<< i;
                 if(!RF_DAT)
-                    while(!(dat = RF_DAT)) {
-                        if(time_out==0)
+                    while((dat = RF_DAT) == 0) {
+                        if(time_out<=0)
                             break;
 					}
             }
@@ -350,4 +366,5 @@ INIT_APP_EXPORT(rt_rf433_init);
 #include <finsh.h>
 FINSH_FUNCTION_EXPORT_ALIAS(rf433_check_start, rf_cst, rf_check_start);
 FINSH_FUNCTION_EXPORT_ALIAS(rf433_check_stop, rf_csp, rf_check_stop);
+FINSH_FUNCTION_EXPORT(send_rf433_mail, send_rf433_mail[cmd buf]);
 #endif
