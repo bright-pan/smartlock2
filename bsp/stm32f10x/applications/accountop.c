@@ -458,6 +458,7 @@ rt_err_t user_add_fprint(rt_uint32_t outtime)
 	result = device_config_account_append_key(AccountUse.AccountPos,KeyPos,0, 0);
 	if(result < 0)
 	{
+		device_config_key_delete(KeyPos,0, 0);
 		rt_kprintf("Fingerprint binding failure\n");
 		rt_free(buf);
 
@@ -489,6 +490,7 @@ rt_err_t user_modify_fprint(rt_uint16_t KeyPos,rt_uint32_t outtime)
 	result = device_config_account_append_key(AccountUse.AccountPos,result,0, 0);
 	if(result < 0)
 	{
+		device_config_key_delete(result,0, 0);
 		rt_kprintf("Fingerprint binding failure\n");
 		rt_free(buf);
 
@@ -544,9 +546,9 @@ rt_err_t admin_modify_fprint(rt_uint32_t outtime)
 	        if(result < 0)
 	        {
 	          rt_kprintf("Fingerprint binding failure\n");
-
-	            rt_free(KeyDat);
-	            rt_free(ah);
+						device_config_key_delete(keypos,0, 0);
+            rt_free(KeyDat);
+            rt_free(ah);
 	          return RT_ERROR;
 	        }
 	        else
@@ -588,7 +590,7 @@ rt_err_t admin_modify_fprint(rt_uint32_t outtime)
 	    if(result < 0)
 	    {
 	      rt_kprintf("Fingerprint binding failure\n");
-
+        device_config_key_delete(keypos,0, 0);
 		    rt_free(KeyDat);
 		    rt_free(ah);
 	      return RT_ERROR;

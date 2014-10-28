@@ -24,6 +24,8 @@ rt_err_t net_bind_key_process(net_recvmsg_p mail)
 	OpResult = device_config_account_append_key(KeyID,AccountID,OpTime,1);
 	if(OpResult < 0)
 	{
+    RT_DEBUG_LOG(SHOW_NETPHONE_INFO,("Bind Key Fail %d\n",OpResult));
+    device_config_key_delete(KeyID,0,0);
 		return RT_ERROR;
 	}
 
@@ -53,6 +55,8 @@ rt_err_t net_bind_phone_process(net_recvmsg_p mail)
 	OpResult = device_config_account_append_phone(PhoneID,AccountID,OpTime,1);
 	if(OpResult < 0)
 	{
+    RT_DEBUG_LOG(SHOW_NETPHONE_INFO,("Bind Phone Fail %d\n",OpResult));
+    device_config_phone_delete(PhoneID,0,0);
 		return RT_ERROR;
 	}
 	
