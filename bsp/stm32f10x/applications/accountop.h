@@ -84,5 +84,8 @@ rt_err_t account_set_use(rt_int32_t id);
 
 //删除当前用户
 rt_err_t account_cur_delete(void);
+
+//钥匙权限检测
+rt_err_t key_permission_check(rt_uint16_t KeyID);
 #endif
 

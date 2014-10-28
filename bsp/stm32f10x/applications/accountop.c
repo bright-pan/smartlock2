@@ -1,6 +1,8 @@
 #include"accountop.h"
 #include "config.h"
 #include "fprint.h"
+#include <time.h>
+
 
 #define USEING_DEBUG_ACCOP		0
 
@@ -444,7 +446,7 @@ rt_err_t user_add_fprint(rt_uint32_t outtime)
 	buf = rt_calloc(1,1024);
 	rt_memset(buf,0,1024);
 	result = fp_enroll(&KeyPos,buf,outtime);
-	if(result < 0)
+	if(result != 0)
 	{
 		rt_kprintf("Fingerprint acquisition failure\n");
 		rt_free(buf);
@@ -453,7 +455,7 @@ rt_err_t user_add_fprint(rt_uint32_t outtime)
 	}
 
 	rt_kprintf("正在绑定用户\n");
-	result = device_config_account_append_key(AccountUse.AccountPos,result,0, 0);
+	result = device_config_account_append_key(AccountUse.AccountPos,KeyPos,0, 0);
 	if(result < 0)
 	{
 		rt_kprintf("Fingerprint binding failure\n");
@@ -503,18 +505,99 @@ rt_err_t user_modify_fprint(rt_uint16_t KeyPos,rt_uint32_t outtime)
 rt_err_t admin_modify_fprint(rt_uint32_t outtime)
 {
   struct account_head *ah;
-
+  struct key          *KeyDat;
+	rt_uint8_t          i;
+	
   ah = rt_calloc(1,sizeof(*ah));
+  KeyDat = rt_calloc(1,sizeof(*KeyDat));
   
 	device_config_account_operate(0,ah,0);
 
-	if(ah->key[1] != KEY_ID_INVALID)
+	for(i = 0;i<ACCOUNT_HAVE_KEY_NUMBERS;i++)
 	{
-    device_config_account_remove_key(ah->key[1]);
+		if(ah->key[i] != KEY_ID_INVALID)
+		{
+			//有效钥匙
+			device_config_key_operate(ah->key[i],KeyDat,0);
+			if(KeyDat->head.key_type == KEY_TYPE_FPRINT)
+			{
+				//指纹类型
+				rt_int32_t result;
+				rt_int16_t keypos = KEY_ID_INVALID;
+				
+				rt_kprintf("key pos is %d \n",ah->key[i]);
+	
+				result = fp_enroll(&keypos,RT_NULL,outtime);
+				rt_kprintf("get new fprint ID %d\n",ah->key[i]);
+				if(result != 0)
+				{
+					rt_kprintf("Fingerprint acquisition failure\n");
+					
+	        rt_free(KeyDat);
+	        rt_free(ah);
+					return RT_ERROR;
+				}
+				else
+				{
+	        rt_kprintf("Admin User add fprint ID %d\n",keypos);
+	        result = device_config_account_append_key(0,keypos,0, 0);
+	        if(result < 0)
+	        {
+	          rt_kprintf("Fingerprint binding failure\n");
+
+	            rt_free(KeyDat);
+	            rt_free(ah);
+	          return RT_ERROR;
+	        }
+	        else
+	        {
+            device_config_key_delete(ah->key[i],0,0);
+						rt_free(ah);
+						rt_free(KeyDat);
+						return RT_EOK;
+	        }
+	        
+				}
+			}
+		}
+	}
+	if(i == ACCOUNT_HAVE_KEY_NUMBERS)
+	{
+		//没有指纹
+		rt_int32_t result;
+		rt_int16_t keypos;
+
+		rt_kprintf("Admin create new fprint\n");
+		keypos = KEY_ID_INVALID;
+		
+		result = fp_enroll(&keypos,RT_NULL,outtime);
+		
+    rt_kprintf("get new fprint ID %d\n",result);
+		if(result != 0)
+		{
+			rt_kprintf("Fingerprint acquisition failure\n");
+			
+	    rt_free(KeyDat);
+	    rt_free(ah);
+			return RT_ERROR;
+		}
+		else
+		{
+	    rt_kprintf("正在绑定用户\n");
+	    result = device_config_account_append_key(0,keypos,0, 0);
+	    if(result < 0)
+	    {
+	      rt_kprintf("Fingerprint binding failure\n");
+
+		    rt_free(KeyDat);
+		    rt_free(ah);
+	      return RT_ERROR;
+	    }
+		}
 	}
 	rt_free(ah);
-
-	return user_add_fprint(outtime);
+	rt_free(KeyDat);
+	return RT_EOK;
 }
 
 void user_get_info_continuous(UserInfoDef user[],rt_int32_t *start_id,rt_int32_t num,rt_uint8_t flag)
@@ -615,7 +698,8 @@ void admin_create(void)
 	result = device_config_account_next_valid(0,1);
 	if(result == 0)
 	{
-		rt_kprintf("Administrator exist\n");
+		rt_kprintf("Administrator init exist\n");
+		return ;
 	}
 	else
 	{
@@ -696,6 +780,155 @@ rt_err_t admin_password_verify(rt_uint8_t *password)
   rt_free(k);
 	return RT_EOK;
 }
+
+//星期检测
+static rt_err_t week_is_check(rt_uint32_t data,rt_uint8_t week)
+{
+	if(data&(0x01<<week))
+	{
+    rt_kprintf("week in permission\n");
+		return RT_EOK;
+	}
+	
+  rt_kprintf("week none permission\n");
+	return RT_ERROR;
+}
+
+struct OpenTDef
+{
+  rt_uint32_t stop_m:8;
+  rt_uint32_t stop_h:8;
+  rt_uint32_t start_m:8;
+  rt_uint32_t start_h:8;
+};
+
+
+//检测时间
+static rt_err_t date_is_check(rt_uint32_t data,rt_uint8_t hour,rt_uint8_t min)
+{	
+	struct OpenTDef *OpenTime;
+
+	OpenTime = (struct OpenTDef *)&data;
+
+	if((OpenTime->start_h <= hour)&&(OpenTime->start_m <= min))
+	{
+		if((OpenTime->stop_h >= hour)&&(OpenTime->stop_m >= min))
+		{
+			rt_kprintf("time in permission\n");
+			return RT_EOK;
+		}
+	}
+	
+  rt_kprintf("time none permission new:%d:%d  start:%d:%d  stop:%d:%d\n",
+  					hour,min,OpenTime->start_h,OpenTime->start_m,
+  					OpenTime->stop_h,OpenTime->stop_m);
+	return RT_ERROR;
+}
+
+//权限检测
+rt_err_t key_permission_check(rt_uint16_t KeyID)
+{
+	struct key *KeyDat;
+	rt_err_t   RunResult;
+	rt_int16_t result;
+
+	RunResult = RT_ERROR;
+	KeyDat = rt_calloc(1,sizeof(*KeyDat));
+	
+	result = device_config_key_operate(KeyID,KeyDat,0);
+	if(result < 0)
+	{
+		rt_kprintf("read key data fail\n");
+		rt_free(KeyDat);
+
+		return RT_ERROR;
+	}
+	switch(KeyDat->head.operation_type)
+	{
+		case KEY_OPERATION_TYPE_FOREVER:
+		{
+			RunResult = RT_EOK;
+			break;
+		}
+		case KEY_OPERATION_TYPE_ONCE:
+		{
+			rt_uint32_t date;
+
+			date = menu_get_cur_date();
+			if((date > KeyDat->head.start_time)&&(date < KeyDat->head.end_time))
+			{
+				RunResult = RT_EOK;
+			}
+			rt_kprintf("KEY_OPERATION_TYPE_ONCE:\n");
+      rt_kprintf("%s\n", ctime(&date));
+      rt_kprintf("%s\n", ctime(&KeyDat->head.start_time));
+      rt_kprintf("%s\n", ctime(&KeyDat->head.end_time));
+			break;
+		}
+		case KEY_OPERATION_TYPE_WEEKLY:
+		{
+			
+			time_t now;
+			struct tm *p_tm;
+			struct tm tm_new;
+			rt_device_t device;
+			rt_err_t ret = -RT_ERROR;
+
+			/* get current time */
+			now = time(RT_NULL);
+
+			/* lock scheduler. */
+			rt_enter_critical();
+			/* converts calendar time time into local time. */
+			p_tm = localtime(&now);
+			/* copy the statically located variable */
+			rt_memcpy(&tm_new, p_tm, sizeof(struct tm));
+			/* unlock scheduler. */
+			rt_exit_critical();
+
+			rt_kprintf("%d\n",tm_new.tm_year);
+			rt_kprintf("%d\n",tm_new.tm_mon);
+			rt_kprintf("%d\n",tm_new.tm_mday);
+			rt_kprintf("%d\n",tm_new.tm_wday);
+			rt_kprintf("%d\n",tm_new.tm_hour);
+			rt_kprintf("%d\n",tm_new.tm_min);
+			rt_kprintf("%d\n",tm_new.tm_sec);
+			
+			ret = week_is_check(KeyDat->head.start_time,tm_new.tm_wday);
+			if(ret == RT_EOK)
+			{
+				ret = date_is_check(KeyDat->head.end_time,tm_new.tm_hour,tm_new.tm_min);
+				if(ret == RT_EOK)
+				{
+					RunResult = RT_EOK;
+				}
+			}
+			break;
+		}
+		default :
+		{
+			rt_kprintf("system data error!!!");
+			RT_ASSERT(RT_NULL);
+			break;
+		}
+	}
+	
+	rt_free(KeyDat);
+
+	return RunResult;
+}
+
+
+
+
+
+
+
+
+
+
+
+
 #ifdef RT_USING_FINSH
 #include <finsh.h>
 
@@ -736,6 +969,10 @@ void show_account(rt_uint8_t id)
 				else if(buf->head.key_type == KEY_TYPE_FPRINT)
 				{
 					rt_kprintf("This is fingerprint\n");
+				}
+				else 
+				{
+					rt_kprintf("none define\n");
 				}
 				rt_free(buf);
 			}
@@ -784,6 +1021,31 @@ void all_account(rt_uint8_t mode)
 	}
 }
 FINSH_FUNCTION_EXPORT(all_account,show all user info);
+void fcjg(rt_uint8_t h,rt_uint8_t m,rt_uint8_t j)
+{
+	rt_uint8_t temp;
+	rt_uint8_t day;
+	rt_uint8_t i;
+	
+	day = 24*60/j;
+	for(i = 0;i < day;i++)
+	{
+    temp = m+j;
+    if((temp / 60) == 1)
+    {
+      h++;
+      if(h > 24)
+      {
+				break;
+      }
+    }
+    m = temp % 60;
+ 
+    rt_kprintf("%d:%d\n",h,m);
+	}
+}
+FINSH_FUNCTION_EXPORT(fcjg,m371);
 #endif
+
 
 
