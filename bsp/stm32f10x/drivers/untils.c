@@ -161,6 +161,14 @@ void sysreset()
   NVIC_SystemReset();
 }
 FINSH_FUNCTION_EXPORT(sysreset,sysreset() -- reset stm32);
+
+void sysinit(void)
+{
+	unlink("/config");
+	NVIC_SystemReset();
+}
+FINSH_FUNCTION_EXPORT(sysinit,-- init system);
+
 void delay_us_test(char *name, int cnts, int delay1, int delay2)
 {
     u8 dat = 1;
