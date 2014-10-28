@@ -1417,7 +1417,7 @@ device_config_account_append_key(u16 account_id, u16 key_id, u32 op_time, u8 fla
 					if (device_config_get_key_valid(key_id) > 0 &&
 						device_config_key_operate(key_id, &k, 0) >= 0) {
                         if (flag) {
-                            if (op_time > k.head.updated_time) {
+                            if (op_time >= k.head.updated_time) {
                                 if (k.head.account != ACCOUNT_ID_INVALID) {
                                     device_config_account_remove_key(key_id);
                                 }
@@ -1586,7 +1586,7 @@ device_config_account_append_phone(u16 account_id, u16 phone_id, u32 op_time, u8
 					if (device_config_get_phone_valid(phone_id) &&
 						device_config_phone_operate(phone_id, &ph, 0) >= 0) {
                         if (flag) {
-                            if (op_time > ph.updated_time) {
+                            if (op_time >= ph.updated_time) {
                                 if (ph.account != ACCOUNT_ID_INVALID) {
                                     device_config_account_remove_phone(phone_id);
                                 }
