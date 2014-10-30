@@ -617,8 +617,10 @@ device_config_key_delete(u16 key_id, u32 op_time, u8 flag)
                 result = device_config_account_remove_key(key_id);
                 if (result >= 0) {
                     device_config_set_key_valid(key_id, 0);
-                    if (device_config_file_operate(&device_config, 1) >= 0)
+                    if (device_config_file_operate(&device_config, 1) >= 0) {
+                        fp_delete(key_id, 1);
                         result = key_id;
+                    }
                 }
             }
         }

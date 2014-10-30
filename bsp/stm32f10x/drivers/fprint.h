@@ -58,10 +58,14 @@ fp_delete(const uint16_t, const uint16_t);
 
 void
 fp_inform(void);
+
 int
 fp_get_template(uint8_t *buf, uint32_t timeout);
 
 int
 fp_store_template(const uint16_t key_id, uint8_t *buf, uint32_t timeout);
+
+int
+fp_delete(const uint16_t key_id, const uint16_t size);
 
 #endif /* _FPRINT_H_ */
