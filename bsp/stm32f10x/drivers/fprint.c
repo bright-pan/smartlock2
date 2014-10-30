@@ -24,13 +24,13 @@
 
 #define FPRINT_MAIL_MAX_MSGS 10
 
-#define FPRINT_DEBUG 0
+#define FPRINT_DEBUG 1
 #define DEVICE_NAME_FPRINT "uart2"
 #define FPRINT_TEMPLATE_OFFSET 0 // 0 <= offset <= 999
 #define FPRINT_TEMPLATE_SIZE (1000 - 1) // 1 <= offset <= 2000
 #define FPRINT_TEMPLATE_ID_START FPRINT_TEMPLATE_OFFSET
 #define FPRINT_TEMPLATE_ID_END (FPRINT_TEMPLATE_OFFSET + KEY_NUMBERS - 1)
-#define FPRINT_PARAM_DATA_SIZE 3
+#define FPRINT_PARAM_DATA_SIZE 2
 
 static const u16 fprint_param_data_size_map[] = {
     32, 64, 128, 256,
@@ -78,6 +78,7 @@ typedef enum {
     FPRINT_CMD_UP_CHAR,
     FPRINT_CMD_STORE_TEMPLATE,
     FPRINT_CMD_GET_TEMPLATE,
+    FPRINT_CMD_GET_BUF1,
 
 }FPRINT_CMD_TYPEDEF;
 
@@ -969,7 +970,7 @@ fprint_init(uint8_t *buf, FPRINT_FRAME_REQ_DATA_TYPEDEF *req_data, FPRINT_FRAME_
 	rt_memset(req_data, 0, sizeof(*req_data));
     rt_memset(rep_data, 0, sizeof(*rep_data));
 	req_data->req_set_param.type = 6;
-	req_data->req_set_param.data = 2;
+	req_data->req_set_param.data = FPRINT_PARAM_DATA_SIZE;
 	error = fprint_frame_process(FPRINT_FRAME_CMD_SET_PARAM, req_data, rep_data);
 	if (error != FPRINT_EOK)
 		return error;
@@ -1209,6 +1210,20 @@ fprint_thread_entry(void *parameters)
                         error = fprint_frame_process(FPRINT_FRAME_CMD_LOAD_CHAR, &req_data, &rep_data);
                         if (error != FPRINT_EOK)
                             break;
+                        // get fprint template from rambuf0
+                        rt_memset(&req_data, 0, sizeof(req_data));
+                        rt_memset(&rep_data, 0, sizeof(rep_data));
+                        req_data.req_up_char.buf_id = 1;
+                        error = fprint_frame_process(FPRINT_FRAME_CMD_UP_CHAR,
+                                                        &req_data, &rep_data);
+                        if (error == FPRINT_EOK) {
+                            fprint_frame_recv_data(buf, 512);
+                            print_hex(buf, 512);
+                        }
+                        break;
+					}
+				case FPRINT_CMD_GET_BUF1:
+					{
                         // get fprint template from rambuf0
                         rt_memset(&req_data, 0, sizeof(req_data));
                         rt_memset(&rep_data, 0, sizeof(rep_data));
