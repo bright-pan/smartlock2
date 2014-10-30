@@ -1736,7 +1736,7 @@ device_config_account_index(int(*callback)(struct account_head *, u16 account_id
 }
 
 s32
-device_config_event_index(int(*callback)(struct event *, void *arg1), void *arg1)
+device_config_event_index(int(*callback)(struct event *, int id ,void *arg1), void *arg1)
 {
     s32 result;
     u16 i;
@@ -1750,12 +1750,13 @@ device_config_event_index(int(*callback)(struct event *, void *arg1), void *arg1
 		if (len > 0) {
 			len = device_config_event_operate(i, &evt, 0);
 			if (len >= 0) {
-                result = callback(&evt, arg1);
+                result = callback(&evt, i, arg1);
 			}
 		}
 	}
     return result;
 }
+
 int
 device_config_init(struct device_configure *config)
 {
