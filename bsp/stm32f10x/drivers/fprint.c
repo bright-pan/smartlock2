@@ -24,7 +24,7 @@
 
 #define FPRINT_MAIL_MAX_MSGS 10
 
-#define FPRINT_DEBUG 1
+#define FPRINT_DEBUG 0
 #define DEVICE_NAME_FPRINT "uart2"
 #define FPRINT_TEMPLATE_OFFSET 0 // 0 <= offset <= 999
 #define FPRINT_TEMPLATE_SIZE (1000 - 1) // 1 <= offset <= 2000
