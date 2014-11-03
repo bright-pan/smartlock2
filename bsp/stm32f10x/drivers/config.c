@@ -18,6 +18,7 @@
 #include <dfs_posix.h>
 #include "config.h"
 #include "untils.h"
+#include "fprint.h"
 
 //#include "eeprom.h"
 //#include "funtable.h"
@@ -1882,6 +1883,138 @@ device_config_key0_operate(u8 *key0, u8 flag)
 
 	} else {
         rt_memcpy(key0, config->param.key0, 8);
+        result = 1;
+	}
+	
+	rt_mutex_release(config->mutex);
+	return result;
+}
+
+int
+device_config_pv_operate(struct phone_valid_map *pv_map, u8 flag)
+{
+	int fd;
+	int cnts;
+	int result = -ECONFIG_ERROR;
+
+    struct device_configure *config = &device_config;
+	RT_ASSERT(config!=RT_NULL);
+	RT_ASSERT(config->mutex!=RT_NULL);
+
+	rt_mutex_take(config->mutex, RT_WAITING_FOREVER);
+
+
+	if (flag) {
+        if ((fd = open(DEVICE_CONFIG_FILE_NAME,O_RDWR,0x777)) >= 0)
+        {
+            rt_memcpy(&config->param.pv_map, pv_map, sizeof(*pv_map)); 
+            cnts = write(fd, &(config->param), sizeof(config->param));
+            if (cnts == sizeof(config->param))
+                result = cnts;
+            close(fd);
+        }
+
+	} else {
+        rt_memcpy(pv_map, &config->param.pv_map, sizeof(*pv_map));
+        result = 1;
+	}
+	
+	rt_mutex_release(config->mutex);
+	return result;
+}
+
+int
+device_config_av_operate(struct account_valid_map *av_map, u8 flag)
+{
+	int fd;
+	int cnts;
+	int result = -ECONFIG_ERROR;
+
+    struct device_configure *config = &device_config;
+	RT_ASSERT(config!=RT_NULL);
+	RT_ASSERT(config->mutex!=RT_NULL);
+
+	rt_mutex_take(config->mutex, RT_WAITING_FOREVER);
+
+
+	if (flag) {
+        if ((fd = open(DEVICE_CONFIG_FILE_NAME,O_RDWR,0x777)) >= 0)
+        {
+            rt_memcpy(&config->param.av_map, av_map, sizeof(*av_map)); 
+            cnts = write(fd, &(config->param), sizeof(config->param));
+            if (cnts == sizeof(config->param))
+                result = cnts;
+            close(fd);
+        }
+
+	} else {
+        rt_memcpy(av_map, &config->param.av_map, sizeof(*av_map));
+        result = 1;
+	}
+	
+	rt_mutex_release(config->mutex);
+	return result;
+}
+
+int
+device_config_kv_operate(struct key_valid_map *kv_map, u8 flag)
+{
+	int fd;
+	int cnts;
+	int result = -ECONFIG_ERROR;
+
+    struct device_configure *config = &device_config;
+	RT_ASSERT(config!=RT_NULL);
+	RT_ASSERT(config->mutex!=RT_NULL);
+
+	rt_mutex_take(config->mutex, RT_WAITING_FOREVER);
+
+
+	if (flag) {
+        if ((fd = open(DEVICE_CONFIG_FILE_NAME,O_RDWR,0x777)) >= 0)
+        {
+            rt_memcpy(&config->param.kv_map, kv_map, sizeof(*kv_map)); 
+            cnts = write(fd, &(config->param), sizeof(config->param));
+            if (cnts == sizeof(config->param))
+                result = cnts;
+            close(fd);
+        }
+
+	} else {
+        rt_memcpy(kv_map, &config->param.kv_map, sizeof(*kv_map));
+        result = 1;
+	}
+	
+	rt_mutex_release(config->mutex);
+	return result;
+}
+
+int
+device_config_ev_operate(struct event_valid_map *ev_map, u8 flag)
+{
+	int fd;
+	int cnts;
+	int result = -ECONFIG_ERROR;
+
+    struct device_configure *config = &device_config;
+	RT_ASSERT(config!=RT_NULL);
+	RT_ASSERT(config->mutex!=RT_NULL);
+
+	rt_mutex_take(config->mutex, RT_WAITING_FOREVER);
+
+
+	if (flag) {
+        if ((fd = open(DEVICE_CONFIG_FILE_NAME,O_RDWR,0x777)) >= 0)
+        {
+            rt_memcpy(&config->param.ev_map, ev_map, sizeof(*ev_map)); 
+            cnts = write(fd, &(config->param), sizeof(config->param));
+            if (cnts == sizeof(config->param))
+                result = cnts;
+            close(fd);
+        }
+
+	} else {
+        rt_memcpy(ev_map, &config->param.ev_map, sizeof(*ev_map));
         result = 1;
 	}
 	

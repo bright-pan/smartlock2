@@ -334,4 +334,15 @@ s32
 device_config_event_index(int(*callback)(struct event *, int id ,void *arg1), void *arg1);
 s32
 device_config_account_index(int(*callback)(struct account_head *, u16 account_id, void *args), void *args);
+
+
+int
+device_config_ev_operate(struct event_valid_map *ev_map, u8 flag);
+int
+device_config_kv_operate(struct key_valid_map *kv_map, u8 flag);
+int
+device_config_av_operate(struct account_valid_map *av_map, u8 flag);
+int
+device_config_pv_operate(struct phone_valid_map *pv_map, u8 flag);
+
 #endif /* _CONFIG_H_ */
