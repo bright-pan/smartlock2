@@ -734,7 +734,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
 				return RT_ERROR;
 			}
       msg_data->cmd = NET_MSGTYPE_OPENDOOR;
-      net_set_lenmap(&msg_data->lenmap,1,1,7,2);
+      net_set_lenmap(&msg_data->lenmap,1,1,9,2);
       
       break;
     }
@@ -1258,7 +1258,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
       }
       else
 			{
-				RT_DEBUG_LOG(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_KEYBIND message user is null\n"));
+				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_KEYBIND message user is null\n"));
         
 				return RT_ERROR;
 			}
@@ -1279,7 +1279,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
       }
       else
 			{
-				RT_DEBUG_LOG(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_KEYBIND message user is null\n"));
+				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_KEYBIND message user is null\n"));
         
 				return RT_ERROR;
 			}
@@ -1300,7 +1300,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
       }
       else
 			{
-				RT_DEBUG_LOG(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_KEYBIND message user is null\n"));
+				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_KEYBIND message user is null\n"));
         
 				return RT_ERROR;
 			}
@@ -1321,7 +1321,28 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
       }
       else
 			{
-				RT_DEBUG_LOG(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_KEYBIND message user is null\n"));
+				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_KEYBIND message user is null\n"));
+        
+				return RT_ERROR;
+			}
+			break;
+    }
+    case NET_MSGTYPE_DATA_SYNC:
+    {
+    	//ÓÃ»§
+    	net_datasync_ack *data;
+
+    	msg_data->cmd = NET_MSGTYPE_DATA_SYNC_ACK;
+     	net_set_lenmap(&msg_data->lenmap,1,1,1,2);
+
+     	data = MsgMail->user;
+      if(data != RT_NULL)
+      {
+				msg_data->data.DataSYNCAck = data->data;
+      }
+      else
+			{
+				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_DATA_SYNC message user is null\n"));
         
 				return RT_ERROR;
 			}
