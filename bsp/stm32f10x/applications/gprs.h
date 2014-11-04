@@ -48,5 +48,7 @@ typedef struct
 
 void send_gprs_mail(ALARM_TYPEDEF AlarmType,time_t time,void *user);
 
+void set_all_update_flag(rt_uint8_t flag);
+
 #endif
 
