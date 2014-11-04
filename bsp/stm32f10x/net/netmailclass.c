@@ -134,7 +134,7 @@ void net_mail_heart(void)
   mail->type = NET_MSGTYPE_HEART;
   mail->resend = 3;
   mail->outtime = 500;
-  mail->sendmode = ASYN_MODE;
+  mail->sendmode = ASYN_MODE;//异步
   mail->col.byte = get_msg_new_order(RT_TRUE);
 
 	#ifdef USEING_MOTOR_API
@@ -1188,7 +1188,7 @@ void msg_mail_phonebind_ack(net_recvmsg_p RMail,rt_uint8_t result)
 	RT_ASSERT(mail != RT_NULL);
 
 	//设置邮件
-	mail->type = NET_MSGTYPE_KEYBIND_ACK;  //邮件类型
+	mail->type = NET_MSGTYPE_PHONEBIND_ACK;  //邮件类型
 	mail->resend = 0;                       //重发技术
 	mail->outtime = 0;                      //超时间
 	mail->sendmode = ASYN_MODE;             //同步
@@ -1208,6 +1208,34 @@ void msg_mail_phonebind_ack(net_recvmsg_p RMail,rt_uint8_t result)
 	rt_free(mail);
 }
 
+void msg_mail_datasync_ack(net_recvmsg_p RMail,rt_uint8_t result)
+{
+	net_msgmail_p mail = RT_NULL;
+	net_datasync_ack *UserData;
+
+	//获取资源
+	mail = (net_msgmail_p)rt_calloc(1,sizeof(net_msgmail));
+	RT_ASSERT(mail != RT_NULL);
+
+	//设置邮件
+	mail->type = NET_MSGTYPE_DATA_SYNC_ACK;  //邮件类型
+	mail->resend = 0;                       //重发技术
+	mail->outtime = 0;                      //超时间
+	mail->sendmode = ASYN_MODE;             //同步
+	mail->col = RMail->col;
+
+	//设置数据域 在发送完成后销毁
+	UserData = rt_calloc(1,sizeof(*UserData));
+	RT_ASSERT(UserData != RT_NULL);
+	mail->user = UserData;
+	UserData->data.result = result;
+	//发送邮件
+	net_msg_send_mail(mail);
+
+	//释放资源
+	RT_ASSERT(mail != RT_NULL);
+	rt_free(mail);
+}
 
 /*********************************************************************
  *process receive net messge 
@@ -1478,6 +1506,18 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
     
 			break;
 		}	
+		case NET_MSGTYPE_DATA_SYNC:
+		{
+			//数据同步
+
+
+			ProcessResult  = net_data_sync(Mail);
+			result = (ProcessResult == RT_EOK)?1:0;
+
+   		msg_mail_datasync_ack(Mail,result);
+
+			break;
+		}
 	  default:
 	  {
 	    break;

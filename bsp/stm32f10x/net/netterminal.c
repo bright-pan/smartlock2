@@ -13,6 +13,7 @@
   */
 #include "netterminal.h"
 #include "netmailclass.h"
+#include "dataSYNC.h"
 
 //#include "unlockprocess.h"
 //#include "camera.h"
@@ -167,4 +168,13 @@ rt_err_t net_set_doormode(net_recvmsg_p mail)
 
 	
 	return RT_EOK;
+}
+
+
+rt_err_t net_data_sync(net_recvmsg_p mail)
+{
+	RT_ASSERT(mail != RT_NULL);
+	
+	
+	return remote_data_sync_process();
 }
