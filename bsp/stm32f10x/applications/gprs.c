@@ -858,6 +858,12 @@ void record_show(void)
 }
 FINSH_FUNCTION_EXPORT(record_show,"show record");
 
+void database_update(rt_uint8_t flag)
+{
+	set_all_update_flag(flag);	
+}
+FINSH_FUNCTION_EXPORT(database_update,set database all update);
+
 #endif
 
 
