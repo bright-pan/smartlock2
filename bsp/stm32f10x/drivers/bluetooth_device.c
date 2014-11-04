@@ -1045,6 +1045,7 @@ void at_test(const char cmd,const char *ack)
 	if(uart == RT_NULL)
 	{
 		rt_kprintf("This Name UART device none find!\n");
+		rt_free(buf);
 		return ;
 	}
 	rt_device_open(uart,RT_DEVICE_OFLAG_RDWR);
