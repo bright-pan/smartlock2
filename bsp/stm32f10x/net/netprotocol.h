@@ -96,6 +96,7 @@ typedef enum
   NET_MSGTYPE_ACCMAPCKS     = 0X26, //账户映射域
   NET_MSGTYPE_ACCMAPCKS_ACK = 0XA6, //账户映射域检测应答
   NET_MSGTYPE_ACCMAPADD     = 0X27, //账户映射域添加
+  NET_MSGTYPE_ACCMAPADD_ACK = 0XA7, //账户映射域添加应答
   NET_MSGTYPE_DATA_SYNC     = 0x32, //远程同步
   NET_MSGTYPE_DATA_SYNC_ACK = 0XB2,//远程同步
   NET_MSGTYPE_NULL          = 0XFF
@@ -361,6 +362,13 @@ typedef struct
 	rt_uint8_t Date[4];
 }net_phonebind;
 
+//账户映射域添加
+typedef struct 
+{
+	rt_uint8_t *MapByte;
+	rt_uint8_t Date[4];
+}net_accmap_add;
+
 
 //发送应答
 typedef struct
@@ -426,6 +434,7 @@ typedef union
   net_phonebind			PhoneBind;		//电话绑定
   net_account_ack   PhoneBindAck; //电话绑定应答
   net_ack           DataSYNCAck;  //数据同步应答
+  net_accmap_add    AccMapAdd;    //账户映射域添加
 }net_messge_data;
 
 //序号的位操作结构
@@ -667,10 +676,18 @@ typedef struct
 	rt_uint8_t crc16[2];
 }net_recv_phonebind_ack;
 
+//同步报文接收
 typedef struct 
 {
 	rt_uint8_t crc16[2];
 }net_recv_datasync;
+
+//账户映射域添加
+typedef struct 
+{
+	rt_uint8_t result;
+	rt_uint8_t crc16[2];
+}net_recv_accmapadd_ack;
 
 //接收报文的数据域
 typedef union 
@@ -708,6 +725,7 @@ typedef union
 	net_recv_phonebind			PhoneBind;		//电话绑定
 	net_recv_phonebind_ack	PhoneBindAck;	//电话绑定应答
 	net_recv_datasync       DataSYNC;     //数据同步
+	net_recv_accmapadd_ack  AccMapAddAck; //账户映射域添加应答
 }net_recv_data;
 
 //接收报文的描述结构体
@@ -928,7 +946,15 @@ typedef struct
 {
 	net_send_result result;
 	net_ack         data;
-}net_datasync_ack;
+}net_datasync_ack_user;
+
+//账户映射域添加
+typedef struct 
+{
+	net_send_result result;
+	net_accmap_add  data;
+	rt_size_t       DataLen;
+}net_accmapadd_user;
 
 //包序号
 extern net_col net_order;

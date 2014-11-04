@@ -571,6 +571,13 @@ void net_pack_data(net_message *message,net_encrypt *data)
 			
 			break;
 		}
+		case NET_MSGTYPE_ACCMAPADD:
+		{
+			rt_memcpy(bufp,data->data.AccMapAdd.MapByte,data->lenmap.bit.data-4);//拷贝映射域
+			rt_memcpy(bufp+data->lenmap.bit.data-4,&data->data.AccMapAdd.Date,4);//拷贝时间
+
+			break;
+		}
 		case NET_MSGTYPE_HTTPUPDATE:
 		{
 			break;
@@ -603,7 +610,7 @@ void net_pack_data(net_message *message,net_encrypt *data)
  {
     rt_uint16_t i;
 
-    RT_DEBUG_LOG(SHOW_SEND_MSG_INFO,("Send encrypt message:\n"));
+    RT_DEBUG_LOG(SHOW_SEND_MSG_INFO,("Send encrypt message:\n>>>>>>"));
     for(i = 0;i < message->length+4;i++)
     {
       RT_DEBUG_LOG(SHOW_SEND_MSG_INFO,("%02X",*(message->buffer+i)));
@@ -1327,10 +1334,30 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
 			}
 			break;
     }
-    case NET_MSGTYPE_DATA_SYNC:
+    case NET_MSGTYPE_ACCMAPADD:
     {
-    	//用户
-    	net_datasync_ack *data;
+    	//用户映射域添加
+    	net_accmapadd_user *data;
+
+			data = MsgMail->user;
+			if(data != RT_NULL)
+			{
+				msg_data->data.AccMapAdd = data->data;
+			}
+			else
+			{
+				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_ACCMAPADD message user is null\n"));
+				return RT_ERROR;
+			}
+    	msg_data->cmd = MsgMail->type;
+    	net_set_lenmap(&msg_data->lenmap,1,1,data->DataLen+4,2);
+    	
+			break;
+    }
+    case NET_MSGTYPE_DATA_SYNC_ACK:
+    {
+    	//数据同步
+    	net_datasync_ack_user *data;
 
     	msg_data->cmd = NET_MSGTYPE_DATA_SYNC_ACK;
      	net_set_lenmap(&msg_data->lenmap,1,1,1,2);

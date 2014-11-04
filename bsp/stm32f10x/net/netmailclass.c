@@ -9,7 +9,7 @@
 #include "stdlib.h"
 #include "netprotocol.h"
 #include "config.h"
-
+#include "dataSYNC.h"
 
 //#include "untils.h"
 //#include "unlockprocess.h"
@@ -1211,7 +1211,7 @@ void msg_mail_phonebind_ack(net_recvmsg_p RMail,rt_uint8_t result)
 void msg_mail_datasync_ack(net_recvmsg_p RMail,rt_uint8_t result)
 {
 	net_msgmail_p mail = RT_NULL;
-	net_datasync_ack *UserData;
+	net_datasync_ack_user *UserData;
 
 	//获取资源
 	mail = (net_msgmail_p)rt_calloc(1,sizeof(net_msgmail));
@@ -1236,6 +1236,54 @@ void msg_mail_datasync_ack(net_recvmsg_p RMail,rt_uint8_t result)
 	RT_ASSERT(mail != RT_NULL);
 	rt_free(mail);
 }
+
+//账户映射域添加
+rt_err_t msg_mail_accmapadd(rt_uint8_t *MapByte,rt_size_t ByteLength,rt_uint32_t date)
+{
+	rt_uint8_t            result;
+	net_msgmail_p         mail = RT_NULL;
+	net_accmapadd_user    *UserData = RT_NULL;
+
+	//获取资源
+	mail = (net_msgmail_p)rt_calloc(1,sizeof(net_msgmail));
+	UserData = rt_calloc(1,sizeof(*UserData));
+	RT_ASSERT(mail != RT_NULL);
+	RT_ASSERT(UserData != RT_NULL);
+	mail->user = UserData;
+
+	UserData->result.complete = smg_send_wait_sem_crate();
+	RT_ASSERT(UserData != RT_NULL);
+
+	//设置邮件
+	mail->type = NET_MSGTYPE_ACCMAPADD;   						//邮件类型
+	mail->resend = MAIL_FAULT_RESEND;                 //重发技术
+	mail->outtime = MAIL_FAULT_OUTTIME;              //超时间
+	mail->sendmode = SYNC_MODE;      								 //同步
+	mail->col.byte = get_msg_new_order(RT_TRUE);
+	//设置私有数据
+
+	UserData->DataLen = ByteLength;
+	UserData->data.MapByte = MapByte;
+	date = net_rev32(date);
+	rt_memcpy(UserData->data.Date,&date,4);
+
+	//发送邮件
+	net_msg_send_mail(mail);
+	rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
+	rt_sem_delete(UserData->result.complete);
+	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
+	result = UserData->result.result;
+
+	//释放资源
+	RT_ASSERT(UserData != RT_NULL);
+	rt_free(UserData);
+	RT_ASSERT(mail != RT_NULL);
+	rt_free(mail);
+
+  return (result == 0)?RT_EOK:RT_ERROR;
+}
+
+
 
 /*********************************************************************
  *process receive net messge 
@@ -1506,6 +1554,12 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
     
 			break;
 		}	
+		case NET_MSGTYPE_ACCMAPADD_ACK:
+		{
+			//账户映射域添加应答
+			
+			break;
+		}
 		case NET_MSGTYPE_DATA_SYNC:
 		{
 			//数据同步
@@ -1732,7 +1786,34 @@ void msg_test(rt_uint8_t cmd)
 		}
 	}
 }
-FINSH_FUNCTION_EXPORT(msg_test,msg_test(void))
+FINSH_FUNCTION_EXPORT(msg_test,msg_test(void));
+
+void upload_accmap(void)
+{
+	struct account_valid_map *mapdata;
+	rt_size_t i;
+	
+	mapdata = rt_calloc(1,sizeof(*mapdata));
+	
+	device_config_av_operate(mapdata,0);
+
+	for(i = 0 ; i < ACCOUNT_MAP_SIZE;i++)
+	{
+		if(i % 5 == 0)
+		{
+			rt_kprintf("\n");
+		}
+		rt_kprintf("%08X",mapdata->data[i]);
+	}
+
+	msg_mail_accmapadd((rt_uint8_t *)mapdata->data,ACCOUNT_MAP_SIZE*4,net_get_date());
+
+	rt_free(mapdata);
+
+	
+}
+
+FINSH_FUNCTION_EXPORT(upload_accmap,upload account mapbit)
 
 #endif
 

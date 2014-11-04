@@ -178,3 +178,4 @@ rt_err_t net_data_sync(net_recvmsg_p mail)
 	
 	return remote_data_sync_process();
 }
+
