@@ -49,8 +49,8 @@ const KbdTabStruct	KeyTab[KEY_MAX_MENU_NUM] =
 	{8,9,13,14,11,menu_8_processing},//新增密码 >>同时创建账号
 	{9,10,8,15,11,menu_9_processing},//新增指纹
 	{10,11,9,16,11,menu_10_processing},//新增手机
-	{11,12,10,17,10,menu_11_processing},//保存退出
-	{12,13,11,18,12,menu_12_processing},//查看信息
+	{11,12,10,17,11,menu_11_processing},//保存退出
+	{12,13,11,18,11,menu_12_processing},//查看信息
 	{13,8,12,19,13,menu_13_processing},//退出
 
 	//五级
@@ -78,7 +78,7 @@ const KbdTabStruct	KeyTab[KEY_MAX_MENU_NUM] =
 	{29,23,24,25,24,menu_29_processing},//修改指纹处理
 	{30,23,24,25,25,menu_30_processing},//修改电话处理
 	{31,31,31,5,26,menu_31_processing},//删除用户处理
-  {32,32,32,5,26,menu_32_processing},//保存退出
+  {32,32,32,5,5,menu_32_processing},//保存退出
 
 	//三级菜单
 	{33,34,34,35,7,menu_33_processing},  //自动休眠
@@ -444,7 +444,7 @@ void menu_inputchar_glint(rt_uint8_t x,rt_uint8_t y,rt_uint8_t status)
 	}
 }
 
-void menu_error_handle(rt_uint8_t type)
+void menu_operation_result_handle(rt_uint8_t type)
 {
 	switch(type)
 	{

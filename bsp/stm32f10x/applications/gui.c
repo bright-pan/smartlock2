@@ -46,6 +46,12 @@ rt_uint8_t gui_sleep_time_get(void)
 	return GUISleepTime;
 }
 
+//´ò¿ªlcdÏÔÊ¾
+void gui_open_lcd_show(void)
+{
+  send_key_value_mail(KB_MAIL_TYPE_INPUT, KB_MODE_NORMAL_AUTH, MENU_DEL_VALUE);
+}
+
 rt_err_t send_key_value_mail(uint16_t type, KB_MODE_TYPEDEF mode, uint8_t c)
 {
 	rt_err_t result = -RT_EFULL;

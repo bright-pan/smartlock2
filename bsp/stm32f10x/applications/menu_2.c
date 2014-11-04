@@ -330,7 +330,7 @@ void menu_14_processing(void)
           if(result != RT_EOK)
           {
           	//密码不合法
-          	menu_error_handle(1);
+          	menu_operation_result_handle(1);
     				gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PasswordAddText[3],GUI_WIHIT);
     				gui_display_update();
     				rt_thread_delay(RT_TICK_PER_SECOND);
@@ -424,7 +424,7 @@ void menu_14_processing(void)
           if(temp != 0)
           {
             //密码匹配错误
-            menu_error_handle(1);
+            menu_operation_result_handle(1);
             gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PasswordAddText[3],GUI_WIHIT);
     				gui_display_update();
     				rt_thread_delay(RT_TICK_PER_SECOND);
@@ -556,7 +556,7 @@ void menu_15_processing(void)
 					if(result == RT_EOK)
 					{
 						//指纹采集成功
-						menu_error_handle(2);
+						menu_operation_result_handle(2);
 						gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(2),SHOW_X_ROW8(15),SHOW_Y_LINE(3));
 						gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),MenuCommText[1],GUI_WIHIT);
 						gui_display_update();
@@ -567,7 +567,7 @@ void menu_15_processing(void)
 					else
 					{
 						//指纹采集失败
-						menu_error_handle(1);
+						menu_operation_result_handle(1);
 						gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(2),SHOW_X_ROW8(15),SHOW_Y_LINE(3));
 						gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),MenuCommText[2],GUI_WIHIT);
 						gui_display_update();
@@ -677,7 +677,7 @@ void menu_16_processing(void)
           if(result != RT_EOK)
           {
           	//不合法
-          	menu_error_handle(1);
+          	menu_operation_result_handle(1);
     				gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PhoneAddText[2],GUI_WIHIT);
     				gui_display_update();
     				rt_thread_delay(RT_TICK_PER_SECOND);
@@ -767,7 +767,7 @@ void menu_16_processing(void)
           if(res != 0)
           {
           	//不合法
-          	menu_error_handle(1);
+          	menu_operation_result_handle(1);
     				gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PhoneAddText[2],GUI_WIHIT);
     				gui_display_update();
     				rt_thread_delay(RT_TICK_PER_SECOND);
@@ -791,7 +791,7 @@ void menu_16_processing(void)
            	if(result == RT_ERROR)
            	{
 							//保存失败
-							menu_error_handle(2);
+							menu_operation_result_handle(2);
 							SaveShowFlag = 2;
            	}
            	gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),MenuCommText[SaveShowFlag],GUI_WIHIT);
@@ -864,6 +864,8 @@ static void update_account_new_data(rt_uint16_t pos)
 		//上传电话
     gprs_account_add_mail(data->phone[i]);
 	}
+
+	rt_free(data);
 }
 //保存并退出
 void menu_17_processing(void)
@@ -2064,7 +2066,7 @@ void menu_35_processing(void)
 	
 	gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
   gui_display_string(SHOW_X_CENTERED(MenuAutoSleepText[0]),SHOW_Y_LINE(1),MenuAutoSleepText[0],GUI_WIHIT);
-  rt_sprintf(ShowBuf,"<  %03d  >",SleepTime);
+  rt_sprintf((char *)ShowBuf,"<  %03d  >",SleepTime);
   gui_display_string(SHOW_X_CENTERED(ShowBuf),SHOW_Y_LINE(2),ShowBuf,GUI_WIHIT);
   gui_display_update();
 	while(1)
@@ -2090,7 +2092,7 @@ void menu_35_processing(void)
 			{
 				SleepTime--;
 			}
-			rt_sprintf(ShowBuf,"<  %03d  >",SleepTime);
+			rt_sprintf((char *)ShowBuf,"<  %03d  >",SleepTime);
   		gui_display_string(SHOW_X_CENTERED(ShowBuf),SHOW_Y_LINE(2),ShowBuf,GUI_WIHIT);
   		gui_display_update();
 		}
@@ -2115,7 +2117,7 @@ void menu_36_processing(void)
 	
 	gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
   gui_display_string(SHOW_X_CENTERED(MenuAutoLockText[0]),SHOW_Y_LINE(1),MenuAutoLockText[0],GUI_WIHIT);
-  rt_sprintf(ShowBuf,"<  %03d  >",LockTime);
+  rt_sprintf((char *)ShowBuf,"<  %03d  >",LockTime);
   gui_display_string(SHOW_X_CENTERED(ShowBuf),SHOW_Y_LINE(2),ShowBuf,GUI_WIHIT);
   gui_display_update();
 	while(1)
@@ -2145,7 +2147,7 @@ void menu_36_processing(void)
 				}
 				
 			}
-			rt_sprintf(ShowBuf,"<  %03d  >",LockTime);
+			rt_sprintf((char *)ShowBuf,"<  %03d  >",LockTime);
   		gui_display_string(SHOW_X_CENTERED(ShowBuf),SHOW_Y_LINE(2),ShowBuf,GUI_WIHIT);
   		gui_display_update();
 		}

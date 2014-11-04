@@ -125,13 +125,27 @@ rt_err_t fprint_input_ok_trigger(void *user)
 
 		KeyData.key.ID = key.KeyPos;
 	  KeyData.key.Type = KEY_TYPE_FPRINT;
+
+		if(key_permission_check(KeyData.key.ID) != RT_EOK)
+		{
+			//计数累加
+			if(key_error_alarm_manage(KEY_ERRNUM_MODE_ADDUP,&KeyData.key.sms) == RT_TRUE)
+			{
+				menu_operation_result_handle(3);
+			}
+
+			menu_event_process(0,MENU_EVT_FP_ERROR);
+		  send_local_mail(ALARM_TYPE_KEY_ERROR,0,&KeyData);	
+			return RT_EOK; 
+		}
+		
 	  send_local_mail(ALARM_TYPE_KEY_RIGHT,(time_t)menu_get_cur_date,&KeyData);
 
 		//发送解锁事件给UI
 		menu_event_process(0,MENU_EVT_FP_UNLOCK);
 		
-    //错误次数管理
-		key_error_alarm_manage(1);
+    //清除开锁错误次数
+		key_error_alarm_manage(KEY_ERRNUM_MODE_CLAER,RT_NULL);
 	}
   
   return RT_EOK;
@@ -150,14 +164,11 @@ rt_err_t fprint_input_error_trigger(void *user)
   data.key.ID = KEY_TYPE_INVALID;
 	data.key.Type = KEY_TYPE_FPRINT;
 	//计数累加
-	if(key_error_alarm_manage(0) == RT_TRUE)
+	if(key_error_alarm_manage(KEY_ERRNUM_MODE_ADDUP,&data.key.sms) == RT_TRUE)
 	{
-		data.key.sms = 1;
+		menu_operation_result_handle(3);
 	}
-	else
-	{
-		data.key.sms = 0;
-	}
+
 	menu_event_process(0,MENU_EVT_FP_ERROR);
   send_local_mail(ALARM_TYPE_KEY_ERROR,0,&data);	
   

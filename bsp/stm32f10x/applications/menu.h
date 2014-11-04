@@ -70,7 +70,7 @@ void key_input_processing_init(void);
 void system_menu_choose(rt_uint8_t menu);
 
 //´íÎó´¦Àí
-void menu_error_handle(rt_uint8_t type);
+void menu_operation_result_handle(rt_uint8_t type);
 
 rt_uint8_t menu_event_process(rt_uint8_t mode,rt_uint32_t type);
 

@@ -144,20 +144,15 @@ rt_err_t unlock_process_ui(void)
 						data.key.ID = KEY_TYPE_INVALID;
 						data.key.Type = KEY_TYPE_KBOARD;
 						
-	          menu_error_handle(1);
+	          menu_operation_result_handle(1);
 	          gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),UNLOCK_UI_TEXT[2],GUI_WIHIT);
 	          gui_display_update();
 	          menu_input_sure_key(RT_TICK_PER_SECOND);
 	          gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(3),SHOW_X_ROW8(15),SHOW_Y_LINE(4));
 
-	          if(key_error_alarm_manage(0) ==  RT_TRUE)
+	          if(key_error_alarm_manage(0,&data.key.sms) ==  RT_TRUE)
 	          {
-	          	data.key.sms = 1;
-							menu_error_handle(3);
-	          }
-	          else
-	          {
-							data.key.sms = 0;
+							menu_operation_result_handle(3);
 	          }
 	          send_local_mail(ALARM_TYPE_KEY_ERROR,0,&data);
 	          break;
@@ -180,7 +175,7 @@ rt_err_t unlock_process_ui(void)
 	          #ifndef USEING_SYSTEM_SHOW_STYLE1
 	          system_menu_choose(1);
 	          #endif
-	          key_error_alarm_manage(1);
+	          key_error_alarm_manage(KEY_ERRNUM_MODE_CLAER,RT_NULL);
 	          return RT_EOK;
 	        }
 	      }

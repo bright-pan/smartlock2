@@ -112,27 +112,30 @@ void menu_0_processing(void)
             current_operation_index = KeyTab[KeyFuncIndex].CurrentOperate;
             current_operation_index();
             send_local_mail(ALARM_TYPE_SYSTEM_UNFREEZE,0,RT_NULL);
+
+						//Çå³ýÔ¿³×´íÎó¼ÆÊý
+            key_error_alarm_manage(KEY_ERRNUM_MODE_CLAER,RT_NULL);
             return ;
           }
           else
           {
+          	rt_uint8_t smsflag;
             //ÃÜÂë´íÎó
-            menu_error_handle(1);
+            menu_operation_result_handle(1);
             gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(3),SHOW_LAND_UI_PS_ERR,GUI_WIHIT);
             gui_display_update();
             menu_input_sure_key(RT_TICK_PER_SECOND);
             //rt_thread_delay(RT_TICK_PER_SECOND);
             //ÃÜÂë´íÎó3´Î±¨¾¯
-            if(key_error_alarm_manage(0) ==  RT_TRUE)
+            if(key_error_alarm_manage(KEY_ERRNUM_MODE_ADDUP,&smsflag) ==  RT_TRUE)
 	          {
 	          	union alarm_data data;
 	          	
 	          	data.key.ID = KEY_ID_INVALID;
 	          	data.key.Type = KEY_TYPE_KBOARD;
-	          	data.key.sms = 1;
               send_local_mail(ALARM_TYPE_KEY_ERROR,0,&data);
               
-							menu_error_handle(3);
+							menu_operation_result_handle(3);
 	          }
             break;
           }

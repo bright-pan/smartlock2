@@ -41,6 +41,8 @@ void gui_sleep_time_set(rt_uint8_t value);
 
 rt_uint8_t gui_sleep_time_get(void);
 
+void gui_open_lcd_show(void);
+
 rt_err_t send_key_value_mail(uint16_t type, KB_MODE_TYPEDEF mode, uint8_t c);
 
 //¼üÅÌÊäÈë½Ó¿Ú
