@@ -160,25 +160,37 @@ rt_uint8_t local_event_process(rt_uint8_t mode,rt_uint32_t type)
 
 
 //报警管理
-//错误计数累加  1
-//清除计数      0
-rt_bool_t key_error_alarm_manage(rt_uint8_t mode)
+//错误计数累加  0
+//清除计数      1
+rt_bool_t key_error_alarm_manage(KeyErrCntManageMode mode,rt_uint8_t *smsflag)
 {
 	switch(mode)
 	{
-		case 0:
+		case KEY_ERRNUM_MODE_ADDUP:
 		{	
 			//计数
 			KeyErrorData.ErrorCnt++;
-			if(KeyErrorData.ErrorCnt == 3)
+			if(KeyErrorData.ErrorCnt > 3)
 			{
 				//发送冻结事件
 				send_local_mail(ALARM_TYPE_SYSTEM_FREEZE,0,RT_NULL);
-				return RT_TRUE;
+				if(smsflag != RT_NULL)
+				{
+          if(KeyErrorData.ErrorCnt == 4)
+          {
+            *smsflag = 1;
+          }
+          else
+          {
+            *smsflag = 0;
+          }
+				}
+
+       	return RT_TRUE;
 			}
 			break;
 		}
-		case 1:
+		case KEY_ERRNUM_MODE_CLAER:
 		{
 			//清除计数
 			KeyErrorData.ErrorCnt = 0;
@@ -274,22 +286,26 @@ local_thread_entry(void *parameter)
 			{
 				case ALARM_TYPE_GSM_RING:
 				{
-                    s32 temp;
-                    struct phone_head ph;
-                    rt_memset(&ph, 0, sizeof(ph));
-                    rt_memcpy(ph.address, "86", 2);
-                    rt_memcpy(ph.address+2, local_mail_buf.data.ring.phone_call, rt_strlen(local_mail_buf.data.ring.phone_call));
-					temp = device_config_phone_verify(ph.address, 20);
-                    if (temp >= 0)
-                    {
-                        if (device_config_phone_operate(temp, &ph, 0) >= 0) {
-                            if (ph.account != PHONE_ID_INVALID && ph.auth & PHONE_AUTH_SMS) {
-                                //电机解锁。
-                                lock_operation(LOCK_OPERATION_OPEN, MOTOR_WORK_CUT);
-                                send_sms_mail(ALARM_TYPE_SMS_REP_IN_PHONE_CALL, 0, ph.address, 13, PHONE_AUTH_SMS);
-                            }
-                        }
-                    }
+	        s32 temp;
+	        struct phone_head ph;
+	        rt_memset(&ph, 0, sizeof(ph));
+	        rt_memcpy(ph.address, "86", 2);
+	        rt_memcpy(ph.address+2, local_mail_buf.data.ring.phone_call, rt_strlen(local_mail_buf.data.ring.phone_call));
+					temp = device_config_phone_verify(local_mail_buf.data.ring.phone_call, 11);
+	        if (temp >= 0)
+	        {
+	            if (device_config_phone_operate(temp, &ph, 0) >= 0) {
+	                if (ph.account != PHONE_ID_INVALID && ph.auth & PHONE_AUTH_SMS) {
+	                    //电机解锁。
+	                    lock_operation(LOCK_OPERATION_OPEN, MOTOR_WORK_CUT);
+	                    send_sms_mail(ALARM_TYPE_SMS_REP_IN_PHONE_CALL, 0, ph.address, 13, PHONE_AUTH_SMS);
+	                }
+	            }
+	        }
+	        else
+	        {
+						RT_DEBUG_LOG(LOCAL_DEBUG,("This is phone error %s\n",local_mail_buf.data.ring.phone_call));
+	        }
 					break;
 				}
 				case ALARM_TYPE_GSM_RING_REQUEST:
@@ -341,11 +357,12 @@ local_thread_entry(void *parameter)
         	//钥匙正确
 					union alarm_data data;
 
-					if(local_mail_buf.data.key.Type == ALARM_TYPE_KEY_RIGHT)
+					if(local_mail_buf.data.key.Type == KEY_TYPE_RF433)
 					{
 						//433 钥匙
 						rt_kprintf("This is RF433 GPRS Mail\n");
             gprs_key_right_mail(local_mail_buf.data.key.ID);
+            buzzer_send_mail(BZ_TYPE_UNLOCK);
 						break;
 					}
 					data.lock.key_id = local_mail_buf.data.key.ID;
@@ -561,19 +578,5 @@ void system_info(void)
 }
 FINSH_FUNCTION_EXPORT(system_info,"show system info");
 
-void rf433_test(void)
-{
-	send_rf433_mail(RF433_START, RT_NULL);
-}
-FINSH_FUNCTION_EXPORT(rf433_test,"RF433 test");
-void timer_test_entry(void *arg)
-{
-	rt_kprintf("timer  run \n");
-}
-void timer_test(void)
-{
-	rt_timer_start(rt_timer_create("test",timer_test_entry,RT_NULL,10,RT_TIMER_FLAG_ONE_SHOT));
-}
-FINSH_FUNCTION_EXPORT(timer_test,test timer);
 
 #endif

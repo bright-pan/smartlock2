@@ -25,6 +25,13 @@
 #define LOCK_OPERATION_OPEN                   0
 #define LOCK_OPERATION_CLOSE                  1
 
+//报警错误技术管理模式
+typedef enum 
+{
+	KEY_ERRNUM_MODE_ADDUP,
+	KEY_ERRNUM_MODE_CLAER,
+}KeyErrCntManageMode;
+
 #define LOCAL_EVT_SYSTEM_FREEZE               (0X01<<0)
 struct lock_data {
     s32 key_id;
@@ -61,7 +68,7 @@ void send_local_mail(ALARM_TYPEDEF alarm_type, time_t time, union alarm_data *da
 
 rt_uint8_t motor_status_get(void);
 
-rt_bool_t key_error_alarm_manage(rt_uint8_t mode);
+rt_bool_t key_error_alarm_manage(KeyErrCntManageMode mode,rt_uint8_t *smsflag);
 
 void system_autolock_time_set(rt_uint16_t value);
 
