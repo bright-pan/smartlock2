@@ -578,5 +578,13 @@ void system_info(void)
 }
 FINSH_FUNCTION_EXPORT(system_info,"show system info");
 
+void int_to_uint(rt_uint8_t data)
+{
+	rt_int8_t sdata;
+
+	sdata = data;
+	rt_kprintf("int:%d hex:%x\nuint:%d hex:%x\n",sdata,sdata,data,data);
+}
+FINSH_FUNCTION_EXPORT(int_to_uint,"int to uint show");
 
 #endif
