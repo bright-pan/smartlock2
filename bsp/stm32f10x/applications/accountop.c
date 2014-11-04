@@ -2,6 +2,7 @@
 #include "config.h"
 #include "fprint.h"
 #include <time.h>
+#include "local.h"
 
 
 #define USEING_DEBUG_ACCOP		0
@@ -263,7 +264,7 @@ rt_err_t phone_data_create(rt_uint8_t *phone)
 {
 	rt_int32_t pos;
 	
-	pos = device_config_phone_create(PHONE_ID_INVALID,phone,PHONE_ADDRESS_LENGTH);
+	pos = device_config_phone_create(PHONE_ID_INVALID,phone,rt_strlen(phone));
 	if(pos < 0)
 	{
 		return RT_ERROR;
@@ -835,6 +836,12 @@ rt_err_t key_permission_check(rt_uint16_t KeyID)
 	rt_int16_t result;
 
 	RunResult = RT_ERROR;
+	if(local_event_process(1,LOCAL_EVT_SYSTEM_FREEZE) == 0)
+	{
+		//ÏµÍ³¶³½á
+		RunResult = RT_ERROR;
+		return RunResult;
+	}
 	KeyDat = rt_calloc(1,sizeof(*KeyDat));
 	
 	result = device_config_key_operate(KeyID,KeyDat,0);
