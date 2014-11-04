@@ -157,6 +157,10 @@ static void key_upload_process(rt_uint16_t UpdatePos)
 		}
 		case KEY_TYPE_RF433:
 		{
+			data->DataLen = KEY_RF433_CODE_SIZE;
+			data->data.data = rt_calloc(1,data->DataLen);
+			RT_ASSERT(data->data.data != RT_NULL);
+			rt_memcpy(data->data.data,KeyData->data.rf433.code,data->DataLen);
 			break;
 		};
 		default:
@@ -204,7 +208,7 @@ rt_uint16_t get_key_update_pos(void)
 			if(keydat->head.is_updated == UPDATE_FLAG_VALUE)
 			{
 				//433钥匙不需要上传
-				if(keydat->head.key_type != KEY_TYPE_RF433)
+				//if(keydat->head.key_type != KEY_TYPE_RF433)
 				{
           rt_free(keydat);
           return i;
@@ -734,13 +738,15 @@ void gprs_mail_manage_entry(void* arg)
 		}
 		else
 		{
-			//send_gprs_mail(ALARM_TYPE_GPRS_SYS_TIME_UPDATE,0,RT_NULL);
+			
 			if(login_flag == 0)
 			{
 				//set_all_update_flag(1);
 				count = UPDATE_KEY_CNT;
 				//device_config_event_index(gprs_local_mail_resend,RT_NULL);
 				login_flag = 1;
+				update_smartlock_database();
+				send_gprs_mail(ALARM_TYPE_GPRS_SYS_TIME_UPDATE,0,RT_NULL);
 			}
 		}
 		//更新钥匙 手机号 
