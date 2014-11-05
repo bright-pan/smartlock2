@@ -4,6 +4,7 @@
 зїеп:wangzw <wangzw@yuettak.com>
 */
 #include "netcomm.h"
+#include <time.h>
 //#include <cyg/crc/crc.h>
 
 /*
@@ -129,7 +130,7 @@ rt_uint32_t net_get_date(void)
       rt_device_control(device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
   }
 
-	rt_kprintf("Current System Time: 0x%X\n",time);
+	rt_kprintf("System Time: %s\n",ctime((const time_t *)time));
   return time;
 }
 

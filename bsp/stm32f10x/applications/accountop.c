@@ -33,7 +33,7 @@ rt_uint32_t menu_get_cur_date(void)
 	    rt_device_control(device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
 	}
 
-	RT_DEBUG_LOG(USEING_DEBUG_ACCOP,("Current System Time: 0x%X\n",time));
+	RT_DEBUG_LOG(USEING_DEBUG_ACCOP,("System Time: %s",ctime((const time_t *)&time)));
 	return time;
 }
 
@@ -264,7 +264,7 @@ rt_err_t phone_data_create(rt_uint8_t *phone)
 {
 	rt_int32_t pos;
 	
-	pos = device_config_phone_create(PHONE_ID_INVALID,phone,rt_strlen(phone));
+	pos = device_config_phone_create(PHONE_ID_INVALID,phone,rt_strlen((const char *)phone));
 	if(pos < 0)
 	{
 		return RT_ERROR;
@@ -869,7 +869,7 @@ rt_err_t key_permission_check(rt_uint16_t KeyID)
 				RunResult = RT_EOK;
 			}
 			rt_kprintf("KEY_OPERATION_TYPE_ONCE:\n");
-      rt_kprintf("%s\n", ctime(&date));
+      rt_kprintf("%s\n", ctime((const time_t *)&date));
       rt_kprintf("%s\n", ctime(&KeyDat->head.start_time));
       rt_kprintf("%s\n", ctime(&KeyDat->head.end_time));
 			break;

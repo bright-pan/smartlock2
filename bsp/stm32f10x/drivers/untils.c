@@ -37,7 +37,7 @@ sys_cur_date(void)
 	{
 		rt_device_control(device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
 	}
-	RT_DEBUG_LOG(CONFIG_DEBUG,("Current System Time: 0x%X\n",time));
+	RT_DEBUG_LOG(CONFIG_DEBUG,("System Time: %s\n",ctime((const time_t *)time)));
 	return time;
 }
 
