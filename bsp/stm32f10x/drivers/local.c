@@ -530,15 +530,18 @@ rt_local_init(void)
 
 INIT_APP_EXPORT(rt_local_init);
 
+//系统自动上锁时间设置
 void system_autolock_time_set(rt_uint16_t value)
 {
 	AutoLockTime = value;
 }
 
+//系统自动上锁时间获取
 rt_uint16_t system_autolock_time_get(void)
 {
 	return AutoLockTime;
 }
+
 
 
 #ifdef RT_USING_FINSH
@@ -586,5 +589,6 @@ void int_to_uint(rt_uint8_t data)
 	rt_kprintf("int:%d hex:%x\nuint:%d hex:%x\n",sdata,sdata,data,data);
 }
 FINSH_FUNCTION_EXPORT(int_to_uint,"int to uint show");
+
 
 #endif

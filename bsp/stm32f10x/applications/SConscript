@@ -22,6 +22,7 @@ gprs.c
 gprsmailclass.c
 FprintHandle.c
 dataSYNS.c
+eeprom_process.c
 """)
 
 CPPPATH = [cwd, str(Dir('#'))]
