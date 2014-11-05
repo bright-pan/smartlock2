@@ -1283,7 +1283,7 @@ rt_err_t msg_mail_accmapadd(rt_uint8_t *MapByte,rt_size_t ByteLength,rt_uint32_t
   return (result == 0)?RT_EOK:RT_ERROR;
 }
 
-//账户映射域添加
+//钥匙映射域添加
 rt_err_t msg_mail_keymapadd(rt_uint8_t *MapByte,rt_size_t ByteLength,rt_uint32_t date)
 {
 	rt_uint8_t            result;
@@ -1304,6 +1304,56 @@ rt_err_t msg_mail_keymapadd(rt_uint8_t *MapByte,rt_size_t ByteLength,rt_uint32_t
 
 	//设置邮件
 	mail->type = NET_MSGTYPE_KEYMAPADD;   						//邮件类型
+	mail->resend = MAIL_FAULT_RESEND;                 //重发技术
+	mail->outtime = MAIL_FAULT_OUTTIME;              //超时间
+	mail->sendmode = SYNC_MODE;      								 //同步
+	mail->col.byte = get_msg_new_order(RT_TRUE);
+	
+	//设置私有数据
+	UserData->DataLen = ByteLength;
+	UserData->data.MapByte = MapByte;
+	date = net_rev32(date);
+	rt_memcpy(UserData->data.Date,&date,4);
+
+	//发送邮件
+	net_msg_send_mail(mail);
+
+	//等待发送结果
+	rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
+	rt_sem_delete(UserData->result.complete);
+	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
+	result = UserData->result.result;
+
+	//释放资源
+	RT_ASSERT(UserData != RT_NULL);
+	rt_free(UserData);
+	RT_ASSERT(mail != RT_NULL);
+	rt_free(mail);
+
+  return (result == 0)?RT_EOK:RT_ERROR;
+}
+
+//手机映射域添加
+rt_err_t msg_mail_phmapadd(rt_uint8_t *MapByte,rt_size_t ByteLength,rt_uint32_t date)
+{
+	rt_uint8_t            result;
+	net_msgmail_p         mail = RT_NULL;
+	net_phmapadd_user    *UserData = RT_NULL;
+
+	//获取资源
+	mail = (net_msgmail_p)rt_calloc(1,sizeof(net_msgmail));
+	UserData = rt_calloc(1,sizeof(*UserData));
+	RT_ASSERT(mail != RT_NULL);
+	RT_ASSERT(UserData != RT_NULL);
+	
+	mail->user = UserData;
+
+	//创建同步信号量
+	UserData->result.complete = smg_send_wait_sem_crate();
+	RT_ASSERT(UserData != RT_NULL);
+
+	//设置邮件
+	mail->type = NET_MSGTYPE_PHMAPADD;   						//邮件类型
 	mail->resend = MAIL_FAULT_RESEND;                 //重发技术
 	mail->outtime = MAIL_FAULT_OUTTIME;              //超时间
 	mail->sendmode = SYNC_MODE;      								 //同步
@@ -1612,6 +1662,16 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 			
 			break;
 		}
+		case NET_MSGTYPE_KEYMAPADD_ACK:
+		{
+			//钥匙映射域添加
+			break;
+		}
+		case NET_MSGTYPE_PHMAPADD_ACK:
+		{
+			//手机映射域添加应答
+			break;
+		}
 		case NET_MSGTYPE_DATA_SYNC:
 		{
 			//数据同步
@@ -1622,11 +1682,6 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 
    		msg_mail_datasync_ack(Mail,result);
 
-			break;
-		}
-		case NET_MSGTYPE_KEYMAPADD:
-		{
-			//钥匙映射域添加
 			break;
 		}
 	  default:
@@ -1669,11 +1724,12 @@ void Net_Param_Init(void)
 	rt_uint8_t *data;
 	rt_uint8_t i;
 	
-	rt_kprintf("Net param ID KEY0 set>>>>\n");
+	rt_kprintf("Net param set:\n");
 	data = rt_calloc(1,9);
 	RT_ASSERT(data != RT_NULL);
 	
 	device_config_device_id_operate(data,0);
+	rt_kprintf("Device ID  >>>");
 	for(i = 0 ; i < 8;i++)
 	{
 		rt_kprintf("%x",data[i]);
@@ -1682,10 +1738,13 @@ void Net_Param_Init(void)
 	rt_memset(data,0,9);
 	device_config_key0_operate(data,0);
 	rt_kprintf("\n");
+	
+	rt_kprintf("Device Key0>>>");
 	for(i = 0 ; i < 8;i++)
 	{
 		rt_kprintf("%x",data[i]);
 	}
+	rt_kprintf("\n");
 	net_config_parameter_set(2,data);
 }
 
@@ -1922,6 +1981,7 @@ void upload_map(rt_uint8_t type)
 		}
 		case 2:
 		{
+			msg_mail_phmapadd((rt_uint8_t *)mapaddr,mapsize,net_get_date());
 			break;
 		}
 		default:

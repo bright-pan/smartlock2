@@ -587,6 +587,15 @@ void net_pack_data(net_message *message,net_encrypt *data)
 
 			break;
 		}
+		case NET_MSGTYPE_PHMAPADD:
+		{
+			//钥匙映射域添加
+			rt_memcpy(bufp,data->data.PhMapAdd.MapByte,data->lenmap.bit.data-4);//拷贝映射域
+			rt_memcpy(bufp+data->lenmap.bit.data-4,&data->data.PhMapAdd.Date,4);//拷贝时间
+
+			break;
+		}
+		
 		case NET_MSGTYPE_HTTPUPDATE:
 		{
 			break;
@@ -1365,7 +1374,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
     }
     case NET_MSGTYPE_KEYMAPADD:
     {
-    	//用户映射域添加
+    	//钥匙映射域添加
     	net_keymapadd_user *data;
 
 			data = MsgMail->user;
@@ -1376,6 +1385,26 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
 			else
 			{
 				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_KEYMAPADD message user is null\n"));
+				return RT_ERROR;
+			}
+    	msg_data->cmd = MsgMail->type;
+    	net_set_lenmap(&msg_data->lenmap,1,1,data->DataLen+4,2);
+    	
+			break;
+    }
+    case NET_MSGTYPE_PHMAPADD:
+    {
+    	//手机映射域添加
+    	net_phmapadd_user *data;
+
+			data = MsgMail->user;
+			if(data != RT_NULL)
+			{
+				msg_data->data.PhMapAdd = data->data;
+			}
+			else
+			{
+				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_PHMAPADD message user is null\n"));
 				return RT_ERROR;
 			}
     	msg_data->cmd = MsgMail->type;
@@ -2279,15 +2308,22 @@ static void net_recv_message(net_msgmail_p mail)
 			}	
 			case NET_MSGTYPE_ACCMAPADD_ACK:
 			{
-				//电话绑定应答
+				//电话映射域应答
         RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_ACCMAPADD_ACK\n"));
         Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
 			case NET_MSGTYPE_KEYMAPADD_ACK:
 			{
-				//钥匙绑定应答
+				//钥匙映射域应答
         RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_KEYMAPADD_ACK\n"));
+        Net_MsgRecv_handle(msg,RT_NULL);
+				break;
+			}
+			case NET_MSGTYPE_PHMAPADD_ACK:
+			{
+				//手机映射域应答
+        RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_PHMAPADD_ACK\n"));
         Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
