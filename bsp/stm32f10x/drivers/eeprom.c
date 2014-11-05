@@ -237,8 +237,14 @@ void rt_hw_eeprom_register(void)
   eeprom_mutex = rt_mutex_create("EEPROM", RT_IPC_FLAG_FIFO);
 }
 
-
-
+#ifdef RT_USING_COMPONENTS_INIT
+int rt_component_eeprom_init(void)
+{
+	rt_hw_eeprom_register();
+	return 0;
+}
+INIT_DEVICE_EXPORT(rt_component_eeprom_init);
+#endif
 
 
 
