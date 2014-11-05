@@ -539,7 +539,7 @@ rt_uint32_t sys_cur_date(void)
       rt_device_control(device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
   }
 
-	RT_DEBUG_LOG(SHOW_APP_DEBUG_INFO,("System Time: %s\n",ctime((const time_t *)time)));
+	RT_DEBUG_LOG(SHOW_APP_DEBUG_INFO,("System Time: %s\n",ctime((const time_t *)&time)));
   return time;
 }
 RTM_EXPORT(sys_cur_date);
