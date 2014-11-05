@@ -72,8 +72,8 @@ void send_net_landed_mail(void)
 	
   mail->time = 0;
   mail->type = NET_MSGTYPE_LANDED;
-  mail->resend = 2;
-  mail->outtime = 50;
+  mail->resend = 3;
+  mail->outtime = 80;
   mail->sendmode = ASYN_MODE;
   mail->col.byte = get_msg_new_order(RT_TRUE);
 
@@ -190,7 +190,7 @@ rt_err_t msg_mail_alarm(rt_uint8_t alarm,rt_uint8_t LockStatus,rt_uint32_t time)
   net_msg_send_mail(mail);
   rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
   rt_sem_delete(UserData->result.complete);
-  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
+  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
   result = UserData->result.result;
   
   //释放资源
@@ -233,7 +233,7 @@ rt_err_t msg_mail_fault(rt_uint8_t fault,rt_uint32_t time)
   net_msg_send_mail(mail);
   rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
   rt_sem_delete(UserData->result.complete);
-  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
+  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
   result = UserData->result.result;
   
   //释放资源
@@ -278,7 +278,7 @@ rt_err_t msg_mail_opendoor(rt_uint8_t type,rt_uint16_t account,rt_uint16_t key,r
   net_msg_send_mail(mail);
   rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
   rt_sem_delete(UserData->result.complete);
-  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
+  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
   result = UserData->result.result;
   
   //释放资源
@@ -323,7 +323,7 @@ rt_err_t msg_mail_battery(rt_uint8_t status,rt_uint8_t capacity,rt_uint32_t time
   net_msg_send_mail(mail);
   rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
   rt_sem_delete(UserData->result.complete);
-  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
+  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
   result = UserData->result.result;
   
   //释放资源
@@ -365,7 +365,7 @@ rt_err_t msg_mail_adjust_time(void)
 	net_msg_send_mail(mail);
 	rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
 	rt_sem_delete(UserData->result.complete);
-	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
+	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
 	result = UserData->result.result;
 
 	//释放资源
@@ -408,7 +408,7 @@ rt_err_t msg_mail_alarmarg(rt_uint8_t Type,rt_uint8_t arg)
   net_msg_send_mail(mail);
   rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
   rt_sem_delete(UserData->result.complete);
-  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
+  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
   result = UserData->result.result;
   
   //释放资源
@@ -456,7 +456,7 @@ rt_err_t msg_mail_phoneadd(rt_uint16_t PhID,rt_uint16_t flag,rt_uint8_t buf[],rt
   net_msg_send_mail(mail);
   rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
   rt_sem_delete(UserData->result.complete);
-  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
+  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
   result = UserData->result.result;
   
   //释放资源
@@ -535,7 +535,7 @@ rt_err_t msg_mail_phondel(rt_uint16_t PhID,rt_uint32_t date)
   net_msg_send_mail(mail);
   rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
   rt_sem_delete(UserData->result.complete);
-  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
+  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
   result = UserData->result.result;
   
   //释放资源
@@ -612,7 +612,7 @@ rt_err_t msg_mail_keyadd(net_keyadd_user *KeyData)
   net_msg_send_mail(mail);
   rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
   rt_sem_delete(UserData->result.complete);
-  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
+  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
   result = UserData->result.result;
   
   //释放资源
@@ -691,7 +691,7 @@ rt_err_t msg_mail_keydelete(rt_uint16_t pos,rt_uint32_t date)
   net_msg_send_mail(mail);
   rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
   rt_sem_delete(UserData->result.complete);
-  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
+  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
   result = UserData->result.result;
   
   //释放资源
@@ -908,7 +908,7 @@ rt_err_t msg_mail_account_add(rt_int16_t account_pos,rt_uint8_t *name,rt_uint32_
   net_msg_send_mail(mail);
   rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
   rt_sem_delete(UserData->result.complete);
-  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
+  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
   result = UserData->result.result;
   
   //释放资源
@@ -991,7 +991,7 @@ rt_err_t msg_mail_account_del(rt_int16_t account_pos,rt_uint32_t date)
 	net_msg_send_mail(mail);
 	rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
 	rt_sem_delete(UserData->result.complete);
-	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
+	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
 	result = UserData->result.result;
 
 	//释放资源
@@ -1078,7 +1078,7 @@ rt_err_t msg_mail_keybind(rt_uint16_t key_pos,rt_uint16_t account_pos,rt_uint32_
 	net_msg_send_mail(mail);
 	rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
 	rt_sem_delete(UserData->result.complete);
-	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
+	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
 	result = UserData->result.result;
 
 	//释放资源
@@ -1163,7 +1163,7 @@ rt_err_t msg_mail_phonebind(rt_uint16_t phone_pos,rt_uint16_t account_pos,rt_uin
 	net_msg_send_mail(mail);
 	rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
 	rt_sem_delete(UserData->result.complete);
-	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
+	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
 	result = UserData->result.result;
 
 	//释放资源
@@ -1271,7 +1271,7 @@ rt_err_t msg_mail_accmapadd(rt_uint8_t *MapByte,rt_size_t ByteLength,rt_uint32_t
 	net_msg_send_mail(mail);
 	rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
 	rt_sem_delete(UserData->result.complete);
-	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("send result = %d\n",UserData->result.result));
+	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
 	result = UserData->result.result;
 
 	//释放资源
@@ -1282,6 +1282,58 @@ rt_err_t msg_mail_accmapadd(rt_uint8_t *MapByte,rt_size_t ByteLength,rt_uint32_t
 
   return (result == 0)?RT_EOK:RT_ERROR;
 }
+
+//账户映射域添加
+rt_err_t msg_mail_keymapadd(rt_uint8_t *MapByte,rt_size_t ByteLength,rt_uint32_t date)
+{
+	rt_uint8_t            result;
+	net_msgmail_p         mail = RT_NULL;
+	net_keymapadd_user    *UserData = RT_NULL;
+
+	//获取资源
+	mail = (net_msgmail_p)rt_calloc(1,sizeof(net_msgmail));
+	UserData = rt_calloc(1,sizeof(*UserData));
+	RT_ASSERT(mail != RT_NULL);
+	RT_ASSERT(UserData != RT_NULL);
+	
+	mail->user = UserData;
+
+	//创建同步信号量
+	UserData->result.complete = smg_send_wait_sem_crate();
+	RT_ASSERT(UserData != RT_NULL);
+
+	//设置邮件
+	mail->type = NET_MSGTYPE_KEYMAPADD;   						//邮件类型
+	mail->resend = MAIL_FAULT_RESEND;                 //重发技术
+	mail->outtime = MAIL_FAULT_OUTTIME;              //超时间
+	mail->sendmode = SYNC_MODE;      								 //同步
+	mail->col.byte = get_msg_new_order(RT_TRUE);
+	
+	//设置私有数据
+	UserData->DataLen = ByteLength;
+	UserData->data.MapByte = MapByte;
+	date = net_rev32(date);
+	rt_memcpy(UserData->data.Date,&date,4);
+
+	//发送邮件
+	net_msg_send_mail(mail);
+
+	//等待发送结果
+	rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
+	rt_sem_delete(UserData->result.complete);
+	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
+	result = UserData->result.result;
+
+	//释放资源
+	RT_ASSERT(UserData != RT_NULL);
+	rt_free(UserData);
+	RT_ASSERT(mail != RT_NULL);
+	rt_free(mail);
+
+  return (result == 0)?RT_EOK:RT_ERROR;
+}
+
+
 
 
 
@@ -1572,6 +1624,11 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 
 			break;
 		}
+		case NET_MSGTYPE_KEYMAPADD:
+		{
+			//钥匙映射域添加
+			break;
+		}
 	  default:
 	  {
 	    break;
@@ -1788,32 +1845,97 @@ void msg_test(rt_uint8_t cmd)
 }
 FINSH_FUNCTION_EXPORT(msg_test,msg_test(void));
 
-void upload_accmap(void)
+void upload_map(rt_uint8_t type)
 {
-	struct account_valid_map *mapdata;
-	rt_size_t i;
-	
-	mapdata = rt_calloc(1,sizeof(*mapdata));
-	
-	device_config_av_operate(mapdata,0);
+	void 				*mapdata;
+	rt_uint32_t *mapaddr = RT_NULL;
+	rt_size_t   mapsize;
+	rt_size_t   i;
 
-	for(i = 0 ; i < ACCOUNT_MAP_SIZE;i++)
+	switch(type)
 	{
-		if(i % 5 == 0)
+		case 0:
+		{
+			//账户
+			struct account_valid_map *data = RT_NULL;
+			
+			mapdata = (void *)rt_calloc(1,sizeof(struct account_valid_map));
+			data = mapdata;
+			mapaddr = (rt_uint32_t *)data->data;
+			mapsize = ACCOUNT_MAP_SIZE*4;
+			rt_kprintf("account map size %d Bypte\n",mapsize);
+			break;
+		}
+		case 1:
+		{
+			//钥匙
+			struct key_valid_map *data = RT_NULL;
+			
+			mapdata = (void *)rt_calloc(1,sizeof(struct key_valid_map));
+			data = mapdata;
+			mapaddr = (rt_uint32_t *)data->data;
+			mapsize = KEY_MAP_SIZE*4;
+			rt_kprintf("key map size %d Bypte\n",mapsize);
+			break;
+		}
+		case 2:
+		{
+			//手机
+			struct phone_valid_map *data = RT_NULL;
+			
+			mapdata = (void *)rt_calloc(1,sizeof(struct phone_valid_map));
+			data = mapdata;
+			mapaddr = (rt_uint32_t *)data->data;
+			mapsize = PHONE_MAP_SIZE*4;
+			rt_kprintf("phone map size %d Bypte\n",mapsize);
+			break;
+		}
+		default:
+		{
+			break;
+		}
+	}
+	
+	device_config_av_operate((void *)mapdata,0);
+
+	for(i = 0 ; i < mapsize/4;i++)
+	{
+		if(i % 10 == 0)
 		{
 			rt_kprintf("\n");
 		}
-		rt_kprintf("%08X",mapdata->data[i]);
+		rt_kprintf("%08X",mapaddr[i]);
 	}
+  rt_kprintf("\n");
 
-	msg_mail_accmapadd((rt_uint8_t *)mapdata->data,ACCOUNT_MAP_SIZE*4,net_get_date());
+	switch(type)
+	{
+		case 0:
+		{
+			msg_mail_accmapadd((rt_uint8_t *)mapaddr,mapsize,net_get_date());
+			break;
+		}
+		case 1:
+		{
+			msg_mail_keymapadd((rt_uint8_t *)mapaddr,mapsize,net_get_date());
+			break;
+		}
+		case 2:
+		{
+			break;
+		}
+		default:
+		{
+			break;
+		}
+	}
 
 	rt_free(mapdata);
 
 	
 }
 
-FINSH_FUNCTION_EXPORT(upload_accmap,upload account mapbit)
+FINSH_FUNCTION_EXPORT(upload_map,upload_map[type]--upload [0:account 1:key 2:phone 3:record] mapbyte)
 
 #endif
 
