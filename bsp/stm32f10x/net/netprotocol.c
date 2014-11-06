@@ -1423,7 +1423,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
     }
     case NET_MSGTYPE_KEYDATCKS:
     {
-    	//账户数据校验
+    	//钥匙数据校验
     	net_keydatcks_user *data;
 
 			msg_data->cmd = MsgMail->type;
@@ -1459,6 +1459,27 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
 			}
     	msg_data->cmd = MsgMail->type;
     	net_set_lenmap(&msg_data->lenmap,1,1,data->DataLen+4,2);
+    	
+			break;
+    }
+    case NET_MSGTYPE_PHDATCKS:
+    {
+    	//手机数据校验
+    	net_phdatcks_user *data;
+
+			msg_data->cmd = MsgMail->type;
+    	net_set_lenmap(&msg_data->lenmap,1,1,6,2);
+    	
+			data = MsgMail->user;
+			if(data != RT_NULL)
+			{
+				msg_data->data.PhDatCks = data->data;
+			}
+			else
+			{
+				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_PHDATCKS message user is null\n"));
+				return RT_ERROR;
+			}
     	
 			break;
     }
@@ -2408,6 +2429,13 @@ static void net_recv_message(net_msgmail_p mail)
 			{
 				//手机映射域应答
         RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_PHMAPADD_ACK\n"));
+        Net_MsgRecv_handle(msg,RT_NULL);
+				break;
+			}
+			case NET_MSGTYPE_PHDATCKS_ACK:
+			{
+				//手机数据校验应答
+        RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_PHDATCKS_ACK\n"));
         Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}

@@ -1479,6 +1479,53 @@ rt_err_t msg_mail_phmapadd(rt_uint8_t *MapByte,rt_size_t ByteLength,rt_uint32_t 
   return (result == 0)?RT_EOK:RT_ERROR;
 }
 
+//手机数据校验
+rt_err_t msg_mail_phdatcks(rt_uint16_t  ID, rt_uint32_t date)
+{
+	rt_uint8_t            result;
+	net_msgmail_p         mail = RT_NULL;
+	net_phdatcks_user    *UserData = RT_NULL;
+
+	//获取资源
+	mail = (net_msgmail_p)rt_calloc(1,sizeof(net_msgmail));
+	UserData = rt_calloc(1,sizeof(*UserData));
+	RT_ASSERT(mail != RT_NULL);
+	RT_ASSERT(UserData != RT_NULL);
+	mail->user = UserData;
+
+	UserData->result.complete = smg_send_wait_sem_crate();
+	RT_ASSERT(UserData != RT_NULL);
+
+	//设置邮件
+	mail->type = NET_MSGTYPE_PHDATCKS;   						//邮件类型
+	mail->resend = MAIL_FAULT_RESEND;                 //重发技术
+	mail->outtime = MAIL_FAULT_OUTTIME;              //超时间
+	mail->sendmode = SYNC_MODE;      								 //同步
+	mail->col.byte = get_msg_new_order(RT_TRUE);
+	//设置私有数据
+
+  ID = net_rev16(ID);
+	rt_memcpy(UserData->data.ID,&ID,2);
+
+	date = net_rev32(date);
+	rt_memcpy(UserData->data.Date,&date,4);
+
+	//发送邮件
+	net_msg_send_mail(mail);
+	rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
+	rt_sem_delete(UserData->result.complete);
+	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
+	result = UserData->result.result;
+
+	//释放资源
+	RT_ASSERT(UserData != RT_NULL);
+	rt_free(UserData);
+	RT_ASSERT(mail != RT_NULL);
+	rt_free(mail);
+
+  return (result == 0)?RT_EOK:RT_ERROR;
+}
+
 //记录映射域添加
 rt_err_t msg_mail_recmapadd(rt_uint8_t *MapByte,rt_size_t ByteLength,rt_uint32_t date)
 {
@@ -1827,6 +1874,12 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 		case NET_MSGTYPE_PHMAPADD_ACK:
 		{
 			//手机映射域添加应答
+			break;
+		}
+		case NET_MSGTYPE_PHDATCKS_ACK:
+		{
+			//手机数据校验应答
+			
 			break;
 		}
 		case NET_MSGTYPE_RECMAPADD_ACK:
