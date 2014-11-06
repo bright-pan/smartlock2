@@ -1897,46 +1897,65 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 		case NET_MSGTYPE_ACCMAPADD_ACK:
 		{
 			//账户映射域添加应答
-			
+			#ifdef USEING_NEW_DATA_SYNC
+			net_accmapadd_result(Mail);
+			#endif
 			break;
 		}
 		case NET_MSGTYPE_ACCDATCKS_ACK:
 		{
 			//账户数据校验应答
-			
+			#ifdef USEING_NEW_DATA_SYNC
+			net_accdatcks_result(Mail);
+			#endif
 			break;
 		}
 		case NET_MSGTYPE_KEYMAPADD_ACK:
 		{
 			//钥匙映射域添加
+			#ifdef USEING_NEW_DATA_SYNC
+			net_keymapadd_result(Mail);
+			#endif
 			break;
 		}
 		case NET_MSGTYPE_KEYDATCKS_ACK:
 		{
 			//钥匙数据校验应答
-			
+			#ifdef USEING_NEW_DATA_SYNC
+			net_keydatcks_result(Mail);
+			#endif
 			break;
 		}
 		case NET_MSGTYPE_PHMAPADD_ACK:
 		{
 			//手机映射域添加应答
+			#ifdef USEING_NEW_DATA_SYNC
+			net_phmapadd_result(Mail);
+			#endif
 			break;
 		}
 		case NET_MSGTYPE_PHDATCKS_ACK:
 		{
 			//手机数据校验应答
-			
+			#ifdef USEING_NEW_DATA_SYNC
+			net_phdatcks_result(Mail);
+			#endif
 			break;
 		}
 		case NET_MSGTYPE_RECMAPADD_ACK:
 		{
 			//记录映射域添加应答
+			#ifdef USEING_NEW_DATA_SYNC
+			net_recmapadd_result(Mail);
+			#endif
 			break;
 		}
 		case NET_MSGTYPE_RECDATCKS_ACK:
 		{
 			//记录数据校验应答
-			
+			#ifdef USEING_NEW_DATA_SYNC
+			net_recdatcks_result(Mail);
+			#endif
 			break;
 		}
 		case NET_MSGTYPE_DATA_SYNC:

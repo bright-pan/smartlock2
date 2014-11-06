@@ -179,3 +179,118 @@ rt_err_t net_data_sync(net_recvmsg_p mail)
 	return remote_data_sync_process();
 }
 
+
+#ifdef USEING_NEW_DATA_SYNC
+//账户映射域上传应答处理
+rt_err_t net_accmapadd_result(net_recvmsg_p mail)
+{
+	struct account_map_ack data;
+	RT_ASSERT(mail != RT_NULL);
+
+	data.result = mail->data.AccMapAddAck.result;
+	
+	sync_account_map_ack(&data);	
+
+	return RT_EOK;
+}
+
+
+//账户数据校验应答处理
+rt_err_t net_accdatcks_result(net_recvmsg_p mail)
+{
+	struct account_check_ack data;
+	RT_ASSERT(mail != RT_NULL);
+
+	data.result = mail->data.AccDatCksAck.result;
+	
+	sync_account_check_ack(&data);	
+
+	return RT_EOK;
+}
+
+//钥匙映射域上传应答处理
+rt_err_t net_keymapadd_result(net_recvmsg_p mail)
+{
+	struct key_map_ack data;
+	RT_ASSERT(mail != RT_NULL);
+
+	data.result = mail->data.KeyMapAddAck.result;
+	
+	sync_key_map_ack(&data);	
+
+	return RT_EOK;
+}
+
+
+//钥匙数据校验应答处理
+rt_err_t net_keydatcks_result(net_recvmsg_p mail)
+{
+	struct key_check_ack data;
+	RT_ASSERT(mail != RT_NULL);
+
+	data.result = mail->data.KeyDatCksAck.result;
+	
+	sync_key_check_ack(&data);	
+
+	return RT_EOK;
+}
+
+
+//手机映射域上传应答处理
+rt_err_t net_phmapadd_result(net_recvmsg_p mail)
+{
+	struct phone_map_ack data;
+	RT_ASSERT(mail != RT_NULL);
+
+	data.result = mail->data.PhMapAddAck.result;
+	
+	sync_phone_map_ack(&data);	
+
+	return RT_EOK;
+}
+
+
+//手机数据校验应答处理
+rt_err_t net_phdatcks_result(net_recvmsg_p mail)
+{
+	struct phone_check_ack data;
+	RT_ASSERT(mail != RT_NULL);
+
+	data.result = mail->data.PhDatCksAck.result;
+	
+	sync_phone_check_ack(&data);	
+
+	return RT_EOK;
+}
+
+
+//记录映射域上传应答处理
+rt_err_t net_recmapadd_result(net_recvmsg_p mail)
+{
+	struct event_map_ack data;
+	RT_ASSERT(mail != RT_NULL);
+
+	data.result = mail->data.RecMapAddAck.result;
+	
+	sync_event_map_ack(&data);	
+
+	return RT_EOK;
+}
+
+
+//记录数据校验应答处理
+rt_err_t net_recdatcks_result(net_recvmsg_p mail)
+{
+	struct event_check_ack data;
+	RT_ASSERT(mail != RT_NULL);
+
+	data.result = mail->data.RecDatCksAck.result;
+	
+	sync_event_check_ack(&data);	
+
+	return RT_EOK;
+}
+
+#endif
+
+

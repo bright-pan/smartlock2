@@ -81,7 +81,7 @@ rt_err_t netprotocol_connect_status(void)
 	  rt_kprintf("open blooth module\n");
 	  rt_device_open(dev,RT_DEVICE_OFLAG_OPEN);
 	}
-	rt_device_control(dev,3,&status);
+	rt_device_control(dev,3,(void *)&status);
 
 	if(status == 1)
 	{
@@ -102,7 +102,7 @@ void netprotocol_thread_entry(void *arg)
   //rt_size_t bytenum = 0;   //收到字节数总和
   rt_size_t MsgEndPos = 0; //一条报文结束的位置
   rt_size_t bytes_received;
-  rt_uint32_t ClearBufTime = 0;
+  volatile rt_uint32_t ClearBufTime = 0;
   rt_device_t hw_dev = RT_NULL;
    
   while(1)
