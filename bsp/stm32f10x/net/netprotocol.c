@@ -1421,6 +1421,27 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
     	
 			break;
     }
+    case NET_MSGTYPE_KEYDATCKS:
+    {
+    	//账户数据校验
+    	net_keydatcks_user *data;
+
+			msg_data->cmd = MsgMail->type;
+    	net_set_lenmap(&msg_data->lenmap,1,1,6,2);
+    	
+			data = MsgMail->user;
+			if(data != RT_NULL)
+			{
+				msg_data->data.KeyDatCks = data->data;
+			}
+			else
+			{
+				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_KEYDATCKS message user is null\n"));
+				return RT_ERROR;
+			}
+    	
+			break;
+    }
     case NET_MSGTYPE_PHMAPADD:
     {
     	//手机映射域添加
@@ -2373,6 +2394,13 @@ static void net_recv_message(net_msgmail_p mail)
 			{
 				//钥匙映射域应答
         RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_KEYMAPADD_ACK\n"));
+        Net_MsgRecv_handle(msg,RT_NULL);
+				break;
+			}
+			case NET_MSGTYPE_KEYDATCKS_ACK:
+			{
+				//钥匙数据校验应答
+        RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_KEYDATCKS_ACK\n"));
         Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}

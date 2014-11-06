@@ -101,6 +101,8 @@ typedef enum
   NET_MSGTYPE_ACCDATCKS_ACK = 0XA8, //账户数据校验应答
   NET_MSGTYPE_KEYMAPADD     = 0X2A, //钥匙映射域添加
   NET_MSGTYPE_KEYMAPADD_ACK = 0XAA, //钥匙映射域添加应答
+  NET_MSGTYPE_KEYDATCKS     = 0x2B, //钥匙数据校验
+  NET_MSGTYPE_KEYDATCKS_ACK = 0XAB, //钥匙数据校验应答
   NET_MSGTYPE_PHMAPADD      = 0X2D, //手机映射域添加
   NET_MSGTYPE_PHMAPADD_ACK  = 0XAD, //手机映射域添加应答
   NET_MSGTYPE_RECMAPADD     = 0X30, //记录映射域添加
@@ -391,6 +393,13 @@ typedef struct
 	rt_uint8_t Date[4];
 }net_keymap_add;
 
+//钥匙数据校验
+typedef struct 
+{
+	rt_uint8_t ID[2];
+	rt_uint8_t Date[4];
+}net_keydatcks;
+
 //手机映射域添加
 typedef struct 
 {
@@ -472,6 +481,7 @@ typedef union
   net_accmap_add    AccMapAdd;    //账户映射域添加
   net_accdatcks     AccDatCks;    //账户数据校验
   net_keymap_add    KeyMapAdd;    //钥匙映射域添加
+  net_keydatcks     KeyDatCks;    //钥匙数据校验
   net_phmap_add     PhMapAdd;     //手机映射域添加
   net_recmap_add    RecMapAdd;    //记录映射域添加
 }net_messge_data;
@@ -788,6 +798,7 @@ typedef union
 	net_recv_accmapadd_ack  AccMapAddAck; //账户映射域添加应答
 	net_recv_result         AccDatCksAck; //账户数据校验应答
 	net_recv_keymapadd_ack  KeyMapAddAck; //钥匙映射域添加应答
+	net_recv_result         KeyDatCksAck; //钥匙数据校验
 	net_recv_phmapadd_ack   PhMapAddAck;  //手机映射域添加应答
 	net_recv_recmapadd_ack  RecMapAddAck;  //记录映射域添加应答
 }net_recv_data;
@@ -1035,6 +1046,13 @@ typedef struct
 	net_keymap_add  data;
 	rt_size_t       DataLen;
 }net_keymapadd_user;
+
+//钥匙数据校验
+typedef struct 
+{
+	net_send_result result;
+	net_keydatcks   data;
+}net_keydatcks_user;
 
 //手机映射域添加
 typedef struct 
