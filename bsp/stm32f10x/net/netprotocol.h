@@ -109,6 +109,8 @@ typedef enum
   NET_MSGTYPE_PHDATCKS_ACK  = 0xAE, //手机数据校验应答
   NET_MSGTYPE_RECMAPADD     = 0X30, //记录映射域添加
   NET_MSGTYPE_RECMAPADD_ACK = 0XB0, //记录映射域添加应答
+  NET_MSGTYPE_RECDATCKS     = 0X31, //记录数据校验
+  NET_MSGTYPE_RECDATCKS_ACK = 0XB1, //记录数据校验应答
   NET_MSGTYPE_DATA_SYNC     = 0x32, //远程同步
   NET_MSGTYPE_DATA_SYNC_ACK = 0XB2, //远程同步
   NET_MSGTYPE_NULL          = 0XFF
@@ -423,6 +425,13 @@ typedef struct
 	rt_uint8_t Date[4];
 }net_recmap_add;
 
+//记录数据校验
+typedef struct 
+{
+	rt_uint8_t ID[2];
+	rt_uint8_t Date[4];
+}net_recdatcks;
+
 //发送应答
 typedef struct
 {
@@ -493,7 +502,8 @@ typedef union
   net_keydatcks     KeyDatCks;    //钥匙数据校验
   net_phmap_add     PhMapAdd;     //手机映射域添加
   net_phdatcks      PhDatCks;     //手机数据校验
-  net_recmap_add    RecMapAdd;    //记录映射域添加
+  net_recmap_add    RecMapAdd;    //记录映射域添加  
+  net_recdatcks     RecDatCks;    //记录数据校验
 }net_messge_data;
 
 //序号的位操作结构
@@ -811,7 +821,8 @@ typedef union
 	net_recv_result         KeyDatCksAck; //钥匙数据校验
 	net_recv_phmapadd_ack   PhMapAddAck;  //手机映射域添加应答
 	net_recv_result         PhDatCksAck;  //手机数据校验应答
-	net_recv_recmapadd_ack  RecMapAddAck;  //记录映射域添加应答
+	net_recv_recmapadd_ack  RecMapAddAck;  //记录映射域添加应答	
+	net_recv_result         RecDatCksAck;  //记录数据校验应答
 }net_recv_data;
 
 //接收报文的描述结构体
@@ -1088,6 +1099,12 @@ typedef struct
 	rt_size_t       DataLen;
 }net_recmapadd_user;
 
+//记录数据校验
+typedef struct 
+{
+	net_send_result result;
+	net_recdatcks   data;
+}net_recdatcks_user;
 
 //包序号
 extern net_col net_order;
