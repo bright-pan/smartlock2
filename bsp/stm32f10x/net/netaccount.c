@@ -21,7 +21,7 @@ rt_err_t net_account_add_process(net_recvmsg_p mail)
   RT_DEBUG_LOG(SHOW_NETPHONE_INFO,("ah->updated_time = %x\n",ah->updated_time));
   RT_DEBUG_LOG(SHOW_NETPHONE_INFO,("ah->name         = %s\n",ah->name));
 	//处理数据
-	OpResult = device_config_account_set(AhID,(char *)ah->name,rt_strlen((const char *)ah->name),ah->updated_time);
+	OpResult = device_config_account_set(AhID,(u8 *)ah->name,rt_strlen((const char *)ah->name),ah->updated_time);
 
 	rt_free(ah);
 

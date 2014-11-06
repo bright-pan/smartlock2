@@ -290,7 +290,7 @@ local_thread_entry(void *parameter)
 	        struct phone_head ph;
 	        rt_memset(&ph, 0, sizeof(ph));
 	        rt_memcpy(ph.address, "86", 2);
-	        rt_memcpy(ph.address+2, local_mail_buf.data.ring.phone_call, rt_strlen(local_mail_buf.data.ring.phone_call));
+	        rt_memcpy(ph.address+2, local_mail_buf.data.ring.phone_call, rt_strlen((const char *)local_mail_buf.data.ring.phone_call));
 					temp = device_config_phone_verify(local_mail_buf.data.ring.phone_call, 11);
 	        if (temp >= 0)
 	        {
@@ -298,7 +298,7 @@ local_thread_entry(void *parameter)
 	                if (ph.account != PHONE_ID_INVALID && ph.auth & PHONE_AUTH_SMS) {
 	                    //µç»ú½âËø¡£
 	                    lock_operation(LOCK_OPERATION_OPEN, MOTOR_WORK_CUT);
-	                    send_sms_mail(ALARM_TYPE_SMS_REP_IN_PHONE_CALL, 0, ph.address, 13, PHONE_AUTH_SMS);
+	                    send_sms_mail(ALARM_TYPE_SMS_REP_IN_PHONE_CALL, 0, (u8 *)ph.address, 13, PHONE_AUTH_SMS);
 	                }
 	            }
 	        }

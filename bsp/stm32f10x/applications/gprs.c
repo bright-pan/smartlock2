@@ -851,6 +851,7 @@ int record_deal(struct event *data, int id ,void *arg1)
 	{
 		rt_kprintf("This ID %d none update time:%s",id,ctime(&data->head.updated_time));
 	}
+  return 0;
 }
 void record_show(void)
 {
