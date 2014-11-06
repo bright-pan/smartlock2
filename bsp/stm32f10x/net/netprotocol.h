@@ -93,10 +93,12 @@ typedef enum
   NET_MSGTYPE_KEYBIND_ACK 	= 0XA4, //钥匙绑定应答
   NET_MSGTYPE_PHONEBIND			= 0X25, //电话绑定
   NET_MSGTYPE_PHONEBIND_ACK = 0XA5, //电话绑定应答
-  NET_MSGTYPE_ACCMAPCKS     = 0X26, //账户映射域
+  NET_MSGTYPE_ACCMAPCKS     = 0X26, //账户映射域检测
   NET_MSGTYPE_ACCMAPCKS_ACK = 0XA6, //账户映射域检测应答
   NET_MSGTYPE_ACCMAPADD     = 0X27, //账户映射域添加
   NET_MSGTYPE_ACCMAPADD_ACK = 0XA7, //账户映射域添加应答
+  NET_MSGTYPE_ACCDATCKS     = 0X28, //账户数据校验
+  NET_MSGTYPE_ACCDATCKS_ACK = 0XA8, //账户数据校验应答
   NET_MSGTYPE_KEYMAPADD     = 0X2A, //钥匙映射域添加
   NET_MSGTYPE_KEYMAPADD_ACK = 0XAA, //钥匙映射域添加应答
   NET_MSGTYPE_PHMAPADD      = 0X2D, //手机映射域添加
@@ -375,6 +377,13 @@ typedef struct
 	rt_uint8_t Date[4];
 }net_accmap_add;
 
+//账户数据校验
+typedef struct 
+{
+	rt_uint8_t ID[2];
+	rt_uint8_t Date[4];
+}net_accdatcks;
+
 //钥匙映射域添加
 typedef struct 
 {
@@ -461,6 +470,7 @@ typedef union
   net_account_ack   PhoneBindAck; //电话绑定应答
   net_ack           DataSYNCAck;  //数据同步应答
   net_accmap_add    AccMapAdd;    //账户映射域添加
+  net_accdatcks     AccDatCks;    //账户数据校验
   net_keymap_add    KeyMapAdd;    //钥匙映射域添加
   net_phmap_add     PhMapAdd;     //手机映射域添加
   net_recmap_add    RecMapAdd;    //记录映射域添加
@@ -776,6 +786,7 @@ typedef union
 	net_recv_phonebind_ack	PhoneBindAck;	//电话绑定应答
 	net_recv_datasync       DataSYNC;     //数据同步
 	net_recv_accmapadd_ack  AccMapAddAck; //账户映射域添加应答
+	net_recv_result         AccDatCksAck; //账户数据校验应答
 	net_recv_keymapadd_ack  KeyMapAddAck; //钥匙映射域添加应答
 	net_recv_phmapadd_ack   PhMapAddAck;  //手机映射域添加应答
 	net_recv_recmapadd_ack  RecMapAddAck;  //记录映射域添加应答
@@ -1009,6 +1020,13 @@ typedef struct
 	net_accmap_add  data;
 	rt_size_t       DataLen;
 }net_accmapadd_user;
+
+//账户数据校验
+typedef struct 
+{
+	net_send_result result;
+	net_accdatcks   data;
+}net_accdatcks_user;
 
 //钥匙映射域添加
 typedef struct 
