@@ -100,9 +100,11 @@ typedef enum
   NET_MSGTYPE_KEYMAPADD     = 0X2A, //钥匙映射域添加
   NET_MSGTYPE_KEYMAPADD_ACK = 0XAA, //钥匙映射域添加应答
   NET_MSGTYPE_PHMAPADD      = 0X2D, //手机映射域添加
-  NET_MSGTYPE_PHMAPADD_ACK  = 0XAD,//手机映射域添加应答
+  NET_MSGTYPE_PHMAPADD_ACK  = 0XAD, //手机映射域添加应答
+  NET_MSGTYPE_RECMAPADD     = 0X30, //记录映射域添加
+  NET_MSGTYPE_RECMAPADD_ACK = 0XB0, //记录映射域添加应答
   NET_MSGTYPE_DATA_SYNC     = 0x32, //远程同步
-  NET_MSGTYPE_DATA_SYNC_ACK = 0XB2,//远程同步
+  NET_MSGTYPE_DATA_SYNC_ACK = 0XB2, //远程同步
   NET_MSGTYPE_NULL          = 0XFF
 }message_type;
 
@@ -387,6 +389,13 @@ typedef struct
 	rt_uint8_t Date[4];
 }net_phmap_add;
 
+//记录映射域添加
+typedef struct 
+{
+	rt_uint8_t *MapByte;
+	rt_uint8_t Date[4];
+}net_recmap_add;
+
 //发送应答
 typedef struct
 {
@@ -454,6 +463,7 @@ typedef union
   net_accmap_add    AccMapAdd;    //账户映射域添加
   net_keymap_add    KeyMapAdd;    //钥匙映射域添加
   net_phmap_add     PhMapAdd;     //手机映射域添加
+  net_recmap_add    RecMapAdd;    //记录映射域添加
 }net_messge_data;
 
 //序号的位操作结构
@@ -701,26 +711,33 @@ typedef struct
 	rt_uint8_t crc16[2];
 }net_recv_datasync;
 
-//账户映射域添加
+//账户映射域添加应答
 typedef struct 
 {
 	rt_uint8_t result;
 	rt_uint8_t crc16[2];
 }net_recv_accmapadd_ack;
 
-//钥匙映射域添加
+//钥匙映射域添加应答
 typedef struct 
 {
 	rt_uint8_t result;
 	rt_uint8_t crc16[2];
 }net_recv_keymapadd_ack;
 
-//手机映射域添加
+//手机映射域添加应答
 typedef struct
 {
 	rt_uint8_t result;
 	rt_uint8_t crc16[2];
 }net_recv_phmapadd_ack;
+
+//记录映射域添加应答
+typedef struct
+{
+	rt_uint8_t result;
+	rt_uint8_t crc16[2];
+}net_recv_recmapadd_ack;
 
 //接收报文的数据域
 typedef union 
@@ -761,6 +778,7 @@ typedef union
 	net_recv_accmapadd_ack  AccMapAddAck; //账户映射域添加应答
 	net_recv_keymapadd_ack  KeyMapAddAck; //钥匙映射域添加应答
 	net_recv_phmapadd_ack   PhMapAddAck;  //手机映射域添加应答
+	net_recv_recmapadd_ack  RecMapAddAck;  //记录映射域添加应答
 }net_recv_data;
 
 //接收报文的描述结构体
@@ -815,6 +833,7 @@ typedef struct _NET_SENDWND_LIST_
 #define  NET_ENVET_FILERQ              0x01<<2 //文件请求
 #define  NET_ENVET_CONNECT             0X01<<3 //正在连接
 #define  NET_ENVET_FILE_ON             0X01<<4 //文件传送完成 
+#define  NET_ENVET_LOGINFAIL           0x01<<5 //登陆失败
 #define  NET_EVENT_ALL                 0XFFFFFFFF
 
 
@@ -1007,6 +1026,13 @@ typedef struct
 	rt_size_t       DataLen;
 }net_phmapadd_user;
 
+//记录映射域添加
+typedef struct 
+{
+	net_send_result result;
+	net_recmap_add  data;
+	rt_size_t       DataLen;
+}net_recmapadd_user;
 
 
 //包序号

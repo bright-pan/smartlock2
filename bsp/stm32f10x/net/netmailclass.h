@@ -56,6 +56,7 @@ rt_err_t msg_mail_phonebind(rt_uint16_t phone_pos,rt_uint16_t account_pos,rt_uin
 rt_err_t msg_mail_accmapadd(rt_uint8_t *MapByte,rt_size_t ByteLength,rt_uint32_t date);
 rt_err_t msg_mail_keymapadd(rt_uint8_t *MapByte,rt_size_t ByteLength,rt_uint32_t date);
 rt_err_t msg_mail_phmapadd(rt_uint8_t *MapByte,rt_size_t ByteLength,rt_uint32_t date);
+rt_err_t msg_mail_recmapadd(rt_uint8_t *MapByte,rt_size_t ByteLength,rt_uint32_t date);
 
 void msg_null_ack(message_type MSGType);
 

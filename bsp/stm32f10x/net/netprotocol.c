@@ -240,9 +240,10 @@ void show_recvmsg(net_recvmsg_p msg)
 void show_sendmsg(net_encrypt_p msg)
 {
   RT_DEBUG_LOG(SHOW_SEND_MSG_INFO,
-  	("Send message key parameter:\nCmd:%02X Order:%02d LengthMap:%02X CRC16:%02X%02X\n",
+  	("Send Message Info:\nCmd:%02X Order:%02d Resend:%02d LengthMap:%02X CRC16:%02X%02X\n",
 		msg->cmd,
 		msg->col.bit.col,
+		msg->col.bit.resend,
 		msg->lenmap.bype,
 		msg->check[0],
 		msg->check[1]));
@@ -589,13 +590,20 @@ void net_pack_data(net_message *message,net_encrypt *data)
 		}
 		case NET_MSGTYPE_PHMAPADD:
 		{
-			//钥匙映射域添加
+			//手机映射域添加
 			rt_memcpy(bufp,data->data.PhMapAdd.MapByte,data->lenmap.bit.data-4);//拷贝映射域
 			rt_memcpy(bufp+data->lenmap.bit.data-4,&data->data.PhMapAdd.Date,4);//拷贝时间
 
 			break;
 		}
-		
+		case NET_MSGTYPE_RECMAPADD:
+		{
+			//记录映射域添加
+			rt_memcpy(bufp,data->data.RecMapAdd.MapByte,data->lenmap.bit.data-4);//拷贝映射域
+			rt_memcpy(bufp+data->lenmap.bit.data-4,&data->data.RecMapAdd.Date,4);//拷贝时间
+
+			break;
+		}
 		case NET_MSGTYPE_HTTPUPDATE:
 		{
 			break;
@@ -1405,6 +1413,26 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
 			else
 			{
 				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_PHMAPADD message user is null\n"));
+				return RT_ERROR;
+			}
+    	msg_data->cmd = MsgMail->type;
+    	net_set_lenmap(&msg_data->lenmap,1,1,data->DataLen+4,2);
+    	
+			break;
+    }
+    case NET_MSGTYPE_RECMAPADD:
+    {
+    	//记录映射域添加
+    	net_recmapadd_user *data;
+
+			data = MsgMail->user;
+			if(data != RT_NULL)
+			{
+				msg_data->data.RecMapAdd = data->data;
+			}
+			else
+			{
+				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_RECMAPADD message user is null\n"));
 				return RT_ERROR;
 			}
     	msg_data->cmd = MsgMail->type;
@@ -2327,6 +2355,13 @@ static void net_recv_message(net_msgmail_p mail)
         Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
+			case NET_MSGTYPE_RECMAPADD_ACK:
+			{
+				//手机映射域应答
+        RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_RECMAPADD_ACK\n"));
+        Net_MsgRecv_handle(msg,RT_NULL);
+				break;
+			}
 			case NET_MSGTYPE_DATA_SYNC:
 			{
 				//数据同步
@@ -2385,7 +2420,7 @@ rt_uint8_t net_wnd_resend_mail(rt_int8_t pos)
 		  clear_wnd_mail_pos(pos,SEND_FAIL);
 		  //标志断线 申请重新登陆
 		  net_event_process(2,NET_ENVET_ONLINE);
-		  net_event_process(0,NET_ENVET_RELINK);
+		  //net_event_process(0,NET_ENVET_RELINK);
 		  set_wnd_allmail_permission(-1);
 		  return 2;
 		}	
@@ -2413,6 +2448,7 @@ static void net_wnd_timer_process(void)
 		result = net_wnd_resend_mail(pos);
 		if(result == 2)
 		{
+			net_event_process(0,NET_ENVET_LOGINFAIL);
 			RT_DEBUG_LOG(SHOW_WND_INFO,("Try Connection Again Server\n"));
 		}
 

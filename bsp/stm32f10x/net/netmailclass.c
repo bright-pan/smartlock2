@@ -17,7 +17,7 @@
 //#include "file_update.h"
 
 #define MAIL_FAULT_RESEND     3
-#define MAIL_FAULT_OUTTIME    1000
+#define MAIL_FAULT_OUTTIME    50
 
 #define SHWO_PRINTF_INFO      1
 
@@ -53,6 +53,7 @@ rt_sem_t smg_send_wait_sem_crate(void)
   return sem;
 }
 
+static rt_uint16_t landresendtime = 20;
 /** 
 @brief  send landed mail
 @param  void 
@@ -73,7 +74,7 @@ void send_net_landed_mail(void)
   mail->time = 0;
   mail->type = NET_MSGTYPE_LANDED;
   mail->resend = 3;
-  mail->outtime = 80;
+  mail->outtime = landresendtime;
   mail->sendmode = ASYN_MODE;
   mail->col.byte = get_msg_new_order(RT_TRUE);
 
@@ -1383,6 +1384,55 @@ rt_err_t msg_mail_phmapadd(rt_uint8_t *MapByte,rt_size_t ByteLength,rt_uint32_t 
   return (result == 0)?RT_EOK:RT_ERROR;
 }
 
+//记录映射域添加
+rt_err_t msg_mail_recmapadd(rt_uint8_t *MapByte,rt_size_t ByteLength,rt_uint32_t date)
+{
+	rt_uint8_t            result;
+	net_msgmail_p         mail = RT_NULL;
+	net_recmapadd_user    *UserData = RT_NULL;
+
+	//获取资源
+	mail = (net_msgmail_p)rt_calloc(1,sizeof(net_msgmail));
+	UserData = rt_calloc(1,sizeof(*UserData));
+	RT_ASSERT(mail != RT_NULL);
+	RT_ASSERT(UserData != RT_NULL);
+	
+	mail->user = UserData;
+
+	//创建同步信号量
+	UserData->result.complete = smg_send_wait_sem_crate();
+	RT_ASSERT(UserData != RT_NULL);
+
+	//设置邮件
+	mail->type = NET_MSGTYPE_RECMAPADD;   						//邮件类型
+	mail->resend = MAIL_FAULT_RESEND;                 //重发技术
+	mail->outtime = MAIL_FAULT_OUTTIME;              //超时间
+	mail->sendmode = SYNC_MODE;      								 //同步
+	mail->col.byte = get_msg_new_order(RT_TRUE);
+	
+	//设置私有数据
+	UserData->DataLen = ByteLength;
+	UserData->data.MapByte = MapByte;
+	date = net_rev32(date);
+	rt_memcpy(UserData->data.Date,&date,4);
+
+	//发送邮件
+	net_msg_send_mail(mail);
+
+	//等待发送结果
+	rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
+	rt_sem_delete(UserData->result.complete);
+	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
+	result = UserData->result.result;
+
+	//释放资源
+	RT_ASSERT(UserData != RT_NULL);
+	rt_free(UserData);
+	RT_ASSERT(mail != RT_NULL);
+	rt_free(mail);
+
+  return (result == 0)?RT_EOK:RT_ERROR;
+}
 
 
 
@@ -1672,6 +1722,11 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 			//手机映射域添加应答
 			break;
 		}
+		case NET_MSGTYPE_RECMAPADD_ACK:
+		{
+			//记录映射域添加应答
+			break;
+		}
 		case NET_MSGTYPE_DATA_SYNC:
 		{
 			//数据同步
@@ -1922,6 +1977,7 @@ void upload_map(rt_uint8_t type)
 			data = mapdata;
 			mapaddr = (rt_uint32_t *)data->data;
 			mapsize = ACCOUNT_MAP_SIZE*4;
+			device_config_av_operate((void *)mapdata,0);
 			rt_kprintf("account map size %d Bypte\n",mapsize);
 			break;
 		}
@@ -1934,6 +1990,7 @@ void upload_map(rt_uint8_t type)
 			data = mapdata;
 			mapaddr = (rt_uint32_t *)data->data;
 			mapsize = KEY_MAP_SIZE*4;
+			device_config_kv_operate((void *)mapdata,0);
 			rt_kprintf("key map size %d Bypte\n",mapsize);
 			break;
 		}
@@ -1946,6 +2003,20 @@ void upload_map(rt_uint8_t type)
 			data = mapdata;
 			mapaddr = (rt_uint32_t *)data->data;
 			mapsize = PHONE_MAP_SIZE*4;
+			device_config_pv_operate((void *)mapdata,0);
+			rt_kprintf("phone map size %d Bypte\n",mapsize);
+			break;
+		}
+		case 3:
+		{
+			//事件
+			struct event_valid_map *data = RT_NULL;
+			
+			mapdata = (void *)rt_calloc(1,sizeof(struct event_valid_map));
+			data = mapdata;
+			mapaddr = (rt_uint32_t *)data->data;
+			mapsize = EVENT_MAP_SIZE*4;
+			device_config_ev_operate((void *)mapdata,0);
 			rt_kprintf("phone map size %d Bypte\n",mapsize);
 			break;
 		}
@@ -1955,7 +2026,6 @@ void upload_map(rt_uint8_t type)
 		}
 	}
 	
-	device_config_av_operate((void *)mapdata,0);
 
 	for(i = 0 ; i < mapsize/4;i++)
 	{
@@ -1984,6 +2054,11 @@ void upload_map(rt_uint8_t type)
 			msg_mail_phmapadd((rt_uint8_t *)mapaddr,mapsize,net_get_date());
 			break;
 		}
+		case 3:
+		{
+			msg_mail_recmapadd((rt_uint8_t *)mapaddr,mapsize,net_get_date());
+			break;
+		}
 		default:
 		{
 			break;
@@ -1995,7 +2070,13 @@ void upload_map(rt_uint8_t type)
 	
 }
 
-FINSH_FUNCTION_EXPORT(upload_map,upload_map[type]--upload [0:account 1:key 2:phone 3:record] mapbyte)
+FINSH_FUNCTION_EXPORT(upload_map,upload_map[type]--upload [0:account 1:key 2:phone 3:record] mapbyte);
+
+void landtimeset(rt_uint16_t data)
+{
+	landresendtime = data;
+}
+FINSH_FUNCTION_EXPORT(landtimeset,set land resend time);
 
 #endif
 
