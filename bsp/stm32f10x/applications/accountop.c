@@ -526,7 +526,7 @@ rt_err_t admin_modify_fprint(rt_uint32_t outtime)
 			{
 				//指纹类型
 				rt_int32_t result;
-				rt_int16_t keypos = KEY_ID_INVALID;
+				rt_uint16_t keypos = KEY_ID_INVALID;
 				
 				rt_kprintf("key pos is %d \n",ah->key[i]);
 	
@@ -568,7 +568,7 @@ rt_err_t admin_modify_fprint(rt_uint32_t outtime)
 	{
 		//没有指纹
 		rt_int32_t result;
-		rt_int16_t keypos;
+		rt_uint16_t keypos;
 
 		rt_kprintf("Admin create new fprint\n");
 		keypos = KEY_ID_INVALID;
@@ -880,7 +880,7 @@ rt_err_t key_permission_check(rt_uint16_t KeyID)
 			time_t now;
 			struct tm *p_tm;
 			struct tm tm_new;
-			rt_device_t device;
+			//rt_device_t device;
 			rt_err_t ret = -RT_ERROR;
 
 			/* get current time */

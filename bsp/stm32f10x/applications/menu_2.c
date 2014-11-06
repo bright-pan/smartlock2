@@ -930,7 +930,6 @@ void menu_19_processing(void)
 	account_add_exit(RT_FALSE);
   gui_display_update();
 }
-
 rt_err_t search_user_id_check(rt_uint8_t *buf,rt_uint8_t *user)
 {
 	rt_kprintf("buf %s",buf);
