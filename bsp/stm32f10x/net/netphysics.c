@@ -10,6 +10,7 @@
 //#include "appconfig.h"
 
 #define SHOW_PRINTF_INFO   0    //打印调试信息
+#define SHOW_STATUS_INFO   1
 
 #define TCP_BUF_SIZE       1024 //接收缓冲区
 
@@ -68,9 +69,13 @@ rt_size_t find_package_end(rt_uint8_t *buffer,rt_size_t size)
 rt_err_t netprotocol_connect_status(void)
 {
 	rt_device_t dev;
-	rt_uint8_t  status;
+	volatile rt_uint8_t  status;
 	
 	dev = rt_device_find("Blooth");
+	if(dev == RT_NULL)
+	{
+		rt_kprintf("Blooth open fail \n");
+	}
 	if(!(dev->open_flag & RT_DEVICE_OFLAG_OPEN))
 	{
 	  rt_kprintf("open blooth module\n");
@@ -122,7 +127,7 @@ void netprotocol_thread_entry(void *arg)
 
 		//请求连接阶段
 		//net_event_process(0,NET_ENVET_CONNECT);
-    net_event_process(2,NET_ENVET_CONNECT);
+    //net_event_process(2,NET_ENVET_CONNECT);
     while(1)
     {
       int mq_result;
@@ -132,34 +137,26 @@ void netprotocol_thread_entry(void *arg)
 			//如果收到重新连接事件
     	if(net_event_process(2,NET_ENVET_RELINK) == 0)
     	{
-				RT_DEBUG_LOG(SHOW_PRINTF_INFO,("relink TCP/IP !!!!\n"));
+				RT_DEBUG_LOG(SHOW_STATUS_INFO,("relink TCP/IP !!!!\n"));
+
 				//清除所有登陆报文
-				clear_wnd_cmd_all(NET_MSGTYPE_LANDED);
+				//clear_wnd_cmd_all(NET_MSGTYPE_LANDED);
 				rt_thread_delay(RT_TICK_PER_SECOND*3);
         send_net_landed_mail();
         RT_ASSERT(recv_data != RT_NULL);
 				rt_free(recv_data);
 				break;
     	}
-    	if(netprotocol_connect_status() == RT_ERROR)
+
+    	//三次登陆失败
+    	if(net_event_process(2,NET_ENVET_LOGINFAIL) == 0)
     	{
-    		rt_thread_delay(10);
-    		if(net_event_process(0,NET_ENVET_CONNECT) == 1)
-    		{
-          //请求连接阶段
-          net_event_process(0,NET_ENVET_CONNECT);
-    		}
-    		net_event_process(2,NET_ENVET_ONLINE);
-				continue;
+    		//断开蓝牙连接
+    		RT_DEBUG_LOG(SHOW_STATUS_INFO,("Login Fail Auto Disconnect!!!\n"));
+				rt_device_control(hw_dev,5,RT_NULL);
     	}
-			else
-			{
-				if(net_event_process(0,NET_ENVET_CONNECT) == 0)
-				{
-					//请求连接成功
-    			net_event_process(2,NET_ENVET_CONNECT);
-				}
-			}
+
+			//接收数据
       bytes_received = rt_device_read(hw_dev,0,recv_data+SavePos,TCP_BUF_SIZE - (1+SavePos));
       //分析数据有效性
       if(bytes_received > 0)
@@ -223,7 +220,8 @@ void netprotocol_thread_entry(void *arg)
 					MsgEndPos = 0;
 				}*/
       }
-      
+
+      //发送数据
       mq_result = rt_mq_recv(net_datsend_mq,(void *)&message,sizeof(net_message),1);
       if(mq_result == RT_EOK)
       {
@@ -249,6 +247,33 @@ void netprotocol_thread_entry(void *arg)
         }
         rt_sem_release(message.sendsem);
       }
+
+      //蓝牙链接断开
+    	if(netprotocol_connect_status() == RT_ERROR)
+    	{
+    		if(net_event_process(1,NET_ENVET_CONNECT) == 1)
+    		{
+          //请求连接阶段
+          net_event_process(0,NET_ENVET_CONNECT);
+          RT_DEBUG_LOG(SHOW_STATUS_INFO,("Blooth physics disconnect!!!\n"));
+    		}
+    		net_event_process(2,NET_ENVET_ONLINE);
+    		//清除所有登陆报文
+				clear_wnd_cmd_all(NET_MSGTYPE_LANDED);
+				rt_thread_delay(1);
+				continue;
+    	}
+			else
+			{
+				if(net_event_process(1,NET_ENVET_CONNECT) == 0)
+				{
+					RT_DEBUG_LOG(SHOW_STATUS_INFO,("Blooth physics connect^_^\n"));
+					//请求连接成功
+    			net_event_process(2,NET_ENVET_CONNECT);
+    			net_event_process(0,NET_ENVET_RELINK);
+				}
+				rt_thread_delay(1);
+			}
     }
   }
 }

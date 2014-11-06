@@ -29,7 +29,8 @@
 //邮件类型
 #define BT_MAIL_TYPE_SLEEP    0X01//断开睡眠
 #define BT_MAIL_TYPE_CONN     0X02//连接
-#define BT_MAIL_TYPE_STATUS   0X03
+#define BT_MAIL_TYPE_STATUS   0X03//获取链接状态
+#define BT_MAIL_TYPE_RESET    0X04//模块复位
 
 //连接状态
 #define BT_NOW_CONNECT        0
@@ -297,7 +298,8 @@ static rt_err_t bluetooth_mac_manage(bluetooth_module_p module,rt_bool_t mode)
 static rt_err_t bluetooth_module_reset(bluetooth_module_p module)
 {
 	rt_uint8_t gpio_status;
-
+	
+	rt_kprintf("Bluetooth Moudlue Reset\n");
 	gpio_status = 0;
 	rt_device_write(module->rst_dev,0,&gpio_status,1);
 	rt_thread_delay(10);
@@ -312,7 +314,6 @@ static rt_err_t bluetooth_initiate(bluetooth_module_p module)
 {
 	rt_uint8_t gpio_status;
 
-	rt_kprintf("Bluetooth Moudlue Reset\n");
 	bluetooth_module_reset(module);
 	//wk = 1
 	gpio_status = 1;
@@ -371,7 +372,7 @@ static rt_err_t bluetooth_conn_status(rt_uint8_t *status)
 	rt_err_t 				result;
 	rt_uint32_t     mail_result; 
 	
-	tx_mq.tx_end = rt_mb_create("bt_sleep",1,RT_IPC_FLAG_FIFO);
+	tx_mq.tx_end = rt_mb_create("bt_stat",1,RT_IPC_FLAG_FIFO);
 	RT_ASSERT(tx_mq.tx_end != RT_NULL);
 	RT_ASSERT(BloothRequest_mq != RT_NULL);
 
@@ -386,6 +387,7 @@ static rt_err_t bluetooth_conn_status(rt_uint8_t *status)
 	result = rt_mb_recv(tx_mq.tx_end,&mail_result,RT_WAITING_FOREVER);
 	if(result != RT_EOK)
 	{
+		rt_kprintf("Get Blooth status fail\n");
 	  rt_mb_delete(tx_mq.tx_end);
 	  return RT_ERROR;
 	}
@@ -484,6 +486,37 @@ static rt_err_t bluetooth_connect(void)
   rt_mb_delete(tx_mq.tx_end);
 	return RT_EOK;
 }
+
+static rt_err_t bluetooth_reset(void)
+{
+	bluetooth_tx_mq tx_mq;
+	rt_err_t 				result;
+	rt_uint32_t     mail_result;
+	
+	tx_mq.tx_end = rt_mb_create("BTreset",1,RT_IPC_FLAG_FIFO);
+	RT_ASSERT(tx_mq.tx_end != RT_NULL);
+	RT_ASSERT(BloothRequest_mq != RT_NULL);
+
+	
+  tx_mq.type = BT_MAIL_TYPE_RESET;
+	result = rt_mq_send(BloothRequest_mq,&tx_mq,sizeof(bluetooth_tx_mq));
+	if(result != RT_EOK)
+	{
+	  rt_mb_delete(tx_mq.tx_end);
+	  return RT_ERROR;
+	}
+	result = rt_mb_recv(tx_mq.tx_end,&mail_result,RT_WAITING_FOREVER);
+	if(result != RT_EOK)
+	{
+	  rt_mb_delete(tx_mq.tx_end);
+	  return RT_ERROR;
+	}
+
+  rt_mb_delete(tx_mq.tx_end);
+	return RT_EOK;
+}
+
+
 
 
 static void bluetooth_cmd_switch(bluetooth_module_p bluetooth,rt_bool_t mode)
@@ -707,6 +740,7 @@ rt_size_t bluetooth_module_wirte(rt_uint8_t *buf,rt_size_t size)
 	rt_uint8_t      *bufp = buf;
 	rt_size_t       send_num = 0;
 
+	RT_DEBUG_LOG(RT_USEING_DEBUG,("bluetooth_module_wirte:\n",i));
 	tx_mq.tx_end = rt_mb_create("bt_tx",1,RT_IPC_FLAG_FIFO);
 	RT_ASSERT(tx_mq.tx_end != RT_NULL);
 	RT_ASSERT(BloothRequest_mq != RT_NULL);
@@ -718,14 +752,15 @@ rt_size_t bluetooth_module_wirte(rt_uint8_t *buf,rt_size_t size)
 		rt_mb_delete(tx_mq.tx_end);
 		return 0;
 	}
-	result = rt_mb_recv(tx_mq.tx_end,(void *)&uart,RT_TICK_PER_SECOND*30);
+	result = rt_mb_recv(tx_mq.tx_end,(void *)&uart,RT_TICK_PER_SECOND*10);
 	if(result != RT_EOK)
 	{
+		rt_kprintf("Blooth send data fail!!!\n");
 		rt_mb_delete(tx_mq.tx_end);
 		return 0;
 	}
 
-	RT_DEBUG_LOG(RT_USEING_DEBUG,("Start Send Data:\n",i));
+	RT_DEBUG_LOG(RT_USEING_DEBUG,("Blooth write Data:\n>>>>>>\n",i));
 	page = size / BT_DATA_PAGE_SIZE;
 	send_num = 0;
 	for(i=0; i<page; i++)
@@ -803,6 +838,13 @@ void bluetooth_thread_entry(void *arg)
 	            rt_mb_send(mail.tx_end,(rt_uint32_t )bluetooth->work_status);
 	            break;
 	          }
+	          case BT_MAIL_TYPE_RESET:
+	          {
+	          	bluetooth_initiate(bluetooth);
+	  					rt_thread_delay(100);
+	  					rt_mb_send(mail.tx_end,RT_NULL);
+							break;
+	          }
 	          default:
 	          {
 	            break;
@@ -816,7 +858,6 @@ void bluetooth_thread_entry(void *arg)
 					if(gpio_status == BT_NOW_CONNECT)
 					{
 						bluetooth_passivity_connect(bluetooth);
-						net_event_process(0,NET_ENVET_RELINK);
 					}
 	      }
 	    }
@@ -851,6 +892,13 @@ void bluetooth_thread_entry(void *arg)
 	              rt_mb_send(mail.tx_end,(rt_uint32_t )bluetooth->work_status);
 	              break;
 	            }
+	            case BT_MAIL_TYPE_RESET:
+		          {
+		          	bluetooth_initiate(bluetooth);
+	  						rt_thread_delay(100);
+	  						rt_mb_send(mail.tx_end,RT_NULL);
+								break;
+		          }
 	            default:
 	            {
 	              rt_kprintf(BT_SYSTEM_ERROR_INFO,__FUNCTION__, __LINE__);
@@ -988,6 +1036,11 @@ static rt_err_t  rt_bluetooth_control(rt_device_t dev, rt_uint8_t cmd, void *arg
 			{
 				rt_memcpy(args,BluetoothUerConfig.local_mac,12);
 			}
+			break;
+		}
+		case 5:
+		{
+			bluetooth_reset();
 			break;
 		}
 		default :
