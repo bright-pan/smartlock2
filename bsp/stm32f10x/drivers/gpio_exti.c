@@ -901,7 +901,7 @@ kb_intr_exti_timeout(void *parameters)
             }
         }
         //rt_kprintf("key value : %x\n", data);
-            if (cnts < 5000)
+            if (cnts < 3000)
                 c = char_remap[bit_to_index(data&0x0fff)];
             else
                 c = char_long_remap[bit_to_index(data&0x0fff)];
