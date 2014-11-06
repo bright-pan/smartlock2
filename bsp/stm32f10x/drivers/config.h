@@ -310,10 +310,10 @@ s32
 device_config_account_next_valid(u16 account_id, u8 flag);
 int
 device_config_file_operate(struct device_configure *config, u8 flag);
-s32 
-device_config_key_index(int(*callback)(struct key *, void *arg1, void *arg2, void *arg3), void *arg1, void *arg2);
 s32
-device_config_phone_index(int(*callback)(struct phone_head *, void *arg1, void *arg2, void *arg3), void *arg1, void *arg2, void *arg3);
+device_config_key_index(int(*callback)(struct key *, int id, void *arg1, void *arg2), void *arg1, void *arg2);
+s32
+device_config_phone_index(int(*callback)(struct phone_head *, int id, void *args), void *args);
 int
 system_init(void);
 s32
@@ -331,9 +331,9 @@ device_config_account_key_counts(u16 account_id);
 s32
 device_config_account_counts(void);
 s32
-device_config_event_index(int(*callback)(struct event *, int id ,void *arg1), void *arg1);
+device_config_event_index(int(*callback)(struct event *, int id ,void *args), void *args);
 s32
-device_config_account_index(int(*callback)(struct account_head *, u16 account_id, void *args), void *args);
+device_config_account_index(int(*callback)(struct account_head *, int id, void *args), void *args);
 
 
 int

@@ -897,12 +897,12 @@ process_error:
 	return error;
 }
 
-int fprint_key_init_callback(struct key *k, void *arg1, void *arg2, void *arg3)
+int fprint_key_init_callback(struct key *k, int key_id, void *arg1, void *arg2)
 {
     FPRINT_ERROR_TYPEDEF error = FPRINT_EERROR;
     FPRINT_FRAME_REQ_DATA_TYPEDEF *req_data = arg1;
     FPRINT_FRAME_REP_DATA_TYPEDEF *rep_data = arg2;
-    u16 key_id = *(u16 *)arg3 + FPRINT_TEMPLATE_OFFSET;
+    key_id += FPRINT_TEMPLATE_OFFSET;
     if (k->head.key_type == KEY_TYPE_FPRINT) {
         rt_memset(req_data, 0, sizeof(*req_data));
         rt_memset(rep_data, 0, sizeof(*rep_data));

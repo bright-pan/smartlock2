@@ -1674,7 +1674,7 @@ device_config_account_remove_phone(u16 phone_id)
 
 
 s32
-device_config_key_index(int(*callback)(struct key *, void *arg1, void *arg2, void *arg3), void *arg1, void *arg2)
+device_config_key_index(int(*callback)(struct key *, int id, void *arg1, void *arg2), void *arg1, void *arg2)
 {
     s32 result;
     u16 i;
@@ -1687,7 +1687,7 @@ device_config_key_index(int(*callback)(struct key *, void *arg1, void *arg2, voi
 		if (device_config_get_key_valid(i) > 0) {
 			len = device_config_key_operate(i, &k, 0);
 			if (len >= 0) {
-                result = callback(&k, arg1, arg2, &i);
+                result = callback(&k, i, arg1, arg2);
 			}
 		}
 	}
@@ -1695,7 +1695,7 @@ device_config_key_index(int(*callback)(struct key *, void *arg1, void *arg2, voi
 }
 
 s32
-device_config_phone_index(int(*callback)(struct phone_head *, void *arg1, void *arg2, void *arg3), void *arg1, void *arg2, void *arg3)
+device_config_phone_index(int(*callback)(struct phone_head *, int id, void *args), void *args)
 {
     s32 result;
     u16 i;
@@ -1709,7 +1709,7 @@ device_config_phone_index(int(*callback)(struct phone_head *, void *arg1, void *
 		if (len > 0) {
 			len = device_config_phone_operate(i, &ph, 0);
 			if (len >= 0) {
-                result = callback(&ph, arg1, arg2, arg3);
+                result = callback(&ph, i, args);
 			}
 		}
 	}
@@ -1717,7 +1717,7 @@ device_config_phone_index(int(*callback)(struct phone_head *, void *arg1, void *
 }
 
 s32
-device_config_account_index(int(*callback)(struct account_head *, u16 account_id, void *args), void *args)
+device_config_account_index(int(*callback)(struct account_head *, int id, void *args), void *args)
 {
     s32 result;
     u16 i;
@@ -1739,7 +1739,7 @@ device_config_account_index(int(*callback)(struct account_head *, u16 account_id
 }
 
 s32
-device_config_event_index(int(*callback)(struct event *, int id ,void *arg1), void *arg1)
+device_config_event_index(int(*callback)(struct event *, int id ,void *args), void *args)
 {
     s32 result;
     u16 i;
@@ -1753,7 +1753,7 @@ device_config_event_index(int(*callback)(struct event *, int id ,void *arg1), vo
 		if (len > 0) {
 			len = device_config_event_operate(i, &evt, 0);
 			if (len >= 0) {
-                result = callback(&evt, i, arg1);
+                result = callback(&evt, i, args);
 			}
 		}
 	}
