@@ -1,12 +1,17 @@
 #ifndef __DATASYNC_H__
 #define __DATASYNC_H__
+
 #include "rtthread.h"
 #include "sync_account.h"
 #include "sync_event.h"
 #include "sync_key.h"
 #include "sync_phone.h"
+#include "netmailclass.h"
+
 
 rt_err_t remote_data_sync_process(void);
+
+#ifdef USEING_NEW_DATA_SYNC
 
 //账户映射域请求发送
 void sync_account_map_req_api(struct account_map_req *data);
@@ -35,6 +40,7 @@ void sync_event_map_req_api(struct event_map_req *data);
 //记录数据校验报文发送
 void sync_event_check_request_api(struct event_check_req *data);
 
+#endif
 
 #endif
 
