@@ -18,6 +18,7 @@
 //#define USEING_MODIF_UI           
 
 #define MENU2_DEBUG_ARG						1
+#define FPRIN_OP_OUTIME           5
 
 #define PAGE_MAX_SHOW_NUM					4
 #define PHONE_STAND_LEN						11
@@ -311,7 +312,7 @@ void menu_14_processing(void)
         //有按键
         if(KeyValue >= '0' && KeyValue <= '9')
         {
-          result = string_add_char(buf,KeyValue,8);
+          result = string_add_char(buf,KeyValue,7);
           if(result == RT_EOK)
           {
             string_hide_string((const rt_uint8_t *)buf,ShowBuf,SHOW_PW_HIDE_CH,8);
@@ -403,7 +404,7 @@ void menu_14_processing(void)
         //有按键
         if(KeyValue >= '0' && KeyValue <= '9')
         {
-          result = string_add_char(buf,KeyValue,8);
+          result = string_add_char(buf,KeyValue,7);
           if(result == RT_EOK)
           {
             string_hide_string((const rt_uint8_t *)buf,ShowBuf,SHOW_PW_HIDE_CH,8);
@@ -547,11 +548,11 @@ void menu_15_processing(void)
 					gui_display_update();
 					if(CurUserPos == ADMIN_DATA_POS)
 					{
-						result = admin_modify_fprint(30*RT_TICK_PER_SECOND);
+						result = admin_modify_fprint(FPRIN_OP_OUTIME*RT_TICK_PER_SECOND);
 					}
 					else
 					{
-            result = user_add_fprint(30*RT_TICK_PER_SECOND);
+            result = user_add_fprint(FPRIN_OP_OUTIME*RT_TICK_PER_SECOND);
 					}
 					if(result == RT_EOK)
 					{
@@ -851,18 +852,41 @@ static void update_account_new_data(rt_uint16_t pos)
 	//上传账户
 	gprs_account_add_mail(pos);
 	device_config_account_operate(pos,data,0);
+  //上传新增钥匙
 	for(i = 0;i< ACCOUNT_KEY_NUMBERS;i++)
 	{
 		if(data->key[i] != KEY_ID_INVALID)
 		{
-			//上传新增钥匙
-			gprs_Key_add_mail(data->key[i]);
+			struct key           *key;
+
+			key = rt_calloc(1,sizeof(*key));
+			RT_ASSERT(key != RT_NULL);
+			
+			device_config_key_operate(data->key[i],key,0);
+			if(key->head.is_updated == 1)
+			{
+        gprs_Key_add_mail(data->key[i]);
+			}
+			rt_free(key);
 		}
 	}
+	//上传电话
 	for(i=0;i < ACCOUNT_PHONE_NUMBERS;i++)
 	{
-		//上传电话
-    gprs_account_add_mail(data->phone[i]);
+		if(data->phone[i] != PHONE_ID_INVALID)
+		{
+			struct phone_head *ph;
+
+			ph = rt_calloc(1,sizeof(*ph));
+			RT_ASSERT(ph != RT_NULL);
+			
+			device_config_phone_operate(data->phone[i],ph,0);
+			if(ph->is_update == 1)
+			{
+				gprs_account_add_mail(data->phone[i]);
+			}
+			rt_free(ph);
+		}
 	}
 
 	rt_free(data);

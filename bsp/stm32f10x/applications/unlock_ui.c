@@ -115,7 +115,7 @@ rt_err_t unlock_process_ui(void)
 	      //ÓÐ°´¼ü
 	      if(KeyValue >= '0' && KeyValue <= '9')
 	      {
-	        result = string_add_char(buf,KeyValue,8);
+	        result = string_add_char(buf,KeyValue,7);
 	        if(result == RT_EOK)
 	        {
 	          string_hide_string((const rt_uint8_t *)buf,ShowBuf,SHOW_PW_HIDE_CH,8);

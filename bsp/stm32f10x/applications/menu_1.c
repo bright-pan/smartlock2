@@ -89,7 +89,7 @@ void menu_0_processing(void)
       {
         if(KeyValue >= '0' && KeyValue <= '9')
         {
-          result = string_add_char(buf,KeyValue,8);
+          result = string_add_char(buf,KeyValue,7);
           if(result == RT_EOK)
           {
             string_hide_string((const rt_uint8_t *)buf,ShowBuf,SHOW_PW_HIDE_CH,8);
