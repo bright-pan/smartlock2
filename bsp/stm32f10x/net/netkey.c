@@ -126,7 +126,7 @@ rt_err_t net_key_add_process(net_recvmsg_p mail)
 	}
 	else
 	{
-    RT_DEBUG_LOG(SHOW_NETKEY_INFO,("error type key\n"));
+    RT_DEBUG_LOG(SHOW_NETKEY_INFO,("error type key!!!\n\n"));
 	}
 	
 	KeyOpResult = device_config_key_set(KeyID,keydat,keydat->head.updated_time);
