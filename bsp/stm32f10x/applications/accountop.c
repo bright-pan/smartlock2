@@ -98,7 +98,8 @@ rt_err_t account_cur_delete(void)
 	{
 		return RT_ERROR;
 	}
-	
+
+	rt_kprintf("删除账户ID:%d\n",AccountUse.AccountPos);
 	return RT_EOK;
 }
 
@@ -731,6 +732,7 @@ void admin_create(void)
         rt_kprintf("Admin key create Fail\n");
         RT_ASSERT(RT_NULL == RT_NULL);
 			}
+			//创建管理员433钥匙
 			result = device_config_key_create(KEY_ID_INVALID,KEY_TYPE_RF433,rf433data,4);
 			if(result >= 0)
 			{
@@ -751,6 +753,39 @@ void admin_create(void)
 			{
         rt_kprintf("Admin key create Fail\n");
         RT_ASSERT(RT_NULL == RT_NULL);
+			}
+
+			//创建管理员手机
+			result = device_config_phone_create(0,"12345678901",rt_strlen("12345678901"));
+			if(result == 0)
+			{	
+				struct phone_head *ph;
+
+				ph = rt_calloc(1,sizeof(*ph));
+				
+				device_config_phone_operate(0,ph,0);
+
+				ph->auth |= PHONE_AUTH_CALL; 
+
+				device_config_phone_operate(0,ph,1);
+
+				rt_free(ph);
+				
+				rt_kprintf("Admin phone create ok\n");
+				result = device_config_account_append_phone(0,0,menu_get_cur_date(),0);
+				if(result >= 0)
+				{
+					rt_kprintf("Administrator append OK\n");
+				}
+				else
+				{
+          rt_kprintf("Admin append Fail\n");
+          RT_ASSERT(RT_NULL == RT_NULL);
+				}
+			}
+			else
+			{
+        rt_kprintf("Admin phone create fail\n");
 			}
 	  } 
 	  else
@@ -1011,16 +1046,22 @@ FINSH_FUNCTION_EXPORT(show_account,show user info);
 void all_account(rt_uint8_t mode)
 {
 	rt_uint32_t i;
-	rt_uint32_t maxnum;
+	rt_uint32_t showpos = 0;
+	rt_uint32_t maxnum = 0;
 
 	maxnum = device_config_account_counts();
-	for(i=0;i<maxnum;i++)
+	for(i=0;i<ACCOUNT_NUMBERS;i++)
 	{
 		if(mode == 0)
 		{
       if(device_config_get_account_valid(i) > 0)
       {
         show_account(i);
+        showpos++;
+        if(showpos >= maxnum)
+        {
+					break;
+        }
       }
 		}
 		else
