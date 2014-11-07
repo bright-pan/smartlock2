@@ -77,6 +77,47 @@ static bluetooth_user	BluetoothUerConfig =
 
 rt_size_t bluetooth_module_read(rt_uint8_t *buf,rt_size_t size);
 
+//发送蓝牙控制命令
+static rt_err_t bluetooth_control_cmd_send(const char *mb_name,rt_uint8_t cmd,void *result)
+{
+	bluetooth_tx_mq tx_mq;
+	rt_err_t        SendResult;
+	rt_uint32_t     Mbresult;
+	
+  tx_mq.tx_end = rt_mb_create(mb_name,1,RT_IPC_FLAG_FIFO);
+	RT_ASSERT(tx_mq.tx_end != RT_NULL);
+	RT_ASSERT(BloothRequest_mq != RT_NULL);
+
+	tx_mq.type = cmd;
+
+	//发送控制命令
+	SendResult = rt_mq_send(BloothRequest_mq,&tx_mq,sizeof(bluetooth_tx_mq));
+	if(SendResult != RT_EOK)
+	{
+	  rt_mb_delete(tx_mq.tx_end);
+	  return RT_ERROR;
+	}
+	//蓝牙设备处理完成之后的结果
+	if(result == RT_NULL)
+	{
+    SendResult = rt_mb_recv(tx_mq.tx_end,&Mbresult,RT_WAITING_FOREVER);
+	}
+	else
+	{
+    SendResult = rt_mb_recv(tx_mq.tx_end,result,RT_WAITING_FOREVER);
+	}
+	
+	if(SendResult != RT_EOK)
+	{
+	  rt_kprintf("Get Blooth status fail\n");
+	  rt_mb_delete(tx_mq.tx_end);
+	  return RT_ERROR;
+	}
+
+	rt_mb_delete(tx_mq.tx_end);
+	return RT_EOK;
+}
+
 //驱动设备初始化
 static void device_init_processor(rt_device_t *dev,const char *dev_name)
 {
@@ -368,63 +409,19 @@ BT_INIT_EXIT:
 
 static rt_err_t bluetooth_conn_status(rt_uint8_t *status)
 {
-	bluetooth_tx_mq tx_mq;
-	rt_err_t 				result;
-	rt_uint32_t     mail_result; 
+	rt_err_t result;
+
+	result = bluetooth_control_cmd_send("BtStatus",BT_MAIL_TYPE_STATUS,status);
 	
-	tx_mq.tx_end = rt_mb_create("bt_stat",1,RT_IPC_FLAG_FIFO);
-	RT_ASSERT(tx_mq.tx_end != RT_NULL);
-	RT_ASSERT(BloothRequest_mq != RT_NULL);
-
-	
-  tx_mq.type = BT_MAIL_TYPE_STATUS;
-	result = rt_mq_send(BloothRequest_mq,&tx_mq,sizeof(bluetooth_tx_mq));
-	if(result != RT_EOK)
-	{
-	  rt_mb_delete(tx_mq.tx_end);
-	  return RT_ERROR;
-	}
-	result = rt_mb_recv(tx_mq.tx_end,&mail_result,RT_WAITING_FOREVER);
-	if(result != RT_EOK)
-	{
-		rt_kprintf("Get Blooth status fail\n");
-	  rt_mb_delete(tx_mq.tx_end);
-	  return RT_ERROR;
-	}
-
- 	*status = mail_result;
-
-  rt_mb_delete(tx_mq.tx_end);
-	return RT_EOK;
-
+	return result;
 }
 static rt_err_t bluetooth_sleep(void)
 {
-	bluetooth_tx_mq tx_mq;
-	rt_err_t 				result;
-	rt_uint32_t     mail_result; 
-	
-	tx_mq.tx_end = rt_mb_create("bt_sleep",1,RT_IPC_FLAG_FIFO);
-	RT_ASSERT(tx_mq.tx_end != RT_NULL);
-	RT_ASSERT(BloothRequest_mq != RT_NULL);
+	rt_err_t result;
 
+	result = bluetooth_control_cmd_send("BtSleep",BT_MAIL_TYPE_SLEEP,RT_NULL);
 	
-  tx_mq.type = BT_MAIL_TYPE_SLEEP;
-	result = rt_mq_send(BloothRequest_mq,&tx_mq,sizeof(bluetooth_tx_mq));
-	if(result != RT_EOK)
-	{
-	  rt_mb_delete(tx_mq.tx_end);
-	  return RT_ERROR;
-	}
-	result = rt_mb_recv(tx_mq.tx_end,&mail_result,RT_WAITING_FOREVER);
-	if(result != RT_EOK)
-	{
-	  rt_mb_delete(tx_mq.tx_end);
-	  return RT_ERROR;
-	}
-
-  rt_mb_delete(tx_mq.tx_end);
-	return RT_EOK;
+	return result;
 }
 
 static void bluetooth_uart_read_data(bluetooth_module_p module)
@@ -458,67 +455,27 @@ static void bluetooth_uart_read_data(bluetooth_module_p module)
 	rt_free(data_buf);
 }
 
+//连接
 static rt_err_t bluetooth_connect(void)
 {
-	bluetooth_tx_mq tx_mq;
-	rt_err_t 				result;
-	rt_uint32_t     mail_result;
-	
-	tx_mq.tx_end = rt_mb_create("bt_conn",1,RT_IPC_FLAG_FIFO);
-	RT_ASSERT(tx_mq.tx_end != RT_NULL);
-	RT_ASSERT(BloothRequest_mq != RT_NULL);
+	rt_err_t result;
 
+	result = bluetooth_control_cmd_send("BtConn",BT_MAIL_TYPE_CONN,RT_NULL);
 	
-  tx_mq.type = BT_MAIL_TYPE_CONN;
-	result = rt_mq_send(BloothRequest_mq,&tx_mq,sizeof(bluetooth_tx_mq));
-	if(result != RT_EOK)
-	{
-	  rt_mb_delete(tx_mq.tx_end);
-	  return RT_ERROR;
-	}
-	result = rt_mb_recv(tx_mq.tx_end,&mail_result,RT_WAITING_FOREVER);
-	if(result != RT_EOK)
-	{
-	  rt_mb_delete(tx_mq.tx_end);
-	  return RT_ERROR;
-	}
-
-  rt_mb_delete(tx_mq.tx_end);
-	return RT_EOK;
+	return result;
 }
 
+//蓝牙设备复位
 static rt_err_t bluetooth_reset(void)
 {
-	bluetooth_tx_mq tx_mq;
-	rt_err_t 				result;
-	rt_uint32_t     mail_result;
-	
-	tx_mq.tx_end = rt_mb_create("BTreset",1,RT_IPC_FLAG_FIFO);
-	RT_ASSERT(tx_mq.tx_end != RT_NULL);
-	RT_ASSERT(BloothRequest_mq != RT_NULL);
+	rt_err_t result;
 
+	result = bluetooth_control_cmd_send("BtReset",BT_MAIL_TYPE_RESET,RT_NULL);
 	
-  tx_mq.type = BT_MAIL_TYPE_RESET;
-	result = rt_mq_send(BloothRequest_mq,&tx_mq,sizeof(bluetooth_tx_mq));
-	if(result != RT_EOK)
-	{
-	  rt_mb_delete(tx_mq.tx_end);
-	  return RT_ERROR;
-	}
-	result = rt_mb_recv(tx_mq.tx_end,&mail_result,RT_WAITING_FOREVER);
-	if(result != RT_EOK)
-	{
-	  rt_mb_delete(tx_mq.tx_end);
-	  return RT_ERROR;
-	}
-
-  rt_mb_delete(tx_mq.tx_end);
-	return RT_EOK;
+	return result;
 }
 
-
-
-
+//命令模式与数据模式切换
 static void bluetooth_cmd_switch(bluetooth_module_p bluetooth,rt_bool_t mode)
 {
 	rt_uint8_t gpio_status;
