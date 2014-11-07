@@ -2101,6 +2101,42 @@ s32 device_config_key_set_test(u16 key_id, u16 k_type, u8 *buf, u16 o_type, u32 
     rt_free(k);
     return result;
 }
+s32 device_config_key_valid_display(int x)
+{
+    int i;
+    for (i=0; i<KEY_MAP_SIZE/x; i++)
+    {
+        print_hex(&device_config.param.kv_map.data[i], x * sizeof(device_config.param.kv_map.data[0]));
+    }
+}
+s32 device_config_account_valid_display(int x)
+{
+    int i;
+    for (i=0; i<ACCOUNT_MAP_SIZE/x; i++)
+    {
+        print_hex(&device_config.param.av_map.data[i], x * sizeof(device_config.param.av_map.data[0]));
+    }
+}
+s32 device_config_phone_valid_display(int x)
+{
+    int i;
+    for (i=0; i<PHONE_MAP_SIZE/x; i++)
+    {
+        print_hex(&device_config.param.pv_map.data[i], x * sizeof(device_config.param.pv_map.data[0]));
+    }
+}
+s32 device_config_event_valid_display(int x)
+{
+    int i;
+    for (i=0; i<EVENT_MAP_SIZE/x; i++)
+    {
+        print_hex(&device_config.param.ev_map.data[i], x * sizeof(device_config.param.ev_map.data[0]));
+    }
+}
+FINSH_FUNCTION_EXPORT_ALIAS(device_config_key_valid_display, devcfg_kvd, [x]);
+FINSH_FUNCTION_EXPORT_ALIAS(device_config_account_valid_display, devcfg_avd, [x]);
+FINSH_FUNCTION_EXPORT_ALIAS(device_config_phone_valid_display, devcfg_pvd, [x]);
+FINSH_FUNCTION_EXPORT_ALIAS(device_config_event_valid_display, devcfg_evd, [x]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_phone_create, devcfg_pcr, [phone_id name len]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_phone_set, devcfg_ps, [phone_id name len op_time]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_get_phone_valid, devcfg_gpv, [phone_id]);
