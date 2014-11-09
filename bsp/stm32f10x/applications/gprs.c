@@ -162,7 +162,7 @@ static void key_upload_process(rt_uint16_t UpdatePos)
 			RT_ASSERT(data->data.data != RT_NULL);
 			rt_memcpy(data->data.data,KeyData->data.rf433.code,data->DataLen);
 			break;
-		};
+		}
 		default:
 		{
 			
@@ -346,56 +346,81 @@ static int set_alarmlog_update_flag(struct event *data,int evt_id, void *user)
 //设置数据库中数据更新标志位
 void set_all_update_flag(rt_uint8_t flag)
 {
-  rt_uint16_t           i;
 	rt_int16_t            result;
 	struct account_head   *data;
 	struct phone_head 	  *phdata;
 	struct key 		        *keydat;
+	rt_uint32_t           CurPos;
 	rt_int32_t           	maxnum;
-
+	
+  //账户更新标志设置
 	data = rt_calloc(1,sizeof(*data));
 	maxnum = device_config_account_counts();
-	for(i = 0;i < maxnum;i++)
+	rt_kprintf("upload %d account \n",maxnum);
+	CurPos = 0;
+	while(maxnum)
 	{
-	  result = device_config_get_account_valid(i);
+	  result = device_config_get_account_valid(CurPos);
 	  if(result == 1)
 	  {
-	    device_config_account_operate(i,data,0);
+	  	maxnum--;
+	    device_config_account_operate(CurPos,data,0);
 			data->is_updated = flag;		
-	    device_config_account_operate(i,data,1);
+	    device_config_account_operate(CurPos,data,1);
 	  }
+	  else
+	  {
+			rt_kprintf("set account update flag fail\n");
+	  }
+	  CurPos++;
 	}
 	rt_free(data);
 
+	//手机更新标志设置
 	maxnum = device_config_phone_counts();
 	phdata = rt_calloc(1,sizeof(*phdata));
-	for(i = 0;i < maxnum;i++)
+	CurPos = 0;
+	while(maxnum)
 	{
-	  result = device_config_get_phone_valid(i);
+	  result = device_config_get_phone_valid(CurPos);
 	  
 	  if(result == 1)
 	  {
-	    device_config_phone_operate(i,phdata,0);
+	  	maxnum--;
+	    device_config_phone_operate(CurPos,phdata,0);
 			phdata->is_update = flag;
-	    device_config_phone_operate(i,phdata,1);
+	    device_config_phone_operate(CurPos,phdata,1);
 	  }
+	  else
+	  {
+
+	  }
+	  CurPos++;
 	}
 	rt_free(phdata);
 
+	//钥匙更新标志设置
   maxnum = device_config_key_counts();
 	keydat = rt_calloc(1,sizeof(*keydat));
-	for(i = 0;i < maxnum;i++)
+	while(maxnum)
 	{
-		result = device_config_get_key_valid(i);
+		result = device_config_get_key_valid(CurPos);
 		if(result == 1)
 		{
-			device_config_key_operate(i,keydat,0);
+			maxnum--;
+			device_config_key_operate(CurPos,keydat,0);
 			keydat->head.is_updated = flag;
-			device_config_key_operate(i,keydat,1);
+			device_config_key_operate(CurPos,keydat,1);
 		}
+		else
+		{
+
+		}
+		CurPos++;
 	}
 	rt_free(keydat);
 
+	//记录更新标志设置
 	device_config_event_index(set_alarmlog_update_flag,(void *)&flag);
 }
 
@@ -684,15 +709,24 @@ int gprs_local_mail_resend(struct event *data,int evt_id, void *user)
 static void update_smartlock_database(void)
 {
   rt_kprintf("update start\n");
+
+	//上传账户映射域
+	rt_kprintf("update map data...\n");
+  //upload_map(1);
+
+  //上传记录
   rt_kprintf("update record data...\n");
   device_config_event_index(gprs_local_mail_resend,RT_NULL);
-  
+
+  //上传账户
   rt_kprintf("update account data...\n");
   update_account_lib_remote();
-  
+
+  //上传账户钥匙
   rt_kprintf("update key data...\n");
   update_key_lib_remote();
-  
+
+  //上传手机
   rt_kprintf("update phone data...\n");
   update_phone_lib_remote();
   rt_kprintf("update end\n");
@@ -755,6 +789,7 @@ void gprs_mail_manage_entry(void* arg)
 			count = 0;
 
 			update_smartlock_database();
+			send_gprs_mail(ALARM_TYPE_GPRS_SYS_TIME_UPDATE,0,RT_NULL);
 		}
 		
 		//处理邮件
