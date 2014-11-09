@@ -373,7 +373,28 @@ local_thread_entry(void *parameter)
 					gprs_key_error_mail(local_mail_buf.data.key.Type);
 					if(local_mail_buf.data.key.sms == 1)
 					{
-           	send_sms_mail(ALARM_TYPE_SMS_KEY_ERROR,0, RT_NULL, 0, PHONE_AUTH_SMS);
+						switch(local_mail_buf.data.key.Type)
+						{
+							case KEY_TYPE_FPRINT:
+							{
+								send_sms_mail(ALARM_TYPE_SMS_FPRINT_ERROR,0, RT_NULL, 0, PHONE_AUTH_SMS);
+								break;
+							}
+							case KEY_TYPE_KBOARD:
+							{
+								send_sms_mail(ALARM_TYPE_SMS_KEY_ERROR,0, RT_NULL, 0, PHONE_AUTH_SMS);
+								break;
+							}
+							case KEY_TYPE_RF433:
+							{
+								send_sms_mail(ALARM_TYPE_SMS_RF433_ERROR,0, RT_NULL, 0, PHONE_AUTH_SMS);
+								break;
+							}
+							default:
+							{
+								break;
+							}
+						}
 					}
 
 					data.lock.key_id = 0;
