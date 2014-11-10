@@ -25,7 +25,7 @@
 
 #define RF433_DEBUG 1
 #define RF433_TIMEOUT 1000
-#define RF433_SMS_LIMITE 2000
+#define RF433_SMS_LIMITE 200
 
 static volatile s32 time_out; // ms 计时变量
 static volatile s32 time_cnt;
