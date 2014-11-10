@@ -22,6 +22,7 @@
 #include "config.h"
 #include "sms.h"
 #include "local.h"
+#include "buzzer.h"
 
 #define RF433_DEBUG 1
 #define RF433_TIMEOUT 1000
@@ -128,7 +129,7 @@ rf433_thread_entry(void *parameter)
 	{
 		// receive mail
 		rt_memset(&rf433_mail_buf, 0, sizeof(rf433_mail_buf));
-		result = rt_mq_recv(rf433_mq, &rf433_mail_buf, sizeof(rf433_mail_buf), RF433_TIMEOUT);
+		result = rt_mq_recv(rf433_mq, &rf433_mail_buf, sizeof(rf433_mail_buf), 1000);
 		if (result == RT_EOK)
         {
 			switch (rf433_mail_buf.cmd)
@@ -138,6 +139,7 @@ rf433_thread_entry(void *parameter)
                     flag = 1;
                     gpio_pin_output(DEVICE_NAME_RF_ENABLE, 0, 1);
                     rf433_check_start();
+                    buzzer_send_mail(BZ_TYPE_RF433_STRART);
                     break;
                 }
 				case RF433_VERIFY:
