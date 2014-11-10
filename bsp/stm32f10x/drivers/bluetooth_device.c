@@ -756,7 +756,7 @@ void bluetooth_thread_entry(void *arg)
 	while(1)
 	{
 	  bluetooth_initiate(bluetooth);
-	  rt_thread_delay(1000);
+	  rt_thread_delay(500);
 	  while(1)
 	  { 
 	    rt_uint8_t mb_result;
