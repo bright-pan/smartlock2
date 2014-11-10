@@ -40,13 +40,13 @@
 #define LOCK_GATE_TIMER_BASE										5				   // 5s debug use
 #endif
 #define BATTERY_CHECH_TIMER_BASE								6000				// 1min
-
+#define AUTO_UNFREEZE_TIME                      60*3          //30s
 #define LOCAL_MAIL_MAX_MSGS 										20
 void lock_process(LOCAL_MAIL_TYPEDEF *);
 // local msg queue for local alarm
 static rt_mq_t local_mq;
 static rt_uint16_t AutoLockTime = LOCK_GATE_TIMER_BASE;
-
+static rt_uint16_t AutoUnfreezeTime = AUTO_UNFREEZE_TIME;
 
 typedef struct
 {
@@ -73,6 +73,11 @@ static MotorDevDef MotorManage =
 };
 static rt_event_t   local_evt = RT_NULL;
 
+void lock_operation(s32 status, u16 pluse);
+
+
+
+
 
 /**
   * @brief  掉电紧急处理函数
@@ -87,7 +92,26 @@ void PVD_IRQCallbackFun(void)
 	rt_kprintf("save current system time\n");
 }
 
-void lock_operation(s32 status, u16 pluse);
+/**
+  * @brief  系统冻结管理函数
+  * @param  None
+  * @retval None
+  */
+void system_freeze_magage(void)
+{
+	//如果被冻结
+	if(local_event_process(1,LOCAL_EVT_SYSTEM_FREEZE) == 0)
+	{
+		//解冻倒计时
+		AutoUnfreezeTime--;
+		if(AutoUnfreezeTime == 0)
+		{
+			AutoUnfreezeTime = AUTO_UNFREEZE_TIME;
+			local_event_process(2,LOCAL_EVT_SYSTEM_FREEZE);
+			rt_kprintf("System In Unfreeze\n");
+		}
+	}
+}
 
 /*
 功能:local线程中事件
@@ -463,7 +487,11 @@ local_thread_entry(void *parameter)
 		}
 		else
 		{
+			//电机状态管理
 			motor_status_manage();
+
+			//电机冻结管理
+			system_freeze_magage();
 		}
 		//motor_auto_lock(RT_FALSE);
 	}
