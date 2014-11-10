@@ -12,6 +12,7 @@ typedef enum
 	BZ_TYPE_ERROR1,
 	BZ_TYPE_ERROR3,
 	BZ_TYPE_OPOK,
+	BZ_TYPE_RF433_STRART,
 }BuzzerType;
 
 rt_err_t buzzer_send_mail(BuzzerType type);

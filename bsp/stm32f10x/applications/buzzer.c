@@ -119,6 +119,13 @@ void buzzer_work(BuzzerType mode)
 			buzzer_pwm_set(500);
 			break;
 		}
+		case BZ_TYPE_RF433_STRART:
+		{
+			buzzer_pwm_set(400);
+			buzzer_control(500);
+			buzzer_pwm_set(500);
+			break;
+		}
 		default:
 		{
 			rt_kprintf("buzzer type is error!!!\n");
@@ -177,6 +184,14 @@ INIT_APP_EXPORT(buzzer_thread_init);
 #include <finsh.h>
 
 FINSH_FUNCTION_EXPORT(buzzer_work, buzzer_work[mode]);
+
+void buzzer_ch(rt_uint32_t f,rt_uint32_t t,rt_uint32_t T)
+{
+  buzzer_pwm_set(f);
+	buzzer_control(t);
+	rt_thread_delay(T);
+}
+FINSH_FUNCTION_EXPORT(buzzer_ch, buzzer_change(f t T));
 
 #endif
 
