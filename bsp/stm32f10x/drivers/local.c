@@ -264,6 +264,31 @@ void motor_status_sem_init(void)
 	}
 }
 
+static u8 gsm_ring_request = 1;
+
+void gsm_ring_request_timeout(void *parameters)
+{
+    u8 *flag = parameters;
+    *flag = 1;
+}
+
+int gsm_ring_request_enter(void)
+{
+    int result = -1;
+    if (gsm_ring_request)
+    {
+        rt_timer_create("g_req", gsm_ring_request_timeout, &gsm_ring_request, 10000, RT_TIMER_FLAG_ONE_SHOT | RT_TIMER_FLAG_SOFT_TIMER);
+        gsm_ring_request = 0;
+        result = 0;
+    }
+    return result;
+}
+
+void gsm_ring_request_exit(void)
+{
+    gsm_ring_request = 1;
+}
+
 void
 local_thread_entry(void *parameter)
 {
@@ -308,12 +333,13 @@ local_thread_entry(void *parameter)
 						RT_DEBUG_LOG(LOCAL_DEBUG,("This is phone error %s\n",local_mail_buf.data.ring.phone_call));
 	        }
                     send_gsm_ctrl_mail(GSM_CTRL_PHONE_CALL_HANG_UP,RT_NULL,0,1);
-            
+                    gsm_ring_request_exit();
 					break;
 				}
 				case ALARM_TYPE_GSM_RING_REQUEST:
 				{
-                    send_sms_mail(ALARM_TYPE_SMS_REQ_IN_PHONE_CALL, 0, RT_NULL, 0, PHONE_AUTH_CALL);
+                    if (gsm_ring_request_enter >= 0)
+                        send_sms_mail(ALARM_TYPE_SMS_REQ_IN_PHONE_CALL, 0, RT_NULL, 0, PHONE_AUTH_CALL);
 					break;
 				}
 				case ALARM_TYPE_FPRINT_KEY_ADD:
