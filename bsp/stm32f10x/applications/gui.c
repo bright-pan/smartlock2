@@ -117,7 +117,7 @@ rt_err_t gui_key_input(rt_uint8_t *KeyValue)
 			}
 			case KEY_START_RING_VALUE:
 			{
-				if(local_event_process(0,LOCAL_EVT_SYSTEM_FREEZE) == 0)
+				if(local_event_process(1,LOCAL_EVT_SYSTEM_FREEZE) == 0)
 				{
 					//ÏµÍ³¶³½á
 					rt_kprintf("system is freeze\n");
