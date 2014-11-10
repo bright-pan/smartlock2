@@ -913,7 +913,9 @@ void bluetooth_thread_entry(void *arg)
 	    
 	    if(bluetooth->work_status == BT_MODULE_CMD_ABNORMAL)
 	    {
+#ifdef USEING_BT_C_CONN
 LINK_ON_AT_CMD_ABNORMAL:
+#endif
 				break;
 	    }
 	    rt_thread_delay(1);
