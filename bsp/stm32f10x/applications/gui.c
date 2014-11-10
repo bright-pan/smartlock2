@@ -119,6 +119,9 @@ rt_err_t gui_key_input(rt_uint8_t *KeyValue)
 			{
 				//触发接电话功能
 				send_local_mail(ALARM_TYPE_GSM_RING_REQUEST,0,RT_NULL);
+
+				//发送电话开门UI事件
+				menu_event_process(0,MENU_EVT_PH_UNLOCK);
 				result = RT_ERROR;
 				break;
 			}

@@ -463,6 +463,7 @@ void menu_14_processing(void)
 								save = 2;
 	            }
           	}
+          	menu_operation_result_handle(2);
             gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),MenuCommText[save],GUI_WIHIT);
     				gui_display_update();
     				rt_thread_delay(RT_TICK_PER_SECOND);
@@ -795,6 +796,7 @@ void menu_16_processing(void)
 							menu_operation_result_handle(2);
 							SaveShowFlag = 2;
            	}
+           	menu_operation_result_handle(2);
            	gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),MenuCommText[SaveShowFlag],GUI_WIHIT);
     				gui_display_update();
     				rt_thread_delay(RT_TICK_PER_SECOND);

@@ -31,6 +31,11 @@ static const rt_uint8_t FpUnlockUIText[][LCD_LINE_MAX_LEN] =
 	{"指纹错误"},
 };
 
+static const rt_uint8_t PhUnlockUIText[][LCD_LINE_MAX_LEN] = 
+{
+ {"已通知主人"},
+};
+
 #define SYSTEM_ENTER_MENU_NUM						2	//菜单的最大个数
 static void system_enter_menu_ui(rt_uint8_t InPOS)
 {
@@ -207,7 +212,7 @@ rt_err_t unlock_process_ui(void)
 	    }
 	    else
 	    {
-	    	rt_bool_t fpshowresult;
+	    	rt_bool_t EvtProcessResult;
 	    	
 	    	//操作超时
 	    	if(menu_event_process(2,MENU_EVT_OP_OUTTIME) == 0)
@@ -219,8 +224,12 @@ rt_err_t unlock_process_ui(void)
 	      menu_inputchar_glint(SHOW_X_ROW8(PASSWORD_DATA_POS+rt_strlen((const char *)ShowBuf)),SHOW_Y_LINE(2),GlintStatus%2);
 	      gui_display_update();
 	      //指纹处理结果显示
-	      fpshowresult = fprint_unlock_result_show();
-				if(fpshowresult == RT_TRUE)
+	      EvtProcessResult = fprint_unlock_result_show();
+				if(EvtProcessResult == RT_TRUE)
+	      {
+					return RT_EOK;
+	      }
+	      EvtProcessResult = phone_unlock_result_show();
 	      {
 					return RT_EOK;
 	      }
@@ -270,4 +279,26 @@ rt_bool_t fprint_unlock_result_show(void)
 
 	return RT_FALSE;
 }
+
+
+//打电话开门ui
+//返回 RT_TRUE:表示有打电话开门事件
+//返回 RT_TRUE:表示没有打电话开门事件
+rt_bool_t phone_unlock_result_show(void)
+{
+	if(menu_event_process(2,MENU_EVT_PH_UNLOCK) == 0)
+	{
+		//显示电话开门提示
+		gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+		gui_display_string(SHOW_X_CENTERED(PhUnlockUIText[0]),SHOW_Y_LINE(2),PhUnlockUIText[0],GUI_WIHIT);
+		gui_display_update();
+		menu_input_sure_key(RT_TICK_PER_SECOND);
+		gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+
+		return RT_TRUE;
+	}
+
+	return RT_FALSE;
+}
+
 

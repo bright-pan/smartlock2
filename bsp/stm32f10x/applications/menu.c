@@ -348,10 +348,12 @@ void key_input_processing_init(void)
   system_menu_choose(0);
 }
 
+//进入菜单后按键处理
 void key_input_processing(void)
 {
 	cur_run_processing();
 	fprint_unlock_result_show();
+	//phone_unlock_result_show();
 }
 
 //菜单运行确定按钮处理函数
