@@ -23,9 +23,6 @@ rt_mutex_t mutex_gsm_mail_sequence;
 
 TCP_DOMAIN_TYPEDEF tcp_domain;
 
-AT_RESPONSE_TYPEDEF
-send_cmd_mail(AT_COMMAND_INDEX_TYPEDEF command_index, uint16_t delay, GSM_MAIL_CMD_DATA *cmd_data);
-
 const char *at_command_map[80];
 
 void at_command_map_init(void)
@@ -1451,14 +1448,14 @@ gsm_mode_switch(uint8_t flag)
 }
 
 AT_RESPONSE_TYPEDEF
-gsm_ring_process(void)
+gsm_ring_process(uint8_t flag)
 {
 	GSM_MAIL_CMD_DATA cmd_data;
 	AT_RESPONSE_TYPEDEF result = AT_RESPONSE_ERROR;
 
 	if (gpio_pin_input(DEVICE_NAME_GSM_RING, 1) == GSM_RING_STATUS)
 	{
-		if(send_cmd_mail(AT_CLCC, 100, &cmd_data) == AT_RESPONSE_OK)
+		if(send_cmd_mail(AT_CLCC, 100, &cmd_data, flag) == AT_RESPONSE_OK)
 		{
 			result = AT_RESPONSE_OK;
 		}
@@ -1466,16 +1463,16 @@ gsm_ring_process(void)
 	return result;
 }
 AT_RESPONSE_TYPEDEF
-gsm_phone_call_process(uint8_t flag)
+gsm_phone_call_process(int type, uint8_t flag)
 {
 	GSM_MAIL_CMD_DATA cmd_data;
 	AT_RESPONSE_TYPEDEF result = AT_RESPONSE_ERROR;
 
-	switch (flag)
+	switch (type)
 	{
 		case GSM_CTRL_PHONE_CALL_ANSWER:
 			{
-				if(send_cmd_mail(ATA, 100, &cmd_data) == AT_RESPONSE_OK)
+				if(send_cmd_mail(ATA, 100, &cmd_data, flag) == AT_RESPONSE_OK)
 				{
 					result = AT_RESPONSE_OK;
 				}
@@ -1483,7 +1480,7 @@ gsm_phone_call_process(uint8_t flag)
 			}
 		case GSM_CTRL_PHONE_CALL_HANG_UP:
 			{
-				if(send_cmd_mail(ATH5, 100, &cmd_data) == AT_RESPONSE_OK)
+				if(send_cmd_mail(ATH5, 100, &cmd_data, flag) == AT_RESPONSE_OK)
 				{
 					result = AT_RESPONSE_OK;
 				}
@@ -1579,7 +1576,7 @@ gsm_thread_entry(void *parameters)
 					case GSM_CTRL_PHONE_CALL_HANG_UP:
 						{
 							if (data)
-								at_result = gsm_phone_call_process(gsm_mail_buf.mail_data.control.cmd);
+								at_result = gsm_phone_call_process(gsm_mail_buf.mail_data.control.cmd, 0);
 							else
 								at_result = AT_NO_RESPONSE;
 							break;
@@ -1628,7 +1625,7 @@ gsm_thread_entry(void *parameters)
 }
 
 AT_RESPONSE_TYPEDEF
-send_cmd_mail(AT_COMMAND_INDEX_TYPEDEF command_index, uint16_t delay, GSM_MAIL_CMD_DATA *cmd_data)
+send_cmd_mail(AT_COMMAND_INDEX_TYPEDEF command_index, uint16_t delay, GSM_MAIL_CMD_DATA *cmd_data, u8 flag)
 {
 	GSM_MAIL_TYPEDEF gsm_mail_buf;
 	AT_RESPONSE_TYPEDEF send_result = AT_RESPONSE_ERROR;
@@ -1637,7 +1634,10 @@ send_cmd_mail(AT_COMMAND_INDEX_TYPEDEF command_index, uint16_t delay, GSM_MAIL_C
     rt_memset(&gsm_mail_buf, 0, sizeof(gsm_mail_buf));
 	gsm_mail_buf.send_mode = GSM_MODE_CMD;
 	gsm_mail_buf.result = &send_result;
-	gsm_mail_buf.result_sem = rt_sem_create("s_cmd", 0, RT_IPC_FLAG_FIFO);
+    if (flag)
+        gsm_mail_buf.result_sem = rt_sem_create("s_cmd", 0, RT_IPC_FLAG_FIFO);
+    else
+        gsm_mail_buf.result_sem = RT_NULL;
 	gsm_mail_buf.flag = 1;
 	gsm_mail_buf.mail_data.cmd.index = command_index;
 	gsm_mail_buf.mail_data.cmd.delay = delay;
@@ -1652,9 +1652,11 @@ send_cmd_mail(AT_COMMAND_INDEX_TYPEDEF command_index, uint16_t delay, GSM_MAIL_C
 		}
 		else
 		{
-			rt_sem_take(gsm_mail_buf.result_sem, RT_WAITING_FOREVER);
+            if (gsm_mail_buf.result_sem != RT_NULL)
+                rt_sem_take(gsm_mail_buf.result_sem, RT_WAITING_FOREVER);
 		}
-		rt_sem_delete(gsm_mail_buf.result_sem);
+        if (gsm_mail_buf.result_sem != RT_NULL)
+            rt_sem_delete(gsm_mail_buf.result_sem);
 	}
 	else
 	{

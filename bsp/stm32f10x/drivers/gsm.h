@@ -334,13 +334,17 @@ void gsm_put_char(const uint8_t *str, uint16_t length);
 void gsm_put_hex(const uint8_t *str, uint16_t length);
 void gsm_muntex_control(rt_uint8_t cmd,char *username);
 
+
 AT_RESPONSE_TYPEDEF
-gsm_ring_process(void);
+gsm_phone_call_process(int type, uint8_t flag);
+AT_RESPONSE_TYPEDEF
+gsm_ring_process(uint8_t flag);
 
 GSM_ERROR_TYPEDEF
 send_gsm_sms_mail(uint8_t *buf, uint16_t length, uint8_t flag);
 
 GSM_ERROR_TYPEDEF
 send_gsm_ctrl_mail(u8 ctrl_cmd, uint8_t *buf, uint16_t length, uint8_t flag);
-
+AT_RESPONSE_TYPEDEF
+send_cmd_mail(AT_COMMAND_INDEX_TYPEDEF command_index, uint16_t delay, GSM_MAIL_CMD_DATA *cmd_data, u8 flag);
 #endif

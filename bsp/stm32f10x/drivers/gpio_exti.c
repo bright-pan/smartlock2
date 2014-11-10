@@ -973,7 +973,7 @@ void gsm_ring_exti_timeout(void *parameters)
         rt_kprintf("it is gsm ring!\n");
         // produce mail
         //send_alarm_mail(ALARM_TYPE_SWITCH1, ALARM_PROCESS_FLAG_LOCAL, SWITCH1_STATUS, 0);
-        gsm_ring_process();
+        gsm_ring_process(1);
     }
 	gpio->ops->control(gpio, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0); 
 	rt_timer_stop(gpio_user_data->timer);
