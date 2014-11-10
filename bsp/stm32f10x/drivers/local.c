@@ -26,6 +26,9 @@
 #include "buzzer.h"
 #endif
 #include "rf433.h"
+#include "PVDProcess.h"
+#include "eeprom_process.h"
+
 
 #define LOCAL_DEBUG 1
 
@@ -69,6 +72,20 @@ static MotorDevDef MotorManage =
 	LOCK_GATE_TIMER_BASE-3,
 };
 static rt_event_t   local_evt = RT_NULL;
+
+
+/**
+  * @brief  掉电紧急处理函数
+  * @param  None
+  * @retval None
+  */
+void PVD_IRQCallbackFun(void)
+{
+	/* save current system time */
+	system_time_save();
+
+	rt_kprintf("save current system time\n");
+}
 
 void lock_operation(s32 status, u16 pluse);
 
@@ -560,6 +577,7 @@ rt_local_init(void)
 {
 	rt_thread_t local_thread;
 
+	PVD_IRQCallBackSet(PVD_IRQCallbackFun);
     // initial local msg queue
 	local_mq = rt_mq_create("local", sizeof(LOCAL_MAIL_TYPEDEF),
 							LOCAL_MAIL_MAX_MSGS, RT_IPC_FLAG_FIFO);
@@ -591,6 +609,8 @@ rt_uint16_t system_autolock_time_get(void)
 {
 	return AutoLockTime;
 }
+
+
 
 
 
