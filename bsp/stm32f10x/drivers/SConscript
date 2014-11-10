@@ -33,6 +33,7 @@ sync_account.c
 sync_key.c
 sync_phone.c
 sync_event.c
+PVDProcess.c
 """)
 
 # add Ethernet drvers.
