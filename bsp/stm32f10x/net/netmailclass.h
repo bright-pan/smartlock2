@@ -69,6 +69,7 @@ void msg_null_ack(message_type MSGType);
 
 rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData);
 
+void upload_map(rt_uint8_t type);
 
 #endif
 
