@@ -24,9 +24,12 @@
 #include "local.h"
 
 #define RF433_DEBUG 1
+#define RF433_TIMEOUT 1000
+#define RF433_SMS_LIMITE 2000
 
 static volatile s32 time_out; // ms 计时变量
 static volatile s32 time_cnt;
+static volatile s32 status_cnt;
 
 #define RF_DAT GPIO_ReadInputDataBit(user->gpiox,user->gpio_pinx)
 #define START_TIME  RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2 , ENABLE);TIM_Cmd(TIM2, ENABLE)
@@ -49,13 +52,16 @@ static rt_timer_t rf433_dat_scan_timer = RT_NULL;
 static void
 rf433_check_start(void)
 {
+    status_cnt = 0;
     rt_timer_start(rf433_dat_scan_timer);
+    
 }
 
-static void
+static s32
 rf433_check_stop(void)
 {
     rt_timer_stop(rf433_dat_scan_timer);
+    return status_cnt;
 }
 
 /*
@@ -122,7 +128,7 @@ rf433_thread_entry(void *parameter)
 	{
 		// receive mail
 		rt_memset(&rf433_mail_buf, 0, sizeof(rf433_mail_buf));
-		result = rt_mq_recv(rf433_mq, &rf433_mail_buf, sizeof(rf433_mail_buf), 10000);
+		result = rt_mq_recv(rf433_mq, &rf433_mail_buf, sizeof(rf433_mail_buf), RF433_TIMEOUT);
 		if (result == RT_EOK)
         {
 			switch (rf433_mail_buf.cmd)
@@ -172,9 +178,7 @@ rf433_thread_entry(void *parameter)
 			}
         } else {
             if (flag) {
-                rf433_check_stop();
-                gpio_pin_output(DEVICE_NAME_RF_ENABLE, 1, RF433_DEBUG);
-                if (gpio_pin_input(DEVICE_NAME_HALL, RF433_DEBUG) == HALL_STATUS)
+                if (abs(rf433_check_stop()) < RF433_TIMEOUT - RF433_SMS_LIMITE)
                     send_sms_mail(ALARM_TYPE_SMS_RF433_ERROR, 0, RT_NULL, 0, PHONE_AUTH_SMS);
                 flag = 0;
             }
@@ -210,8 +214,12 @@ rf433_dat_check(void *parameters)
     u8 b, i = 0;
     u8 dat, byte = 0;
     u8 data[16] = {0,};
-    if (gpio_pin_input(DEVICE_NAME_HALL, 0) != HALL_STATUS)
+    if (gpio_pin_input(DEVICE_NAME_HALL, 0) != HALL_STATUS) {
+        --status_cnt;
         return;
+    } else {
+        ++status_cnt;
+    }
     //等一次跳变到来
     START_TIME;
     MASK_TIME;
