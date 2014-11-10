@@ -117,6 +117,14 @@ rt_err_t gui_key_input(rt_uint8_t *KeyValue)
 			}
 			case KEY_START_RING_VALUE:
 			{
+				if(local_event_process(0,LOCAL_EVT_SYSTEM_FREEZE) == 0)
+				{
+					//系统冻结
+					rt_kprintf("system is freeze\n");
+					result = RT_ERROR;
+					
+					break;
+				}
 				//触发接电话功能
 				send_local_mail(ALARM_TYPE_GSM_RING_REQUEST,0,RT_NULL);
 

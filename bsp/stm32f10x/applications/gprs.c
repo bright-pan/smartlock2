@@ -723,7 +723,7 @@ static void update_smartlock_database(rt_uint32_t ModeFlag)
 	{
     //上传账户映射域
     rt_kprintf("update map data...\n");
-    upload_map(1);
+    upload_map(0);
 	}
 
 	if(ModeFlag & DATA_SYNC_ACCDAT)
@@ -842,6 +842,7 @@ void gprs_mail_manage_entry(void* arg)
         gprs_event_process(0,GPRS_EVT_ALLOW2_DATSYNC);
 
 				//登陆后马上进行数据同步
+				count = 0;
 				gprs_event_process(0,GPRS_EVT_SYNS_ALLDAT);
 			}
 		}
