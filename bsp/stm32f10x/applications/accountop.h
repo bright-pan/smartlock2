@@ -1,6 +1,7 @@
 #ifndef __ACCOUNTOP_H__
 #define __ACCOUNTOP_H___
 #include "config.h"
+#include "gprs.h"
 
 typedef struct
 {

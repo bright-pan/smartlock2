@@ -46,7 +46,8 @@ rt_err_t account_add_enter(void)
 		AccountUse.Save = 1;
     AccountUse.AccountPos  = device_config_account_create(ACCOUNT_ID_INVALID, RT_NULL,0);
 	}
-
+	
+	gprs_event_process(2,GPRS_EVT_ALLOW2_DATSYNC);
 	return RT_EOK;
 }
 
@@ -54,7 +55,8 @@ rt_err_t account_add_enter(void)
 rt_err_t account_add_exit(rt_bool_t mode)
 {
 	rt_int32_t result;
-	
+
+	gprs_event_process(0,GPRS_EVT_ALLOW2_DATSYNC);
 	if(mode == RT_TRUE)
 	{
 		//±£´æÍË³ö

@@ -17,11 +17,19 @@
 #include "netmailclass.h"
 
 #define UPDATE_KEY_CNT    					10 //钥匙同步周期
-#define UPDATE_FLAG_VALUE 					1
-#define UNUPDATA_FLAG_VALUE         0
+#define UPDATE_FLAG_VALUE 					1  //需要更新标志
+#define UNUPDATA_FLAG_VALUE         0  //不需要更新标志
 
-static rt_mq_t gprs_mq = RT_NULL;//gprs data mail 
+#define DATA_SYNC_ACCMAP            (0X01<<0)//同步账户映射域
+#define DATA_SYNC_ACCDAT            (0X01<<1)//同步账户数据
+#define DATA_SYNC_KEYDAT            (0X01<<2)//同步钥匙数据
+#define DATA_SYNC_PHDATA            (0X01<<3)//同步手机数据
+#define DATA_SYNC_RECDAT            (0X01<<4)//同步记录数据
+#define DATA_SYNC_ALLDAT            0xff     //同步所以数据
 
+static rt_mq_t gprs_mq = RT_NULL;      //gprs 数据邮件
+
+static rt_event_t gprs_evt = RT_NULL;  //gprs线程事件
 
 //手机上传处理
 static void phone_upload_process(rt_uint16_t pos)
@@ -157,6 +165,7 @@ static void key_upload_process(rt_uint16_t UpdatePos)
 		}
 		case KEY_TYPE_RF433:
 		{
+			data->data.type = 1;//RF433 上传为RFID类型
 			data->DataLen = KEY_RF433_CODE_SIZE;
 			data->data.data = rt_calloc(1,data->DataLen);
 			RT_ASSERT(data->data.data != RT_NULL);
@@ -706,36 +715,88 @@ int gprs_local_mail_resend(struct event *data,int evt_id, void *user)
 }
 
 //更新智能锁数据库
-static void update_smartlock_database(void)
+static void update_smartlock_database(rt_uint32_t ModeFlag)
 {
   rt_kprintf("update start\n");
 
-	//上传账户映射域
-	rt_kprintf("update map data...\n");
-  //upload_map(1);
+	if(ModeFlag & DATA_SYNC_ACCMAP)
+	{
+    //上传账户映射域
+    rt_kprintf("update map data...\n");
+    upload_map(1);
+	}
 
-  //上传记录
-  rt_kprintf("update record data...\n");
-  device_config_event_index(gprs_local_mail_resend,RT_NULL);
+	if(ModeFlag & DATA_SYNC_ACCDAT)
+	{
+    //上传账户
+    rt_kprintf("update account data...\n");
+    update_account_lib_remote();
+	}
 
-  //上传账户
-  rt_kprintf("update account data...\n");
-  update_account_lib_remote();
+	if(ModeFlag & DATA_SYNC_KEYDAT)
+	{
+    //上传账户钥匙
+    rt_kprintf("update key data...\n");
+    update_key_lib_remote();
+	}
 
-  //上传账户钥匙
-  rt_kprintf("update key data...\n");
-  update_key_lib_remote();
+	if(ModeFlag & DATA_SYNC_PHDATA)
+	{
+    //上传手机
+    rt_kprintf("update phone data...\n");
+    update_phone_lib_remote();
+	}
 
-  //上传手机
-  rt_kprintf("update phone data...\n");
-  update_phone_lib_remote();
+	if(ModeFlag & DATA_SYNC_RECDAT)
+	{
+	  //上传记录
+	  rt_kprintf("update record data...\n");
+	  device_config_event_index(gprs_local_mail_resend,RT_NULL);
+	}
+
   rt_kprintf("update end\n");
 }
 
 /** 
 @brief  gprs thread entry
+@param  None
+@retval None
+*/
+void gprs_database_sync_process(void)
+{
+  //允许gprs进行数据同步
+  if((gprs_event_process(1,GPRS_EVT_ALLOW1_DATSYNC) == 0)&&
+     (gprs_event_process(1,GPRS_EVT_ALLOW2_DATSYNC) == 0))
+  {
+    //同步所以数据
+    if(gprs_event_process(2,GPRS_EVT_SYNS_ALLDAT) == 0)
+    {
+      //同步数据
+      update_smartlock_database(DATA_SYNC_ALLDAT);
+
+      //发送较时
+      msg_mail_adjust_time();
+    }
+
+    //进行除映射域之外的数据同步
+    if(gprs_event_process(2,GPRS_EVT_SYNC_DATMODE1) == 0)
+    {
+      //同步数据
+      update_smartlock_database(DATA_SYNC_ACCDAT |
+                                DATA_SYNC_KEYDAT|
+                                DATA_SYNC_PHDATA |
+                                DATA_SYNC_RECDAT );
+
+      //发送较时
+      msg_mail_adjust_time();
+    }
+  }
+}
+
+/** 
+@brief  gprs thread entry
 @param  *arg
-@retval void
+@retval None
 */
 void gprs_mail_manage_entry(void* arg)
 {
@@ -775,23 +836,26 @@ void gprs_mail_manage_entry(void* arg)
 			
 			if(login_flag == 0)
 			{
-				//set_all_update_flag(1);
-				count = UPDATE_KEY_CNT;
-				//device_config_event_index(gprs_local_mail_resend,RT_NULL);
 				login_flag = 1;
-				update_smartlock_database();
-				send_gprs_mail(ALARM_TYPE_GPRS_SYS_TIME_UPDATE,0,RT_NULL);
+				//允许同步数据
+				gprs_event_process(0,GPRS_EVT_ALLOW1_DATSYNC);
+        gprs_event_process(0,GPRS_EVT_ALLOW2_DATSYNC);
+
+				//登陆后马上进行数据同步
+				gprs_event_process(0,GPRS_EVT_SYNS_ALLDAT);
 			}
 		}
-		//更新钥匙 手机号 
+		
+		//周期性数据同步
 		if(count++ >= UPDATE_KEY_CNT)
 		{
 			count = 0;
-
-			update_smartlock_database();
-			send_gprs_mail(ALARM_TYPE_GPRS_SYS_TIME_UPDATE,0,RT_NULL);
+			gprs_event_process(0,GPRS_EVT_SYNC_DATMODE1);
 		}
-		
+
+		//同步数据处理
+    gprs_database_sync_process();
+
 		//处理邮件
 		mq_result = rt_mq_recv(gprs_mq,&mail,sizeof(GPRS_MAIL_TYPEDEF),100);
 		if(mq_result == RT_EOK)
@@ -855,6 +919,92 @@ void send_gprs_mail(ALARM_TYPEDEF AlarmType,time_t time,void *user)
 	}
 }
 
+/*
+功能:local线程中事件
+参数:mode 模式  type 事件类型
+返回: -------------------------
+		 |模式 |成功|失败|功能    |
+		 |0    |0   |1   |发送事件|
+		 |1    |0   |1   |收到事件|
+		 |2    |0   |1   |清除事件|
+		 --------------------------
+*/
+rt_uint8_t gprs_event_process(rt_uint8_t mode,rt_uint32_t type)
+{
+	rt_uint32_t value;
+	rt_err_t    result;
+	rt_uint8_t  return_data = 1;
+	
+	//net_evt_mutex_op(RT_TRUE);
+
+	if(gprs_evt == RT_NULL)
+	{
+    gprs_evt = rt_event_create("gprs",RT_IPC_FLAG_FIFO);
+    RT_ASSERT(gprs_evt != RT_NULL);
+	}
+	switch(mode)
+	{
+		case 0:	//set event 
+		{
+			result = rt_event_send(gprs_evt,type);
+			if(result == RT_EOK)
+			{
+				return_data = 0;
+			}
+			break;
+		}
+		case 1:	//get event 
+		{
+			result = rt_event_recv(gprs_evt,
+			                       type,
+			                       RT_EVENT_FLAG_OR,
+			                       RT_WAITING_NO,&value);
+			if(result == RT_EOK)
+			{
+				return_data = 0;
+			}
+			else if(result == -RT_ETIMEOUT)
+			{
+				return_data = 1;
+			}
+			break;
+		}
+		case 2://clean event
+		{
+			result = rt_event_recv(gprs_evt,
+			                       type,
+			                       RT_EVENT_FLAG_OR | 
+			                       RT_EVENT_FLAG_CLEAR,
+			                       RT_WAITING_NO,&value);
+			if(result == RT_EOK)
+			{
+				return_data = 0;
+			}
+			break;
+		}
+    case 3://clean all event 
+    {
+      result = rt_event_recv(gprs_evt,
+                             0xffffffff,
+                             RT_EVENT_FLAG_OR | 
+                             RT_EVENT_FLAG_CLEAR,
+                             RT_WAITING_NO,&value);
+      if(result == RT_EOK)
+      {
+        return_data = 0;
+      }
+      break;
+    }
+    default:
+    {
+			break;
+    }
+	}
+
+	//net_evt_mutex_op(RT_FALSE);
+	return return_data;
+}
+
 
 #ifdef RT_USING_FINSH
 #include <finsh.h>
@@ -899,6 +1049,12 @@ void database_update(rt_uint8_t flag)
 	set_all_update_flag(flag);	
 }
 FINSH_FUNCTION_EXPORT(database_update,set database all update);
+
+void net_timeaj(void)
+{
+	msg_mail_adjust_time();
+}
+FINSH_FUNCTION_EXPORT(net_timeaj,adjust system time);
 
 #endif
 
