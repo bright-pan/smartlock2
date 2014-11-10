@@ -1528,16 +1528,21 @@ gsm_thread_entry(void *parameters)
 				{
 					case GSM_CTRL_CLOSE:
 						{
-                            gpio_pin_output(DEVICE_NAME_POWER_GSM, 0,1);
-							if (gsm_setup(DISABLE) == GSM_SETUP_DISABLE_SUCCESS)
-								at_result = AT_RESPONSE_OK;
+                            if (gpio_pin_input(DEVICE_NAME_GSM_STATUS, 0)) {
+                                gpio_pin_output(DEVICE_NAME_POWER_GSM, 0,1);
+                                if (gsm_setup(DISABLE) == GSM_SETUP_DISABLE_SUCCESS)
+                                    at_result = AT_RESPONSE_OK;
+                            }
                             break;
 						}
 					case GSM_CTRL_OPEN:
 						{
-                            gpio_pin_output(DEVICE_NAME_POWER_GSM, 1,1);
-							if (gsm_setup(ENABLE) == GSM_SETUP_ENABLE_SUCCESS && gsm_init_process() == GSM_EOK)
-								at_result = AT_RESPONSE_OK;
+                            if (!gpio_pin_input(DEVICE_NAME_GSM_STATUS, 0)) {
+                                gpio_pin_output(DEVICE_NAME_POWER_GSM, 1,1);
+                                if (gsm_setup(ENABLE) == GSM_SETUP_ENABLE_SUCCESS && gsm_init_process() == GSM_EOK)
+                                    at_result = AT_RESPONSE_OK;
+                                                            
+                            }
                             break;
 						}
 					case GSM_CTRL_RESET:
