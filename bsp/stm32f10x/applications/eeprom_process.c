@@ -19,7 +19,7 @@ static rt_uint32_t sys_date_get(void)
       rt_device_control(device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
   }
 
-	RT_DEBUG_LOG(USEING_DEBUG_INFO,("System Time: %s\n",ctime((const time_t *)&time)));
+	RT_DEBUG_LOG(USEING_DEBUG_INFO,("System Time: %s",ctime((const time_t *)&time)));
   return time;
 }
 
@@ -38,7 +38,7 @@ static void sys_date_set(rt_uint32_t date)
     rt_device_close(device);
   }
 
-	RT_DEBUG_LOG(USEING_DEBUG_INFO,("System Time: %s\n",ctime((const time_t *)&date)));	
+	RT_DEBUG_LOG(USEING_DEBUG_INFO,("System Time: %s",ctime((const time_t *)&date)));	
 }
 
 rt_device_t eeprom_device_open(void)
