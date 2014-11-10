@@ -465,7 +465,7 @@ void
 device_config_key_head_init(struct key_head *kh, u16 key_type)
 {
 	rt_memset(kh, 0, sizeof(*kh));
-    kh->is_updated = 0;
+    kh->is_updated = 1;
 	kh->account = ACCOUNT_ID_INVALID;
     kh->key_type = key_type;
     kh->operation_type = KEY_OPERATION_TYPE_FOREVER;
@@ -556,7 +556,7 @@ device_config_key_set(u16 key_id, struct key *new_key, u32 op_time)
                     if (op_time > k.head.updated_time) {
                         len = device_config_key_verify(new_key->head.key_type, (u8 *)&new_key->data, device_config_get_key_code_size(new_key->head.key_type));
                         if (len < 0 || len == i) {
-                            k.head.is_updated = 0;
+                            k.head.is_updated = 1;
                             k.head.key_type = new_key->head.key_type;
                             k.head.operation_type = new_key->head.operation_type;
                             k.head.start_time = new_key->head.start_time;
@@ -577,7 +577,7 @@ device_config_key_set(u16 key_id, struct key *new_key, u32 op_time)
         if (len >= 0) {
             len = device_config_key_operate(i, &k, 0);
             if (len >= 0) {
-                k.head.is_updated = 0;
+                k.head.is_updated = 1;
                 k.head.key_type = new_key->head.key_type;
                 k.head.operation_type = new_key->head.operation_type;
                 k.head.start_time = new_key->head.start_time;
@@ -705,6 +705,7 @@ device_config_phone_head_init(struct phone_head *ph, u8 *buf, u8 length)
     rt_memset(ph->address, '\0', sizeof(ph->address));
     rt_memcpy(ph->address, buf, length);
     ph->account = ACCOUNT_ID_INVALID;
+    ph->is_update = 1;
     ph->auth = PHONE_AUTH_SMS;
     ph->updated_time = sys_cur_date();
 }
@@ -1127,7 +1128,7 @@ device_config_account_head_init(struct account_head *ah, u8 *name, u16 length)
     s32 i;
     rt_memset(ah, 0, sizeof(*ah));
     rt_memcpy(ah->name, name, length);
-    ah->is_updated = 0;
+    ah->is_updated = 1;
     ah->updated_time = sys_cur_date();
     for (i = 0; i < ACCOUNT_KEY_NUMBERS; ++i)
 		ah->key[i] = KEY_ID_INVALID;
@@ -1426,11 +1427,11 @@ device_config_account_append_key(u16 account_id, u16 key_id, u32 op_time, u8 fla
                                     device_config_account_remove_key(key_id);
                                 }
                                 k.head.account = account_id;
-                                k.head.is_updated = 0;
+                                k.head.is_updated = 1;
                                 k.head.updated_time = op_time;
                                 device_config_key_operate(key_id, &k, 1);
                                 ah.key[pos] = key_id;
-                                ah.is_updated = 0;
+                                ah.is_updated = 1;
                                 ah.updated_time = op_time;
                                 device_config_account_operate(account_id, &ah, 1);
                                 result = key_id;
@@ -1596,10 +1597,10 @@ device_config_account_append_phone(u16 account_id, u16 phone_id, u32 op_time, u8
                                 }
                                 ph.account = account_id;
                                 ph.updated_time = op_time;
-                                ph.is_update = 0;
+                                ph.is_update = 1;
                                 device_config_phone_operate(phone_id, &ph, 1);
                                 ah.phone[pos] = phone_id;
-                                ah.is_updated = 0;
+                                ah.is_updated = 1;
                                 ah.updated_time = op_time;
                                 device_config_account_operate(account_id, &ah, 1);
                                 result = phone_id;
@@ -2108,6 +2109,7 @@ s32 device_config_key_valid_display(int x)
     {
         print_hex(&device_config.param.kv_map.data[i], x * sizeof(device_config.param.kv_map.data[0]));
     }
+    return 0;
 }
 s32 device_config_account_valid_display(int x)
 {
@@ -2116,6 +2118,7 @@ s32 device_config_account_valid_display(int x)
     {
         print_hex(&device_config.param.av_map.data[i], x * sizeof(device_config.param.av_map.data[0]));
     }
+    return 0;
 }
 s32 device_config_phone_valid_display(int x)
 {
@@ -2124,6 +2127,7 @@ s32 device_config_phone_valid_display(int x)
     {
         print_hex(&device_config.param.pv_map.data[i], x * sizeof(device_config.param.pv_map.data[0]));
     }
+    return 0;
 }
 s32 device_config_event_valid_display(int x)
 {
@@ -2132,6 +2136,7 @@ s32 device_config_event_valid_display(int x)
     {
         print_hex(&device_config.param.ev_map.data[i], x * sizeof(device_config.param.ev_map.data[0]));
     }
+    return 0;
 }
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_key_valid_display, devcfg_kvd, [x]);
 FINSH_FUNCTION_EXPORT_ALIAS(device_config_account_valid_display, devcfg_avd, [x]);
