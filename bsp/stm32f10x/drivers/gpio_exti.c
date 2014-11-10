@@ -884,7 +884,7 @@ kb_intr_exti_timeout(void *parameters)
 	gpio->ops->control(gpio, RT_DEVICE_CTRL_MASK_EXTI, (void *)0);
     if (gpio->ops->intput(gpio) == KB_INTR_STATUS) {
         data = kb_read();
-        for (i = 0; i < 20000; i++) {
+        for (i = 0; i < 5000; i++) {
             if (gpio->ops->intput(gpio) == KB_INTR_STATUS) {
                 data2 = kb_read();
                 if (data2) {
