@@ -2634,7 +2634,7 @@ void netmsg_thread_entry(void *arg)
     //发送心跳
     HearTime++;
     //rt_kprintf("HearTime = %d\n",HearTime);
-    if(HearTime >= 1000*60)
+    if(HearTime >= RT_TICK_PER_SECOND*30)
     {
 			HearTime = 0;
 			//如果已经登陆
