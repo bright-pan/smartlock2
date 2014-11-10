@@ -42,6 +42,11 @@ rt_err_t net_modify_alarm_arg(net_recvmsg_p mail)
 */
 rt_err_t net_motor_Control(net_recvmsg_p mail)
 {
+	if(local_event_process(1,LOCAL_EVT_SYSTEM_FREEZE) == 0)
+	{
+		rt_kprintf("system is freeze\n");
+		return RT_ERROR;
+	}
 	if(mail->data.motor.motor.operation == 0)
 	{
 		union alarm_data KeyData;
