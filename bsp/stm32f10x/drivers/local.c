@@ -296,10 +296,10 @@ local_thread_entry(void *parameter)
 	        if (temp >= 0)
 	        {
 	            if (device_config_phone_operate(temp, &ph, 0) >= 0) {
-	                if (ph.account != PHONE_ID_INVALID && ph.auth & PHONE_AUTH_SMS) {
+	                if (ph.account != PHONE_ID_INVALID && ph.auth & PHONE_AUTH_CALL) {
 	                    //µç»ú½âËø¡£
 	                    lock_operation(LOCK_OPERATION_OPEN, MOTOR_WORK_CUT);
-	                    send_sms_mail(ALARM_TYPE_SMS_REP_IN_PHONE_CALL, 0, (u8 *)ph.address, 11, PHONE_AUTH_SMS);
+	                    send_sms_mail(ALARM_TYPE_SMS_REP_IN_PHONE_CALL, 0, (u8 *)ph.address, 11, PHONE_AUTH_CALL);
 	                }
 	            }
 	        }
@@ -313,7 +313,7 @@ local_thread_entry(void *parameter)
 				}
 				case ALARM_TYPE_GSM_RING_REQUEST:
 				{
-                    send_sms_mail(ALARM_TYPE_SMS_REQ_IN_PHONE_CALL, 0, RT_NULL, 0, PHONE_AUTH_SMS);
+                    send_sms_mail(ALARM_TYPE_SMS_REQ_IN_PHONE_CALL, 0, RT_NULL, 0, PHONE_AUTH_CALL);
 					break;
 				}
 				case ALARM_TYPE_FPRINT_KEY_ADD:
