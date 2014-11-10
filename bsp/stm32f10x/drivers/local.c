@@ -20,6 +20,7 @@
 #include "config.h"
 #include "gpio_pwm.h"
 #include "sms.h"
+#include "gsm.h"
 #include "gprsmailclass.h"
 #ifdef USEING_BUZZER_FUN
 #include "buzzer.h"
@@ -298,7 +299,7 @@ local_thread_entry(void *parameter)
 	                if (ph.account != PHONE_ID_INVALID && ph.auth & PHONE_AUTH_SMS) {
 	                    //µç»ú½âËø¡£
 	                    lock_operation(LOCK_OPERATION_OPEN, MOTOR_WORK_CUT);
-	                    send_sms_mail(ALARM_TYPE_SMS_REP_IN_PHONE_CALL, 0, (u8 *)ph.address, 13, PHONE_AUTH_SMS);
+	                    send_sms_mail(ALARM_TYPE_SMS_REP_IN_PHONE_CALL, 0, (u8 *)ph.address, 11, PHONE_AUTH_SMS);
 	                }
 	            }
 	        }
@@ -306,6 +307,8 @@ local_thread_entry(void *parameter)
 	        {
 						RT_DEBUG_LOG(LOCAL_DEBUG,("This is phone error %s\n",local_mail_buf.data.ring.phone_call));
 	        }
+                    send_gsm_ctrl_mail(GSM_CTRL_PHONE_CALL_HANG_UP,RT_NULL,0,1);
+            
 					break;
 				}
 				case ALARM_TYPE_GSM_RING_REQUEST:
@@ -331,7 +334,7 @@ local_thread_entry(void *parameter)
 						lock_operation(LOCK_OPERATION_CLOSE,MOTOR_WORK_CUT);
         	}
         	else
-        	{						
+        	{
             lock_process(&local_mail_buf);
         	}
          	break;
