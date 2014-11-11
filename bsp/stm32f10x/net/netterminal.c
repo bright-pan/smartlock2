@@ -52,7 +52,8 @@ rt_err_t net_motor_Control(net_recvmsg_p mail)
 		union alarm_data KeyData;
 
 		KeyData.lock.key_id = 0;
-	  KeyData.lock.operation = 0;
+	  KeyData.lock.operation = LOCK_OPERATION_OPEN;
+	  KeyData.lock.CheckMode = LOCK_NONE_AUTH_CHECK;
 	  send_local_mail(ALARM_TYPE_LOCK_PROCESS,(time_t)net_get_date(),&KeyData);
 	}
 	

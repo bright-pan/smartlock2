@@ -25,6 +25,9 @@
 #define LOCK_OPERATION_OPEN                   0
 #define LOCK_OPERATION_CLOSE                  1
 
+#define LOCK_HAVE_AUTH_CHECK                  0
+#define LOCK_NONE_AUTH_CHECK                  1
+
 //报警错误技术管理模式
 typedef enum 
 {
@@ -36,6 +39,7 @@ typedef enum
 struct lock_data {
     s32 key_id;
     s32 operation;
+    s8  CheckMode;         //检查模式
 };
 struct ring_data {
      u8 phone_call[20];

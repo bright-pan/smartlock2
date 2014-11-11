@@ -97,7 +97,7 @@ void PVD_IRQCallbackFun(void)
   * @param  None
   * @retval None
   */
-void system_freeze_magage(void)
+void system_freeze_manage(void)
 {
 	//如果被冻结
 	if(local_event_process(1,LOCAL_EVT_SYSTEM_FREEZE) == 0)
@@ -440,6 +440,7 @@ local_thread_entry(void *parameter)
 
 					data.lock.key_id = 0;
 					data.lock.operation = LOCK_OPERATION_CLOSE;
+					data.lock.CheckMode = LOCK_HAVE_AUTH_CHECK;
 					send_local_mail(ALARM_TYPE_LOCK_PROCESS,0,&data);
 					break;
         }
@@ -458,6 +459,7 @@ local_thread_entry(void *parameter)
 					}
 					data.lock.key_id = local_mail_buf.data.key.ID;
 					data.lock.operation = LOCK_OPERATION_OPEN;
+					data.lock.operation = LOCK_HAVE_AUTH_CHECK;
 					send_local_mail(ALARM_TYPE_LOCK_PROCESS,0,&data);
 					gprs_key_right_mail(local_mail_buf.data.key.ID);
 					
@@ -491,7 +493,7 @@ local_thread_entry(void *parameter)
 			motor_status_manage();
 
 			//电机冻结管理
-			system_freeze_magage();
+			system_freeze_manage();
 		}
 		//motor_auto_lock(RT_FALSE);
 	}
@@ -550,31 +552,51 @@ device_config_key_operate(u16 key_id, struct key *k, u8 flag);
 void lock_process(LOCAL_MAIL_TYPEDEF *local_mail)
 {
     struct key k;
-    //time_t time = sys_cur_date();
-    device_config_key_operate(local_mail->data.lock.key_id, &k, 0);
-    switch (k.head.operation_type)
-    {
-        case KEY_OPERATION_TYPE_FOREVER : {
-            lock_operation(local_mail->data.lock.operation, MOTOR_WORK_CUT);
-            // send lock log
-            break;
-        }
-        case KEY_OPERATION_TYPE_ONCE : {
-            if (local_mail->time >= k.head.start_time && local_mail->time <= k.head.end_time) {
-                lock_operation(local_mail->data.lock.operation, MOTOR_WORK_CUT);
-                // send lock log
-            }
-            break;
-        }
-        case KEY_OPERATION_TYPE_WEEKLY : {
-            if (check_time(k.head.start_time, k.head.end_time, localtime(&local_mail->time)) > 0) {
-                lock_operation(local_mail->data.lock.operation, MOTOR_WORK_CUT);
-                // send lock log
-            }
-            break;
-        }
-    }
 
+    if(local_mail->data.lock.CheckMode)
+    {
+    	//电机工作在不做钥匙检查模式
+      lock_operation(local_mail->data.lock.operation, MOTOR_WORK_CUT);
+    }
+    else
+    {
+    	//电机工作在权限检测开锁方式
+			//time_t time = sys_cur_date();
+			device_config_key_operate(local_mail->data.lock.key_id, &k, 0);
+			switch (k.head.operation_type)
+			{
+				case KEY_OPERATION_TYPE_FOREVER : 
+				{
+					 lock_operation(local_mail->data.lock.operation, MOTOR_WORK_CUT);
+					 // send lock log
+					 break;
+				}
+				case KEY_OPERATION_TYPE_ONCE : 
+				{
+					 if (local_mail->time >= k.head.start_time && local_mail->time <= k.head.end_time)
+					 {
+				     lock_operation(local_mail->data.lock.operation, MOTOR_WORK_CUT);
+				     // send lock log
+					 }
+					 break;
+				}
+				case KEY_OPERATION_TYPE_WEEKLY : 
+				{
+					if (check_time(k.head.start_time, k.head.end_time, localtime(&local_mail->time)) > 0) 
+					{
+						lock_operation(local_mail->data.lock.operation, MOTOR_WORK_CUT);
+						// send lock log
+					}
+					break;
+				}
+				default:
+				{
+					rt_kprintf("%s Key Type Is Error!!!\n",__FUNCTION__);
+					RT_ASSERT(RT_NULL);
+					break;
+				}
+			}
+    }
 }
 
 void
