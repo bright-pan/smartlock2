@@ -16,7 +16,17 @@
 #include "gprsmailclass.h"
 #include "netmailclass.h"
 
-#define UPDATE_KEY_CNT    					10 //钥匙同步周期
+#define USEING_DEBUG_INFO           1  //使用调试信息
+
+#define rt_dprintf(message)                      \
+do                                               \
+{                                                \
+    if (USEING_DEBUG_INFO)                       \
+        rt_kprintf message;                      \
+}                                                \
+while (0)
+
+#define UPDATE_KEY_CNT    					60 //钥匙同步周期
 #define UPDATE_FLAG_VALUE 					1  //需要更新标志
 #define UNUPDATA_FLAG_VALUE         0  //不需要更新标志
 
@@ -170,6 +180,10 @@ static void key_upload_process(rt_uint16_t UpdatePos)
 			data->data.data = rt_calloc(1,data->DataLen);
 			RT_ASSERT(data->data.data != RT_NULL);
 			rt_memcpy(data->data.data,KeyData->data.rf433.code,data->DataLen);
+			/*rt_kprintf("%d\n%d\n%d\n%d\n",data->data.data[0],
+										data->data.data[1],
+										data->data.data[2],
+										data->data.data[3]);*/
 			break;
 		}
 		default:
@@ -347,7 +361,7 @@ static int set_alarmlog_update_flag(struct event *data,int evt_id, void *user)
 
 	data->head.is_updated = flag;
 	device_config_event_operate(evt_id,data,1);
-	
+	rt_kprintf("#");
 	return 0;
 }
 
@@ -379,16 +393,19 @@ void set_all_update_flag(rt_uint8_t flag)
 	  }
 	  else
 	  {
-			rt_kprintf("set account update flag fail\n");
+			
 	  }
 	  CurPos++;
+	  rt_kprintf(("#"));
 	}
 	rt_free(data);
+	rt_dprintf(("\n"));
 
 	//手机更新标志设置
 	maxnum = device_config_phone_counts();
 	phdata = rt_calloc(1,sizeof(*phdata));
 	CurPos = 0;
+	rt_dprintf(("Update %d Phone\n",maxnum));
 	while(maxnum)
 	{
 	  result = device_config_get_phone_valid(CurPos);
@@ -405,12 +422,16 @@ void set_all_update_flag(rt_uint8_t flag)
 
 	  }
 	  CurPos++;
+    rt_dprintf(("#"));
 	}
 	rt_free(phdata);
+	rt_dprintf(("\n"));
 
 	//钥匙更新标志设置
   maxnum = device_config_key_counts();
 	keydat = rt_calloc(1,sizeof(*keydat));
+	CurPos = 0;
+	rt_dprintf(("Update %d Key \n",maxnum));
 	while(maxnum)
 	{
 		result = device_config_get_key_valid(CurPos);
@@ -426,11 +447,15 @@ void set_all_update_flag(rt_uint8_t flag)
 
 		}
 		CurPos++;
+		rt_dprintf(("#"));
 	}
 	rt_free(keydat);
+	rt_dprintf(("\n"));
 
 	//记录更新标志设置
+	rt_dprintf(("Update record\n"));
 	device_config_event_index(set_alarmlog_update_flag,(void *)&flag);
+	rt_dprintf(("\n"));
 }
 
 //处理钥匙开门正确邮件
