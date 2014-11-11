@@ -387,7 +387,8 @@ at_response_process(AT_COMMAND_INDEX_TYPEDEF index, uint8_t *buf, GSM_MAIL_CMD_D
 	uint8_t *process_buf = (uint8_t *)rt_malloc(512);
 	int temp = 0;
 	rt_device_t device_gsm_usart;
-
+    
+    RT_ASSERT(process_buf != RT_NULL);
 	device_gsm_usart = device_enable(DEVICE_NAME_GSM_USART);
 	while (counts < 10)
 	{
@@ -1130,7 +1131,7 @@ gsm_command(AT_COMMAND_INDEX_TYPEDEF index, uint16_t delay, GSM_MAIL_CMD_DATA *c
 	rt_device_t device_gsm_usart;
 	AT_RESPONSE_TYPEDEF result = AT_RESPONSE_OK;
 	uint8_t *process_buf = (uint8_t *)rt_malloc(512);
-
+    RT_ASSERT(process_buf != RT_NULL);
 	device_gsm_usart = device_enable(DEVICE_NAME_GSM_USART);
 
 	switch (index)
@@ -1402,7 +1403,8 @@ gsm_init_process(void)
 	GSM_ERROR_TYPEDEF result = GSM_EERROR;
 	uint8_t *process_buf = (uint8_t *)rt_malloc(512);
 	GSM_MAIL_CMD_DATA gsm_mail_cmd_data;
-
+    
+    RT_ASSERT(process_buf != RT_NULL);
 	memset(process_buf,0,512);
 	gsm_recv_frame(process_buf);
 	gsm_put_char(process_buf, strlen((char *)process_buf));
@@ -1919,6 +1921,7 @@ void gsm_ip_start(char *ip, int port)
 	if (device_gsm_usart != RT_NULL)
 	{
 		at_temp = (char *)rt_malloc(512);
+        RT_ASSERT(at_temp != RT_NULL);
 		memset(at_temp, '\0', 512);
 		rt_sprintf(at_temp,"AT+CIPSTART=\"TCP\",\"%s\",%d\r", ip, port);
 		gsm_put_char((uint8_t *)at_temp, strlen(at_temp));

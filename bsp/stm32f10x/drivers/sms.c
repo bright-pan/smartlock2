@@ -635,6 +635,8 @@ sms_pdu_ucs_send(char *dest_address, char *smsc_address, uint16_t *content, uint
 	pdu_data = send_pdu_frame.TPDU.TP_UD;
 
 	send_pdu_string = (uint8_t *)rt_malloc(512);
+    RT_ASSERT(send_pdu_string != RT_NULL);
+    
 	memset(send_pdu_string, '\0', 512);
 
 	sms_pdu_head_init(smsc_address, dest_address, &send_pdu_frame, length << 1);
@@ -761,6 +763,7 @@ sms_thread_entry(void *parameter)
 			// sms content process
 			sms_ucs_length = 0;
 			sms_ucs = (uint16_t *)rt_malloc(sizeof(uint16_t) * 256);
+            RT_ASSERT(sms_ucs != RT_NULL);
 			sms_ucs_bk = sms_ucs;
 
 			temp_ucs = sms_data[sms_mail_buf.alarm_type].data;
