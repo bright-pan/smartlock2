@@ -180,7 +180,7 @@ rf433_thread_entry(void *parameter)
 			}
         } else {
             if (flag) {
-                if (abs(rf433_check_stop()) < RF433_TIMEOUT - RF433_SMS_LIMITE)
+                if (rf433_check_stop() > (2*RF433_SMS_LIMITE - RF433_TIMEOUT))
                     send_sms_mail(ALARM_TYPE_SMS_RF433_ERROR, 0, RT_NULL, 0, PHONE_AUTH_SMS);
                 flag = 0;
             }
