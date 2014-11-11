@@ -16,10 +16,19 @@
 //#include "apppubulic.h"
 //#include "file_update.h"
 
+#ifdef   USEING_CAN_SET_DEBUG
+#include "untils.h" //主要使用里面的 rt_dprintf
+#endif
+
+#ifndef USEING_CAN_SET_DEBUG
+#define rt_dprintf    RT_DEBUG_LOG
+#endif
+
+
 #define MAIL_FAULT_RESEND     3
 #define MAIL_FAULT_OUTTIME    50
 
-#define SHWO_PRINTF_INFO      1
+#define NETMAILCLASS_DEBUG      22
 
 #ifndef SYSTEM_SOFTWARE_VER   
 #define SYSTEM_SOFTWARE_VER   0x01
@@ -92,7 +101,7 @@ void send_net_landed_mail(void)
 	        (const char *)NetParameterConfig.key1,8);
 	UserData->version = SYSTEM_SOFTWARE_VER;
 
-#if(SHWO_PRINTF_INFO == 1)
+#if(NETMAILCLASS_DEBUG)
 	{
 		rt_uint8_t i;
 
@@ -191,7 +200,7 @@ rt_err_t msg_mail_alarm(rt_uint8_t alarm,rt_uint8_t LockStatus,rt_uint32_t time)
   net_msg_send_mail(mail);
   rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
   rt_sem_delete(UserData->result.complete);
-  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
+  rt_dprintf(NETMAILCLASS_DEBUG,("message send result:%d\n",UserData->result.result));
   result = UserData->result.result;
   
   //释放资源
@@ -234,7 +243,7 @@ rt_err_t msg_mail_fault(rt_uint8_t fault,rt_uint32_t time)
   net_msg_send_mail(mail);
   rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
   rt_sem_delete(UserData->result.complete);
-  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
+  rt_dprintf(NETMAILCLASS_DEBUG,("message send result:%d\n",UserData->result.result));
   result = UserData->result.result;
   
   //释放资源
@@ -279,7 +288,7 @@ rt_err_t msg_mail_opendoor(rt_uint8_t type,rt_uint16_t account,rt_uint16_t key,r
   net_msg_send_mail(mail);
   rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
   rt_sem_delete(UserData->result.complete);
-  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
+  rt_dprintf(NETMAILCLASS_DEBUG,("message send result:%d\n",UserData->result.result));
   result = UserData->result.result;
   
   //释放资源
@@ -324,7 +333,7 @@ rt_err_t msg_mail_battery(rt_uint8_t status,rt_uint8_t capacity,rt_uint32_t time
   net_msg_send_mail(mail);
   rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
   rt_sem_delete(UserData->result.complete);
-  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
+  rt_dprintf(NETMAILCLASS_DEBUG,("message send result:%d\n",UserData->result.result));
   result = UserData->result.result;
   
   //释放资源
@@ -366,7 +375,7 @@ rt_err_t msg_mail_adjust_time(void)
 	net_msg_send_mail(mail);
 	rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
 	rt_sem_delete(UserData->result.complete);
-	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
+	rt_dprintf(NETMAILCLASS_DEBUG,("message send result:%d\n",UserData->result.result));
 	result = UserData->result.result;
 
 	//释放资源
@@ -409,7 +418,7 @@ rt_err_t msg_mail_alarmarg(rt_uint8_t Type,rt_uint8_t arg)
   net_msg_send_mail(mail);
   rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
   rt_sem_delete(UserData->result.complete);
-  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
+  rt_dprintf(NETMAILCLASS_DEBUG,("message send result:%d\n",UserData->result.result));
   result = UserData->result.result;
   
   //释放资源
@@ -457,7 +466,7 @@ rt_err_t msg_mail_phoneadd(rt_uint16_t PhID,rt_uint16_t flag,rt_uint8_t buf[],rt
   net_msg_send_mail(mail);
   rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
   rt_sem_delete(UserData->result.complete);
-  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
+  rt_dprintf(NETMAILCLASS_DEBUG,("message send result:%d\n",UserData->result.result));
   result = UserData->result.result;
   
   //释放资源
@@ -536,7 +545,7 @@ rt_err_t msg_mail_phondel(rt_uint16_t PhID,rt_uint32_t date)
   net_msg_send_mail(mail);
   rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
   rt_sem_delete(UserData->result.complete);
-  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
+  rt_dprintf(NETMAILCLASS_DEBUG,("message send result:%d\n",UserData->result.result));
   result = UserData->result.result;
   
   //释放资源
@@ -613,7 +622,7 @@ rt_err_t msg_mail_keyadd(net_keyadd_user *KeyData)
   net_msg_send_mail(mail);
   rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
   rt_sem_delete(UserData->result.complete);
-  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
+  rt_dprintf(NETMAILCLASS_DEBUG,("message send result:%d\n",UserData->result.result));
   result = UserData->result.result;
   
   //释放资源
@@ -692,7 +701,7 @@ rt_err_t msg_mail_keydelete(rt_uint16_t pos,rt_uint32_t date)
   net_msg_send_mail(mail);
   rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
   rt_sem_delete(UserData->result.complete);
-  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
+  rt_dprintf(NETMAILCLASS_DEBUG,("message send result:%d\n",UserData->result.result));
   result = UserData->result.result;
   
   //释放资源
@@ -909,7 +918,7 @@ rt_err_t msg_mail_account_add(rt_int16_t account_pos,rt_uint8_t *name,rt_uint32_
   net_msg_send_mail(mail);
   rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
   rt_sem_delete(UserData->result.complete);
-  RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
+  rt_dprintf(NETMAILCLASS_DEBUG,("message send result:%d\n",UserData->result.result));
   result = UserData->result.result;
   
   //释放资源
@@ -992,7 +1001,7 @@ rt_err_t msg_mail_account_del(rt_int16_t account_pos,rt_uint32_t date)
 	net_msg_send_mail(mail);
 	rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
 	rt_sem_delete(UserData->result.complete);
-	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
+	rt_dprintf(NETMAILCLASS_DEBUG,("message send result:%d\n",UserData->result.result));
 	result = UserData->result.result;
 
 	//释放资源
@@ -1079,7 +1088,7 @@ rt_err_t msg_mail_keybind(rt_uint16_t key_pos,rt_uint16_t account_pos,rt_uint32_
 	net_msg_send_mail(mail);
 	rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
 	rt_sem_delete(UserData->result.complete);
-	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
+	rt_dprintf(NETMAILCLASS_DEBUG,("message send result:%d\n",UserData->result.result));
 	result = UserData->result.result;
 
 	//释放资源
@@ -1164,7 +1173,7 @@ rt_err_t msg_mail_phonebind(rt_uint16_t phone_pos,rt_uint16_t account_pos,rt_uin
 	net_msg_send_mail(mail);
 	rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
 	rt_sem_delete(UserData->result.complete);
-	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
+	rt_dprintf(NETMAILCLASS_DEBUG,("message send result:%d\n",UserData->result.result));
 	result = UserData->result.result;
 
 	//释放资源
@@ -1272,7 +1281,7 @@ rt_err_t msg_mail_accmapadd(rt_uint8_t *MapByte,rt_size_t ByteLength,rt_uint32_t
 	net_msg_send_mail(mail);
 	rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
 	rt_sem_delete(UserData->result.complete);
-	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
+	rt_dprintf(NETMAILCLASS_DEBUG,("message send result:%d\n",UserData->result.result));
 	result = UserData->result.result;
 
 	//释放资源
@@ -1319,7 +1328,7 @@ rt_err_t msg_mail_accdatcks(rt_uint16_t  ID, rt_uint32_t date)
 	net_msg_send_mail(mail);
 	rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
 	rt_sem_delete(UserData->result.complete);
-	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
+	rt_dprintf(NETMAILCLASS_DEBUG,("message send result:%d\n",UserData->result.result));
 	result = UserData->result.result;
 
 	//释放资源
@@ -1370,7 +1379,7 @@ rt_err_t msg_mail_keymapadd(rt_uint8_t *MapByte,rt_size_t ByteLength,rt_uint32_t
 	//等待发送结果
 	rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
 	rt_sem_delete(UserData->result.complete);
-	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
+	rt_dprintf(NETMAILCLASS_DEBUG,("message send result:%d\n",UserData->result.result));
 	result = UserData->result.result;
 
 	//释放资源
@@ -1417,7 +1426,7 @@ rt_err_t msg_mail_keydatcks(rt_uint16_t  ID, rt_uint32_t date)
 	net_msg_send_mail(mail);
 	rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
 	rt_sem_delete(UserData->result.complete);
-	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
+	rt_dprintf(NETMAILCLASS_DEBUG,("message send result:%d\n",UserData->result.result));
 	result = UserData->result.result;
 
 	//释放资源
@@ -1467,7 +1476,7 @@ rt_err_t msg_mail_phmapadd(rt_uint8_t *MapByte,rt_size_t ByteLength,rt_uint32_t 
 	//等待发送结果
 	rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
 	rt_sem_delete(UserData->result.complete);
-	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
+	rt_dprintf(NETMAILCLASS_DEBUG,("message send result:%d\n",UserData->result.result));
 	result = UserData->result.result;
 
 	//释放资源
@@ -1514,7 +1523,7 @@ rt_err_t msg_mail_phdatcks(rt_uint16_t  ID, rt_uint32_t date)
 	net_msg_send_mail(mail);
 	rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
 	rt_sem_delete(UserData->result.complete);
-	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
+	rt_dprintf(NETMAILCLASS_DEBUG,("message send result:%d\n",UserData->result.result));
 	result = UserData->result.result;
 
 	//释放资源
@@ -1564,7 +1573,7 @@ rt_err_t msg_mail_recmapadd(rt_uint8_t *MapByte,rt_size_t ByteLength,rt_uint32_t
 	//等待发送结果
 	rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
 	rt_sem_delete(UserData->result.complete);
-	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
+	rt_dprintf(NETMAILCLASS_DEBUG,("message send result:%d\n",UserData->result.result));
 	result = UserData->result.result;
 
 	//释放资源
@@ -1611,7 +1620,7 @@ rt_err_t msg_mail_recdatcks(rt_uint16_t  ID, rt_uint32_t date)
 	net_msg_send_mail(mail);
 	rt_sem_take(UserData->result.complete,RT_WAITING_FOREVER);
 	rt_sem_delete(UserData->result.complete);
-	RT_DEBUG_LOG(SHWO_PRINTF_INFO,("message send result:%d\n",UserData->result.result));
+	rt_dprintf(NETMAILCLASS_DEBUG,("message send result:%d\n",UserData->result.result));
 	result = UserData->result.result;
 
 	//释放资源

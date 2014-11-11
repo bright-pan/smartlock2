@@ -16,15 +16,17 @@
 #include "gprsmailclass.h"
 #include "netmailclass.h"
 
-#define USEING_DEBUG_INFO           1  //使用调试信息
+#ifdef   USEING_CAN_SET_DEBUG
+#include "untils.h" //主要使用里面的 rt_dprintf
+#endif
 
-#define rt_dprintf(message)                      \
-do                                               \
-{                                                \
-    if (USEING_DEBUG_INFO)                       \
-        rt_kprintf message;                      \
-}                                                \
-while (0)
+#ifndef USEING_CAN_SET_DEBUG
+#define rt_dprintf    RT_DEBUG_LOG
+#endif
+
+
+#define USEING_GPRS_DEBUG           0  //使用调试信息
+
 
 #define UPDATE_KEY_CNT    					60 //钥匙同步周期
 #define UPDATE_FLAG_VALUE 					1  //需要更新标志
@@ -65,14 +67,14 @@ static void phone_upload_process(rt_uint16_t pos)
 	if(result == RT_EOK)
 	{
 		//手机数据上传成功
-    rt_kprintf("Phone Upload data succeed\n");
+    rt_dprintf(USEING_GPRS_DEBUG,("Phone Upload data succeed\n"));
 		result = msg_mail_phonebind(pos,data->account,data->updated_time);
 		if(result == RT_EOK)
 		{
 			//手机绑定成功	
 			data->is_update = 1-UPDATE_FLAG_VALUE;
 			device_config_phone_operate(pos,data,1);
-			rt_kprintf("Phone bind succeed\n");
+			rt_dprintf(USEING_GPRS_DEBUG,("Phone bind succeed\n"));
 		}
 	}
 	else
@@ -95,7 +97,7 @@ static void account_upload_process(rt_uint16_t pos)
 	ah_result = device_config_account_operate(pos,data,0);
 	if(ah_result < 0)
 	{
-		rt_kprintf("GPRS mail account operate fail >>%s",__FUNCTION__);
+		rt_dprintf(USEING_GPRS_DEBUG,("GPRS mail account operate fail >>%s",__FUNCTION__));
 	}
 
 	result = msg_mail_account_add(pos,(rt_uint8_t *)data->name,data->updated_time);
@@ -104,7 +106,7 @@ static void account_upload_process(rt_uint16_t pos)
 		//成功上传
 		data->is_updated = 1-UPDATE_FLAG_VALUE;
     device_config_account_operate(pos,data,1);
-		rt_kprintf("Account Upload succeed\n");
+		rt_dprintf(USEING_GPRS_DEBUG,("Account Upload succeed\n"));
 	}
 	else
 	{
@@ -340,7 +342,7 @@ void update_account_lib_remote(void)
 {
 	rt_uint16_t run = device_config_account_counts();
 
-	rt_kprintf("Account num %d\n",run);
+	rt_dprintf(USEING_GPRS_DEBUG,("Account num %d\n",run));
 	while(run--) 
 	{
 		rt_uint16_t pos;
@@ -348,7 +350,7 @@ void update_account_lib_remote(void)
 		pos = get_account_update_pos();
 		if(pos < ACCOUNT_NUMBERS)
 		{  		
-			rt_kprintf("update account %d\n",pos);
+			rt_dprintf(USEING_GPRS_DEBUG,("update account %d\n",pos));
       account_upload_process(pos);
  		}
 	}
@@ -361,7 +363,7 @@ static int set_alarmlog_update_flag(struct event *data,int evt_id, void *user)
 
 	data->head.is_updated = flag;
 	device_config_event_operate(evt_id,data,1);
-	rt_kprintf("#");
+	rt_dprintf(USEING_GPRS_DEBUG,("#"));
 	return 0;
 }
 
@@ -379,7 +381,7 @@ void set_all_update_flag(rt_uint8_t flag)
   //账户更新标志设置
 	data = rt_calloc(1,sizeof(*data));
 	maxnum = device_config_account_counts();
-	rt_kprintf("upload %d account \n",maxnum);
+	rt_dprintf(USEING_GPRS_DEBUG,("upload %d account \n",maxnum));
 	CurPos = 0;
 	while(maxnum)
 	{
@@ -396,16 +398,16 @@ void set_all_update_flag(rt_uint8_t flag)
 			
 	  }
 	  CurPos++;
-	  rt_kprintf(("#"));
+	  rt_dprintf(USEING_GPRS_DEBUG,("#"));
 	}
 	rt_free(data);
-	rt_dprintf(("\n"));
+	rt_dprintf(USEING_GPRS_DEBUG,("\n"));
 
 	//手机更新标志设置
 	maxnum = device_config_phone_counts();
 	phdata = rt_calloc(1,sizeof(*phdata));
 	CurPos = 0;
-	rt_dprintf(("Update %d Phone\n",maxnum));
+	rt_dprintf(USEING_GPRS_DEBUG,("Update %d Phone\n",maxnum));
 	while(maxnum)
 	{
 	  result = device_config_get_phone_valid(CurPos);
@@ -422,16 +424,16 @@ void set_all_update_flag(rt_uint8_t flag)
 
 	  }
 	  CurPos++;
-    rt_dprintf(("#"));
+    rt_dprintf(USEING_GPRS_DEBUG,("#"));
 	}
 	rt_free(phdata);
-	rt_dprintf(("\n"));
+	rt_dprintf(USEING_GPRS_DEBUG,("\n"));
 
 	//钥匙更新标志设置
   maxnum = device_config_key_counts();
 	keydat = rt_calloc(1,sizeof(*keydat));
 	CurPos = 0;
-	rt_dprintf(("Update %d Key \n",maxnum));
+	rt_dprintf(USEING_GPRS_DEBUG,("Update %d Key \n",maxnum));
 	while(maxnum)
 	{
 		result = device_config_get_key_valid(CurPos);
@@ -447,15 +449,15 @@ void set_all_update_flag(rt_uint8_t flag)
 
 		}
 		CurPos++;
-		rt_dprintf(("#"));
+		rt_dprintf(USEING_GPRS_DEBUG,("#"));
 	}
 	rt_free(keydat);
-	rt_dprintf(("\n"));
+	rt_dprintf(USEING_GPRS_DEBUG,("\n"));
 
 	//记录更新标志设置
-	rt_dprintf(("Update record\n"));
+	rt_dprintf(USEING_GPRS_DEBUG,("Update record\n"));
 	device_config_event_index(set_alarmlog_update_flag,(void *)&flag);
-	rt_dprintf(("\n"));
+	rt_dprintf(USEING_GPRS_DEBUG,("\n"));
 }
 
 //处理钥匙开门正确邮件
@@ -625,7 +627,7 @@ void gprs_mail_delete(GPRS_MAIL_TYPEDEF *mail)
 	RT_ASSERT(mail != RT_NULL);
 	if(mail->user != RT_NULL)
 	{
-		rt_kprintf("Delete GPRS Mail User");
+		rt_dprintf(USEING_GPRS_DEBUG,("Delete GPRS Mail User"));
 		rt_free(mail->user);
 	}
 }
@@ -742,44 +744,44 @@ int gprs_local_mail_resend(struct event *data,int evt_id, void *user)
 //更新智能锁数据库
 static void update_smartlock_database(rt_uint32_t ModeFlag)
 {
-  rt_kprintf("update start\n");
+  rt_dprintf(USEING_GPRS_DEBUG,("update start\n"));
 
 	if(ModeFlag & DATA_SYNC_ACCMAP)
 	{
     //上传账户映射域
-    rt_kprintf("update map data...\n");
+    rt_dprintf(USEING_GPRS_DEBUG,("update map data...\n"));
     upload_map(0);
 	}
 
 	if(ModeFlag & DATA_SYNC_ACCDAT)
 	{
     //上传账户
-    rt_kprintf("update account data...\n");
+    rt_dprintf(USEING_GPRS_DEBUG,("update account data...\n"));
     update_account_lib_remote();
 	}
 
 	if(ModeFlag & DATA_SYNC_KEYDAT)
 	{
     //上传账户钥匙
-    rt_kprintf("update key data...\n");
+    rt_dprintf(USEING_GPRS_DEBUG,("update key data...\n"));
     update_key_lib_remote();
 	}
 
 	if(ModeFlag & DATA_SYNC_PHDATA)
 	{
     //上传手机
-    rt_kprintf("update phone data...\n");
+    rt_dprintf(USEING_GPRS_DEBUG,("update phone data...\n"));
     update_phone_lib_remote();
 	}
 
 	if(ModeFlag & DATA_SYNC_RECDAT)
 	{
 	  //上传记录
-	  rt_kprintf("update record data...\n");
+	  rt_dprintf(USEING_GPRS_DEBUG,("update record data...\n"));
 	  device_config_event_index(gprs_local_mail_resend,RT_NULL);
 	}
 
-  rt_kprintf("update end\n");
+  rt_dprintf(USEING_GPRS_DEBUG,("update end\n"));
 }
 
 /** 
@@ -838,7 +840,7 @@ void gprs_mail_manage_entry(void* arg)
 			mq_result =rt_mq_recv(gprs_mq,&mail,sizeof(GPRS_MAIL_TYPEDEF),100);
 			if(mq_result == RT_EOK)
 			{	
-				rt_kprintf("保存记录\n");
+				rt_dprintf(USEING_GPRS_DEBUG,("Save alarm and open door mail\n"));
 				gprs_local_mail_save(&mail,UPDATE_FLAG_VALUE);
 				gprs_mail_delete(&mail);//释放资源
 			}

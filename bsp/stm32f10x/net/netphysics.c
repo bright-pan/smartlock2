@@ -8,7 +8,15 @@
 //#include "bdcom.h"
 //#include "comm.h"
 //#include "appconfig.h"
+#ifdef   USEING_CAN_SET_DEBUG
+#include "untils.h" //主要使用里面的 rt_dprintf
+#endif
 
+#ifndef USEING_CAN_SET_DEBUG
+#define rt_dprintf    RT_DEBUG_LOG
+#endif
+
+#define NETPY_DEBUG_THREAD 21
 #define SHOW_PRINTF_INFO   0    //打印调试信息
 #define SHOW_STATUS_INFO   1
 
@@ -31,27 +39,27 @@ rt_size_t find_package_end(rt_uint8_t *buffer,rt_size_t size)
 		rt_kprintf("Recv message length(%d) abnormal is bad message ! ! !\n",length);
 		return size;
 	}
-	RT_DEBUG_LOG(SHOW_PRINTF_INFO,("Receive the packet length:%d = 0X%x\n",length,length));
+	rt_dprintf(SHOW_PRINTF_INFO,("Receive the packet length:%d = 0X%x\n",length,length));
 	/*#ifdef 0
 	{
     rt_uint8_t i;
 		for(i = 0;i < length;i++)
     {
-      RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("%02X",buffer[i]));
+      rt_dprintf(SHOW_RECV_MSG_INFO,("%02X",buffer[i]));
     }
-    RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("\n"));
+    rt_dprintf(SHOW_RECV_MSG_INFO,("\n"));
 	}
 	#endif*/
   for(i = 0; i < size; i++)
   {
     FlagStr[0] = FlagStr[1];
     FlagStr[1] = buffer[i];
-    RT_DEBUG_LOG(SHOW_PRINTF_INFO,("[find:0x%02X 0x%02X]\n",FlagStr[0],FlagStr[1]));
+    rt_dprintf(SHOW_PRINTF_INFO,("[find:0x%02X 0x%02X]\n",FlagStr[0],FlagStr[1]));
     if((FlagStr[0] == 0x0d) && (FlagStr[1] == 0x0a))
     {
     	if(length <= i+1)
     	{
-    		RT_DEBUG_LOG(SHOW_PRINTF_INFO,("recv message succeed (length:%d)\n",size));
+    		rt_dprintf(SHOW_PRINTF_INFO,("recv message succeed (length:%d)\n",size));
         return i+1;
     	}
     }
@@ -78,7 +86,7 @@ rt_err_t netprotocol_connect_status(void)
 	}
 	if(!(dev->open_flag & RT_DEVICE_OFLAG_OPEN))
 	{
-	  rt_kprintf("open blooth module\n");
+	  rt_dprintf(NETPY_DEBUG_THREAD,("open blooth module\n"));
 	  rt_device_open(dev,RT_DEVICE_OFLAG_OPEN);
 	}
 	rt_device_control(dev,3,(void *)&status);
@@ -117,7 +125,7 @@ void netprotocol_thread_entry(void *arg)
 			}
 			if(!(hw_dev->open_flag & RT_DEVICE_OFLAG_OPEN))
 			{
-			  rt_kprintf("open %s device\n",hw_dev->parent.name);
+			  rt_dprintf(NETPY_DEBUG_THREAD,("open %s device\n",hw_dev->parent.name));
 			  rt_device_open(hw_dev,RT_DEVICE_OFLAG_RDWR);
 			}
   	}
@@ -137,7 +145,7 @@ void netprotocol_thread_entry(void *arg)
 			//如果收到重新连接事件
     	if(net_event_process(2,NET_ENVET_RELINK) == 0)
     	{
-				RT_DEBUG_LOG(SHOW_STATUS_INFO,("relink TCP/IP !!!!\n"));
+				rt_dprintf(SHOW_STATUS_INFO,("relink TCP/IP !!!!\n"));
 
 				//清除所有登陆报文
 				//clear_wnd_cmd_all(NET_MSGTYPE_LANDED);
@@ -152,7 +160,7 @@ void netprotocol_thread_entry(void *arg)
     	if(net_event_process(2,NET_ENVET_LOGINFAIL) == 0)
     	{
     		//断开蓝牙连接
-    		RT_DEBUG_LOG(SHOW_STATUS_INFO,("Login Fail Auto Disconnect!!!\n"));
+    		rt_dprintf(SHOW_STATUS_INFO,("Login Fail Auto Disconnect!!!\n"));
 				rt_device_control(hw_dev,5,RT_NULL);
     	}
 
@@ -178,10 +186,10 @@ void netprotocol_thread_entry(void *arg)
             {
               rt_memcpy(recvmail,recv_data,MsgEndPos);
             }
-          	RT_DEBUG_LOG(SHOW_RECV_MAIL_ADDR,("Send mailbox addr %X\n",recvmail));
+          	rt_dprintf(SHOW_RECV_MAIL_ADDR,("Send mailbox addr %X\n",recvmail));
           	if(rt_mb_send(net_datrecv_mb,(rt_uint32_t)recvmail) != RT_EOK)
           	{
-          	  RT_DEBUG_LOG(SHOW_PRINTF_INFO,
+          	  rt_dprintf(SHOW_PRINTF_INFO,
 						          	  ("%s mail full send fail !!!\n",
 						          	  net_datrecv_mb->parent.parent.name));
 						          	  
@@ -190,12 +198,12 @@ void netprotocol_thread_entry(void *arg)
           	}
 
           	//打印调试信息
-          	RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("\nReceives the encrypted data:\n<<<<<"));
+          	rt_dprintf(SHOW_SEND_MSG_INFO,("\nReceives the encrypted data:\n<<<<<"));
             for(i = 0;i < MsgEndPos;i++)
             {
-              RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("%02X",recv_data[i]));
+              rt_dprintf(SHOW_SEND_MSG_INFO,("%02X",recv_data[i]));
             }
-            RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("\n"));
+            rt_dprintf(SHOW_SEND_MSG_INFO,("\n"));
 
             //将找到包的后面数据移动到buffer首地址处
             SavePos -= MsgEndPos;
@@ -232,14 +240,14 @@ void netprotocol_thread_entry(void *arg)
             rt_size_t i;
 	          rt_uint8_t *buf = RT_NULL;
 
-	          rt_kprintf(">>>>>");
+	          rt_dprintf(NETPY_DEBUG_THREAD,(">>>>>"));
 	          buf = message.buffer;
 
 	          for(i=0;i<message.length+4;i++)
 	          {
-	            rt_kprintf("%02X",*(buf++));
+	            rt_dprintf(NETPY_DEBUG_THREAD,("%02X",*(buf++)));
 	          }
-	          rt_kprintf("\n");
+	          rt_dprintf(NETPY_DEBUG_THREAD,("\n"));
         	}
         	
           //发送
@@ -255,7 +263,7 @@ void netprotocol_thread_entry(void *arg)
     		{
           //请求连接阶段
           net_event_process(0,NET_ENVET_CONNECT);
-          RT_DEBUG_LOG(SHOW_STATUS_INFO,("Blooth physics disconnect!!!\n"));
+          rt_dprintf(SHOW_STATUS_INFO,("Blooth physics disconnect!!!\n"));
     		}
     		net_event_process(2,NET_ENVET_ONLINE);
     		//清除所有登陆报文
@@ -267,7 +275,7 @@ void netprotocol_thread_entry(void *arg)
 			{
 				if(net_event_process(1,NET_ENVET_CONNECT) == 0)
 				{
-					RT_DEBUG_LOG(SHOW_STATUS_INFO,("Blooth physics connect^_^\n"));
+					rt_dprintf(SHOW_STATUS_INFO,("Blooth physics connect^_^\n"));
 					//请求连接成功
     			net_event_process(2,NET_ENVET_CONNECT);
     			net_event_process(0,NET_ENVET_RELINK);

@@ -6,7 +6,14 @@
 #include "netprotocol.h"
 #include "crc16.h"
 #include "des.h"
-//#include "untils.h"
+#ifdef   USEING_CAN_SET_DEBUG
+#include "untils.h" //主要使用里面的 rt_dprintf
+#endif
+
+#ifndef USEING_CAN_SET_DEBUG
+#define rt_dprintf    RT_DEBUG_LOG
+#endif
+
 //#include "appconfig.h"
 
 //发送结果
@@ -131,7 +138,7 @@ static rt_int8_t Net_MsgRecv_handle(net_recvmsg_p Mail,void *UserData)
 	}
 	else
 	{
-		RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NetMsg_Recv_handle Is NULL\n"));
+		rt_dprintf(SHOW_RECV_MSG_INFO,("NetMsg_Recv_handle Is NULL\n"));
 	}
 
 	return result;
@@ -150,7 +157,7 @@ static void Net_Msg_thread_callback(void)
 	}
 	/*else
 	{
-		RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("NetMsg_Recv_CallBack_Fun Is NULL\n"));
+		rt_dprintf(SHOW_RECV_MSG_INFO,("NetMsg_Recv_CallBack_Fun Is NULL\n"));
 	}*/
 }
 
@@ -183,8 +190,8 @@ rt_bool_t net_mail_crc16_check(net_recvmsg_p Mail)
 
 	Mail->lenmap.bype = net_rev16(Mail->lenmap.bype);
 
-	RT_DEBUG_LOG(SHOW_CRC16_INIF,("Remote  CRC16 = %04X\n",CRC16Right));
-	RT_DEBUG_LOG(SHOW_CRC16_INIF,("Local   CRC16 = %04X\n",CurCRC16));
+	rt_dprintf(SHOW_CRC16_INIF,("Remote  CRC16 = %04X\n",CRC16Right));
+	rt_dprintf(SHOW_CRC16_INIF,("Local   CRC16 = %04X\n",CurCRC16));
 	if(CurCRC16 == CRC16Right)
 	{
 		return RT_TRUE;
@@ -227,7 +234,7 @@ void net_msg_send_mail(net_msgmail_p mail)
 */
 void show_recvmsg(net_recvmsg_p msg)
 {
-  RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,
+  rt_dprintf(SHOW_RECV_MSG_INFO,
   	("Receive Message key parameter:\nLength:%02X LengthMap:%02X Cmd:%02X Order:%02d Resend:%X\n",
 		msg->length,
 		msg->lenmap,
@@ -241,7 +248,7 @@ void show_recvmsg(net_recvmsg_p msg)
 */
 void show_sendmsg(net_encrypt_p msg)
 {
-  RT_DEBUG_LOG(SHOW_SEND_MSG_INFO,
+  rt_dprintf(SHOW_SEND_MSG_INFO,
   	("Send Message Info:\nCmd:%02X Order:%02d Resend:%02d LengthMap:%02X CRC16:%02X%02X\n",
 		msg->cmd,
 		msg->col.bit.col,
@@ -257,7 +264,7 @@ void show_sendmsg(net_encrypt_p msg)
 */
 void show_lenmap(net_lenmap map)
 {
-  RT_DEBUG_LOG(SHOW_LENMAP_INFO,
+  rt_dprintf(SHOW_LENMAP_INFO,
   	("Length Map:0x%02X  Check:%02d Cmd:%02d Order:%02d Data:%02d \n",
     map.bype,
     map.bit.check,
@@ -437,19 +444,19 @@ void net_des_pack(rt_uint8_t *buffer,rt_size_t size,net_encrypt *data)
     rt_uint16_t i;
     rt_uint8_t  j;
 
-   	RT_DEBUG_LOG(SHOW_NONE_ENC_DATA,("Send raw data:\n"));
+   	rt_dprintf(SHOW_NONE_ENC_DATA,("Send raw data:\n"));
     for(i = 0; i < size/8; i++)
     {
       rt_memset(input_buf, 0, 8);
       rt_memcpy(input_buf, buffer+(i*8), 8);
       for(j = 0 ; j < 8; j++)
       {
-        RT_DEBUG_LOG(SHOW_NONE_ENC_DATA,("%02X",input_buf[j]));
+        rt_dprintf(SHOW_NONE_ENC_DATA,("%02X",input_buf[j]));
       }
       des_crypt_ecb(&ctx_key1_enc, input_buf, output_buf);
       rt_memcpy(buffer+(i*8), output_buf, 8);
     }
-   	RT_DEBUG_LOG(SHOW_NONE_ENC_DATA,("\n"));
+   	rt_dprintf(SHOW_NONE_ENC_DATA,("\n"));
   }
 
 }
@@ -505,9 +512,9 @@ void net_pack_data(net_message *message,net_encrypt *data)
       message->length = 8;
     }
   }
- RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("DES data length: %d\n",message->length));
+ rt_dprintf(SHOW_RECV_MSG_INFO,("DES data length: %d\n",message->length));
 
- RT_DEBUG_LOG(SHOW_MEM_INFO,("obtain acquire memory resource\n"));
+ rt_dprintf(SHOW_MEM_INFO,("obtain acquire memory resource\n"));
  message->buffer = rt_calloc(1,message->length+4);//分配报文的内存
  RT_ASSERT(message->buffer != RT_NULL);
  bufp = message->buffer;
@@ -550,7 +557,7 @@ void net_pack_data(net_message *message,net_encrypt *data)
     crc16 = net_crc16(crc_start,bufp-crc_start);
     data->check[0] = (crc16 & 0xff00) >> 8;
     data->check[1] = (crc16 & 0x00ff);
-    RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("Calculate CRC16 = %02X\n",crc16));
+    rt_dprintf(SHOW_RECV_MSG_INFO,("Calculate CRC16 = %02X\n",crc16));
     rt_memcpy(bufp,&data->check,data->lenmap.bit.check);//crc
     bufp += data->lenmap.bit.check; 
  }
@@ -623,7 +630,7 @@ void net_pack_data(net_message *message,net_encrypt *data)
   crc16 = net_crc16(crc_start,data_len);
   data->check[0] = (crc16 & 0xff00) >> 8;
   data->check[1] = (crc16 & 0x00ff);
-  RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("Calculate CRC16 = %02X\n",crc16));
+  rt_dprintf(SHOW_RECV_MSG_INFO,("Calculate CRC16 = %02X\n",crc16));
   rt_memcpy(bufp,&data->check,data->lenmap.bit.check);//crc
   bufp += data->lenmap.bit.check; 
   //DES加密
@@ -638,12 +645,12 @@ void net_pack_data(net_message *message,net_encrypt *data)
  {
     rt_uint16_t i;
 
-    RT_DEBUG_LOG(SHOW_SEND_MSG_INFO,("Send encrypt message:\n>>>>>>"));
+    rt_dprintf(SHOW_SEND_MSG_INFO,("Send encrypt message:\n>>>>>>"));
     for(i = 0;i < message->length+4;i++)
     {
-      RT_DEBUG_LOG(SHOW_SEND_MSG_INFO,("%02X",*(message->buffer+i)));
+      rt_dprintf(SHOW_SEND_MSG_INFO,("%02X",*(message->buffer+i)));
     }
-    RT_DEBUG_LOG(SHOW_SEND_MSG_INFO,("\n"));
+    rt_dprintf(SHOW_SEND_MSG_INFO,("\n"));
  }
 }
 
@@ -724,7 +731,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
       }
       else
       {
-        RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("Alarm NET_MSGTYPE_ALARM user is null\n"));
+        rt_dprintf(SHOW_SET_MSG_INOF,("Alarm NET_MSGTYPE_ALARM user is null\n"));
 
         return RT_ERROR;
       }
@@ -743,7 +750,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
     	else
     	{
     		
-        RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_FAULT message user is null\n"));
+        rt_dprintf(SHOW_SET_MSG_INOF,("NET_MSGTYPE_FAULT message user is null\n"));
         
 				return RT_ERROR;
     	}
@@ -764,7 +771,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
 			}
 			else
 			{
-				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_OPENDOOR message user is null\n"));
+				rt_dprintf(SHOW_SET_MSG_INOF,("NET_MSGTYPE_OPENDOOR message user is null\n"));
         
 				return RT_ERROR;
 			}
@@ -785,7 +792,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
     	}
     	else
 			{
-				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_BATTERY message user is null\n"));
+				rt_dprintf(SHOW_SET_MSG_INOF,("NET_MSGTYPE_BATTERY message user is null\n"));
         
 				return RT_ERROR;
 			}
@@ -809,7 +816,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
 			}
 			else
 			{
-				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_FILEREQUEST message user is null\n"));
+				rt_dprintf(SHOW_SET_MSG_INOF,("NET_MSGTYPE_FILEREQUEST message user is null\n"));
         
 				return RT_ERROR;
 			}
@@ -831,7 +838,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
       }
       else
 			{
-				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_FILEREQUE_ACK message user is null\n"));
+				rt_dprintf(SHOW_SET_MSG_INOF,("NET_MSGTYPE_FILEREQUE_ACK message user is null\n"));
         
 				return RT_ERROR;
 			}
@@ -850,7 +857,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
       }
       else
 			{
-				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_FILEDATA message user is null\n"));
+				rt_dprintf(SHOW_SET_MSG_INOF,("NET_MSGTYPE_FILEDATA message user is null\n"));
         
 				return RT_ERROR;
 			}
@@ -870,7 +877,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
       } 
       else
 			{
-				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_FILEDATA_ACK message user is null\n"));
+				rt_dprintf(SHOW_SET_MSG_INOF,("NET_MSGTYPE_FILEDATA_ACK message user is null\n"));
         
 				return RT_ERROR;
 			}
@@ -893,7 +900,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
     	}
     	else
 			{
-				RT_DEBUG_LOG(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_PHONEADD message user is null\n"));
+				rt_dprintf(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_PHONEADD message user is null\n"));
         
 				return RT_ERROR;
 			}
@@ -915,7 +922,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
       }
       else
 			{
-				RT_DEBUG_LOG(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_FILEDATA_ACK message user is null\n"));
+				rt_dprintf(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_FILEDATA_ACK message user is null\n"));
         
 				return RT_ERROR;
 			}
@@ -937,7 +944,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
     	}
     	else
 			{
-				RT_DEBUG_LOG(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_PHONEDELETE message user is null\n"));
+				rt_dprintf(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_PHONEDELETE message user is null\n"));
         
 				return RT_ERROR;
 			}
@@ -958,7 +965,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
       }
       else
 			{
-				RT_DEBUG_LOG(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_PHONEDEL_ACK message user is null\n"));
+				rt_dprintf(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_PHONEDEL_ACK message user is null\n"));
         
 				return RT_ERROR;
 			}
@@ -977,7 +984,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
       }
       else
 			{
-				RT_DEBUG_LOG(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_ALARMARG message user is null\n"));
+				rt_dprintf(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_ALARMARG message user is null\n"));
         
 				return RT_ERROR;
 			}
@@ -1025,7 +1032,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
     	}
     	else
 			{
-				RT_DEBUG_LOG(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_KEYADD message user is null\n"));
+				rt_dprintf(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_KEYADD message user is null\n"));
         
 				return RT_ERROR;
 			}
@@ -1047,7 +1054,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
 			}
 			else
 			{
-				RT_DEBUG_LOG(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_KEYADD_ACK message user is null\n"));
+				rt_dprintf(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_KEYADD_ACK message user is null\n"));
         
 				return RT_ERROR;
 			}
@@ -1069,7 +1076,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
       }
       else
 			{
-				RT_DEBUG_LOG(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_KEYDELETE message user is null\n"));
+				rt_dprintf(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_KEYDELETE message user is null\n"));
         
 				return RT_ERROR;
 			}
@@ -1091,7 +1098,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
 			}
 			else
 			{
-				RT_DEBUG_LOG(NET_MSGTYPE_KEYDEL_ACK,("NET_MSGTYPE_KEYDELETE message user is null\n"));
+				rt_dprintf(NET_MSGTYPE_KEYDEL_ACK,("NET_MSGTYPE_KEYDELETE message user is null\n"));
         
 				return RT_ERROR;
 			}
@@ -1119,7 +1126,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
 			}
 			else
 			{
-				RT_DEBUG_LOG(NET_MSGTYPE_KEYDEL_ACK,("NET_MSGTYPE_TIME message user is null\n"));
+				rt_dprintf(NET_MSGTYPE_KEYDEL_ACK,("NET_MSGTYPE_TIME message user is null\n"));
         
 				return RT_ERROR;
 			}
@@ -1211,7 +1218,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
       }
       else
 			{
-				RT_DEBUG_LOG(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_ACCOUNTADD message user is null\n"));
+				rt_dprintf(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_ACCOUNTADD message user is null\n"));
         
 				return RT_ERROR;
 			}
@@ -1232,7 +1239,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
       }
       else
 			{
-				RT_DEBUG_LOG(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_ACCOUNTDEL message user is null\n"));
+				rt_dprintf(NET_MSGTYPE_PHONEADD_ACK,("NET_MSGTYPE_ACCOUNTDEL message user is null\n"));
         
 				return RT_ERROR;
 			}
@@ -1250,7 +1257,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
       } 
       else
 			{
-				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_ACCOUNTADD_ACK message user is null\n"));
+				rt_dprintf(SHOW_SET_MSG_INOF,("NET_MSGTYPE_ACCOUNTADD_ACK message user is null\n"));
         
 				return RT_ERROR;
 			}
@@ -1270,7 +1277,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
       } 
       else
 			{
-				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_ACCOUNTDEL_ACK message user is null\n"));
+				rt_dprintf(SHOW_SET_MSG_INOF,("NET_MSGTYPE_ACCOUNTDEL_ACK message user is null\n"));
         
 				return RT_ERROR;
 			}
@@ -1293,7 +1300,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
       }
       else
 			{
-				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_KEYBIND message user is null\n"));
+				rt_dprintf(SHOW_SET_MSG_INOF,("NET_MSGTYPE_KEYBIND message user is null\n"));
         
 				return RT_ERROR;
 			}
@@ -1314,7 +1321,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
       }
       else
 			{
-				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_KEYBIND message user is null\n"));
+				rt_dprintf(SHOW_SET_MSG_INOF,("NET_MSGTYPE_KEYBIND message user is null\n"));
         
 				return RT_ERROR;
 			}
@@ -1335,7 +1342,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
       }
       else
 			{
-				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_KEYBIND message user is null\n"));
+				rt_dprintf(SHOW_SET_MSG_INOF,("NET_MSGTYPE_KEYBIND message user is null\n"));
         
 				return RT_ERROR;
 			}
@@ -1356,7 +1363,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
       }
       else
 			{
-				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_KEYBIND message user is null\n"));
+				rt_dprintf(SHOW_SET_MSG_INOF,("NET_MSGTYPE_KEYBIND message user is null\n"));
         
 				return RT_ERROR;
 			}
@@ -1374,7 +1381,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
 			}
 			else
 			{
-				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_ACCMAPADD message user is null\n"));
+				rt_dprintf(SHOW_SET_MSG_INOF,("NET_MSGTYPE_ACCMAPADD message user is null\n"));
 				return RT_ERROR;
 			}
     	msg_data->cmd = MsgMail->type;
@@ -1397,7 +1404,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
 			}
 			else
 			{
-				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_ACCDATCKS message user is null\n"));
+				rt_dprintf(SHOW_SET_MSG_INOF,("NET_MSGTYPE_ACCDATCKS message user is null\n"));
 				return RT_ERROR;
 			}
     	
@@ -1415,7 +1422,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
 			}
 			else
 			{
-				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_KEYMAPADD message user is null\n"));
+				rt_dprintf(SHOW_SET_MSG_INOF,("NET_MSGTYPE_KEYMAPADD message user is null\n"));
 				return RT_ERROR;
 			}
     	msg_data->cmd = MsgMail->type;
@@ -1438,7 +1445,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
 			}
 			else
 			{
-				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_KEYDATCKS message user is null\n"));
+				rt_dprintf(SHOW_SET_MSG_INOF,("NET_MSGTYPE_KEYDATCKS message user is null\n"));
 				return RT_ERROR;
 			}
     	
@@ -1456,7 +1463,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
 			}
 			else
 			{
-				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_PHMAPADD message user is null\n"));
+				rt_dprintf(SHOW_SET_MSG_INOF,("NET_MSGTYPE_PHMAPADD message user is null\n"));
 				return RT_ERROR;
 			}
     	msg_data->cmd = MsgMail->type;
@@ -1479,7 +1486,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
 			}
 			else
 			{
-				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_PHDATCKS message user is null\n"));
+				rt_dprintf(SHOW_SET_MSG_INOF,("NET_MSGTYPE_PHDATCKS message user is null\n"));
 				return RT_ERROR;
 			}
     	
@@ -1497,7 +1504,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
 			}
 			else
 			{
-				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_RECMAPADD message user is null\n"));
+				rt_dprintf(SHOW_SET_MSG_INOF,("NET_MSGTYPE_RECMAPADD message user is null\n"));
 				return RT_ERROR;
 			}
     	msg_data->cmd = MsgMail->type;
@@ -1520,7 +1527,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
 			}
 			else
 			{
-				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_RECDATCKS message user is null\n"));
+				rt_dprintf(SHOW_SET_MSG_INOF,("NET_MSGTYPE_RECDATCKS message user is null\n"));
 				return RT_ERROR;
 			}
     	
@@ -1541,7 +1548,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
       }
       else
 			{
-				RT_DEBUG_LOG(SHOW_SET_MSG_INOF,("NET_MSGTYPE_DATA_SYNC message user is null\n"));
+				rt_dprintf(SHOW_SET_MSG_INOF,("NET_MSGTYPE_DATA_SYNC message user is null\n"));
         
 				return RT_ERROR;
 			}
@@ -1589,10 +1596,10 @@ static void clear_wnd_mail_pos(rt_int8_t pos,rt_int8_t result)
 		//如果是异步
 		if(sendwnd_node[pos].mail.sendmode == ASYN_MODE)
 		{
-		  RT_DEBUG_LOG(SHOW_SEND_MODE_INFO,("This is asynchronous sending mode,Result OK\n"));
+		  rt_dprintf(SHOW_SEND_MODE_INFO,("This is asynchronous sending mode,Result OK\n"));
       if(sendwnd_node[pos].mail.user != RT_NULL)
       {
-        RT_DEBUG_LOG(SHOW_MEM_INFO,("free user memroy\n"));
+        rt_dprintf(SHOW_MEM_INFO,("free user memroy\n"));
         
         RT_ASSERT(sendwnd_node[pos].mail.user != RT_NULL);
         rt_free(sendwnd_node[pos].mail.user);
@@ -1607,18 +1614,18 @@ static void clear_wnd_mail_pos(rt_int8_t pos,rt_int8_t result)
 
       if(sendwnd_node[pos].mail.user != RT_NULL)
       {
-        RT_DEBUG_LOG(SHOW_SEND_MODE_INFO,("This is synchronization sending mode,Result OK\n"));
+        rt_dprintf(SHOW_SEND_MODE_INFO,("This is synchronization sending mode,Result OK\n"));
         send_result = (net_send_result *)sendwnd_node[pos].mail.user;
 
         send_result->result = result;
         rt_sem_release(send_result->complete);
-        RT_DEBUG_LOG(SHOW_SEND_MODE_INFO,("release mail of wait sem\n"));
+        rt_dprintf(SHOW_SEND_MODE_INFO,("release mail of wait sem\n"));
         //清除窗口指针
         sendwnd_node[pos].mail.user = RT_NULL;
       }
       else
       {
-        RT_DEBUG_LOG(SHOW_SEND_MODE_INFO,
+        rt_dprintf(SHOW_SEND_MODE_INFO,
                      ("Send mode set error mode:SYNC_MODE but mail.user=RT_NULL,This is unreasonable\n"));
       }
 		}
@@ -1628,7 +1635,7 @@ static void clear_wnd_mail_pos(rt_int8_t pos,rt_int8_t result)
 		}
 		else
 		{
-      RT_DEBUG_LOG(SHOW_SEND_MODE_INFO,("Send mode value is error!!!\n"));
+      rt_dprintf(SHOW_SEND_MODE_INFO,("Send mode value is error!!!\n"));
 		}
 		sendwnd_node[pos].curtime = 0;
 		sendwnd_node[pos].permission = -1;
@@ -1739,7 +1746,7 @@ static rt_int8_t get_wnd_order_pos(net_col col)
 		wnd_show();
   }*/
   
-  RT_DEBUG_LOG(SHOW_WND_INFO,("Send window not find Mail Col:%d\n",col.bit.col));
+  rt_dprintf(SHOW_WND_INFO,("Send window not find Mail Col:%d\n",col.bit.col));
   return -1; 
 }
 
@@ -1789,7 +1796,7 @@ static rt_err_t sendwnd_add_new_mail(net_msgmail_p msg)
 
 	if(msg == RT_NULL)
 	{
-    RT_DEBUG_LOG(SHOW_WND_INFO,("Window add a mail is NULL\n"));
+    rt_dprintf(SHOW_WND_INFO,("Window add a mail is NULL\n"));
 
     return RT_ERROR;
 	}
@@ -1800,7 +1807,7 @@ static rt_err_t sendwnd_add_new_mail(net_msgmail_p msg)
     sendwnd_node[pos].mail = *msg;
     sendwnd_node[pos].curtime = 0;
     sendwnd_node[pos].permission = NET_WND_MAX_NUM-1;
-    RT_DEBUG_LOG(SHOW_WND_INFO,("Window add a mail\n"));
+    rt_dprintf(SHOW_WND_INFO,("Window add a mail\n"));
   }
   else
   {
@@ -1885,7 +1892,7 @@ static rt_err_t net_send_wnd_process(net_msgmail_p msg)
 	if(msg->type & 0x80)
 	{
 		//不需要添加到窗口的报文释放资源
-		RT_DEBUG_LOG(SHOW_WND_INFO,("This ACK Message\n"));
+		rt_dprintf(SHOW_WND_INFO,("This ACK Message\n"));
 		net_msg_user_delete(msg);
 		
 		return RT_EOK;
@@ -1958,7 +1965,7 @@ static void net_recv_wnd_process(net_recvmsg_p msg,rt_int8_t result)
 	  //找到的包命令比较
 		if(cmd == get_wnd_pos_cmd(pos))
 		{
-		  RT_DEBUG_LOG(SHOW_WND_INFO,("clear window %d Col %d\n",pos,msg->col.bit.col));
+		  rt_dprintf(SHOW_WND_INFO,("clear window %d Col %d\n",pos,msg->col.bit.col));
       clear_wnd_mail_pos(pos,result);
 		}
 	}
@@ -2011,7 +2018,7 @@ static void net_send_message(net_msgmail_p msg,void *user)
 		break;
 	}
 
-  RT_DEBUG_LOG(SHOW_MEM_INFO,("release memory resource\n"));
+  rt_dprintf(SHOW_MEM_INFO,("release memory resource\n"));
   rt_sem_delete(message->sendsem);
   
   RT_ASSERT(message->buffer != RT_NULL);
@@ -2040,12 +2047,12 @@ static rt_int8_t net_des_decode(net_recvmsg_p msg)
   
   //小端转换
   msg->length = net_rev16(msg->length);
-  RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("Receive data length = %d \n",msg->length));
+  rt_dprintf(SHOW_RECV_MSG_INFO,("Receive data length = %d \n",msg->length));
 
   //判断包长度是否大于buffer长度
   if(msg->length > sizeof(net_recvmsg))
   {
-  	RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,
+  	rt_dprintf(SHOW_RECV_MSG_INFO,
   							("Array Bounds Write sizeof(net_recvmsg):%d RecvMSG->length:%d!!!!\n",
   							sizeof(net_recvmsg),msg->length));
     return -1;
@@ -2058,7 +2065,7 @@ static rt_int8_t net_des_decode(net_recvmsg_p msg)
       enc_num = 1;
     }
   }
-  RT_DEBUG_LOG(SHOW_NONE_ENC_DATA,("Receive to decrypt the data:\n"));
+  rt_dprintf(SHOW_NONE_ENC_DATA,("Receive to decrypt the data:\n"));
   for(i = 0; i < enc_num;i++)
   {
     rt_memset(input_buf, 0, 8);
@@ -2068,10 +2075,10 @@ static rt_int8_t net_des_decode(net_recvmsg_p msg)
     //显示解密后的数据
     for(j = 0; j < 8; j++)
     {
-			RT_DEBUG_LOG(SHOW_NONE_ENC_DATA,("%02X",output_buf[j]));
+			rt_dprintf(SHOW_NONE_ENC_DATA,("%02X",output_buf[j]));
     }
   }
-  RT_DEBUG_LOG(SHOW_NONE_ENC_DATA,("\n"));
+  rt_dprintf(SHOW_NONE_ENC_DATA,("\n"));
   show_recvmsg(msg);
   return 0;
 }
@@ -2094,7 +2101,7 @@ static void net_recv_alagn_process(net_recvmsg_p msg)
   RT_ASSERT(tmp != RT_NULL);
 	rt_free(tmp);
 	tmp = RT_NULL;
-	RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("Receive alagn process ok\n"));
+	rt_dprintf(SHOW_RECV_MSG_INFO,("Receive alagn process ok\n"));
 }
 
 /** 
@@ -2112,16 +2119,16 @@ static void net_recv_message(net_msgmail_p mail)
 	result = rt_mb_recv(net_datrecv_mb,(rt_uint32_t *)&msg,1);
 	if(result == RT_EOK)
 	{
-	  RT_DEBUG_LOG(SHOW_RECV_MAIL_ADDR,("Recv mailbox addr %X\n",msg));
+	  rt_dprintf(SHOW_RECV_MAIL_ADDR,("Recv mailbox addr %X\n",msg));
 
 	  //如果已经登陆在线收到的所有报文都解密
 	  if(net_event_process(1,NET_ENVET_ONLINE) == 0)
 	  {	
-	  	RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("I have landed ^_^\n"));
+	  	rt_dprintf(SHOW_RECV_MSG_INFO,("I have landed ^_^\n"));
       if(net_des_decode(msg) < 0)
       {
         //解密失败
-        RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("Message decryption failure\n"));
+        rt_dprintf(SHOW_RECV_MSG_INFO,("Message decryption failure\n"));
         RT_ASSERT(msg != RT_NULL);
         rt_free(msg);
         return ;
@@ -2130,7 +2137,7 @@ static void net_recv_message(net_msgmail_p mail)
 	  else
 	  {
 			//没有登录收到的报文
-			RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("Not login !!!\n"));
+			rt_dprintf(SHOW_RECV_MSG_INFO,("Not login !!!\n"));
 
 			//大小端转换
 			msg->length = net_rev16(msg->length);
@@ -2150,7 +2157,7 @@ static void net_recv_message(net_msgmail_p mail)
       	RT_ASSERT(msg != RT_NULL);
         rt_free(msg);
 
-        RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("Message Order Error !!!\n"));
+        rt_dprintf(SHOW_RECV_MSG_INFO,("Message Order Error !!!\n"));
         return ;
       }
     }
@@ -2161,7 +2168,7 @@ static void net_recv_message(net_msgmail_p mail)
       //verify crc16
       if(CRC16Result == RT_FALSE)
       {
-        RT_DEBUG_LOG(SHOW_RECV_MSG_INFO,("Message CRC16 verify Fial !!!\n"));
+        rt_dprintf(SHOW_RECV_MSG_INFO,("Message CRC16 verify Fial !!!\n"));
         
       	RT_ASSERT(msg != RT_NULL);
         rt_free(msg);
@@ -2179,101 +2186,101 @@ static void net_recv_message(net_msgmail_p mail)
 				{
 				  set_wnd_mail_permission(msg->col,-1);
           set_wnd_allmail_permission(NET_WND_MAX_NUM-1);
-          RT_DEBUG_LOG(SHOW_WND_INFO,("clear wnd permission\n"));
+          rt_dprintf(SHOW_WND_INFO,("clear wnd permission\n"));
           Net_MsgRecv_handle(msg,RT_NULL);
 				}
 				//在线标志
 				net_event_process(0,NET_ENVET_ONLINE);
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_LANDED_ACK\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_LANDED_ACK\n"));
 				break;
 			}
 			case NET_MSGTYPE_HEART_ACK:
 			{
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_HEART_ACK\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_HEART_ACK\n"));
 				break;
 			}
 			case NET_MSGTYPE_ALARM_ACK:
 			{
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_ALARM_ACK\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_ALARM_ACK\n"));
 				break;
 			}
 			case NET_MSGTYPE_FAULT_ACK:
 			{
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_FAULT_ACK\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_FAULT_ACK\n"));
 				break;
 			}
 			case NET_MSGTYPE_OPENDOOR_ACK:
 			{
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_OPENDOOR_ACK\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_OPENDOOR_ACK\n"));
 				break;
 			}
 			case NET_MSGTYPE_BATTERY_ACK:
 			{
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_BATTERY_ACK\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_BATTERY_ACK\n"));
 				break;
 			}
 			case NET_MSGTYPE_FILEREQUEST:
 			{
 				//文件请求
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_FILEREQUEST\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_FILEREQUEST\n"));
 				Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
 			case NET_MSGTYPE_FILEREQUE_ACK:
 			{
 				//文件请求应答
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_FILEREQUE_ACK\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_FILEREQUE_ACK\n"));
 				break;
 			}
 			case NET_MSGTYPE_FILEDATA_ACK:
 			{
 				//文件数据包应答
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_FILEDATA_ACK\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_FILEDATA_ACK\n"));
 				Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
 			case NET_MSGTYPE_FILEDATA:
 			{
 				//文件数据包
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_FILEDATA\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_FILEDATA\n"));
 				Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
 			case NET_MSGTYPE_PHONEADD_ACK:
 			{
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_PHONEADD_ACK\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_PHONEADD_ACK\n"));
 				break;
 			}
 			case NET_MSGTYPE_PHONEDEL_ACK:
 			{
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_PHONEDDEL_ACK\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_PHONEDDEL_ACK\n"));
 				break;
 			}
 			case NET_MSGTYPE_ALARMARG_ACK:
 			{
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_ALARMARG_ACK\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_ALARMARG_ACK\n"));
 				break;
 			}
 			case NET_MSGTYPE_LINK_ACK:
 			{
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_LINK_ACK\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_LINK_ACK\n"));
 				break;
 			}
 			case NET_MSGTYPE_KEYADD_ACK:
 			{
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_KEYADD_ACK\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_KEYADD_ACK\n"));
 				SendResult = Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
 			case NET_MSGTYPE_KEYDEL_ACK:
 			{
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_KEYDEL_ACK\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_KEYDEL_ACK\n"));
 				break;
 			}
 			case NET_MSGTYPE_UPDATE:
 			{
 				//远程更新
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_UPDATE\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_UPDATE\n"));
 				//message_ASYN(NET_MSGTYPE_UPDATE_ACK);
 				Net_MsgRecv_handle(msg,RT_NULL);
 				
@@ -2281,14 +2288,14 @@ static void net_recv_message(net_msgmail_p mail)
 			}
 			case NET_MSGTYPE_TIME_ACK:
 			{
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_TIME_ACK\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_TIME_ACK\n"));
 				Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
 			case NET_MSGTYPE_SETK0:
 			{
 				//K0设置
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_SETK0\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_SETK0\n"));
 				//message_ASYN(NET_MSGTYPE_SETK0_ACK);
 				Net_MsgRecv_handle(msg,RT_NULL);
 				break;
@@ -2296,14 +2303,14 @@ static void net_recv_message(net_msgmail_p mail)
 			case NET_MSGTYPE_HTTPUPDATE:
 			{
 				//http更新
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_HTTPUPDATE\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_HTTPUPDATE\n"));
 				message_ASYN(NET_MSGTYPE_HTTPUPDAT_ACK);
 				break;
 			}
 			case NET_MSGTYPE_MOTOR:
 			{
 				//远程开门
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_MOTOR\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_MOTOR\n"));
 				//message_ASYN(NET_MSGTYPE_MOTOR_ACK);
 				Net_MsgRecv_handle(msg,RT_NULL);
 				break;
@@ -2311,28 +2318,28 @@ static void net_recv_message(net_msgmail_p mail)
 			case NET_MSGTYPE_DOORMODE:
 			{
 				//开门方式管理
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_DOORMODE\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_DOORMODE\n"));
 				message_ASYN(NET_MSGTYPE_DOORMODE_ACK);
 				break;
 			}
 			case NET_MSGTYPE_CAMERA:
 			{
 				//远程拍照
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_CAMERA\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_CAMERA\n"));
 				Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
 			case NET_MSGTYPE_TERMINAL:
 			{
 				//模块查询
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_TERMINAL\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_TERMINAL\n"));
 				message_ASYN(NET_MSGTYPE_TERMINAL_ACK);
 				break;
 			}
 			case NET_MSGTYPE_DOMAIN:
 			{
 				//域名设置
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_DOMAIN\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_DOMAIN\n"));
 				//message_ASYN(NET_MSGTYPE_DOMAIN_ACK);
 				Net_MsgRecv_handle(msg,RT_NULL);
 				break;
@@ -2340,7 +2347,7 @@ static void net_recv_message(net_msgmail_p mail)
 			case NET_MSGTYPE_PHONEADD:
 			{	
 				//添加手机白名单
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_PHONEADD\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_PHONEADD\n"));
 				//message_ASYN(NET_MSGTYPE_PHONEADD_ACK);
 				Net_MsgRecv_handle(msg,RT_NULL);
 				break;
@@ -2348,7 +2355,7 @@ static void net_recv_message(net_msgmail_p mail)
 			case NET_MSGTYPE_PHONEDELETE:
 			{	
 				//删除手机白名单
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_PHONEDELETE\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_PHONEDELETE\n"));
 				//message_ASYN(NET_MSGTYPE_PHONEDEL_ACK);
 				Net_MsgRecv_handle(msg,RT_NULL);
 				break;
@@ -2356,21 +2363,21 @@ static void net_recv_message(net_msgmail_p mail)
 			case NET_MSGTYPE_ALARMARG:
 			{
 				//报警参数设置
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_ALARMARG\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_ALARMARG\n"));
 				message_ASYN(NET_MSGTYPE_ALARMARG_ACK);
 				break;
 			}
 			case NET_MSGTYPE_LINK:
 			{
 				//终端休眠
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_LINK\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_LINK\n"));
 				message_ASYN(NET_MSGTYPE_LINK_ACK);
 				break;
 			}
 			case NET_MSGTYPE_KEYADD:
 			{
 				//钥匙添加
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_KEYADD\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_KEYADD\n"));
 				Net_MsgRecv_handle(msg,RT_NULL);
 				//message_ASYN(NET_MSGTYPE_KEYADD_ACK);
 				break;
@@ -2378,7 +2385,7 @@ static void net_recv_message(net_msgmail_p mail)
 			case NET_MSGTYPE_KEYDELETE:
 			{
 				//钥匙删除
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_KEYDELETE\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_KEYDELETE\n"));
 				Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 				//message_ASYN(NET_MSGTYPE_KEYDEL_ACK);
@@ -2386,123 +2393,123 @@ static void net_recv_message(net_msgmail_p mail)
 			case NET_MSGTYPE_ACCOUNTADD:
 			{
 				//账户添加
-        RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_ACCOUNTADD\n"));
+        rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_ACCOUNTADD\n"));
         Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}	
 			case NET_MSGTYPE_ACCOUNTADD_ACK:
 			{
 				//账户添加应答
-        RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_ACCOUNTADD_ACK\n"));
+        rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_ACCOUNTADD_ACK\n"));
         Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}	
 			case NET_MSGTYPE_ACCOUNTDEL:
 			{
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_ACCOUNTDEL\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_ACCOUNTDEL\n"));
         Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
 			case NET_MSGTYPE_ACCOUNTDEL_ACK:
 			{
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_ACCOUNTDEL_ACK\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_ACCOUNTDEL_ACK\n"));
         Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
 			case NET_MSGTYPE_KEYBIND:
 			{
 				//钥匙绑定
-        RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_KEYBIND\n"));
+        rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_KEYBIND\n"));
         Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}	
 			case NET_MSGTYPE_KEYBIND_ACK:
 			{
 				//钥匙绑定应答
-        RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_KEYBIND_ACK\n"));
+        rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_KEYBIND_ACK\n"));
         Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}	
 			case NET_MSGTYPE_PHONEBIND:
 			{
 				//手机绑定
-        RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_PHONEBIND\n"));
+        rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_PHONEBIND\n"));
         Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}	
 			case NET_MSGTYPE_PHONEBIND_ACK:
 			{
 				//电话绑定应答
-        RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_PHONEBIND_ACK\n"));
+        rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_PHONEBIND_ACK\n"));
         Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}	
 			case NET_MSGTYPE_ACCMAPADD_ACK:
 			{
 				//账户映射域应答
-        RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_ACCMAPADD_ACK\n"));
+        rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_ACCMAPADD_ACK\n"));
         Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
 			case NET_MSGTYPE_ACCDATCKS_ACK:
 			{
 				//账户数据校验应答
-        RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_ACCDATCKS_ACK\n"));
+        rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_ACCDATCKS_ACK\n"));
         Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
 			case NET_MSGTYPE_KEYMAPADD_ACK:
 			{
 				//钥匙映射域应答
-        RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_KEYMAPADD_ACK\n"));
+        rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_KEYMAPADD_ACK\n"));
         Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
 			case NET_MSGTYPE_KEYDATCKS_ACK:
 			{
 				//钥匙数据校验应答
-        RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_KEYDATCKS_ACK\n"));
+        rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_KEYDATCKS_ACK\n"));
         Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
 			case NET_MSGTYPE_PHMAPADD_ACK:
 			{
 				//手机映射域应答
-        RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_PHMAPADD_ACK\n"));
+        rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_PHMAPADD_ACK\n"));
         Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
 			case NET_MSGTYPE_PHDATCKS_ACK:
 			{
 				//手机数据校验应答
-        RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_PHDATCKS_ACK\n"));
+        rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_PHDATCKS_ACK\n"));
         Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
 			case NET_MSGTYPE_RECMAPADD_ACK:
 			{
 				//记录映射域应答
-        RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_RECMAPADD_ACK\n"));
+        rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_RECMAPADD_ACK\n"));
         Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
 			case NET_MSGTYPE_RECDATCKS_ACK:
 			{
 				//记录数据校验应答
-        RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_RECDATCKS_ACK\n"));
+        rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_RECDATCKS_ACK\n"));
         Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
 			case NET_MSGTYPE_DATA_SYNC:
 			{
 				//数据同步
-        RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("NET_MSGTYPE_DATA_SYNC\n"));
+        rt_dprintf(SHOW_RECV_GSM_RST,("NET_MSGTYPE_DATA_SYNC\n"));
         Net_MsgRecv_handle(msg,RT_NULL);
 				break;
 			}
 			default:
 			{
-				RT_DEBUG_LOG(SHOW_RECV_GSM_RST,("Receive None identify the message!!!\n\n"));
+				rt_dprintf(SHOW_RECV_GSM_RST,("Receive None identify the message!!!\n\n"));
 				break;
 			}
 		}
@@ -2535,7 +2542,7 @@ rt_uint8_t net_wnd_resend_mail(rt_int8_t pos)
 	}
   if(sendwnd_node[pos].curtime >= sendwnd_node[pos].mail.outtime)
 	{
-		RT_DEBUG_LOG(SHOW_WND_INFO,("Window Mail %d Out Time\n",pos));
+		rt_dprintf(SHOW_WND_INFO,("Window Mail %d Out Time\n",pos));
 		sendwnd_node[pos].curtime = 0;
 		sendwnd_node[pos].mail.col.bit.resend++;
 		if(sendwnd_node[pos].mail.col.bit.resend < sendwnd_node[pos].mail.resend)
@@ -2580,7 +2587,7 @@ static void net_wnd_timer_process(void)
 		if(result == 2)
 		{
 			net_event_process(0,NET_ENVET_LOGINFAIL);
-			RT_DEBUG_LOG(SHOW_WND_INFO,("Try Connection Again Server\n"));
+			rt_dprintf(SHOW_WND_INFO,("Try Connection Again Server\n"));
 		}
 
 		return;
@@ -2639,7 +2646,7 @@ void netmsg_thread_entry(void *arg)
     {
     	HearTime =  0;
     	
-      RT_DEBUG_LOG(SHOW_MSG_THREAD,("MSG Thread recv net_msgmail mail\n"));
+      rt_dprintf(SHOW_MSG_THREAD,("MSG Thread recv net_msgmail mail\n"));
 
       net_send_message(&msg_mail,RT_NULL);//发送数据
       if(msg_mail.sendmode == SYNC_MODE)
@@ -2659,7 +2666,7 @@ void netmsg_thread_entry(void *arg)
 			//如果已经登陆
 			if(net_event_process(1,NET_ENVET_ONLINE) == 0)
 			{
-				RT_DEBUG_LOG(SHOW_SEND_MSG_INFO,("send heart\n"));
+				rt_dprintf(SHOW_SEND_MSG_INFO,("send heart\n"));
 				if(Net_Mail_Heart != RT_NULL)
 				{
 					Net_Mail_Heart();

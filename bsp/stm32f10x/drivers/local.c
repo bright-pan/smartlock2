@@ -29,8 +29,17 @@
 #include "PVDProcess.h"
 #include "eeprom_process.h"
 
+#ifdef   USEING_CAN_SET_DEBUG
+#include "untils.h" //主要使用里面的 rt_dprintf
+#endif
 
-#define LOCAL_DEBUG 1
+#ifndef USEING_CAN_SET_DEBUG
+#define rt_dprintf    RT_DEBUG_LOG
+#endif
+
+
+#define LOCAL_DEBUG_THREAD 											16
+#define LOCAL_DEBUG_MAIL                        17
 
 #define MOTOR_WORK_CUT													180					//电机转动次数
 
@@ -347,7 +356,7 @@ local_thread_entry(void *parameter)
 		{
 			// process mail
             
-     	RT_DEBUG_LOG(LOCAL_DEBUG,("receive local mail < time: %d alarm_type: %s >\n",\
+     	rt_dprintf(LOCAL_DEBUG_MAIL,("receive local mail < time: %d alarm_type: %s >\n",\
                             local_mail_buf.time, alarm_help_map[local_mail_buf.alarm_type]));
 			switch (local_mail_buf.alarm_type)
 			{
@@ -371,7 +380,7 @@ local_thread_entry(void *parameter)
 	        }
 	        else
 	        {
-						RT_DEBUG_LOG(LOCAL_DEBUG,("This is phone error %s\n",local_mail_buf.data.ring.phone_call));
+						rt_dprintf(LOCAL_DEBUG_THREAD,("This is phone error %s\n",local_mail_buf.data.ring.phone_call));
 	        }
                     send_gsm_ctrl_mail(GSM_CTRL_PHONE_CALL_HANG_UP,RT_NULL,0,1);
                     gsm_ring_request_exit();
@@ -482,7 +491,7 @@ local_thread_entry(void *parameter)
         }
 				default :
         {
-            RT_DEBUG_LOG(LOCAL_DEBUG,("this alarm is not process...\n"));
+            rt_dprintf(LOCAL_DEBUG_THREAD,("this alarm is not process...\n"));
             break;
         };
 			}
@@ -615,10 +624,10 @@ send_local_mail(ALARM_TYPEDEF alarm_type, time_t time, union alarm_data *data)
 	if (local_mq != NULL) {
 		result = rt_mq_send(local_mq, &mail, sizeof(LOCAL_MAIL_TYPEDEF));
 		if (result == -RT_EFULL) {
-            RT_DEBUG_LOG(LOCAL_DEBUG,("local_mq is full!!!\n"));
+            rt_dprintf(LOCAL_DEBUG_THREAD,("local_mq is full!!!\n"));
 		}
 	} else {
-            RT_DEBUG_LOG(LOCAL_DEBUG,("local_mq is RT_NULL!!!\n"));
+            rt_dprintf(LOCAL_DEBUG_THREAD,("local_mq is RT_NULL!!!\n"));
 	}
 }
 

@@ -23,6 +23,8 @@
 
 rt_device_t rtc_device;
 
+MapByteDef_p SystemPrintMap = RT_NULL;
+
 /**
   * @brief  创建一个映射域
   * @param  BitMaxNum 最大映射数量
@@ -72,7 +74,7 @@ void map_byte_delete(MapByteDef_p map)
   * @param  data RT_TRUE设置该位为1，RT_FALSE设置该位置为0
   * @retval none
   */
-void map_byte_set_bit(MapByteDef_p Map,rt_size_t Bit,rt_bool_t data)
+void map_byte_bit_set(MapByteDef_p Map,rt_size_t Bit,rt_bool_t data)
 {
 	rt_size_t BytePos;
 	rt_uint8_t BitPos;
@@ -110,7 +112,7 @@ rt_bool_t map_byte_bit_get(MapByteDef_p Map,rt_size_t Bit)
 	if(Bit >= Map->BitMaxNum)
 	{
 	  rt_kprintf("bit max is %d\n",Map->BitMaxNum);
-	  return ;
+	  return RT_FALSE;
 	}
 	BytePos = Bit / 8;
 	BitPos = Bit % 8;
@@ -235,6 +237,25 @@ device_enable(const char *name)
 }
 
 
+#ifdef USEING_CAN_SET_DEBUG
+//创建系统打印映射域
+int system_printf_map_byte(void)
+{
+	SystemPrintMap = map_byte_create(32);
+
+	rt_kprintf("sizeof(MapByteDef_p) = %d\n",sizeof(*SystemPrintMap));
+	RT_ASSERT(SystemPrintMap != RT_NULL);
+
+	return 0;
+}
+INIT_APP_EXPORT(system_printf_map_byte);
+
+rt_bool_t debug_check(rt_uint32_t flag)
+{
+	return map_byte_bit_get(SystemPrintMap,flag);
+}
+#endif
+
 
 #ifdef RT_USING_FINSH
 #include <finsh.h>
@@ -314,12 +335,12 @@ void MapBitOp(rt_uint8_t cmd,rt_size_t data)
 		}
 		case 1:
 		{
-			map_byte_set_bit(maptest,data,RT_FALSE);
+			map_byte_bit_set(maptest,data,RT_FALSE);
 			break;
 		}		
 		case 2:
 		{
-			map_byte_set_bit(maptest,data,RT_TRUE);
+			map_byte_bit_set(maptest,data,RT_TRUE);
 			break;
 		}
 		case 3:
@@ -385,4 +406,93 @@ void MapBitOp(rt_uint8_t cmd,rt_size_t data)
 }
 FINSH_FUNCTION_EXPORT(MapBitOp,(cmd data) test map bype);
 
+
+#ifdef USEING_CAN_SET_DEBUG
+void sys_printf(rt_uint8_t cmd,rt_uint8_t data)
+{
+	switch(cmd)
+	{
+		case 0:
+		{
+			rt_kprintf("--help\n");
+			rt_kprintf("cmd:1 Set Printf Debug Type\n");
+			rt_kprintf("cmd:2 Clear Printf Debug Type\n");
+			rt_kprintf("cmd:3 Set 0~data Printf output");
+			rt_kprintf("cmd:4 Set 0~data Printf close");
+			
+			rt_kprintf("data:0  USEING_GPRS_DEBUG\n");
+			rt_kprintf("data:1  SHOW_MSG_THREAD\n");
+			rt_kprintf("data:2  SHOW_RECV_GSM_RST\n");
+			rt_kprintf("data:3  SHOW_RECV_MSG_INFO\n");
+			rt_kprintf("data:4  SHOW_SEND_MSG_INFO\n");
+			rt_kprintf("data:5  SHOW_LENMAP_INFO\n");
+			rt_kprintf("data:6  SHOW_SEND_MODE_INFO\n");
+			rt_kprintf("data:7  SHOW_MEM_INFO\n");
+			rt_kprintf("data:8  SHOW_WND_INFO\n");
+			rt_kprintf("data:9  SHOW_SET_MSG_INOF\n");
+			rt_kprintf("data:10 SHOW_RECV_MAIL_ADDR\n");
+			rt_kprintf("data:11 SHOW_NONE_ENC_DATA\n");
+			rt_kprintf("data:12 SHOW_NFILE_CRC32\n");
+			rt_kprintf("data:13 SHOW_NFILE_SEND\n");
+			rt_kprintf("data:14 SHOW_NFILE_SRESULT\n");
+			rt_kprintf("data:15 SHOW_CRC16_INIF\n");
+			rt_kprintf("data:16 LOCAL_DEBUG_THREAD\n");
+			rt_kprintf("data:17 LOCAL_DEBUG_MAIL\n");
+			rt_kprintf("data:18 BT_DEBUG_THREAD\n");
+			rt_kprintf("data:19 BT_DEBUG_RCVDAT\n");
+			rt_kprintf("data:20 BT_DEBUG_SENDDAT\n");
+			rt_kprintf("data:21 NETPY_DEBUG_THREAD\n");
+			rt_kprintf("data:22 NETMAILCLASS_DEBUG\n");
+			break;
+		}
+		case 1:
+		{
+			//设置
+			map_byte_bit_set(SystemPrintMap,data,RT_TRUE);
+			break;
+		}
+		case 2:
+		{
+			//清除
+			map_byte_bit_set(SystemPrintMap,data,RT_FALSE);
+			break;
+		}
+		case 3:
+		{
+			//设置0到data调试信息输出
+			rt_uint8_t i;
+
+			for(i = 0;i < data;i++)
+			{
+				map_byte_bit_set(SystemPrintMap,i,RT_TRUE);
+			}
+			rt_kprintf("Set 0~%d Printf output\n",data);
+			break;
+		}
+		case 4:
+		{
+			//设置0到data的调试信息关闭
+			rt_uint8_t i;
+
+			for(i = 0;i < data;i++)
+			{
+				map_byte_bit_set(SystemPrintMap,i,RT_FALSE);
+			}
+			rt_kprintf("Set 0~%d  Printf close\n",data);
+			break;
+		}
+		case 5:
+		{
+			//显示所有已经设置的调试选项
+			break;
+		}
+		default:
+		{
+			break;
+		}
+	}
+}
+FINSH_FUNCTION_EXPORT(sys_printf,(cmd data) system debug printf );
+
+#endif
 #endif

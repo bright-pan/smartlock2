@@ -3,12 +3,24 @@
 #include "rtdevice.h"
 #include "netprotocol.h"
 
+#ifdef   USEING_CAN_SET_DEBUG
+#include "untils.h" //主要使用里面的 rt_dprintf
+#endif
+
+#ifndef USEING_CAN_SET_DEBUG
+#define rt_dprintf    RT_DEBUG_LOG
+#endif
+
+#define BT_DEBUG_THREAD       18//蓝牙线程调试信息
+#define BT_DEBUG_RCVDAT       19
+#define BT_DEBUG_SENDDAT      20
+
 #ifndef BTM_THREAD_PRIORITY
 #define BTM_THREAD_PRIORITY   			RT_THREAD_PRIORITY_MAX/2+2
 #endif
 //#define USEING_BT_C_CONN      //使用蓝牙主动连接
 #define RT_DRIVE_NAME         "Blooth"
-#define RT_USEING_DEBUG				1
+//#define RT_USEING_DEBUG				1
 #define BT_USEING_UARTX_NAME	"uart1"
 #define BT_USEING_WK_NAME			"BT_WK"
 #define BT_USEING_LED_NAME		"BT_LED"
@@ -129,7 +141,7 @@ static void device_init_processor(rt_device_t *dev,const char *dev_name)
 	}
 	if(!((*dev)->open_flag & RT_DEVICE_OFLAG_OPEN))
 	{
-	  rt_kprintf("open %s device\n",(*dev)->parent.name);
+	  rt_dprintf(RT_DEBUG_THREAD,("open %s device\n",(*dev)->parent.name));
 	  rt_device_open((*dev),RT_DEVICE_OFLAG_RDWR);
 	}
 }
@@ -188,17 +200,17 @@ static rt_err_t bt_uart_read_ack(rt_device_t uart
 			rt_thread_delay(1);
 		}
 	}
-	RT_DEBUG_LOG(RT_USEING_DEBUG,("UART>>>%s",uart_buffer));
+	rt_dprintf(BT_DEBUG_THREAD,("UART>>>%s",uart_buffer));
 	if((outtime_t-start_t) >= outtime)
 	{
-		RT_DEBUG_LOG(RT_USEING_DEBUG,("\nUART BUF :%s\n",uart_buffer));
+		rt_dprintf(BT_DEBUG_THREAD,("\nUART BUF :%s\n",uart_buffer));
 		result = RT_ETIMEOUT;
 	}
 	else if((at_ack[0] == '\r')
 					&& (at_ack[1] == '\n')
 					|| (at_ack[0] == 0))
 	{
-		RT_DEBUG_LOG(RT_USEING_DEBUG,("AT Result EOK\n"));
+		rt_dprintf(BT_DEBUG_THREAD,("AT Result EOK\n"));
 		result = RT_EOK;
 		if(rcv_buf != RT_NULL)
 		{
@@ -209,7 +221,7 @@ static rt_err_t bt_uart_read_ack(rt_device_t uart
 	{
 		if(rt_strstr((const char *)uart_buffer,(const char *)at_ack) != RT_NULL)
 		{
-			RT_DEBUG_LOG(RT_USEING_DEBUG,("AT Result Ack EOK\n"));
+			rt_dprintf(BT_DEBUG_THREAD,("AT Result Ack EOK\n"));
       result = RT_EOK;
       if(rcv_buf != RT_NULL)
       {
@@ -218,7 +230,7 @@ static rt_err_t bt_uart_read_ack(rt_device_t uart
 		}
 		else
 		{
-			RT_DEBUG_LOG(RT_USEING_DEBUG,("AT Result ERROR\n"));
+			rt_dprintf(BT_DEBUG_THREAD,("AT Result ERROR\n"));
 			result = RT_ERROR;
 		}
 	}
@@ -256,15 +268,15 @@ static rt_err_t bt_at_cmd_analysis(rt_device_t uart
 	  {
 	    rt_device_write(uart,0,(const void *)at_cmd,rt_strlen((const void *)at_cmd));
 	    result = bt_uart_read_ack(uart,rcv_ack,rcv_buf,outtime);
-	    RT_DEBUG_LOG(RT_USEING_DEBUG,("Send: %s ok_recv: %s",at_cmd,rcv_ack));
+	    rt_dprintf(BT_DEBUG_THREAD,("Send: %s ok_recv: %s",at_cmd,rcv_ack));
 	  }
 	  else
 	  {
 	    result = bt_uart_read_ack(uart,rcv_ack,rcv_buf,outtime);    
-	    RT_DEBUG_LOG(RT_USEING_DEBUG,("recv: %s",rcv_buf));
+	    rt_dprintf(BT_DEBUG_THREAD,("recv: %s",rcv_buf));
 	  }
 
-	  RT_DEBUG_LOG(RT_USEING_DEBUG,("result %x\n",result));
+	  rt_dprintf(BT_DEBUG_THREAD,("result %x\n",result));
 	  if(result == RT_EOK)
 		{
 				break;
@@ -340,7 +352,7 @@ static rt_err_t bluetooth_module_reset(bluetooth_module_p module)
 {
 	rt_uint8_t gpio_status;
 	
-	rt_kprintf("Bluetooth Moudlue Reset\n");
+	RT_DEBUG_LOG(RT_DEBUG_THREAD,("Bluetooth Moudlue Reset\n"));
 	gpio_status = 0;
 	rt_device_write(module->rst_dev,0,&gpio_status,1);
 	rt_thread_delay(10);
@@ -438,18 +450,18 @@ static void bluetooth_uart_read_data(bluetooth_module_p module)
 		rt_ringbuffer_put(&bt_ringbuf_rcv,data_buf,read_len);
 		module->sleep_cnt = 0;
 
-		if(RT_USEING_DEBUG == 1)
+		if(BT_DEBUG_RCVDAT)
 		{
 			rt_size_t  i;
   		rt_uint8_t *buf_p;
 
   		buf_p = data_buf;
-			rt_kprintf("\nBluetooth received data:\n");
+			rt_dprintf(BT_DEBUG_RCVDAT,("\nBluetooth received data:\n"));
 			for(i=0;i<read_len;i++)
 			{
-				rt_kprintf("%02X",*(buf_p+i));
+				rt_dprintf(BT_DEBUG_RCVDAT,("%02X",*(buf_p+i)));
 			}
-			rt_kprintf("\n");
+			rt_dprintf(BT_DEBUG_RCVDAT,("\n"));
 		}
 	}
 	rt_free(data_buf);
@@ -697,7 +709,7 @@ rt_size_t bluetooth_module_wirte(rt_uint8_t *buf,rt_size_t size)
 	rt_uint8_t      *bufp = buf;
 	rt_size_t       send_num = 0;
 
-	RT_DEBUG_LOG(RT_USEING_DEBUG,("bluetooth_module_wirte:\n",i));
+	rt_dprintf(BT_DEBUG_SENDDAT,("bluetooth_module_wirte:\n",i));
 	tx_mq.tx_end = rt_mb_create("bt_tx",1,RT_IPC_FLAG_FIFO);
 	RT_ASSERT(tx_mq.tx_end != RT_NULL);
 	RT_ASSERT(BloothRequest_mq != RT_NULL);
@@ -717,7 +729,7 @@ rt_size_t bluetooth_module_wirte(rt_uint8_t *buf,rt_size_t size)
 		return 0;
 	}
 
-	RT_DEBUG_LOG(RT_USEING_DEBUG,("Blooth write Data:\n>>>>>>\n",i));
+	rt_dprintf(BT_DEBUG_SENDDAT,("Blooth write Data:\n>>>>>>\n",i));
 	page = size / BT_DATA_PAGE_SIZE;
 	send_num = 0;
 	for(i=0; i<page; i++)
@@ -733,7 +745,7 @@ rt_size_t bluetooth_module_wirte(rt_uint8_t *buf,rt_size_t size)
 	//result = rt_mq_send(BloothRequest_mq,&tx_mq,sizeof(bluetooth_tx_mq));
 
 	
-	RT_DEBUG_LOG(RT_USEING_DEBUG,("%s send_num:%d Send Data end!!!\n",uart->parent.name,send_num));
+	rt_dprintf(BT_DEBUG_SENDDAT,("%s send_num:%d Send Data end!!!\n",uart->parent.name,send_num));
 	rt_mb_delete(tx_mq.tx_end);
 	
 	return send_num;
@@ -750,7 +762,7 @@ rt_size_t bluetooth_module_read(rt_uint8_t *buf,rt_size_t size)
 void bluetooth_thread_entry(void *arg)
 {
 	bluetooth_module_p bluetooth;
-	rt_kprintf("bluetooth thread statrt\n");
+	rt_dprintf(BT_DEBUG_THREAD,("bluetooth thread statrt\n"));
 
 	bt_module_create(&bluetooth);
 	while(1)

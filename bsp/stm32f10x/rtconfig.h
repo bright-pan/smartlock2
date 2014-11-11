@@ -192,5 +192,6 @@
 // #define RT_USING_BSP_CMSIS
 
 #define USEING_BUZZER_FUN
+//#define USEING_CAN_SET_DEBUG 
 
 #endif
