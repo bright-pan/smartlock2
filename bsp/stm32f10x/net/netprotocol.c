@@ -13,6 +13,8 @@
 #define SEND_OK            0
 #define SEND_FAIL          1
 
+#define HEAR_SEND_TIME     10                  //心跳发送时间 10s
+
 rt_mq_t 				net_msgmail_mq = RT_NULL;     //报文邮件
 rt_mq_t 				net_datsend_mq = RT_NULL;     //协议层发送给物理网络层
 rt_mailbox_t 		net_datrecv_mb = RT_NULL;			//接收邮箱
@@ -1555,7 +1557,10 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
   return RT_EOK;
 }
 
-static void clear_wnd_resend_all(void)
+/*
+	清除窗口中所有已经发送完报文的重发标志
+*/
+static void clear_wnd_resend_flag_all(void)
 {
 	rt_uint8_t i;
 
@@ -1566,8 +1571,6 @@ static void clear_wnd_resend_all(void)
       sendwnd_node[i].mail.col.bit.resend = 0;
 		}
 	}
-
-
 }
 /*static void net_mail_result_process(void)
 {
@@ -1635,6 +1638,19 @@ static void clear_wnd_mail_pos(rt_int8_t pos,rt_int8_t result)
 		sendwnd_node[pos].mail.time = 0;
 		sendwnd_node[pos].mail.type = NET_MSGTYPE_NULL;
 		sendwnd_node[pos].mail.resend = 3;
+	}
+}
+
+/*
+  清除窗口中所有邮件的数据
+*/
+void clear_wnd_mail_data_all(void)
+{
+	rt_uint8_t i;
+
+	for(i = 0 ; i < NET_WND_MAX_NUM;i++)
+	{
+		clear_wnd_mail_pos(i,SEND_FAIL);
 	}
 }
 
@@ -1796,6 +1812,9 @@ static rt_err_t sendwnd_add_new_mail(net_msgmail_p msg)
       clear_wnd_mail_pos(NET_WND_MAX_NUM,SEND_FAIL);
     }
     rt_kprintf("\n\nNet window is Full!!!!!\n\n\n");
+
+		//清除所有窗口中数据
+    clear_wnd_mail_data_all();
     result = RT_ERROR;
   }
 
@@ -2491,7 +2510,7 @@ static void net_recv_message(net_msgmail_p mail)
 		{
       /* 接收时对窗口的处理 */
       net_recv_wnd_process(msg,SendResult);
-      clear_wnd_resend_all();
+      clear_wnd_resend_flag_all();
 		}
 		rt_free(msg);
 		rt_timer_start(sendwnd_timer);
@@ -2634,7 +2653,7 @@ void netmsg_thread_entry(void *arg)
     //发送心跳
     HearTime++;
     //rt_kprintf("HearTime = %d\n",HearTime);
-    if(HearTime >= RT_TICK_PER_SECOND*30)
+    if(HearTime >= RT_TICK_PER_SECOND*HEAR_SEND_TIME)
     {
 			HearTime = 0;
 			//如果已经登陆

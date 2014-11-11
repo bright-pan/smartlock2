@@ -141,7 +141,7 @@ void netprotocol_thread_entry(void *arg)
 
 				//清除所有登陆报文
 				//clear_wnd_cmd_all(NET_MSGTYPE_LANDED);
-				rt_thread_delay(RT_TICK_PER_SECOND*3);
+				//rt_thread_delay(RT_TICK_PER_SECOND*3);
         send_net_landed_mail();
         RT_ASSERT(recv_data != RT_NULL);
 				rt_free(recv_data);

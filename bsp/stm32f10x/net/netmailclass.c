@@ -134,7 +134,7 @@ void net_mail_heart(void)
   mail->time = 0;
   mail->type = NET_MSGTYPE_HEART;
   mail->resend = 3;
-  mail->outtime = 500;
+  mail->outtime = MAIL_FAULT_OUTTIME; 
   mail->sendmode = ASYN_MODE;//Òì²½
   mail->col.byte = get_msg_new_order(RT_TRUE);
 
