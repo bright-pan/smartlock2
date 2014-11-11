@@ -22,8 +22,23 @@
 
 #define bits_mask(x) (1<<(x))
 
-time_t
+//映射字节数据定义
+typedef struct 
+{
+	rt_uint8_t *data;  			//映射域数据
+	rt_size_t  ByteSize;   	//数组大小
+	rt_size_t  BitMaxNum; 	//位数的最大值
+}MapByteDef,*MapByteDef_p;
 
+MapByteDef_p map_byte_create(rt_size_t BitMaxNum);
+
+void map_byte_delete(MapByteDef_p map);
+
+void map_byte_set_bit(MapByteDef_p Map,rt_size_t Bit,rt_bool_t data);
+
+rt_bool_t map_byte_bit_get(MapByteDef_p Map,rt_size_t Bit);
+
+time_t
 sys_cur_date(void);
 
 void
