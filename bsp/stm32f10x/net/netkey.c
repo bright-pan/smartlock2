@@ -114,9 +114,11 @@ rt_err_t net_key_add_process(net_recvmsg_p mail)
     rt_memcpy((void *)keydat->data.kboard.code,(const void *)remote->data,6);
     RT_DEBUG_LOG(SHOW_NETKEY_INFO,("keydat->data.kboard       = %s\n",keydat->data.kboard.code));
 	}
-	else if(keydat->head.key_type == KEY_TYPE_KBOARD)
+	else if(keydat->head.key_type == KEY_TYPE_RFID)
 	{
-		rt_memcpy((void *)keydat->data.rfid.code,(const void *)remote->data,6);
+		//由于RF433没有对应的报文这里做了一个不合理的处理
+		keydat->head.key_type = KEY_TYPE_RF433;
+		rt_memcpy((void *)keydat->data.rfid.code,(const void *)remote->data,4);
     RT_DEBUG_LOG(SHOW_NETKEY_INFO,("keydat->data.rfid         = %s\n",keydat->data.rfid.code));
 	}
 	else if(keydat->head.key_type == KEY_TYPE_FPRINT)
@@ -124,7 +126,12 @@ rt_err_t net_key_add_process(net_recvmsg_p mail)
     rt_memcpy((void *)keydat->data.fprint.code,(const void *)remote->data,512);
     RT_DEBUG_LOG(SHOW_NETKEY_INFO,("Fprintf type\n"));
 	}
-	else
+	else if(keydat->head.key_type == KEY_TYPE_RF433)
+	{
+    rt_memcpy((void *)keydat->data.rf433.code,(const void *)remote->data,4);
+    RT_DEBUG_LOG(SHOW_NETKEY_INFO,("keydat->data.rf433         = %s\n",keydat->data.rf433.code));
+	}
+	else 
 	{
     RT_DEBUG_LOG(SHOW_NETKEY_INFO,("error type key!!!\n\n"));
 	}
