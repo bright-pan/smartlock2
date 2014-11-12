@@ -8,6 +8,17 @@
 #include "gprsmailclass.h"
 #include "local.h"
 #include "FprintHandle.h"
+#ifdef   USEING_CAN_SET_DEBUG
+#include "untils.h" //主要使用里面的 rt_dprintf
+#endif
+
+#ifndef USEING_CAN_SET_DEBUG
+#define rt_dprintf    RT_DEBUG_LOG
+#endif
+
+
+#define MENU_DEBUG_THREAD        23//菜单线程调试信息
+#define MENU_DEBUG_KEY           24//按键调试信息打印
 
 #define MENU_SURE_VALUE					 '#'
 #define MENU_DEL_VALUE           '*'

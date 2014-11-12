@@ -186,7 +186,6 @@ rt_err_t unlock_process_ui(void)
 	      }
 	      else if(KeyValue == MENU_DEL_VALUE)
 	      {
-	        rt_kprintf("É¾³ý\nn");
 	        result = string_del_char(buf,8);
 	        if(result == RT_EOK)
 	        {

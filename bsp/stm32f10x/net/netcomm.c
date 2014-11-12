@@ -130,7 +130,7 @@ rt_uint32_t net_get_date(void)
       rt_device_control(device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
   }
 
-	rt_kprintf("System Time: %s",ctime((const time_t *)&time));
+	//rt_kprintf("System Time: %s",ctime((const time_t *)&time));
   return time;
 }
 

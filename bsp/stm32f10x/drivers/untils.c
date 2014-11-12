@@ -19,7 +19,7 @@
 #include <time.h>
 #include "gpio.h"
 #include "gpio_pin.h"
-#define CONFIG_DEBUG 1
+#define CONFIG_DEBUG 0
 
 rt_device_t rtc_device;
 
@@ -406,6 +406,36 @@ void MapBitOp(rt_uint8_t cmd,rt_size_t data)
 }
 FINSH_FUNCTION_EXPORT(MapBitOp,(cmd data) test map bype);
 
+#define SYS_PRINTF_TEXT_MAXLEN  50
+static const char SysPintfText[][SYS_PRINTF_TEXT_MAXLEN] = 
+{
+  "USEING_GPRS_DEBUG",
+	"SHOW_MSG_THREAD",
+	"SHOW_RECV_GSM_RST",
+	"SHOW_RECV_MSG_INFO",
+	"SHOW_SEND_MSG_INFO",
+	"SHOW_LENMAP_INFO",
+	"SHOW_SEND_MODE_INFO",
+	"SHOW_MEM_INFO",
+	"SHOW_WND_INFO",
+	"SHOW_SET_MSG_INOF",
+	"SHOW_RECV_MAIL_ADDR",
+	"SHOW_NONE_ENC_DATA",
+	"SHOW_NFILE_CRC32",
+	"SHOW_NFILE_SEND",
+	"SHOW_NFILE_SRESULT",
+	"SHOW_CRC16_INIF",
+	"LOCAL_DEBUG_THREAD",
+	"LOCAL_DEBUG_MAIL",
+	"BT_DEBUG_THREAD",
+	"BT_DEBUG_RCVDAT",
+	"BT_DEBUG_SENDDAT",
+	"NETPY_DEBUG_THREAD",
+	"NETMAILCLASS_DEBUG",
+	"MENU_DEBUG_THREAD",
+	"MENU_DEBUG_THREAD",
+	"EEPROM_DEBUG_THREAD",
+};
 
 #ifdef USEING_CAN_SET_DEBUG
 void sys_printf(rt_uint8_t cmd,rt_uint8_t data)
@@ -414,35 +444,19 @@ void sys_printf(rt_uint8_t cmd,rt_uint8_t data)
 	{
 		case 0:
 		{
+			rt_uint8_t i;
+			
 			rt_kprintf("--help\n");
 			rt_kprintf("cmd:1 Set Printf Debug Type\n");
 			rt_kprintf("cmd:2 Clear Printf Debug Type\n");
 			rt_kprintf("cmd:3 Set 0~data Printf output");
 			rt_kprintf("cmd:4 Set 0~data Printf close");
-			
-			rt_kprintf("data:0  USEING_GPRS_DEBUG\n");
-			rt_kprintf("data:1  SHOW_MSG_THREAD\n");
-			rt_kprintf("data:2  SHOW_RECV_GSM_RST\n");
-			rt_kprintf("data:3  SHOW_RECV_MSG_INFO\n");
-			rt_kprintf("data:4  SHOW_SEND_MSG_INFO\n");
-			rt_kprintf("data:5  SHOW_LENMAP_INFO\n");
-			rt_kprintf("data:6  SHOW_SEND_MODE_INFO\n");
-			rt_kprintf("data:7  SHOW_MEM_INFO\n");
-			rt_kprintf("data:8  SHOW_WND_INFO\n");
-			rt_kprintf("data:9  SHOW_SET_MSG_INOF\n");
-			rt_kprintf("data:10 SHOW_RECV_MAIL_ADDR\n");
-			rt_kprintf("data:11 SHOW_NONE_ENC_DATA\n");
-			rt_kprintf("data:12 SHOW_NFILE_CRC32\n");
-			rt_kprintf("data:13 SHOW_NFILE_SEND\n");
-			rt_kprintf("data:14 SHOW_NFILE_SRESULT\n");
-			rt_kprintf("data:15 SHOW_CRC16_INIF\n");
-			rt_kprintf("data:16 LOCAL_DEBUG_THREAD\n");
-			rt_kprintf("data:17 LOCAL_DEBUG_MAIL\n");
-			rt_kprintf("data:18 BT_DEBUG_THREAD\n");
-			rt_kprintf("data:19 BT_DEBUG_RCVDAT\n");
-			rt_kprintf("data:20 BT_DEBUG_SENDDAT\n");
-			rt_kprintf("data:21 NETPY_DEBUG_THREAD\n");
-			rt_kprintf("data:22 NETMAILCLASS_DEBUG\n");
+
+			for(i = 0;i<sizeof(SysPintfText)/SYS_PRINTF_TEXT_MAXLEN;i++)
+			{
+        rt_kprintf("data=%02d >> %s\n",i,SysPintfText[i]);
+			}
+
 			break;
 		}
 		case 1:

@@ -64,8 +64,6 @@ void menu_0_processing(void)
 	rt_uint8_t ShowBuf[8];
 	rt_uint8_t GlintStatus = 0;
 
-	rt_kprintf("进入一级1菜单\n");
-
 	while(1)
 	{
     gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
@@ -103,7 +101,7 @@ void menu_0_processing(void)
         }
         else if(KeyValue == MENU_SURE_VALUE)
         {
-          rt_kprintf("核对密码\n");
+          rt_dprintf(MENU_DEBUG_THREAD,("Check Password\n"));
           result =  admin_password_check(buf);
           if(result == RT_EOK)
           {	
@@ -142,7 +140,6 @@ void menu_0_processing(void)
         }
         else if(KeyValue == MENU_DEL_VALUE)
         {
-          rt_kprintf("删除\nn");
           result = string_del_char(buf,8);
           if(result == RT_EOK)
           {
@@ -215,21 +212,17 @@ void menu_first_ui(rt_uint8_t InPOS)
 
 void menu_1_processing(void)
 {
-	rt_kprintf("进入二级1菜单\n");
-	
 	menu_first_ui(0);
 }
 
 
 void menu_2_processing(void)
 {
-	rt_kprintf("进入二级2菜单\n");
 	menu_first_ui(1);
 }
 
 void menu_3_processing(void)
 {
-	rt_kprintf("进入三级1菜单\n");
 	menu_first_ui(2);
 }
 
@@ -269,13 +262,11 @@ void menu1_second_ui(rt_uint8_t InPOS)
 
 void menu_4_processing(void)
 {
-	rt_kprintf("进入三级3菜单\n");
   menu1_second_ui(0);
 }
 
 void menu_5_processing(void)
 {
-	rt_kprintf("进入三级3菜单\n");
 	menu1_second_ui(1);
 }
 
@@ -321,13 +312,11 @@ void menu2_second_ui(rt_uint8_t InPOS)
 
 void menu_6_processing(void)
 {
-	rt_kprintf("进入三级3菜单\n");
 	menu2_second_ui(0);
 }
 
 void menu_7_processing(void)
 {
-	rt_kprintf("进入三级3菜单\n");
 	menu2_second_ui(1);
 }
 

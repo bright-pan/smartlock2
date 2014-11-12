@@ -18,7 +18,17 @@
 
 #include "eeprom_process.h"
 #include <time.h>
-#define USEING_DEBUG_INFO        0       //调试信息
+
+#ifdef   USEING_CAN_SET_DEBUG
+#include "untils.h" //主要使用里面的 rt_dprintf
+#endif
+
+#ifndef USEING_CAN_SET_DEBUG
+#define rt_dprintf    RT_DEBUG_LOG
+#endif
+
+
+#define EEPROM_DEBUG_THREAD        25    //调试信息
 
 #define SYSTEM_TIME_SAVE_ADDR    0       //系统时间保存地址
 #define SYSTEM_TIME_SAVE_SIZE    sizeof(rt_uint32_t) //系统时间保存空间大小
@@ -41,7 +51,7 @@ static rt_uint32_t sys_date_get(void)
       rt_device_control(device, RT_DEVICE_CTRL_RTC_GET_TIME, &time);
   }
 
-	RT_DEBUG_LOG(USEING_DEBUG_INFO,("System Time: %s",ctime((const time_t *)&time)));
+	rt_dprintf(EEPROM_DEBUG_THREAD,("System Time: %s",ctime((const time_t *)&time)));
   return time;
 }
 
@@ -65,7 +75,7 @@ static void sys_date_set(rt_uint32_t date)
     rt_device_close(device);
   }
 
-	RT_DEBUG_LOG(USEING_DEBUG_INFO,("System Time: %s",ctime((const time_t *)&date)));	
+	rt_dprintf(EEPROM_DEBUG_THREAD,("System Time: %s",ctime((const time_t *)&date)));	
 }
 
 /**

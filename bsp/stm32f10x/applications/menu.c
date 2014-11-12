@@ -169,7 +169,7 @@ void system_manage_ui_processing(void)
 	result = gui_key_input(&KeyValue);
 	if (result == RT_EOK) 
 	{	
-		rt_kprintf("recv key value :%c\n",KeyValue);
+		rt_dprintf(MENU_DEBUG_KEY,("Menu key value :%c\n",KeyValue));
 		/*if(KeyValue > '0' && KeyValue < '8')
 		{
 			rt_uint8_t MenuPos;
@@ -422,7 +422,7 @@ void string_hide_string(const rt_uint8_t src[],rt_uint8_t str[],rt_uint8_t ch,rt
 
   rt_memset(str,0,size);
 
-  rt_kprintf("input :%s\n",src);  
+  rt_dprintf(MENU_DEBUG_KEY,("input :%s\n",src));  
 
 	for(i=0;i<rt_strlen((const char*)src);i++)
 	{

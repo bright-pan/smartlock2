@@ -18,7 +18,7 @@
 #include "untils.h"
 #include "voice.h"
 
-#define SHOW_APP_DEBUG_INFO  	1
+#define SHOW_APP_DEBUG_INFO  	0
 
 /** 
 @brief  get new add key pos

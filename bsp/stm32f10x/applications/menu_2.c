@@ -347,7 +347,6 @@ void menu_14_processing(void)
         }
         else if(KeyValue == MENU_DEL_VALUE)
         {
-          rt_kprintf("É¾³ý\nn");
           result = string_del_char(buf,8);
           if(result == RT_EOK)
           {
@@ -452,14 +451,14 @@ void menu_14_processing(void)
 	            {
 								//±£´æÊ§°Ü
 								save = 2;
-								rt_kprintf("save fail\n");
+								rt_kprintf("Password save fail\n");
 	            }
 	          
 	            result = account_cur_add_password(buf1);
 	            if(result != RT_EOK)
 	            {
 								//±£´æÊ§°Ü
-								rt_kprintf("save fail\n");
+								rt_kprintf("Password save fail\n");
 								save = 2;
 	            }
           	}
@@ -474,7 +473,6 @@ void menu_14_processing(void)
         }
         else if(KeyValue == MENU_DEL_VALUE)
         {
-          rt_kprintf("É¾³ý\nn");
           result = string_del_char(buf,8);
           if(result == RT_EOK)
           {
@@ -484,7 +482,7 @@ void menu_14_processing(void)
           }
           else
           {
-          	rt_kprintf("ÍË³öÔ¿³×Ìí¼Ó\n");
+          	rt_dprintf(MENU_DEBUG_THREAD,("Add key is exit\n"));
 						//return ;
           }
         }
@@ -563,7 +561,7 @@ void menu_15_processing(void)
 						gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),MenuCommText[1],GUI_WIHIT);
 						gui_display_update();
 						rt_thread_delay(RT_TICK_PER_SECOND*2);
-						rt_kprintf("fprint add ok\n");
+						rt_dprintf(MENU_DEBUG_THREAD,("Fprint add ok\n"));
 						break;
 					}
 					else
@@ -574,7 +572,7 @@ void menu_15_processing(void)
 						gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),MenuCommText[2],GUI_WIHIT);
 						gui_display_update();
 						rt_thread_delay(RT_TICK_PER_SECOND*2);
-						rt_kprintf("fprint del fail\n");
+						rt_kprintf("Fprint delete fail\n");
 						break;
 					}
 				}
@@ -695,7 +693,6 @@ void menu_16_processing(void)
         }
         else if(KeyValue == MENU_DEL_VALUE)
         {
-          rt_kprintf("É¾³ý\nn");
           result = string_del_char(buf,MENU_PHONE_MAX_LEN);
           if(result == RT_EOK)
           {
@@ -786,7 +783,7 @@ void menu_16_processing(void)
           	}
           	else
           	{
-          		rt_kprintf("save phone %s ...\n",PhoneBuf);
+          		rt_dprintf(MENU_DEBUG_THREAD,("Save phone %s ...\n",PhoneBuf));
               result = user_cur_add_phone(PhoneBuf);
           	}
            	
@@ -807,7 +804,6 @@ void menu_16_processing(void)
         }
         else if(KeyValue == MENU_DEL_VALUE)
         {
-          rt_kprintf("É¾³ý\nn");
           result = string_del_char(buf,MENU_PHONE_MAX_LEN);
           if(result == RT_EOK)
           {
@@ -958,7 +954,7 @@ void menu_19_processing(void)
 }
 rt_err_t search_user_id_check(rt_uint8_t *buf,rt_uint8_t *user)
 {
-	rt_kprintf("buf %s",buf);
+	rt_dprintf(MENU_DEBUG_KEY,("Input ID %s",buf));
 	sscanf((const char*)buf,"%d",user);
 	if(rt_strlen((const char *)buf) == 0)
 	{
@@ -1006,7 +1002,7 @@ static void user_list_processing(void)
   CurPage = 0;
   start_id = 0;
 
-	rt_kprintf("judge = %d\n",start_id);
+	rt_dprintf(MENU_DEBUG_THREAD,("start_id = %d\n",start_id));
 	user_get_info_continuous(UserInfo,&start_id,PAGE_MAX_SHOW_LINE,0);
 	start_id1 = start_id;
 	while(1)
@@ -1084,7 +1080,7 @@ static void user_list_processing(void)
       else if(KeyValue == MENU_SURE_VALUE)
       {
         //È·¶¨
-        rt_kprintf("Choose User:%d\n",CurPage*PAGE_MAX_SHOW_LINE+CurLine);
+        rt_dprintf(MENU_DEBUG_THREAD,("Choose User:%d\n",CurPage*PAGE_MAX_SHOW_LINE+CurLine));
         //ModifyUserPos = CurPage*PAGE_MAX_SHOW_LINE+CurLine;
         account_set_use(CurPage*PAGE_MAX_SHOW_LINE+CurLine);
         menu_run_sure_process();
@@ -1095,7 +1091,7 @@ static void user_list_processing(void)
         //È¡Ïû
       }
 
-      rt_kprintf("CurPage = %d CurLine = %d\n",CurPage,CurLine);
+      rt_dprintf(MENU_DEBUG_THREAD,("Choose Pos CurPage = %d CurLine = %d\n",CurPage,CurLine));
     }
     else
     {
@@ -1201,14 +1197,13 @@ void menu_22_processing(void)
 
 	        account_set_use(UserPos);
 	        menu_run_sure_process();
-	       	rt_kprintf("User Pos=%d\n",UserPos);
+	       	rt_dprintf(MENU_DEBUG_THREAD,("User Pos=%d\n",UserPos));
 	        break;
 	      }
 	      //ÐÂÃÜÂëÊäÈëÍê³É ½øÈëÑéÖ¤¡£
 	    }
 	    else if(KeyValue == MENU_DEL_VALUE)
 	    {
-	      rt_kprintf("É¾³ý\nn");
 	      result = string_del_char(buf,MENU_PHONE_MAX_LEN);
 	      if(result == RT_EOK)
 	      {
@@ -1402,7 +1397,6 @@ static rt_err_t menu_intput_password_two(rt_uint8_t *buf,rt_uint8_t *ShowBuf,rt_
 		  }
 		  else if(KeyValue == MENU_DEL_VALUE)
 		  {
-		    rt_kprintf("É¾³ý\nn");
 		    result = string_del_char(buf,8);
 		    if(result == RT_EOK)
 		    {
@@ -1412,7 +1406,7 @@ static rt_err_t menu_intput_password_two(rt_uint8_t *buf,rt_uint8_t *ShowBuf,rt_
 		    }
 		    else
 		    {
-		      rt_kprintf("ÍË³öÔ¿³×Ìí¼Ó\n");
+		      rt_dprintf(MENU_DEBUG_THREAD,("Add key Exit\n"));
 		      return RT_ETIMEOUT;
 		    }
 		  }
@@ -1487,7 +1481,6 @@ static rt_err_t menu_input_password_one(rt_uint8_t *buf,rt_uint8_t *ShowBuf)
       }
       else if(KeyValue == MENU_DEL_VALUE)
       {
-        rt_kprintf("É¾³ý\nn");
         result = string_del_char(buf,8);
         if(result == RT_EOK)
         {
