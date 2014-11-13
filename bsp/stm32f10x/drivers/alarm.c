@@ -99,7 +99,8 @@ const char *alarm_help_map[] = {
 	"ALARM_TYPE_GPRS_ADD_PHONE",
 	"ALARM_TYPE_SYSTEM_FREEZE",
 	"ALARM_TYPE_SYSTEM_UNFREEZE",
-    "ALARM_TYPE_FPRINT_INFORM",
+  "ALARM_TYPE_FPRINT_INFORM",
+  "ALARM_TYPE_SYSTEM_RESET",
 };
 
 void alarm_thread_entry(void *parameter)
