@@ -32,7 +32,7 @@
 
 //#define DEVICE_NAME_MOTOR_STATUS "mt_stat"
 
-#define DEVICE_NAME_SWITCH1 "sw1"
+#define DEVICE_NAME_SWITCH1 "sysrst"
 #define DEVICE_NAME_SWITCH2 "sw2"
 //#define DEVICE_NAME_SWITCH3 "sw3"
 #define DEVICE_NAME_BREAK "brk"

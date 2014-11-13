@@ -253,6 +253,7 @@ void switch1_exti_timeout(void *parameters)
     if (gpio->ops->intput(gpio) == SWITCH1_STATUS)
     {
         rt_kprintf("it is switch1 detect!\n");
+        send_local_mail(ALARM_TYPE_SYSTEM_RESET,0,RT_NULL);
         gpio_backup();
         /*
         gpio_pin_output(DEVICE_NAME_POWER_FLASH,0,0);
@@ -1133,11 +1134,11 @@ EXTI9_5_IRQHandler(void)
 	/* lock_shell exti isr */
 	if(EXTI_GetITStatus(EXTI_Line7) == SET)
 	{
-		//rt_hw_gpio_isr(&switch1_device);
+				rt_hw_gpio_isr(&switch1_device);
         EXTI_ClearITPendingBit(EXTI_Line7);
-        SystemInit();
-        SystemCoreClockUpdate();
-        gpio_restore();
+        //SystemInit();
+        //SystemCoreClockUpdate();
+        //gpio_restore();
     }
 
 	if(EXTI_GetITStatus(EXTI_Line6) == SET)
@@ -1191,7 +1192,7 @@ EXTI15_10_IRQHandler(void)
 static int 
 rt_hw_gpio_exti_enable(void)
 {
-    //device_enable(DEVICE_NAME_SWITCH1);
+    device_enable(DEVICE_NAME_SWITCH1);
     //device_enable(DEVICE_NAME_SWITCH2);
     //device_enable(DEVICE_NAME_SWITCH3);
     device_enable(DEVICE_NAME_KB_INTR);
@@ -1202,7 +1203,7 @@ rt_hw_gpio_exti_enable(void)
     device_enable(DEVICE_NAME_HALL);
     return 0;
 }
-//INIT_DEVICE_EXPORT(rt_hw_switch1_register);
+INIT_DEVICE_EXPORT(rt_hw_switch1_register);
 //INIT_DEVICE_EXPORT(rt_hw_switch2_register);
 INIT_DEVICE_EXPORT(rt_hw_bt_led_register);
 
