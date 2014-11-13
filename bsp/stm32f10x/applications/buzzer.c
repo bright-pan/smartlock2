@@ -1,5 +1,32 @@
 #include "buzzer.h"
+#include "untils.h"
+#define BUZZER_DEBUG_THREAD     26
 
+
+
+void buzzer_control(rt_uint16_t Ferq,rt_uint16_t pwm,rt_size_t num)
+{
+	rt_device_t dev;
+	rt_uint32_t delay;
+	
+	dev = rt_device_find(DEVICE_NAME_SPEAK);
+	if (dev != RT_NULL)
+  {
+  	if(!(dev->open_flag & RT_DEVICE_OFLAG_OPEN))
+  	{
+      rt_device_open(dev,RT_DEVICE_OFLAG_RDWR);
+  	}
+  }
+  rt_device_control(dev, RT_DEVICE_CTRL_SET_RELOAD_VALUE, (void *)&Ferq);
+  rt_device_control(dev, RT_DEVICE_CTRL_SET_PULSE_VALUE, (void *)&pwm);
+  rt_device_control(dev, RT_DEVICE_CTRL_SET_PULSE_COUNTS, (void *)&num);
+  rt_device_control(dev, RT_DEVICE_CTRL_SEND_PULSE, (void *)0);
+  
+  delay = Ferq*num/10000+1;
+  rt_thread_delay(delay);
+  
+  rt_dprintf(BUZZER_DEBUG_THREAD,("play delay %d\n",delay));
+}
 
 
 //蜂鸣器消息列队
@@ -27,103 +54,77 @@ void buzzer_work(BuzzerType mode)
 	{
 		case BZ_TYPE_KEY:
 		{
-			buzzer_control(15);
+			//按键声音
+			buzzer_control(1000,500,15);
 			break;
 		}
 		case BZ_TYPE2:
 		{
-			rt_uint32_t i;
-			rt_uint32_t j;
-			rt_uint32_t z;
+			buzzer_control(800,600,500);
 			
-			buzzer_control(1000);
-			
-			for(i = 0 ;i < 3;i++)
-			{
-				for(j = 50 ;j < 950;j++)
-				{
-					if(i%2)
-					{
-            buzzer_pwm_set(j);
-					}
-					else
-					{
-            buzzer_pwm_set(1000-j);
-					}
-					rt_kprintf("i = %d\n",i);
-					z = 0xfff;
-          while(z--);
-				}
-			}
-			buzzer_pwm_set(500);
 			break;
 		}
 		case BZ_TYPE_LOCK:
 		{
+			//上锁
 			rt_uint8_t i;
 			
-			for(i = 0 ;i < 5;i++)
+			for(i = 0 ;i < 2;i++)
 			{
-				buzzer_control(80);
-				rt_thread_delay(10-i);
-				buzzer_control(10);
-				rt_thread_delay(9-i);
+				buzzer_control(500,600,500);
+				buzzer_control(800,600,300);
+				//rt_thread_delay(15);
 			}
-			rt_thread_delay(120);
 			break;
 		}
 		case BZ_TYPE_UNLOCK:
 		{
-			buzzer_pwm_set(500);
-			buzzer_control(500);
-			rt_thread_delay(5);
+			//解锁成功
+			buzzer_control(900,450,500);
 			break;
 		}
 		case BZ_TYPE_INIT:
 		{
-			buzzer_pwm_set(600);
-			buzzer_control(900);
-			buzzer_pwm_set(500);
+			//开机提示
+			buzzer_control(800,600,500);
 			break;
 		}
-		case BZ_TYPE_ERROR1:
+		case BZ_TYPE_INPUT_ERROR:
 		{
+			//操作错误
 			rt_uint32_t i;
 			
-			for(i = 0 ;i < 3;i++)
+			/*for(i = 0 ;i < 3;i++)
 			{
-				buzzer_pwm_set(400);
-				buzzer_control(30);
-				rt_thread_delay(10);
-				buzzer_pwm_set(500);
-			}
+				buzzer_control(500,450,100);
+				buzzer_control(600,450,100);
+			}*/
+			buzzer_control(450,200,600);
+			
 			break;
 		}
-		case BZ_TYPE_ERROR3:
+		case BZ_TYPE_KEY_ERROR:
 		{
+			//钥匙错误
 			rt_uint32_t i;
 			
 			for(i = 0 ;i < 20;i++)
 			{
-				buzzer_pwm_set(300+i*10);
-				buzzer_control(50);
-				rt_thread_delay(10);
-				buzzer_pwm_set(600-i*10);
+				buzzer_control(800,500,300);
+				buzzer_control(400,200,200);
 			}
 			break;
 		}
 		case BZ_TYPE_OPOK:
 		{
-			buzzer_pwm_set(400);
-			buzzer_control(500);
-			buzzer_pwm_set(500);
+			//操作成功
+			buzzer_control(1000,500,500);
 			break;
 		}
 		case BZ_TYPE_RF433_STRART:
 		{
-			buzzer_pwm_set(400);
-			buzzer_control(500);
-			buzzer_pwm_set(500);
+			//433启动
+			buzzer_control(1200,600,500);
 			break;
 		}
 		default:
@@ -185,13 +186,43 @@ INIT_APP_EXPORT(buzzer_thread_init);
 
 FINSH_FUNCTION_EXPORT(buzzer_work, buzzer_work[mode]);
 
-void buzzer_ch(rt_uint32_t f,rt_uint32_t t,rt_uint32_t T)
+void buzzer_ch(rt_uint32_t f,rt_uint32_t t,rt_uint16_t T)
 {
-  buzzer_pwm_set(f);
-	buzzer_control(t);
-	rt_thread_delay(T);
+	buzzer_control(f,t,T);
 }
 FINSH_FUNCTION_EXPORT(buzzer_ch, buzzer_change(f t T));
 
+/*
+void budebug(rt_int8_t cmd,rt_size_t f,rt_size_t t,rt_size_t T)
+{
+	typedef struct
+	{
+		rt_uint16_t Ferq;
+		rt_uint16_t Pwm;
+		rt_uint16_t Delay;
+	}BuDebugDef,*BuDebugDef_p;
+	rt_uint32_t i,j;
+	static BuDebugDef_p *arg;
+
+	if(cmd == 0)
+	{
+		arg = rt_calloc(1,f);
+		RT_ASSERT(arg != RT_NULL);
+	}
+
+	arg[cmd][0] = f;
+	arg[cmd][1] = t;
+	arg[cmd][2] = T;
+	
+	for(i = 0 ;i < 20;i++)
+	{
+		for(j = 0;j<sizeof(arg))
+		{
+
+		}
+		buzzer_control(800,500,300);
+	}
+
+}*/
 #endif
 
