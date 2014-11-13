@@ -129,7 +129,7 @@ static rt_int8_t send_file_pack(char *FileName,rt_uint32_t PackOrder,rt_uint16_t
 	if(FileID < 0)
 	{
 		//打开文件失败
-		RT_DEBUG_LOG(SHOW_NFILE_SRESULT,("%s OPEN FAIL\n\n",FileName));
+		RT_DEBUG_LOG(NET_NFILE_SRESULT,("%s OPEN FAIL\n\n",FileName));
 		
     RT_ASSERT(buffer != RT_NULL);
 		rt_free(buffer);
@@ -243,7 +243,7 @@ rt_uint8_t check_msgmail_succeed(net_msgmail_p mail[],rt_uint8_t size,rt_sem_t S
 				result = rt_sem_take(file->result.complete,RT_WAITING_NO);
 				if(result == RT_EOK)
 				{	
-					RT_DEBUG_LOG(SHOW_NFILE_SRESULT,("File %X%X%X%X Pack Send Result: %d\n"
+					RT_DEBUG_LOG(NET_NFILE_SRESULT,("File %X%X%X%X Pack Send Result: %d\n"
 																						,file->data.data[0]
 																						,file->data.data[1]
 																						,file->data.data[2]
@@ -326,7 +326,7 @@ static rt_int8_t send_file_request(UploadFile_p arg)
 	//计算CRC32
 	file_get_crc32((rt_uint8_t *)FileName,&CRC32Value);
 	net_uint32_copy_string(RequestInfo->file.crc32,CRC32Value);
-	RT_DEBUG_LOG(SHOW_NFILE_CRC32,("File:%s CRC32:%X\n",FileName,CRC32Value));
+	RT_DEBUG_LOG(NET_NFILE_CRC32,("File:%s CRC32:%X\n",FileName,CRC32Value));
 
 	RequestInfo->result.complete = rt_sem_create("filerequ",0,RT_IPC_FLAG_FIFO);
 	RT_ASSERT(RequestInfo->result.complete != RT_NULL);
@@ -399,7 +399,7 @@ static rt_int8_t send_file_process(UploadFile_p arg,FileSendCtl_p ctl)
 	{
 		PackNum++;
 	}
-	RT_DEBUG_LOG(SHOW_NFILE_SEND,("File Of PackNum = %d\n",PackNum));
+	RT_DEBUG_LOG(NET_NFILE_SEND_INFO,("File Of PackNum = %d\n",PackNum));
 	ReadSize = NET_FILE_BUF_SIZE;//正常包的大小
 	CurPackOrder = 0;
 	SendOk = 0;
@@ -425,7 +425,7 @@ static rt_int8_t send_file_process(UploadFile_p arg,FileSendCtl_p ctl)
 				NetMailPos = find_null_msgmail(mail,FILE_PACKNUM_MAX);
 				if(NetMailPos < 0)
 				{
-					RT_DEBUG_LOG(SHOW_NFILE_SEND,("NetMailPos = %d Value Error\n",NetMailPos));
+					RT_DEBUG_LOG(NET_NFILE_SEND_INFO,("NetMailPos = %d Value Error\n",NetMailPos));
 					break;
 				}
 				mail[NetMailPos] = rt_calloc(1,sizeof(net_msgmail));
@@ -440,7 +440,7 @@ static rt_int8_t send_file_process(UploadFile_p arg,FileSendCtl_p ctl)
 					rt_sem_release(SendSem);
 				}
 				CurPackOrder++;
-				RT_DEBUG_LOG(SHOW_NFILE_SEND,("Send pack number:%d\n",CurPackOrder-1));
+				RT_DEBUG_LOG(NET_NFILE_SEND_INFO,("Send pack number:%d\n",CurPackOrder-1));
 			}
 		}
 		else
@@ -468,13 +468,13 @@ static rt_int8_t send_file_process(UploadFile_p arg,FileSendCtl_p ctl)
       SendOk += RecvResult;
       if(RecvResult > 0)
       {
-				RT_DEBUG_LOG(SHOW_NFILE_SEND,("Send ok number:%d\n",SendOk));
+				RT_DEBUG_LOG(NET_NFILE_SEND_INFO,("Send ok number:%d\n",SendOk));
       }
 		}
 		else
 		{
-			RT_DEBUG_LOG(SHOW_NFILE_SEND,("RecvResult:%d\n",RecvResult));
-			RT_DEBUG_LOG(SHOW_NFILE_SEND,("Send File Outtime\n"));
+			RT_DEBUG_LOG(NET_NFILE_SEND_INFO,("RecvResult:%d\n",RecvResult));
+			RT_DEBUG_LOG(NET_NFILE_SEND_INFO,("Send File Outtime\n"));
 			
 			//文件处理完之后 窗口中的数据必须清掉
 			clear_wnd_cmd_all(NET_MSGTYPE_FILEDATA);
@@ -484,7 +484,7 @@ static rt_int8_t send_file_process(UploadFile_p arg,FileSendCtl_p ctl)
 			return -1;
 		}
 	}
-	RT_DEBUG_LOG(SHOW_NFILE_SEND,("Send File Complete\n"));
+	RT_DEBUG_LOG(NET_NFILE_SEND_INFO,("Send File Complete\n"));
 	
 	//释放资源
 	destroy_net_msgmail(mail,FILE_PACKNUM_MAX);

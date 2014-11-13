@@ -8,11 +8,11 @@
 //#include "bdcom.h"
 //#include "comm.h"
 //#include "appconfig.h"
-#ifdef   USEING_CAN_SET_DEBUG
+#ifdef   USEING_RAM_DEBUG
 #include "untils.h" //主要使用里面的 rt_dprintf
 #endif
 
-#ifndef USEING_CAN_SET_DEBUG
+#ifndef USEING_RAM_DEBUG
 #define rt_dprintf    RT_DEBUG_LOG
 #endif
 
@@ -45,9 +45,9 @@ rt_size_t find_package_end(rt_uint8_t *buffer,rt_size_t size)
     rt_uint8_t i;
 		for(i = 0;i < length;i++)
     {
-      rt_dprintf(SHOW_RECV_MSG_INFO,("%02X",buffer[i]));
+      rt_dprintf(NET_RECV_MSG_INFO,("%02X",buffer[i]));
     }
-    rt_dprintf(SHOW_RECV_MSG_INFO,("\n"));
+    rt_dprintf(NET_RECV_MSG_INFO,("\n"));
 	}
 	#endif*/
   for(i = 0; i < size; i++)
@@ -186,7 +186,7 @@ void netprotocol_thread_entry(void *arg)
             {
               rt_memcpy(recvmail,recv_data,MsgEndPos);
             }
-          	rt_dprintf(SHOW_RECV_MAIL_ADDR,("Send mailbox addr %X\n",recvmail));
+          	rt_dprintf(NET_RECV_MAIL_ADDR,("Send mailbox addr %X\n",recvmail));
           	if(rt_mb_send(net_datrecv_mb,(rt_uint32_t)recvmail) != RT_EOK)
           	{
           	  rt_dprintf(SHOW_PRINTF_INFO,
@@ -198,12 +198,12 @@ void netprotocol_thread_entry(void *arg)
           	}
 
           	//打印调试信息
-          	rt_dprintf(SHOW_SEND_MSG_INFO,("\nReceives the encrypted data:\n<<<<<"));
+          	rt_dprintf(NET_RECV_ENC_DATA,("\nReceives encrypted data:\n<<<<<"));
             for(i = 0;i < MsgEndPos;i++)
             {
-              rt_dprintf(SHOW_SEND_MSG_INFO,("%02X",recv_data[i]));
+              rt_dprintf(NET_RECV_ENC_DATA,("%02X",recv_data[i]));
             }
-            rt_dprintf(SHOW_SEND_MSG_INFO,("\n"));
+            rt_dprintf(NET_RECV_ENC_DATA,("\n"));
 
             //将找到包的后面数据移动到buffer首地址处
             SavePos -= MsgEndPos;

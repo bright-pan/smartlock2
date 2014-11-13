@@ -454,7 +454,7 @@ void menu_operation_result_handle(rt_uint8_t type)
 		{
 			//ÊäÈë´íÎó»ò²Ù×÷Ê§°Ü
 			#ifdef USEING_BUZZER_FUN
-			buzzer_send_mail(BZ_TYPE_ERROR1);
+			buzzer_send_mail(BZ_TYPE_INPUT_ERROR);
 			#endif
 			break;
 		}
@@ -468,7 +468,7 @@ void menu_operation_result_handle(rt_uint8_t type)
 		{
 			//ÃÜÂë´íÎó
 			#ifdef USEING_BUZZER_FUN
-			buzzer_send_mail(BZ_TYPE_ERROR3);
+			buzzer_send_mail(BZ_TYPE_KEY_ERROR);
 			#endif
 			break;
 		}

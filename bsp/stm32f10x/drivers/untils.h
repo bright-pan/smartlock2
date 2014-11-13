@@ -19,6 +19,7 @@
 #include <rthw.h>
 #include <stm32f10x.h>
 #include <time.h>
+#include "debug_manage.h"
 
 #define bits_mask(x) (1<<(x))
 
@@ -30,13 +31,6 @@ typedef struct
 	rt_size_t  BitMaxNum; 	//位数的最大值
 }MapByteDef,*MapByteDef_p;
 
-#define rt_dprintf(type,message)               	\
-do                                              \
-{                                            		\
-    if (debug_check(type) == RT_TRUE)						\
-        rt_kprintf message;                     \
-}                                               \
-while (0)
 
 MapByteDef_p map_byte_create(rt_size_t BitMaxNum);
 
@@ -67,8 +61,6 @@ memmem(const void *haystack,
 	   rt_size_t needle_len);
 #endif
 
-#ifdef USEING_CAN_SET_DEBUG
-rt_bool_t debug_check(rt_uint32_t flag);
-#endif
+void sysinit(void);
 
 #endif

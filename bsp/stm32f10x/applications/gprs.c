@@ -16,11 +16,11 @@
 #include "gprsmailclass.h"
 #include "netmailclass.h"
 
-#ifdef   USEING_CAN_SET_DEBUG
+#ifdef   USEING_RAM_DEBUG
 #include "untils.h" //主要使用里面的 rt_dprintf
 #endif
 
-#ifndef USEING_CAN_SET_DEBUG
+#ifndef USEING_RAM_DEBUG
 #define rt_dprintf    RT_DEBUG_LOG
 #endif
 
@@ -28,7 +28,7 @@
 #define USEING_GPRS_DEBUG           0  //使用调试信息
 
 
-#define UPDATE_KEY_CNT    					60 //钥匙同步周期
+#define UPDATE_KEY_CNT    					10 //钥匙同步周期
 #define UPDATE_FLAG_VALUE 					1  //需要更新标志
 #define UNUPDATA_FLAG_VALUE         0  //不需要更新标志
 
@@ -750,7 +750,7 @@ static void update_smartlock_database(rt_uint32_t ModeFlag)
 	{
     //上传账户映射域
     rt_dprintf(USEING_GPRS_DEBUG,("update map data...\n"));
-    upload_map(0);
+    net_upload_map(0);
 	}
 
 	if(ModeFlag & DATA_SYNC_ACCDAT)

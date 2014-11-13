@@ -3,11 +3,11 @@
 #include "rtdevice.h"
 #include "netprotocol.h"
 
-#ifdef   USEING_CAN_SET_DEBUG
+#ifdef   USEING_RAM_DEBUG
 #include "untils.h" //主要使用里面的 rt_dprintf
 #endif
 
-#ifndef USEING_CAN_SET_DEBUG
+#ifndef USEING_RAM_DEBUG
 #define rt_dprintf    RT_DEBUG_LOG
 #endif
 

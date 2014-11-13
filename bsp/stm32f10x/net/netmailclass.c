@@ -16,32 +16,29 @@
 //#include "apppubulic.h"
 //#include "file_update.h"
 
-#ifdef   USEING_CAN_SET_DEBUG
+#ifdef   USEING_RAM_DEBUG
 #include "untils.h" //主要使用里面的 rt_dprintf
 #endif
 
-#ifndef USEING_CAN_SET_DEBUG
+#ifndef USEING_RAM_DEBUG
 #define rt_dprintf    RT_DEBUG_LOG
 #endif
 
 
-#define MAIL_FAULT_RESEND     3
-#define MAIL_FAULT_OUTTIME    50
+#define MAIL_FAULT_RESEND     			3			//默认重发次数
+#define MAIL_FAULT_OUTTIME    			50		//默认默认超时时间
 
-#define NETMAILCLASS_DEBUG      22
+#define NETMAILCLASS_DEBUG      		22		//邮件打包时的调试信息
 
 #ifndef SYSTEM_SOFTWARE_VER   
-#define SYSTEM_SOFTWARE_VER   0x01
+#define SYSTEM_SOFTWARE_VER  				0x01  //系统软件版本号
 #endif
 
 
-/**
-网络协议发送接口
-*/
 /** 
-@brief  send landed mail
-@param  void 
-@retval RT_TRUE :succeed,RT_FALSE:fail
+@brief  创建报文发送完成等待信号量
+@param  none 
+@retval 信号量对象
 */
 rt_sem_t smg_send_wait_sem_crate(void)
 {
@@ -61,6 +58,10 @@ rt_sem_t smg_send_wait_sem_crate(void)
 	
   return sem;
 }
+
+/***************************************************************************************************
+以下函数为网络协议给应用层提供的使用API
+***************************************************************************************************/
 
 static rt_uint16_t landresendtime = 20;
 /** 
@@ -2199,7 +2200,7 @@ void msg_test(rt_uint8_t cmd)
 }
 FINSH_FUNCTION_EXPORT(msg_test,msg_test(void));
 
-void upload_map(rt_uint8_t type)
+void net_upload_map(rt_uint8_t type)
 {
 	void 				*mapdata;
 	rt_uint32_t *mapaddr = RT_NULL;
@@ -2310,7 +2311,7 @@ void upload_map(rt_uint8_t type)
 	
 }
 
-FINSH_FUNCTION_EXPORT(upload_map,upload_map[type]--upload [0:account 1:key 2:phone 3:record] mapbyte);
+FINSH_FUNCTION_EXPORT(net_upload_map,net_upload_map[type]--upload [0:account 1:key 2:phone 3:record] mapbyte);
 
 void landtimeset(rt_uint16_t data)
 {

@@ -29,11 +29,11 @@
 #include "PVDProcess.h"
 #include "eeprom_process.h"
 
-#ifdef   USEING_CAN_SET_DEBUG
+#ifdef   USEING_RAM_DEBUG
 #include "untils.h" //主要使用里面的 rt_dprintf
 #endif
 
-#ifndef USEING_CAN_SET_DEBUG
+#ifndef USEING_RAM_DEBUG
 #define rt_dprintf    RT_DEBUG_LOG
 #endif
 
@@ -489,6 +489,11 @@ local_thread_entry(void *parameter)
 					local_event_process(2,LOCAL_EVT_SYSTEM_FREEZE);
 					break;
         }
+       	case ALARM_TYPE_SYSTEM_RESET:
+       	{
+					sysinit();
+					break;
+       	}
 				default :
         {
             rt_dprintf(LOCAL_DEBUG_THREAD,("this alarm is not process...\n"));

@@ -140,7 +140,6 @@ void net_copy_date_str(rt_uint8_t *time)
 
 	date = net_get_date();
 
-	rt_kprintf("date = %x",date);
 	net_uint32_copy_string(time,date);
 }
 
