@@ -23,6 +23,7 @@
 #define RT_DEVICE_CTRL_SET_PULSE_COUNTS 0x15    /* disable receive irq */
 #define RT_DEVICE_CTRL_SET_PULSE_VALUE  0x16    /* disable receive irq */
 #define RT_DEVICE_CTRL_CONFIG_DEVICE    0x17    /* Reconfigure the device */
+#define RT_DEVICE_CTRL_SET_RELOAD_VALUE 0X18    /* Set reload value T*/
 
 
 #define RT_DEVICE_FLAG_PWM_TX           0x1000 /* flag mask for gpio pwm mode */
@@ -44,6 +45,6 @@ void voice_output(rt_uint16_t counts ,rt_uint16_t	delay);
 #define GATE_UNLOCK 1
 int8_t lock_output(uint8_t direction);
 void motor_rotate(rt_int16_t);
-void buzzer_control(rt_uint32_t time);
-void buzzer_pwm_set(rt_uint32_t value);
+
+
 #endif

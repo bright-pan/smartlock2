@@ -196,6 +196,13 @@ rt_err_t gpio_pwm_control(gpio_device *gpio, rt_uint8_t cmd, void *arg)
 				gpio->ops->configure((gpio_device *)arg);
 				break;
 			}
+		case RT_DEVICE_CTRL_SET_RELOAD_VALUE:
+		{
+			user->tim_base_reload_value = *(rt_uint32_t *)arg;
+			__gpio_timer_configure((gpio_device *)gpio);
+			break;
+		}
+		
 	}
 	return RT_EOK;
 }
@@ -360,13 +367,13 @@ struct gpio_pwm_user_data speak_user_data =
     TIM3,
     RCC_APB1Periph_TIM3,
     1000000,
-    1000,
+    500,
     0,
     TIM_CounterMode_Up,
     /* timer oc */
     TIM_OCMode_PWM2,
     TIM_OutputState_Enable,
-    500,// pulse value
+    200,// pulse value
     TIM_OCPolarity_High,
     TIM_Channel_3,
     TIM_IT_CC3 | TIM_IT_Update,
@@ -819,6 +826,17 @@ void pwm_set_value(char *str, rt_uint16_t time)
 	}
 }
 
+void pwm_set_reload(char *str, rt_uint16_t reload)
+{
+	rt_device_t device = RT_NULL;
+	
+	device = rt_device_find(str);
+	if(device != RT_NULL)
+	{
+		rt_device_control(device, RT_DEVICE_CTRL_SET_RELOAD_VALUE, (void *)&reload);
+	}
+}
+
 void pwm_send_pulse(char *str)
 {
 	rt_device_t device = RT_NULL;
@@ -852,27 +870,6 @@ void motor_rotate(rt_int16_t data)
     gpio_pin_output(DEVICE_NAME_POWER_MOTOR,0,0);
 }
 
-void buzzer_pwm_set(rt_uint32_t value)
-{
-  pwm_set_value(DEVICE_NAME_SPEAK,value);
-}
-
-void buzzer_control(rt_uint32_t time)
-{
-  rt_device_t dev = RT_NULL;
-  rt_uint16_t value = time;
-  
-  dev = rt_device_find(DEVICE_NAME_SPEAK);
-  if(dev != RT_NULL)
-  {
-    if(!(dev->open_flag & RT_DEVICE_OFLAG_OPEN))
-    {
-      rt_device_open(dev,RT_DEVICE_FLAG_WRONLY);
-    }
-    rt_device_control(dev,RT_DEVICE_CTRL_SET_PULSE_COUNTS,(void *)&value);
-    rt_device_control(dev,RT_DEVICE_CTRL_SEND_PULSE,RT_NULL);
-  }
-}
 
 #ifdef RT_USING_FINSH
 #include <finsh.h>
@@ -882,6 +879,5 @@ FINSH_FUNCTION_EXPORT(pwm_send_pulse, pwm_send_pulse[device_name]);
 
 //FINSH_FUNCTION_EXPORT(voice_output, voice_output[counts]);
 FINSH_FUNCTION_EXPORT(motor_rotate, motor_rotate[angle]);
-FINSH_FUNCTION_EXPORT(buzzer_control, buzzer_control[time]);
 
 #endif
