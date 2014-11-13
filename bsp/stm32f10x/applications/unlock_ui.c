@@ -229,6 +229,7 @@ rt_err_t unlock_process_ui(void)
 					return RT_EOK;
 	      }
 	      EvtProcessResult = phone_unlock_result_show();
+	      if(EvtProcessResult == RT_TRUE)
 	      {
 					return RT_EOK;
 	      }
