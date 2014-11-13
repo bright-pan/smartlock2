@@ -19,19 +19,23 @@
 #include "eeprom_process.h"
 #include <time.h>
 
-#ifdef   USEING_CAN_SET_DEBUG
+//#ifdef   USEING_RAM_DEBUG
 #include "untils.h" //主要使用里面的 rt_dprintf
-#endif
+//#endif
 
-#ifndef USEING_CAN_SET_DEBUG
+#ifndef USEING_RAM_DEBUG
 #define rt_dprintf    RT_DEBUG_LOG
 #endif
+
 
 
 #define EEPROM_DEBUG_THREAD        25    //调试信息
 
 #define SYSTEM_TIME_SAVE_ADDR    0       //系统时间保存地址
 #define SYSTEM_TIME_SAVE_SIZE    sizeof(rt_uint32_t) //系统时间保存空间大小
+#define SYSTEM_DEBUG_MAP_ADDR    (SYSTEM_TIME_SAVE_ADDR+SYSTEM_TIME_SAVE_SIZE)
+#define SYSTEM_DEBUG_MAP_SIZE    128
+
 
 
 
@@ -198,6 +202,83 @@ int system_time_error_process(void)
 }
 INIT_APP_EXPORT(system_time_error_process);
 #endif
+
+
+/**
+  * @brief  调试信息映射域管理				
+  * @param  cmd = 1 写映射域到EEPROM
+            cmd = 0 读EEPROM映射域
+  * @retval RT_EOK 操作成功
+  					RT_EEROR 操作失败
+  */
+rt_err_t eeprom_debugmap_manage(MapByteDef_p map,rt_uint8_t cmd)
+{
+	rt_size_t   Addr;
+	rt_device_t dev = RT_NULL;
+	rt_uint8_t  i;
+
+	RT_ASSERT(map!=RT_NULL);
+
+	if(cmd == 1)
+	{
+		//保存
+		dev = eeprom_device_open();
+		if(dev == RT_NULL)
+		{
+			rt_kprintf("EEPROM Open Fail --%s\n",__FUNCTION__);
+			return RT_ERROR;
+		}
+		//保存数据数据大小
+		Addr = SYSTEM_DEBUG_MAP_ADDR;
+		rt_device_write(dev,Addr,&map->ByteSize,sizeof(map->ByteSize));
+
+		//保存数据
+		Addr += sizeof(map->ByteSize);
+		rt_device_write(dev,Addr,map->data,map->ByteSize);
+
+		rt_device_close(dev);
+	}
+	else
+	{
+		//获取
+		rt_size_t temp;
+		
+		dev = eeprom_device_open();
+		if(dev == RT_NULL)
+		{
+			rt_kprintf("EEPROM Open Fail --%s\n",__FUNCTION__);
+			return RT_ERROR;
+		}
+
+		//读取数据大小
+		Addr = SYSTEM_DEBUG_MAP_ADDR;
+		rt_device_read(dev,Addr,&temp,sizeof(map->ByteSize));
+		if(temp != map->ByteSize)
+		{
+			rt_kprintf("\nSystem debug in eeprom none init\n");
+			return RT_ERROR;
+		}
+		//读取数据
+		Addr += sizeof(map->ByteSize);
+		rt_device_read(dev,Addr,map->data,map->ByteSize);
+
+		rt_kprintf("map->ByteSize = %d\n",map->ByteSize);
+		rt_kprintf("map->BitMaxNum = %d\n",map->BitMaxNum);
+		for(i = 0; i < map->BitMaxNum;i++)
+		{
+			if(i%10 == 0)
+			{
+				rt_kprintf("\n");
+			}
+			rt_kprintf("%01d ",map_byte_bit_get(map,i));
+		}
+		rt_kprintf("\n");
+		
+		rt_device_close(dev);
+	}
+		
+	return RT_EOK;
+}
 
 /**
   * @}

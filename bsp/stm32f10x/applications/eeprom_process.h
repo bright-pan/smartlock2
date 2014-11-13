@@ -17,8 +17,10 @@
 #define __EEPROM_PROCESS_H__
 #include "rtthread.h"
 #include "eeprom.h"
+#include "untils.h"
 
 rt_err_t system_time_save(void);
+rt_err_t eeprom_debugmap_manage(MapByteDef_p map,rt_uint8_t cmd);
 
 #endif
 

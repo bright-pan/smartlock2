@@ -23,6 +23,7 @@ gprsmailclass.c
 FprintHandle.c
 dataSYNS.c
 eeprom_process.c
+debug_manage.c
 """)
 
 CPPPATH = [cwd, str(Dir('#'))]
