@@ -2629,9 +2629,11 @@ rt_uint8_t net_wnd_resend_mail(rt_int8_t pos)
 		{
 		  //清除窗口的邮件信息不再重发
 		  clear_wnd_mail_pos(pos,SEND_FAIL);
-		  //标志断线 申请重新登陆
+		  //终端掉线
 		  net_event_process(2,NET_ENVET_ONLINE);
-		  //net_event_process(0,NET_ENVET_RELINK);
+		  //请求重新登陆
+		  net_event_process(0,NET_ENVET_RELINK);
+		  //设置所以邮件停止重发
 		  set_wnd_allmail_permission(-1);
 		  return 2;
 		}	

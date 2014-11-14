@@ -2267,7 +2267,7 @@ void net_upload_map(rt_uint8_t type)
 		}
 	}
 	
-
+	/*
 	for(i = 0 ; i < mapsize/4;i++)
 	{
 		if(i % 10 == 0)
@@ -2277,7 +2277,7 @@ void net_upload_map(rt_uint8_t type)
 		rt_kprintf("%08X",mapaddr[i]);
 	}
   rt_kprintf("\n");
-
+	*/
 	switch(type)
 	{
 		case 0:

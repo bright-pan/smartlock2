@@ -16,9 +16,10 @@
 #define NET_RECV_ENC_DATA          27 //显示接收到的密码
 #define NET_SEND_MSG_TYPE          28 //显示发送报文类型
 #define NET_SEND_DES_DATA          29 //显示发送报文的密文
+#define NET_MSG_PACK_RECV          30 //网络加密数据包接收    
 //网络文件
 #define NET_NFILE_CRC32            12 //显示文件的crc32校验值
-#define NET_NFILE_SEND_INFO             13 //显示文件发送过程
+#define NET_NFILE_SEND_INFO        13 //显示文件发送过程
 #define NET_NFILE_SRESULT          14 //显示文件包发送的结果
 
 #define NET_CRC16_INIF             15 //显示crc16信息

@@ -880,7 +880,10 @@ void gprs_mail_manage_entry(void* arg)
 			count = 0;
 			gprs_event_process(0,GPRS_EVT_SYNC_DATMODE1);
 		}
-
+		else
+		{
+			rt_dprintf(USEING_GPRS_DEBUG,("Update Time:%d Count:%d\n",UPDATE_KEY_CNT,count));
+		}
 		//同步数据处理
     gprs_database_sync_process();
 
@@ -888,8 +891,8 @@ void gprs_mail_manage_entry(void* arg)
 		mq_result = rt_mq_recv(gprs_mq,&mail,sizeof(GPRS_MAIL_TYPEDEF),100);
 		if(mq_result == RT_EOK)
 		{
-			rt_kprintf("receive gprs mail < time: %d alarm_type: %s >\n",\
-					   		mail.time, alarm_help_map[mail.alarm_type]);
+			rt_dprintf(USEING_GPRS_DEBUG,("receive gprs mail < time: %d alarm_type: %s >\n",\
+					   		mail.time, alarm_help_map[mail.alarm_type]));
 			gprs_local_mail_save(&mail,UNUPDATA_FLAG_VALUE);
 			gprs_mail_process(&mail);
 			gprs_mail_delete(&mail);

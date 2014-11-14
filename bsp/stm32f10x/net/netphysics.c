@@ -39,7 +39,7 @@ rt_size_t find_package_end(rt_uint8_t *buffer,rt_size_t size)
 		rt_kprintf("Recv message length(%d) abnormal is bad message ! ! !\n",length);
 		return size;
 	}
-	rt_dprintf(SHOW_PRINTF_INFO,("Receive the packet length:%d = 0X%x\n",length,length));
+	rt_dprintf(NET_MSG_PACK_RECV,("Receive the packet length:%d = 0X%x\n",length,length));
 	/*#ifdef 0
 	{
     rt_uint8_t i;
@@ -54,12 +54,12 @@ rt_size_t find_package_end(rt_uint8_t *buffer,rt_size_t size)
   {
     FlagStr[0] = FlagStr[1];
     FlagStr[1] = buffer[i];
-    rt_dprintf(SHOW_PRINTF_INFO,("[find:0x%02X 0x%02X]\n",FlagStr[0],FlagStr[1]));
+    rt_dprintf(NET_MSG_PACK_RECV,("[find:0x%02X 0x%02X]\n",FlagStr[0],FlagStr[1]));
     if((FlagStr[0] == 0x0d) && (FlagStr[1] == 0x0a))
     {
     	if(length <= i+1)
     	{
-    		rt_dprintf(SHOW_PRINTF_INFO,("recv message succeed (length:%d)\n",size));
+    		rt_dprintf(NET_MSG_PACK_RECV,("recv message succeed (length:%d)\n",size));
         return i+1;
     	}
     }
@@ -148,7 +148,7 @@ void netprotocol_thread_entry(void *arg)
 				rt_dprintf(SHOW_STATUS_INFO,("relink TCP/IP !!!!\n"));
 
 				//清除所有登陆报文
-				//clear_wnd_cmd_all(NET_MSGTYPE_LANDED);
+				clear_wnd_cmd_all(NET_MSGTYPE_TIME);
 				//rt_thread_delay(RT_TICK_PER_SECOND*3);
         send_net_landed_mail();
         RT_ASSERT(recv_data != RT_NULL);
@@ -249,7 +249,7 @@ void netprotocol_thread_entry(void *arg)
 	          }
 	          rt_dprintf(NETPY_DEBUG_THREAD,("\n"));
         	}
-        	
+        	//rt_thread_delay(100);
           //发送
           rt_device_write(hw_dev,0,message.buffer,message.length+4);
         }
