@@ -83,6 +83,7 @@ static const char SysPintfText[][SYS_PRINTF_TEXT_MAXLEN] =
 	"NET_RECV_ENC_DATA",
 	"NET_SEND_MSG_TYPE",
 	"NET_SEND_DES_DATA",
+	"NET_MSG_PACK_RECV",
 };
 
 
