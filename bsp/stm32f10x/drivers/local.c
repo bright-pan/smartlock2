@@ -57,6 +57,8 @@ static rt_mq_t local_mq;
 static rt_uint16_t AutoLockTime = LOCK_GATE_TIMER_BASE;
 static rt_uint16_t AutoUnfreezeTime = AUTO_UNFREEZE_TIME;
 
+void motor_status_open_send(void);
+
 typedef struct
 {
 	rt_sem_t 		StatusSem;
@@ -117,6 +119,9 @@ void system_freeze_manage(void)
 		{
 			AutoUnfreezeTime = AUTO_UNFREEZE_TIME;
 			local_event_process(2,LOCAL_EVT_SYSTEM_FREEZE);
+
+			//发送开锁信号
+			motor_status_open_send();
 			rt_kprintf("System In Unfreeze\n");
 		}
 	}
@@ -238,6 +243,10 @@ rt_bool_t key_error_alarm_manage(KeyErrCntManageMode mode,rt_uint8_t *smsflag)
 				}
 
        	return RT_TRUE;
+			}
+			else
+			{
+				*smsflag = RT_FALSE;
 			}
 			break;
 		}
@@ -420,7 +429,6 @@ local_thread_entry(void *parameter)
         	//钥匙错误报警
         	union alarm_data data;
         	
-					gprs_key_error_mail(local_mail_buf.data.key.Type);
 					if(local_mail_buf.data.key.sms == 1)
 					{
 						switch(local_mail_buf.data.key.Type)
@@ -445,6 +453,7 @@ local_thread_entry(void *parameter)
 								break;
 							}
 						}
+						gprs_key_error_mail(local_mail_buf.data.key.Type);
 					}
 
 					data.lock.key_id = 0;
@@ -478,7 +487,7 @@ local_thread_entry(void *parameter)
         case ALARM_TYPE_SYSTEM_FREEZE:
         {
         	//系统冻结
-        	rt_kprintf("Key Error System Freeze!!!\n");
+        	rt_kprintf("Password Error System Freeze!!!\n");
         	local_event_process(0,LOCAL_EVT_SYSTEM_FREEZE);
 					break;
         }

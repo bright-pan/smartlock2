@@ -131,6 +131,7 @@ void menu_0_processing(void)
 	          	
 	          	data.key.ID = KEY_ID_INVALID;
 	          	data.key.Type = KEY_TYPE_KBOARD;
+							
               send_local_mail(ALARM_TYPE_KEY_ERROR,0,&data);
               
 							menu_operation_result_handle(3);

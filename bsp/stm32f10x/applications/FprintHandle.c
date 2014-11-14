@@ -135,7 +135,11 @@ rt_err_t fprint_input_ok_trigger(void *user)
 			}
 
 			menu_event_process(0,MENU_EVT_FP_ERROR);
-		  send_local_mail(ALARM_TYPE_KEY_ERROR,0,&KeyData);	
+			if(KeyData.key.sms)
+			{
+        send_local_mail(ALARM_TYPE_KEY_ERROR,0,&KeyData); 
+			}
+		  
 			return RT_EOK; 
 		}
 		
@@ -170,6 +174,7 @@ rt_err_t fprint_input_error_trigger(void *user)
 	}
 
 	menu_event_process(0,MENU_EVT_FP_ERROR);
+	
   send_local_mail(ALARM_TYPE_KEY_ERROR,0,&data);	
   
   return RT_EOK;
