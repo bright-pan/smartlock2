@@ -929,7 +929,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
 			net_phoneadd_ack *data;
       
       msg_data->cmd = NET_MSGTYPE_PHONEADD_ACK;
-      net_set_lenmap(&msg_data->lenmap,1,1,2,2);
+      net_set_lenmap(&msg_data->lenmap,1,1,3,2);
 
 			data = MsgMail->user;
       if(data != RT_NULL)
@@ -975,7 +975,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
 			net_phonedel_ack *data;
       
       msg_data->cmd = NET_MSGTYPE_PHONEDEL_ACK;
-      net_set_lenmap(&msg_data->lenmap,1,1,2,2);
+      net_set_lenmap(&msg_data->lenmap,1,1,3,2);
       
 			data = MsgMail->user;
       if(data != RT_NULL)
@@ -1096,7 +1096,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
     	net_keydelete_user *data;
 
       msg_data->cmd = NET_MSGTYPE_KEYDELETE ;
-      net_set_lenmap(&msg_data->lenmap,1,1,2,2);
+      net_set_lenmap(&msg_data->lenmap,1,1,4,2);
 
 			data = MsgMail->user;
       if(data != RT_NULL)
