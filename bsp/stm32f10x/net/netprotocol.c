@@ -691,7 +691,7 @@ rt_err_t net_set_message(net_encrypt_p msg_data,net_msgmail_p MsgMail)
 	//ÉèÖÃÐòºÅ
 	msg_data->col = MsgMail->col;
 
-	rt_dprintf(NET_SEND_MSG_TYPE,("Send message: "));
+	rt_dprintf(NET_SEND_MSG_TYPE,("Send message:>>> "));
   switch(MsgMail->type)
   {
     case NET_MSGTYPE_LANDED:
@@ -2249,7 +2249,7 @@ static void net_recv_message(net_msgmail_p mail)
       }
     }
     net_recv_alagn_process(msg);
-    rt_dprintf(NET_RECV_MSG_TYP,("Receives message: "));
+    rt_dprintf(NET_RECV_MSG_TYP,("Recv message:<<< "));
 		switch(msg->cmd)
 		{
 			case NET_MSGTYPE_LANDED_ACK:

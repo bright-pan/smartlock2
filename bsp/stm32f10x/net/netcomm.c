@@ -4,6 +4,7 @@
 зїеп:wangzw <wangzw@yuettak.com>
 */
 #include "netcomm.h"
+#include "crc32.h"
 #include <time.h>
 //#include <cyg/crc/crc.h>
 
