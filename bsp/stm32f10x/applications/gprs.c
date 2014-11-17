@@ -97,7 +97,7 @@ static void account_upload_process(rt_uint16_t pos)
 	ah_result = device_config_account_operate(pos,data,0);
 	if(ah_result < 0)
 	{
-		rt_dprintf(USEING_GPRS_DEBUG,("GPRS mail account operate fail >>%s",__FUNCTION__));
+		rt_kprintf("GPRS mail account operate fail >>%s",__FUNCTION__);
 	}
 
 	result = msg_mail_account_add(pos,(rt_uint8_t *)data->name,data->updated_time);
@@ -224,11 +224,15 @@ rt_uint16_t get_key_update_pos(void)
 	rt_int32_t   maxnum = device_config_key_counts();
 
 	keydat = rt_calloc(1,sizeof(*keydat));
-	for(i = 0;i < maxnum;i++)
+	//for(i = 0;i < maxnum;i++)
+	i = 0;
+	while(maxnum)
 	{
+		i++;
 		result = device_config_get_key_valid(i);
 		if(result == 1)
 		{
+			maxnum--;
 			device_config_key_operate(i,keydat,0);
 			if(keydat->head.is_updated == UPDATE_FLAG_VALUE)
 			{
@@ -275,12 +279,16 @@ rt_uint16_t get_phone_update_pos(void)
 	rt_int32_t          result;
 	rt_int32_t         maxnum = device_config_phone_counts();
 	phdata = rt_calloc(1,sizeof(*phdata));
-	for(i = 0;i < maxnum;i++)
+	//for(i = 0;i < maxnum;i++)
+	i = 0;
+	while(maxnum)
 	{
+		i++;
 		result = device_config_get_phone_valid(i);
 		
 		if(result == 1)
 		{
+			maxnum--;
 			device_config_phone_operate(i,phdata,0);
       if(phdata->is_update == UPDATE_FLAG_VALUE)
 		  {
@@ -320,11 +328,15 @@ rt_uint16_t get_account_update_pos(void)
 	rt_int32_t           maxnum = device_config_account_counts();
 
 	data = rt_calloc(1,sizeof(*data));
-	for(i = 0;i < maxnum;i++)
+	//for(i = 0;i < maxnum;i++)
+	i = 0;
+	while(maxnum)
 	{
+		i++;
 		result = device_config_get_account_valid(i);
 		if(result == 1)
-		{
+		{	
+			maxnum--;
 			device_config_account_operate(i,data,0);
       if(data->is_updated == UPDATE_FLAG_VALUE)
       {
@@ -879,10 +891,11 @@ void gprs_mail_manage_entry(void* arg)
 		{
 			count = 0;
 			gprs_event_process(0,GPRS_EVT_SYNC_DATMODE1);
+			rt_dprintf(USEING_GPRS_DEBUG,("\n"));
 		}
 		else
 		{
-			rt_dprintf(USEING_GPRS_DEBUG,("Update Time:%d Count:%d\n",UPDATE_KEY_CNT,count));
+			rt_dprintf(USEING_GPRS_DEBUG,("\rUpdate Time:%d Count:%d",UPDATE_KEY_CNT,count));
 		}
 		//同步数据处理
     gprs_database_sync_process();
