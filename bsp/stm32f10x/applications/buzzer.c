@@ -92,7 +92,7 @@ void buzzer_work(BuzzerType mode)
 		case BZ_TYPE_INPUT_ERROR:
 		{
 			//²Ù×÷´íÎó
-			rt_uint32_t i;
+			//rt_uint32_t i;
 			
 			/*for(i = 0 ;i < 3;i++)
 			{
