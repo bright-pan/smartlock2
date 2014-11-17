@@ -21,11 +21,14 @@
 //#define USEING_BT_C_CONN      //使用蓝牙主动连接
 #define RT_DRIVE_NAME         "Blooth"
 //#define RT_USEING_DEBUG				1
+
+// 蓝牙模块个资源设备名称
 #define BT_USEING_UARTX_NAME	"uart1"
 #define BT_USEING_WK_NAME			"BT_WK"
 #define BT_USEING_LED_NAME		"BT_LED"
 #define BT_USEING_RST_NAME		"BT_RST"
 
+// 蓝牙驱动严重错误调试信息打印
 #define BT_SYSTEM_ERROR_INFO	"The bluetooth module systematic errors function:%s line:%d"
 
 #define BT_AT_CMD_DATA_BUFFER 64
@@ -33,54 +36,61 @@
 #define BT_DATA_PAGE_SIZE     60 	//每页大小
 #define BT_CONNECT_OUTTIME    2000//连接超时2s
 #define BT_AUTO_SLEEP_TIME		100000
-//模块状态
+
+// 模块状态
 #define BT_MODULE_CMD_MODE     0
 #define BT_MODULE_DATA_MODE		 1
 #define BT_MODULE_CMD_ABNORMAL 3
 
-//邮件类型
+// 邮件类型
 #define BT_MAIL_TYPE_SLEEP    0X01//断开睡眠
 #define BT_MAIL_TYPE_CONN     0X02//连接
 #define BT_MAIL_TYPE_STATUS   0X03//获取链接状态
 #define BT_MAIL_TYPE_RESET    0X04//模块复位
 
-//连接状态
+// 连接状态
 #define BT_NOW_CONNECT        0
 #define BT_NOW_DISCONNECT     !BT_NOW_CONNECT
 
-#define USEING_AUTO_CONN		
+//#define USEING_AUTO_CONN		  //断开后自动连接(驱动工作在主模式时使用)
 
-//蓝牙设备的MAC
+// 蓝牙设备的MAC
 typedef struct 
 {
-	rt_uint8_t target_mac[12];
-	rt_uint8_t local_mac[12];
+	rt_uint8_t target_mac[12];   //目标MAC 
+	rt_uint8_t local_mac[12];    //自己的MAC
 }
 bluetooth_user,*bluetooth_user_p;
 
-//蓝牙模块设备
+// 蓝牙模块资源设备定义
 typedef struct 
 {
-	rt_device_t uart_dev;
-	rt_device_t	wk_dev;
-	rt_device_t led_dev;
-	rt_device_t rst_dev;
-	rt_uint8_t  work_status;
-	rt_uint32_t sleep_cnt;
+	rt_device_t uart_dev;			//串口
+	rt_device_t	wk_dev;     	//唤醒脚
+	rt_device_t led_dev;    	//连接状态led脚
+	rt_device_t rst_dev;    	//复位脚
+	rt_uint8_t  work_status; 	//工作状态
+	rt_uint32_t sleep_cnt;    //自动休眠计数器
 }bluetooth_module,*bluetooth_module_p;
 
+// 蓝牙发送请求邮件定义 
 typedef struct
 {
 	rt_uint8_t    type;
 	rt_mailbox_t 	tx_end;
 }bluetooth_tx_mq,*bluetooth_tx_mq_p;
 
-static struct rt_ringbuffer bt_ringbuf_rcv;
-static rt_uint8_t rcv_buffer[BT_DATA_RCV_BUF_SIZE];
-
+/* 蓝牙驱动线程事件请求邮件 */
 static rt_mq_t BloothRequest_mq = RT_NULL;
 
+/* 蓝牙驱动设备对象 */
 static struct rt_device  bluetooth_drive;
+
+/* 接收串口缓冲区 */
+static struct rt_ringbuffer bt_ringbuf_rcv;
+
+/* 蓝牙接收串口缓冲区 */
+static rt_uint8_t rcv_buffer[BT_DATA_RCV_BUF_SIZE];
 
 static bluetooth_user	BluetoothUerConfig = 
 {
@@ -102,14 +112,14 @@ static rt_err_t bluetooth_control_cmd_send(const char *mb_name,rt_uint8_t cmd,vo
 
 	tx_mq.type = cmd;
 
-	//发送控制命令
+	// 发送控制命令
 	SendResult = rt_mq_send(BloothRequest_mq,&tx_mq,sizeof(bluetooth_tx_mq));
 	if(SendResult != RT_EOK)
 	{
 	  rt_mb_delete(tx_mq.tx_end);
 	  return RT_ERROR;
 	}
-	//蓝牙设备处理完成之后的结果
+	// 蓝牙设备处理完成之后的结果
 	if(result == RT_NULL)
 	{
     SendResult = rt_mb_recv(tx_mq.tx_end,&Mbresult,RT_WAITING_FOREVER);
@@ -130,7 +140,7 @@ static rt_err_t bluetooth_control_cmd_send(const char *mb_name,rt_uint8_t cmd,vo
 	return RT_EOK;
 }
 
-//驱动设备初始化
+// 驱动设备初始化
 static void device_init_processor(rt_device_t *dev,const char *dev_name)
 {
   (*dev) = rt_device_find(dev_name);
@@ -146,7 +156,7 @@ static void device_init_processor(rt_device_t *dev,const char *dev_name)
 	}
 }
 
-//驱动设备关闭
+// 驱动设备关闭
 static void device_close_processor(rt_device_t dev)
 {
 	if(dev == RT_NULL)
@@ -157,7 +167,7 @@ static void device_close_processor(rt_device_t dev)
 	rt_device_close(dev);
 }
 
-//读取命令应答
+// 读取命令应答
 static rt_err_t bt_uart_read_ack(rt_device_t uart
 																,const char at_ack[]
 																,rt_uint8_t rcv_buf[]
@@ -759,21 +769,31 @@ rt_size_t bluetooth_module_read(rt_uint8_t *buf,rt_size_t size)
 	return rt_ringbuffer_get(&bt_ringbuf_rcv,buf,size);
 }
 
+/** 
+@brief 蓝牙模块处理线程，改线程维护蓝牙的数据发送、接收、
+			 状态控制等主要工作。
+@param 	arg   RT_NULL
+@retval none 
+*/
 void bluetooth_thread_entry(void *arg)
 {
 	bluetooth_module_p bluetooth;
 	rt_dprintf(BT_DEBUG_THREAD,("bluetooth thread statrt\n"));
 
+	// 创建蓝牙模块对象主要是分配内存资源和获取硬件资源
 	bt_module_create(&bluetooth);
+
 	while(1)
 	{
+		// 初始化蓝牙模块状态
 	  bluetooth_initiate(bluetooth);
 	  rt_thread_delay(500);
+	  
 	  while(1)
 	  { 
-	    rt_uint8_t mb_result;
-	    bluetooth_tx_mq mail;
-	    rt_uint8_t gpio_status;
+	    rt_uint8_t 				mb_result;		//邮件结果
+	    bluetooth_tx_mq 	mail;					//命令请求邮件
+	    rt_uint8_t 				gpio_status;
 
 	    if(bluetooth->work_status == BT_MODULE_CMD_MODE)
 	    {
@@ -919,6 +939,7 @@ void bluetooth_thread_entry(void *arg)
               rt_kprintf("Bluetooth Status Pin instability \n");
 	        	}
 	        }
+	        //rt_thread_delay(1);//线程休息
 	      }
 	      rt_thread_delay(1);
 	    }
@@ -934,10 +955,17 @@ LINK_ON_AT_CMD_ABNORMAL:
 	  }
 
 	}
-
-	bt_module_detele(bluetooth);
+	//bt_module_detele(bluetooth);
 }
 
+
+/** 
+@brief 蓝牙模线程初始化函数，该函数中初始化了所有蓝牙需要用到的
+			 系统资源。
+@param 	none
+@retval 0	:正常
+@retval 1 :系统异常
+*/
 int bluetooth_thread_init(void)
 {
 	rt_thread_t thread;
@@ -1052,6 +1080,20 @@ int rt_bluetooth_drive_init(void)
 }
 INIT_DEVICE_EXPORT(rt_bluetooth_drive_init);
 
+
+
+
+
+
+
+
+
+
+
+
+/***************************************************************************************************
+ 下面是调试命令
+****************************************************************************************************/
 #ifdef RT_USING_FINSH
 #include <finsh.h>
 

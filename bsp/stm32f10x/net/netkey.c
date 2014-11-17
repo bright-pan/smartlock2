@@ -30,6 +30,7 @@ typedef struct
 	rt_uint32_t week7:1;
 }WeekBitMapDef;
 
+//一次性授权数据
 typedef struct
 {
 	rt_uint32_t start_h:8;

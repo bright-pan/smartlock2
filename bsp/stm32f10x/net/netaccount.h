@@ -8,9 +8,7 @@
 rt_err_t net_account_add_process(net_recvmsg_p mail);
 
 //ÍøÂçÉ¾³ıÕË»§´¦Àí
-
-rt_err_t net_account_del_process(net_recvmsg_p mail)
-;
+rt_err_t net_account_del_process(net_recvmsg_p mail);
 
 
 #endif

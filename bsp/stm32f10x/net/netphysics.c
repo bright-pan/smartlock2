@@ -242,7 +242,7 @@ void netprotocol_thread_entry(void *arg)
 
 	          rt_dprintf(NETPY_DEBUG_THREAD,(">>>>>"));
 	          buf = message.buffer;
-
+						
 	          for(i=0;i<message.length+4;i++)
 	          {
 	            rt_dprintf(NETPY_DEBUG_THREAD,("%02X",*(buf++)));

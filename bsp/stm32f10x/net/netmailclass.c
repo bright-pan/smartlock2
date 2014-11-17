@@ -10,14 +10,13 @@
 #include "netprotocol.h"
 #include "config.h"
 #include "dataSYNC.h"
-
 //#include "untils.h"
 //#include "unlockprocess.h"
 //#include "apppubulic.h"
 //#include "file_update.h"
 
 #ifdef   USEING_RAM_DEBUG
-#include "untils.h" //主要使用里面的 rt_dprintf
+#include "untils.h" 
 #endif
 
 #ifndef USEING_RAM_DEBUG
@@ -60,10 +59,13 @@ rt_sem_t smg_send_wait_sem_crate(void)
 }
 
 /***************************************************************************************************
-以下函数为网络协议给应用层提供的使用API
+@brief	以下函数为网络协议给应用层提供的使用API,所有发送API的参数都是协议中的数据域部分，打包过程
+不会做任何填充操作。	
 ***************************************************************************************************/
 
-static rt_uint16_t landresendtime = 20;
+static rt_uint16_t landresendtime = 20;			//登陆报文的重发时间为2s
+
+
 /** 
 @brief  send landed mail
 @param  void 
@@ -123,6 +125,12 @@ void send_net_landed_mail(void)
   rt_free(mail);
 }
 
+/** 
+@brief 发送心跳报文
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
+*/
 void net_mail_heart(void)
 {
 	net_msgmail_p mail;
@@ -160,6 +168,12 @@ void net_mail_heart(void)
   rt_free(mail);
 }
 
+/** 
+@brief 设置心跳函数
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
+*/
 int set_heart_callback(void)
 {
 	Net_Mail_Heart_callback(net_mail_heart);
@@ -168,8 +182,12 @@ int set_heart_callback(void)
 }
 INIT_APP_EXPORT(set_heart_callback);
 
-/*
-功能:设置报文邮件
+
+/** 
+@brief 设置报文邮件
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
 */
 rt_err_t msg_mail_alarm(rt_uint8_t alarm,rt_uint8_t LockStatus,rt_uint32_t time)
 {
@@ -213,8 +231,12 @@ rt_err_t msg_mail_alarm(rt_uint8_t alarm,rt_uint8_t LockStatus,rt_uint32_t time)
   return (result == 0)?RT_EOK:RT_ERROR;
 }
 
-/*
-功能:设置故障报警
+
+/** 
+@brief 设置故障报警
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
 */
 rt_err_t msg_mail_fault(rt_uint8_t fault,rt_uint32_t time)
 {
@@ -256,8 +278,12 @@ rt_err_t msg_mail_fault(rt_uint8_t fault,rt_uint32_t time)
   return (result == 0)?RT_EOK:RT_ERROR;
 }
 
-/*
-功能:钥匙开启
+
+/** 
+@brief 钥匙开启
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
 */
 rt_err_t msg_mail_opendoor(rt_uint8_t type,rt_uint16_t account,rt_uint16_t key,rt_uint32_t time)
 {
@@ -301,8 +327,12 @@ rt_err_t msg_mail_opendoor(rt_uint8_t type,rt_uint16_t account,rt_uint16_t key,r
   return (result == 0)?RT_EOK:RT_ERROR;
 }
 
-/*
-功能:电池报警
+
+/** 
+@brief 电池报警
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
 */
 rt_err_t msg_mail_battery(rt_uint8_t status,rt_uint8_t capacity,rt_uint32_t time)
 {
@@ -346,8 +376,12 @@ rt_err_t msg_mail_battery(rt_uint8_t status,rt_uint8_t capacity,rt_uint32_t time
   return (result == 0)?RT_EOK:RT_ERROR;
 }
 
-/*
-功能:时间同步
+
+/** 
+@brief 时间同步
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
 */
 rt_err_t msg_mail_adjust_time(void)
 {
@@ -388,8 +422,12 @@ rt_err_t msg_mail_adjust_time(void)
   return (result == 0)?RT_EOK:RT_ERROR;
 }
 
-/*
-功能:用户告警参数
+
+/** 
+@brief 用户告警参数
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
 */
 rt_err_t msg_mail_alarmarg(rt_uint8_t Type,rt_uint8_t arg)
 {
@@ -431,8 +469,12 @@ rt_err_t msg_mail_alarmarg(rt_uint8_t Type,rt_uint8_t arg)
   return (result == 0)?RT_EOK:RT_ERROR;
 }
 
-/*
-功能:终端手机添加
+
+/** 
+@brief 终端手机添加
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
 */
 rt_err_t msg_mail_phoneadd(rt_uint16_t PhID,rt_uint16_t flag,rt_uint8_t buf[],rt_uint32_t date)
 {
@@ -479,8 +521,12 @@ rt_err_t msg_mail_phoneadd(rt_uint16_t PhID,rt_uint16_t flag,rt_uint8_t buf[],rt
   return (result == 0)?RT_EOK:RT_ERROR;
 }
 
-/*
-功能:添加手机白名单
+
+/** 
+@brief 添加手机白名单
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
 */
 void msg_mail_phoneadd_ack(net_recvmsg_p RMail,rt_uint8_t result)
 {
@@ -512,8 +558,12 @@ void msg_mail_phoneadd_ack(net_recvmsg_p RMail,rt_uint8_t result)
 	rt_free(mail);
 }
 
-/*
-功能:终端手机添加
+
+/** 
+@brief 终端手机添加
+@param 
+@retval RT_EOK   :succeed
+@retval RT_ERROR :Failure
 */
 rt_err_t msg_mail_phondel(rt_uint16_t PhID,rt_uint32_t date)
 {
@@ -558,8 +608,12 @@ rt_err_t msg_mail_phondel(rt_uint16_t PhID,rt_uint32_t date)
   return (result == 0)?RT_EOK:RT_ERROR;
 }
 
-/*
-功能:删除手机白名单
+
+/** 
+@brief 删除手机白名单
+@param 
+@retval RT_EOK   :succeed
+@retval RT_ERROR :Failure
 */
 void msg_mail_phonedel_ack(net_recvmsg_p RMail,rt_uint8_t result)
 {
@@ -592,8 +646,12 @@ void msg_mail_phonedel_ack(net_recvmsg_p RMail,rt_uint8_t result)
 	rt_free(mail);
 }
 
-/*
-功能:终端添加钥匙
+
+/** 
+@brief 终端添加钥匙
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
 */
 rt_err_t msg_mail_keyadd(net_keyadd_user *KeyData)
 {
@@ -634,8 +692,12 @@ rt_err_t msg_mail_keyadd(net_keyadd_user *KeyData)
   return (result == 0)?RT_EOK:RT_ERROR;
 }
 
-/*
-功能:发送添加钥匙应答
+
+/** 
+@brief 发送添加钥匙应答
+@param 
+@retval RT_EOK   :succeed
+@retval RT_ERROR :Failure
 */
 void msg_mail_keyadd_ack(net_recvmsg_p RMail,rt_uint8_t result)
 {
@@ -668,7 +730,13 @@ void msg_mail_keyadd_ack(net_recvmsg_p RMail,rt_uint8_t result)
 	rt_free(mail);
 }
 
-//钥匙删除
+
+/** 
+@brief 钥匙删除
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
+*/
 rt_err_t msg_mail_keydelete(rt_uint16_t pos,rt_uint32_t date)
 {
 	rt_uint8_t result;
@@ -714,8 +782,12 @@ rt_err_t msg_mail_keydelete(rt_uint16_t pos,rt_uint32_t date)
   return (result == 0)?RT_EOK:RT_ERROR;
 }
 
-/*
-功能:发送添加钥匙应答
+
+/** 
+@brief 发送添加钥匙应答
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
 */
 void msg_mail_keydel_ack(net_recvmsg_p RMail,rt_uint8_t result)
 {
@@ -750,7 +822,7 @@ void msg_mail_keydel_ack(net_recvmsg_p RMail,rt_uint8_t result)
 }
 
 /** 
-@brief send MSGType type message process result
+@brief 发送报文的应答数据只有结果的调用接口
 @param MSGType :message type 
 @param result :process result
 @retval void
@@ -786,8 +858,12 @@ void msg_mail_resultack(net_recvmsg_p RMail,rt_uint8_t result)
 
 }
 
-/*
-功能:发送应答没有数据
+
+/** 
+@brief 发送应答没有数据
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
 */
 void msg_mail_nullack(net_recvmsg_p RMail)
 {
@@ -813,8 +889,12 @@ void msg_mail_nullack(net_recvmsg_p RMail)
 	rt_free(mail);
 }
 
-/*
-功能:文件请求应答
+
+/** 
+@brief 文件请求应答
+@param 
+@retval RT_EOK   :succeed
+@retval RT_ERROR :Failure
 */
 void msg_mail_filereq_ack(net_recvmsg_p RMail,rt_uint8_t result)
 {
@@ -846,8 +926,12 @@ void msg_mail_filereq_ack(net_recvmsg_p RMail,rt_uint8_t result)
 	rt_free(mail);
 }
 
-/*
-功能:文件包应答
+
+/** 
+@brief 文件包应答
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
 */
 void msg_mail_fileack(net_recvmsg_p RMail,rt_uint8_t Fresult)
 {
@@ -881,9 +965,11 @@ void msg_mail_fileack(net_recvmsg_p RMail,rt_uint8_t Fresult)
 }
 
 
-
-/*
-功能:账户添加
+/** 
+@brief 账户添加
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
 */
 rt_err_t msg_mail_account_add(rt_int16_t account_pos,rt_uint8_t *name,rt_uint32_t date)
 {
@@ -932,9 +1018,11 @@ rt_err_t msg_mail_account_add(rt_int16_t account_pos,rt_uint8_t *name,rt_uint32_
 }
 
 
-
-/*
-功能:账户添加应答
+/** 
+@brief 账户添加应答
+@param 
+@retval RT_EOK   :succeed
+@retval RT_ERROR :Failure
 */
 void msg_mail_account_add_ack(net_recvmsg_p RMail,rt_uint8_t result)
 {
@@ -966,8 +1054,12 @@ void msg_mail_account_add_ack(net_recvmsg_p RMail,rt_uint8_t result)
 	rt_free(mail);
 }
 
-/*
-功能:账户删除
+
+/** 
+@brief 账户删除
+@param 
+@retval RT_EOK   :succeed
+@retval RT_ERROR :Failure
 */
 rt_err_t msg_mail_account_del(rt_int16_t account_pos,rt_uint32_t date)
 {
@@ -1015,8 +1107,11 @@ rt_err_t msg_mail_account_del(rt_int16_t account_pos,rt_uint32_t date)
 }
 
   
-/*
-功能:账户删除应答
+/** 
+@brief 账户删除应答
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
 */
 void msg_mail_account_del_ack(net_recvmsg_p RMail,rt_uint8_t result)
 {
@@ -1049,8 +1144,11 @@ void msg_mail_account_del_ack(net_recvmsg_p RMail,rt_uint8_t result)
 }
 
 
-/*
-功能:钥匙绑定
+/** 
+@brief 钥匙绑定
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
 */
 rt_err_t msg_mail_keybind(rt_uint16_t key_pos,rt_uint16_t account_pos,rt_uint32_t date)
 {
@@ -1101,8 +1199,12 @@ rt_err_t msg_mail_keybind(rt_uint16_t key_pos,rt_uint16_t account_pos,rt_uint32_
   return (result == 0)?RT_EOK:RT_ERROR;
 }
 
-/*
-功能:钥匙绑定应答
+
+/** 
+@brief 钥匙绑定应答
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
 */
 void msg_mail_keybind_ack(net_recvmsg_p RMail,rt_uint8_t result)
 {
@@ -1134,8 +1236,12 @@ void msg_mail_keybind_ack(net_recvmsg_p RMail,rt_uint8_t result)
 	rt_free(mail);
 }
 
-/*
-功能:电话绑定
+
+/** 
+@brief 电话绑定
+@param 
+@retval RT_EOK   :succeed
+@retval RT_ERROR :Failure
 */
 rt_err_t msg_mail_phonebind(rt_uint16_t phone_pos,rt_uint16_t account_pos,rt_uint32_t date)
 {
@@ -1186,8 +1292,12 @@ rt_err_t msg_mail_phonebind(rt_uint16_t phone_pos,rt_uint16_t account_pos,rt_uin
   return (result == 0)?RT_EOK:RT_ERROR;
 }
 
-/*
-功能:电话绑定应答
+
+/** 
+@brief 电话绑定应答
+@param 
+@retval RT_EOK   :succeed
+@retval RT_ERROR :Failure
 */
 void msg_mail_phonebind_ack(net_recvmsg_p RMail,rt_uint8_t result)
 {
@@ -1219,6 +1329,12 @@ void msg_mail_phonebind_ack(net_recvmsg_p RMail,rt_uint8_t result)
 	rt_free(mail);
 }
 
+/** 
+@brief 数据同步应答 账户、钥匙、手机、记录的数据同步应答都调用此函数
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
+*/
 void msg_mail_datasync_ack(net_recvmsg_p RMail,rt_uint8_t result)
 {
 	net_msgmail_p mail = RT_NULL;
@@ -1248,7 +1364,13 @@ void msg_mail_datasync_ack(net_recvmsg_p RMail,rt_uint8_t result)
 	rt_free(mail);
 }
 
-//账户映射域添加
+
+/** 
+@brief 账户映射域添加
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
+*/
 rt_err_t msg_mail_accmapadd(rt_uint8_t *MapByte,rt_size_t ByteLength,rt_uint32_t date)
 {
 	rt_uint8_t            result;
@@ -1294,7 +1416,13 @@ rt_err_t msg_mail_accmapadd(rt_uint8_t *MapByte,rt_size_t ByteLength,rt_uint32_t
   return (result == 0)?RT_EOK:RT_ERROR;
 }
 
-//账户数据校验
+
+/** 
+@brief 账户数据校验
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
+*/
 rt_err_t msg_mail_accdatcks(rt_uint16_t  ID, rt_uint32_t date)
 {
 	rt_uint8_t            result;
@@ -1342,7 +1470,12 @@ rt_err_t msg_mail_accdatcks(rt_uint16_t  ID, rt_uint32_t date)
 }
 
 
-//钥匙映射域添加
+/** 
+@brief 钥匙映射域添加
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
+*/
 rt_err_t msg_mail_keymapadd(rt_uint8_t *MapByte,rt_size_t ByteLength,rt_uint32_t date)
 {
 	rt_uint8_t            result;
@@ -1392,7 +1525,13 @@ rt_err_t msg_mail_keymapadd(rt_uint8_t *MapByte,rt_size_t ByteLength,rt_uint32_t
   return (result == 0)?RT_EOK:RT_ERROR;
 }
 
-//钥匙数据校验
+
+/** 
+@brief 钥匙数据校验
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
+*/
 rt_err_t msg_mail_keydatcks(rt_uint16_t  ID, rt_uint32_t date)
 {
 	rt_uint8_t            result;
@@ -1439,7 +1578,13 @@ rt_err_t msg_mail_keydatcks(rt_uint16_t  ID, rt_uint32_t date)
   return (result == 0)?RT_EOK:RT_ERROR;
 }
 
-//手机映射域添加
+
+/** 
+@brief 手机映射域添加
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
+*/
 rt_err_t msg_mail_phmapadd(rt_uint8_t *MapByte,rt_size_t ByteLength,rt_uint32_t date)
 {
 	rt_uint8_t            result;
@@ -1489,7 +1634,12 @@ rt_err_t msg_mail_phmapadd(rt_uint8_t *MapByte,rt_size_t ByteLength,rt_uint32_t 
   return (result == 0)?RT_EOK:RT_ERROR;
 }
 
-//手机数据校验
+/** 
+@brief 手机数据校验
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
+*/
 rt_err_t msg_mail_phdatcks(rt_uint16_t  ID, rt_uint32_t date)
 {
 	rt_uint8_t            result;
@@ -1536,7 +1686,12 @@ rt_err_t msg_mail_phdatcks(rt_uint16_t  ID, rt_uint32_t date)
   return (result == 0)?RT_EOK:RT_ERROR;
 }
 
-//记录映射域添加
+/** 
+@brief 记录映射域添加
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
+*/
 rt_err_t msg_mail_recmapadd(rt_uint8_t *MapByte,rt_size_t ByteLength,rt_uint32_t date)
 {
 	rt_uint8_t            result;
@@ -1586,7 +1741,14 @@ rt_err_t msg_mail_recmapadd(rt_uint8_t *MapByte,rt_size_t ByteLength,rt_uint32_t
   return (result == 0)?RT_EOK:RT_ERROR;
 }
 
-//记录数据校验
+
+/** 
+@brief 记录数据校验报文发送API
+@param ID : 记录映射域的ID
+@param date: 发送报文的时间
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
+*/
 rt_err_t msg_mail_recdatcks(rt_uint16_t  ID, rt_uint32_t date)
 {
 	rt_uint8_t            result;
@@ -1635,15 +1797,18 @@ rt_err_t msg_mail_recdatcks(rt_uint16_t  ID, rt_uint32_t date)
 
 
 
-/*********************************************************************
+/***************************************************************************************************
  *process receive net messge 
  *
- *********************************************************************
- */
+ **************************************************************************************************/
+
  
-/*
-功能:接收处理的指针函数
-返回: 0: 成功 1: 失败
+/** 
+@brief  协议层接收报文处理接口，Mail->cmd对应收到的对应报文类型
+@param  Mail :收到的网络原始数据
+@param  UserData: 网络协议层传出了的私有数据，默认为RT_NULL
+@retval 1 :succeed
+@retval 0 :Failure
 */
 rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 {
@@ -1990,6 +2155,12 @@ rt_uint8_t net_message_recv_process(net_recvmsg_p Mail,void *UserData)
 }
 //#define FILE_UPLOAD_TEST
 #ifdef FILE_UPLOAD_TEST
+/** 
+@brief 
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
+*/
 void fileSendT(void)
 {
 	rt_thread_t id;
@@ -2004,6 +2175,12 @@ void fileSendT(void)
 }
 #endif
 
+/** 
+@brief 
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
+*/
 static void net_msg_thread_process(void)
 {
 	#ifdef USEING_FILE_API
@@ -2014,7 +2191,12 @@ static void net_msg_thread_process(void)
 	#endif
 }
 
-
+/** 
+@brief 
+@param 
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
+*/
 void Net_Param_Init(void)
 {
 	rt_uint8_t *data;
@@ -2200,12 +2382,20 @@ void msg_test(rt_uint8_t cmd)
 }
 FINSH_FUNCTION_EXPORT(msg_test,msg_test(void));
 
+/** 
+@brief 上传映射域
+@param type = 0 账户映射域
+@param type = 1 钥匙映射域
+@param type = 2 手机号映射域
+@param type = 3 锁记录映射域
+@retval none
+*/
 void net_upload_map(rt_uint8_t type)
 {
 	void 				*mapdata;
 	rt_uint32_t *mapaddr = RT_NULL;
 	rt_size_t   mapsize;
-	rt_size_t   i;
+	//rt_size_t   i;
 
 	switch(type)
 	{

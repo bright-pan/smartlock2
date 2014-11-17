@@ -1,6 +1,12 @@
 #include "netaccount.h"
 #define SHOW_NETPHONE_INFO 1
 
+/** 
+@brief 远程端账户添加报文
+@param  mail远程端数据
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
+*/
 rt_err_t net_account_add_process(net_recvmsg_p mail)
 {
 	net_recv_accountadd *remote = RT_NULL;
@@ -35,6 +41,13 @@ rt_err_t net_account_add_process(net_recvmsg_p mail)
 	return RT_EOK;
 }
 
+
+/** 
+@brief  远程端账户删除报文处理
+@param  mail 远程端数据地址
+@retval RT_EOK	 :succeed
+@retval RT_ERROR :Failure
+*/
 rt_err_t net_account_del_process(net_recvmsg_p mail)
 {
 	net_recv_accountdel *remote = RT_NULL;
@@ -68,3 +81,4 @@ rt_err_t net_account_del_process(net_recvmsg_p mail)
   RT_DEBUG_LOG(SHOW_NETPHONE_INFO,("Account Delete Finish^_^\n"));
 	return RT_EOK;
 }
+
