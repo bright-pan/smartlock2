@@ -166,7 +166,7 @@ static rt_err_t rt_oled_control(struct rt_device *dev,
 }
 
 /*
- * serial register
+ * oled register
  */
 rt_err_t rt_hw_oled_register(struct oled_device *oled,
                              const char *name,

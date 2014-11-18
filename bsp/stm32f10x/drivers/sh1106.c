@@ -66,7 +66,7 @@
 
 static void
 sh1106_inverse(struct oled_device *, u8, u8, u8, u8);
-
+/* lcd logo bmp */
 const u8 logo_bmp[] = {
 
 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -113,6 +113,12 @@ struct private_user_data
     const char name[RT_NAME_MAX];
     u8 cache[CACHE_X_SIZE][CACHE_PAGES];
 };
+
+/*
+    sh1106 write command to device
+    u8 dat, data
+    u8 cmd, write mode
+*/
 __STATIC_INLINE void sh1106_write(u8 dat,u8 cmd)
 {
 	u8 i;
@@ -164,6 +170,13 @@ const static u8 bit_map[8] = {
 	0x0f, 0x1f, 0x3f, 0x7f
 };
 
+/*
+    write cache to memory
+    struct oled_device *oled, write device
+    u8 x, u8 y, write coordination(x,y)
+    u8 x_size, u8 y_size, write coordination size(x,y)
+    const u8 *data_array, write data array
+*/
 static void
 sh1106_write_cache(struct oled_device *oled,
                           u8 x, u8 y,
@@ -249,7 +262,13 @@ sh1106_write_cache(struct oled_device *oled,
 	}
 
 }
-
+/*
+    display string
+    struct oled_device *oled, display device
+    u8 x, u8 y, coordination(x,y)
+    u8 *buf, u8 buf_size, string buffer and size
+    u8 inverse_flag, 1,inverse,0,normal.
+*/
 static void
 sh1106_display_string(struct oled_device *oled, u8 x, u8 y, u8 *buf, u8 buf_size, u8 inverse_flag)
 {
@@ -262,7 +281,13 @@ sh1106_display_string(struct oled_device *oled, u8 x, u8 y, u8 *buf, u8 buf_size
     if (inverse_flag)
         sh1106_inverse(oled, x, y, buf_size * 8, 8);
 }
-
+/*
+    display chinese
+    struct oled_device *oled, display device
+    u8 x, u8 y, coordination(x,y)
+    u8 *buf, u8 buf_size, chinese buffer and size
+    u8 inverse_flag, 1,inverse,0,normal.
+*/
 static void
 sh1106_display_chinese(struct oled_device *oled, u8 x, u8 y, u8 *buf, u8 buf_size, u8 inverse_flag)
 {
@@ -286,6 +311,14 @@ sh1106_display_chinese(struct oled_device *oled, u8 x, u8 y, u8 *buf, u8 buf_siz
 	}
 
 }
+
+/*
+    display bmp
+    struct oled_device *oled, display device
+    u8 x, u8 y, coordination(x,y)
+    u8 *buf, u8 buf_size, bmp buffer and size
+    u8 inverse_flag, 1,inverse,0,normal.
+*/
 static void
 sh1106_display_bmp(struct oled_device *oled, u8 x, u8 y, u8 x_size, const u8 *buf, u32 buf_size)
 {
@@ -296,13 +329,15 @@ sh1106_display_bmp(struct oled_device *oled, u8 x, u8 y, u8 x_size, const u8 *bu
 		sh1106_write_cache(oled, x, y + (index << 3), x_size, 8, buf + x_size * index);
 	}
 }
-
+/* display logo */
 __STATIC_INLINE void
 sh1106_display_logo(struct oled_device *oled)
 {
     sh1106_display_bmp(oled, 0,0, 128, logo_bmp, sizeof(logo_bmp));
 }
-//更新显存到LCD
+/*
+    更新显存到LCD
+*/
 static void
 sh1106_refresh(struct oled_device *oled)
 {
@@ -317,7 +352,13 @@ sh1106_refresh(struct oled_device *oled)
             sh1106_write(user->cache[n][i], SH1106_DATA);
 	}
 }
-
+/*
+    display to oled(x,y)
+    x, rect coordinate x
+    y, rect coordinate y
+    x_size, rect coordinate x size
+    y_size, rect coordinate y size
+*/
 static void
 sh1106_display(struct oled_device *oled, u8 x, u8 y, u8 x_size, u8 y_size)
 {
@@ -349,7 +390,13 @@ sh1106_display(struct oled_device *oled, u8 x, u8 y, u8 x_size, u8 y_size)
 	}
 }
 
-
+/*
+    inverse display to oled(x,y)
+    x, rect coordinate x
+    y, rect coordinate y
+    x_size, rect coordinate x size
+    y_size, rect coordinate y size
+*/
 static void
 sh1106_inverse(struct oled_device *oled, u8 x, u8 y, u8 x_size, u8 y_size)
 {
@@ -407,7 +454,13 @@ sh1106_inverse(struct oled_device *oled, u8 x, u8 y, u8 x_size, u8 y_size)
 
 	}
 }
-
+/*
+    clear display to oled(x,y)
+    x, rect coordinate x
+    y, rect coordinate y
+    x_size, rect coordinate x size
+    y_size, rect coordinate y size
+*/
 static void
 sh1106_clear(struct oled_device *oled, u8 x, u8 y, u8 x_size, 	u8 y_size)
 {
@@ -458,7 +511,11 @@ sh1106_clear(struct oled_device *oled, u8 x, u8 y, u8 x_size, 	u8 y_size)
 
 	}
 }
-
+/*
+    set pixer display to oled(x,y)
+    x, coordinate x
+    y, coordinate y
+*/
 __STATIC_INLINE void
 sh1106_set_pixel(struct oled_device *oled, u8 x, u8 y)
 {
@@ -466,7 +523,11 @@ sh1106_set_pixel(struct oled_device *oled, u8 x, u8 y)
     RT_ASSERT(x < CACHE_X_SIZE && y < CACHE_Y_SIZE);
     pixel_set(x, y, user->cache);
 }
-
+/*
+    clear pixer display to oled(x,y)
+    x, coordinate x
+    y, coordinate y
+*/
 __STATIC_INLINE void
 sh1106_clear_pixel(struct oled_device *oled, u8 x, u8 y)
 {
@@ -580,7 +641,7 @@ struct sh1106_param {
     u32 buf_size;
     u8 inverse_flag;
 };
-
+/* sh1106 control */
 static rt_err_t
 sh1106_control(struct oled_device *oled, rt_uint8_t cmd, void *arg)
 {
@@ -693,7 +754,14 @@ rt_hw_sh1106_register(void)
 }
 
 INIT_DEVICE_EXPORT(rt_hw_sh1106_register);
-
+/*
+    lcd dispaly string (x,y)
+    x, rect coordinate x
+    y, rect coordinate y
+    u8 *buf, buffer
+    u8 *buf_size, buffer size
+    u8 inverse_flag, 1,inverse,0,normal.
+*/
 void
 lcd_display_string(u8 x, u8 y, u8 *buf, u8 buf_size, u8 inverse_flag)
 {
@@ -710,7 +778,14 @@ lcd_display_string(u8 x, u8 y, u8 *buf, u8 buf_size, u8 inverse_flag)
     rt_device_control(dev, SH1106_CMD_DISPLAY_STRING, &lpm);
 
 }
-
+/*
+    lcd dispaly chinese (x,y)
+    x, rect coordinate x
+    y, rect coordinate y
+    u8 *buf, buffer
+    u8 *buf_size, buffer size
+    u8 inverse_flag, 1,inverse,0,normal.
+*/
 void
 lcd_display_chinese(u8 x, u8 y, u8 *buf, u8 buf_size, u8 inverse_flag)
 {
@@ -728,6 +803,13 @@ lcd_display_chinese(u8 x, u8 y, u8 *buf, u8 buf_size, u8 inverse_flag)
 
 }
 
+/*
+    lcd display rect(x,y,x_size,y_size)
+    x, rect coordinate x
+    y, rect coordinate y
+    x_size, rect coordinate x size
+    y_size, rect coordinate y size
+*/
 void
 lcd_display(u8 x, u8 y, u8 x_size, u8 y_size)
 {
@@ -742,7 +824,13 @@ lcd_display(u8 x, u8 y, u8 x_size, u8 y_size)
     lpm.y_size = y_size;
     rt_device_control(dev, SH1106_CMD_DISPLAY, &lpm);
 }
-
+/*
+    lcd clear rect(x,y,x_size,y_size)
+    x, rect coordinate x
+    y, rect coordinate y
+    x_size, rect coordinate x size
+    y_size, rect coordinate y size
+*/
 void
 lcd_clear(u8 x, u8 y, u8 x_size, u8 y_size)
 {
@@ -757,7 +845,13 @@ lcd_clear(u8 x, u8 y, u8 x_size, u8 y_size)
     lpm.y_size = y_size;
     rt_device_control(dev, SH1106_CMD_CLEAR, &lpm);
 }
-
+/*
+    lcd inverse rect(x,y,x_size,y_size)
+    x, rect coordinate x
+    y, rect coordinate y
+    x_size, rect coordinate x size
+    y_size, rect coordinate y size
+*/
 void
 lcd_inverse(u8 x, u8 y, u8 x_size, u8 y_size)
 {
@@ -772,7 +866,7 @@ lcd_inverse(u8 x, u8 y, u8 x_size, u8 y_size)
     lpm.y_size = y_size;
     rt_device_control(dev, SH1106_CMD_INVERSE, &lpm);
 }
-
+/* display logo */
 void
 lcd_display_logo(void)
 {
@@ -782,7 +876,14 @@ lcd_display_logo(void)
         return;
     rt_device_control(dev, SH1106_CMD_DISPLAY_LOGO, RT_NULL);
 }
-
+/*
+    lcd bmp (x,y)
+    x, rect coordinate x
+    y, rect coordinate y
+    x_size, rect coordinate x size
+    u8 *buf, bmp buffer
+    u8 *buf, bmp buffer size
+*/
 void
 lcd_display_bmp(u8 x, u8 y, u8 x_size, u8 *buf, u8 buf_size)
 {
@@ -799,7 +900,12 @@ lcd_display_bmp(u8 x, u8 y, u8 x_size, u8 *buf, u8 buf_size)
     rt_device_control(dev, SH1106_CMD_DISPLAY_BMP, &lpm);
 
 }
-
+/*
+    lcd set pixer(x,y) to [0,1]
+    x, rect coordinate x
+    y, rect coordinate y
+    u8 flag: 0,clear;1,set;
+*/
 void
 lcd_pixer(u8 x, u8 y, u8 flag)
 {

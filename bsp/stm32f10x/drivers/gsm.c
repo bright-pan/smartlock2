@@ -24,7 +24,9 @@ rt_mutex_t mutex_gsm_mail_sequence;
 TCP_DOMAIN_TYPEDEF tcp_domain;
 
 const char *at_command_map[80];
-
+/* 
+    at command help information 
+*/
 void at_command_map_init(void)
 {
 	at_command_map[AT] = "AT\r";
@@ -104,7 +106,11 @@ void at_command_map_init(void)
 	at_command_map[AT_IFC] = "AT+IFC=2,2\r";
 	at_command_map[AT_IFC1] = "AT+IFC?\r";
 }
-
+/* 
+    put char to gsm
+    uint8_t *str, source str address
+    uint16_t length, source str length
+*/
 void gsm_put_char(const uint8_t *str, uint16_t length)
 {
 #ifdef TEST_GSM_MODE_PUT_CHAR
@@ -130,6 +136,11 @@ void gsm_put_char(const uint8_t *str, uint16_t length)
 #endif
 }
 
+/* 
+    put hex to gsm
+    uint8_t *str, source str address
+    uint16_t length, source str length
+*/
 void gsm_put_hex(const uint8_t *str, uint16_t length)
 {
 #ifdef TEST_GSM_MODE_PUT_HEX
@@ -174,7 +185,11 @@ void gsm_power(FunctionalState state)
 		}
 	}
 }
-
+/*
+    gsm setup (0/1)
+    0: close
+    1: open
+*/
 GsmStatus gsm_setup(FunctionalState state)
 {
 	rt_int8_t dat = 0;
@@ -254,7 +269,9 @@ GsmStatus gsm_setup(FunctionalState state)
 	}
 	return GSM_SETUP_DISABLE_SUCCESS;
 }
-
+/*
+    gsm reset
+*/
 GsmStatus gsm_reset(void)
 {
 	if (gsm_setup(DISABLE) == GSM_SETUP_DISABLE_SUCCESS)
@@ -303,6 +320,11 @@ void gsm_recv_defult_time(void)
 #endif
 	return ;
 }
+
+/*
+    receive frame from gsm
+    uint8_t *buf, receive buf address
+*/
 uint16_t gsm_recv_frame(uint8_t *buf)
 {
 	uint8_t *buf_bk = buf;
@@ -373,9 +395,12 @@ rescan_frame:
 	return length;
 }
 
-
-
-
+/*
+    AT command response process
+    AT_COMMAND_INDEX_TYPEDEF index, at command index
+    uint8_t *buf, process buf
+    GSM_MAIL_CMD_DATA *cmd_data cmd data for at command index
+*/
 AT_RESPONSE_TYPEDEF
 at_response_process(AT_COMMAND_INDEX_TYPEDEF index, uint8_t *buf, GSM_MAIL_CMD_DATA *cmd_data)
 {
@@ -1124,7 +1149,12 @@ complete:
 
 	return result;
 }
-
+/* 
+    send gsm command
+    AT_COMMAND_INDEX_TYPEDEF index, at command index
+    uint16_t delay, receive command result delay time
+    GSM_MAIL_CMD_DATA *cmd_data, at command data
+*/
 AT_RESPONSE_TYPEDEF
 gsm_command(AT_COMMAND_INDEX_TYPEDEF index, uint16_t delay, GSM_MAIL_CMD_DATA *cmd_data)
 {
@@ -1378,7 +1408,9 @@ at_process_complete:
 	return result;
 }
 
-
+/* 
+dialing command for gprs
+*/
 static AT_RESPONSE_TYPEDEF
 gsm_dialing(void)
 {
@@ -1396,7 +1428,9 @@ gsm_dialing(void)
 
 	return result;
 }
-
+/* 
+    gsm configure for initial
+*/
 GSM_ERROR_TYPEDEF
 gsm_init_process(void)
 {
@@ -1431,7 +1465,10 @@ gsm_init_process(void)
 
 	return result;
 }
-
+/*
+    switch gsm mode
+    uint8_t flag, flag for gsm mode(gprs, gsm)
+*/
 AT_RESPONSE_TYPEDEF
 gsm_mode_switch(uint8_t flag)
 {
@@ -1449,6 +1486,10 @@ gsm_mode_switch(uint8_t flag)
 	return result;
 }
 
+/*
+    gsm ring process
+    uint8_t flag, 1: sync, 0 async
+*/
 AT_RESPONSE_TYPEDEF
 gsm_ring_process(uint8_t flag)
 {
@@ -1464,6 +1505,10 @@ gsm_ring_process(uint8_t flag)
 	}
 	return result;
 }
+/*
+    gsm call process
+    uint8_t flag, 1: sync, 0 async
+*/
 AT_RESPONSE_TYPEDEF
 gsm_phone_call_process(int type, uint8_t flag)
 {
@@ -1626,6 +1671,13 @@ gsm_thread_entry(void *parameters)
 	}
 }
 
+/* 
+    send gsm command mail 
+    AT_COMMAND_INDEX_TYPEDEF command_index, at command index
+    uint16_t delay, receive at command result delay time
+    GSM_MAIL_CMD_DATA *cmd_data, at command data
+    u8 flag, 1:sync, 0:async
+*/
 AT_RESPONSE_TYPEDEF
 send_cmd_mail(AT_COMMAND_INDEX_TYPEDEF command_index, uint16_t delay, GSM_MAIL_CMD_DATA *cmd_data, u8 flag)
 {
@@ -1667,7 +1719,12 @@ send_cmd_mail(AT_COMMAND_INDEX_TYPEDEF command_index, uint16_t delay, GSM_MAIL_C
 
 	return send_result;
 }
-
+/* 
+    send gsm sms mail 
+    uint8_t *buf, sms buf address
+    uint16_t length, sms length
+    u8 flag, 1:sync, 0:async
+*/
 GSM_ERROR_TYPEDEF
 send_gsm_sms_mail(uint8_t *buf, uint16_t length, uint8_t flag)
 {
@@ -1741,6 +1798,13 @@ __free_process:
     return error;
 }
 
+/*
+    send gsm control mail
+    u8 ctrl_cmd, gsm control command
+    uint8_t *buf, control buffer
+    uint16_t length, buffer length
+    u8 flag, 1:sync, 0:async
+*/
 GSM_ERROR_TYPEDEF
 send_gsm_ctrl_mail(u8 ctrl_cmd, uint8_t *buf, uint16_t length, uint8_t flag)
 {
@@ -1799,7 +1863,12 @@ __free_process:
         rt_sem_delete(gsm_mail_buf.result_sem);
     return error;
 }
-
+/*
+    send gsm gprs mail
+    uint8_t *buf, gprs buffer
+    uint16_t length, buffer length
+    u8 flag, 1:sync, 0:async
+*/
 GSM_ERROR_TYPEDEF
 send_gsm_gprs_mail(uint8_t *buf, uint16_t length, uint8_t flag)
 {
@@ -1872,7 +1941,7 @@ __free_process:
         rt_sem_delete(gsm_mail_buf.result_sem);
     return error;
 }
-
+/* gsm mutex manange */
 void gsm_muntex_control(rt_uint8_t cmd,char *username)
 {
 	if(cmd == RT_TRUE)

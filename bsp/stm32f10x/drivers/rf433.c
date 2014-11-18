@@ -25,8 +25,8 @@
 #include "buzzer.h"
 
 #define RF433_DEBUG 1
-#define RF433_TIMEOUT 1000
-#define RF433_SMS_LIMITE 200
+#define RF433_TIMEOUT 1000 // rf433 timeout for work
+#define RF433_SMS_LIMITE 200 // rf433 
 
 static volatile s32 time_out; // ms 计时变量
 static volatile s32 time_cnt;
@@ -42,14 +42,17 @@ static volatile s32 status_cnt;
 
 typedef struct
 {
-    s32 cmd;
-    u8 data[16];
+    s32 cmd;// mail cmd type
+    u8 data[16]; //rf433 data
 }RF433_MAIL_TYPEDEF;
 
 // rf433 msg queue for rf433 alarm
 static rt_mq_t rf433_mq;
 static rt_timer_t rf433_dat_scan_timer = RT_NULL;
 
+/*
+    start rf433 check
+*/
 static void
 rf433_check_start(void)
 {
@@ -58,6 +61,7 @@ rf433_check_start(void)
     
 }
 
+/* stop rf433 check */
 static s32
 rf433_check_stop(void)
 {
@@ -136,9 +140,9 @@ rf433_thread_entry(void *parameter)
 			{
 				case RF433_START:
                 {
-                    flag = 1;
-                    gpio_pin_output(DEVICE_NAME_RF_ENABLE, 0, 1);
-                    rf433_check_start();
+                    flag = 1; // set rf433 work flag
+                    gpio_pin_output(DEVICE_NAME_RF_ENABLE, 0, 1);// enable rf433
+                    rf433_check_start(); // start rf433 check
                     buzzer_send_mail(BZ_TYPE_RF433_STRART);
                     break;
                 }
@@ -146,11 +150,11 @@ rf433_thread_entry(void *parameter)
 				{
                     sum = 0;
                     for (i = 0; i < 15; ++i)
-                        sum += rf433_mail_buf.data[i];
+                        sum += rf433_mail_buf.data[i];// computer checksum for rf433
                     if (sum == rf433_mail_buf.data[15]) {
                         RT_DEBUG_LOG(RF433_DEBUG,("accept rf433\n"));
-                        temp = device_config_key_verify(KEY_TYPE_RF433, rf433_mail_buf.data, 4);
-                        if (temp >= 0) {
+                        temp = device_config_key_verify(KEY_TYPE_RF433, rf433_mail_buf.data, 4);// rf433 data verify
+                        if (temp >= 0) {// verfiy sucesess
                             //send_sms_mail(ALARM_TYPE_RFID_KEY_SUCCESS, 0, RT_NULL, 0);
                             union alarm_data *data;
                             flag = 0;
@@ -181,13 +185,19 @@ rf433_thread_entry(void *parameter)
         } else {
             if (flag) {
                 if (rf433_check_stop() > (2*RF433_SMS_LIMITE - RF433_TIMEOUT))
+                    // rf433 work time > -600
                     send_sms_mail(ALARM_TYPE_SMS_RF433_ERROR, 0, RT_NULL, 0, PHONE_AUTH_SMS);
-                flag = 0;
+                flag = 0; //clear rf433 work flag
             }
         }
     }
 }
 
+/*
+    send rf433 mail to rf433 module.
+    s32 cmd: rf433 work command.
+    u8 *data: rf433 frame data. 
+*/
 void
 send_rf433_mail(s32 cmd, u8 *data)
 {
@@ -206,6 +216,10 @@ send_rf433_mail(s32 cmd, u8 *data)
 	}
 }
 
+
+/*
+    rf433 frame check for rf433 work timer.
+*/
 static void
 rf433_dat_check(void *parameters)
 {
@@ -216,6 +230,8 @@ rf433_dat_check(void *parameters)
     u8 b, i = 0;
     u8 dat, byte = 0;
     u8 data[16] = {0,};
+    
+    // computer work time.
     if (gpio_pin_input(DEVICE_NAME_HALL, 0) != HALL_STATUS) {
         --status_cnt;
         return;
@@ -345,6 +361,7 @@ rf433_dat_check(void *parameters)
         }
         data[b] = byte;
     }
+    // send verify mail to rf433 module
     send_rf433_mail(RF433_VERIFY, data);
     //判断数据是否正确
 __exit:

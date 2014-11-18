@@ -488,7 +488,11 @@ sms_data_init(void)
 
 /*
  * convert time to ucs for sms
- *
+ *  
+    const struct tm *tm_time, time struct
+    const uint16_t *prefix, uint8_t prefix_length, prefix for ucs
+			 const uint16_t *suffix, uint8_t suffix_length, suffix for ucs
+			 uint16_t *time_ucs, uint16_t *length, ucs address and ucs length
  */
 static uint16_t *
 sms_time_ucs(const struct tm *tm_time,
@@ -544,6 +548,13 @@ sms_time_ucs(const struct tm *tm_time,
 
 	return time_ucs;
 }
+
+/*
+    convert number string to ucs
+    u8 *buf, number string buffer address
+    u16 buf_length, number string length
+    uint16_t *time_ucs, uint16_t *length, ucs address and ucs length
+*/
 static uint16_t *
 sms_num_ucs(u8 *buf, u16 buf_length,
             uint16_t *time_ucs, uint16_t *length)
@@ -555,7 +566,11 @@ sms_num_ucs(u8 *buf, u16 buf_length,
     }
 	return time_ucs;
 }
-
+/*
+    convert phone string to octet format
+    uint8_t *octet buffer address
+    const char *phone_address, phone sting buffer address
+*/
 static void
 sms_pdu_phone_address_init(uint8_t *octet, const char *phone_address)
 {
@@ -580,7 +595,13 @@ sms_pdu_phone_address_init(uint8_t *octet, const char *phone_address)
 		*--octet |= 0xf0;
 	}
 }
-
+/*
+    process pdu head to pdu frame
+    char *smsc_address, smsc address
+    char *dest_address, destination address
+    SMS_SEND_PDU_FRAME *pdu, pdu frame
+    uint8_t tp_udl, pdu length
+*/
 static void
 sms_pdu_head_init(char *smsc_address, char *dest_address, SMS_SEND_PDU_FRAME *pdu, uint8_t tp_udl)
 {
@@ -603,6 +624,12 @@ sms_pdu_head_init(char *smsc_address, char *dest_address, SMS_SEND_PDU_FRAME *pd
 
 }
 
+/* 
+    convert hex string to ascii string
+    uint8_t *string, destination ascii string
+    uint8_t *hex, source hex string
+    uint8_t hex_length, source hex string length
+*/
 static void
 hex_to_string(uint8_t *string, uint8_t *hex, uint8_t hex_length)
 {
@@ -613,6 +640,13 @@ hex_to_string(uint8_t *string, uint8_t *hex, uint8_t hex_length)
 	}
 }
 
+/*
+    send pdu frame
+    char *dest_address, destination address
+    char *smsc_address, smsc address
+    uint16_t *content, sms content address
+    uint8_t length, sms content length
+*/
 static int8_t
 sms_pdu_ucs_send(char *dest_address, char *smsc_address, uint16_t *content, uint8_t length)
 {
@@ -702,13 +736,18 @@ sms_pdu_ucs_send(char *dest_address, char *smsc_address, uint16_t *content, uint
 SMSTimeLag_p TimeOutWindow = RT_NULL;
 
 #endif
-
+/* phone callback parameter define */
 struct phone_sms_callback_params {
     void *arg1;
     void *arg2;
     void *arg3;
 };
-
+/*
+    send sms use phone_head information
+    struct phone_head *ph, phone head
+    int phone_id, phone id
+    void *args, callback parameters
+*/
 int phone_sms_callback(struct phone_head *ph, int phone_id, void *args)
 {
     s32 result = -1;
@@ -800,7 +839,14 @@ sms_thread_entry(void *parameter)
 	}
 }
 
-
+/*
+    send sms mail
+    ALARM_TYPEDEF alarm_type, sms alarm type
+    time_t time, sms alarm time
+    u8 *buf, sms alarm data buffer
+    u16 length, sms alarm data length
+    u16 auth, sms alarm auth
+*/
 void
 send_sms_mail(ALARM_TYPEDEF alarm_type, time_t time, u8 *buf, u16 length, u16 auth)
 {

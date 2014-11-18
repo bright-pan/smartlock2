@@ -24,6 +24,9 @@
 //#include "funtable.h"
 #define CONFIG_DEBUG 1
 
+/*
+    configure error define
+*/
 #define ECONFIG_ERROR 1
 #define ECONFIG_FULL 2
 #define ECONFIG_EXIST 3
@@ -167,6 +170,13 @@ device_config_set_event_valid(u16 event_id, u8 value)
     }
     return result;
 }
+/*
+    根据电话ID获得事件的有效使用状况。
+    返回：
+        -ECONFIG_ERROR 无法获得。
+        1 有效。
+        0 无效。
+*/
 s32
 device_config_get_phone_valid(u16 phone_id)
 {
@@ -178,7 +188,13 @@ device_config_get_phone_valid(u16 phone_id)
     }
     return result;
 }
-
+/*
+    根据电话ID，设置为有效（1），无效状态（0）。
+    返回：
+        -ECONFIG_ERROR 无法获得。
+        1 有效。
+        0 无效。
+*/
 s32
 device_config_set_phone_valid(u16 phone_id, u8 value)
 {
@@ -196,7 +212,13 @@ device_config_set_phone_valid(u16 phone_id, u8 value)
     }
     return result;
 }
-
+/*
+    根据账户ID获得事件的有效使用状况。
+    返回：
+        -ECONFIG_ERROR 无法获得。
+        1 有效。
+        0 无效。
+*/
 s32
 device_config_get_account_valid(u16 account_id)
 {
@@ -208,7 +230,13 @@ device_config_get_account_valid(u16 account_id)
     }
     return result;
 }
-
+/*
+    根据账户ID，设置为有效（1），无效状态（0）。
+    返回：
+        -ECONFIG_ERROR 无法获得。
+        1 有效。
+        0 无效。
+*/
 s32
 device_config_set_account_valid(u16 account_id, u8 value)
 {
@@ -226,7 +254,7 @@ device_config_set_account_valid(u16 account_id, u8 value)
     }
     return result;
 }
-
+/* 根据钥匙类型得到钥匙密码的长度*/
 s32
 device_config_get_key_code_size(u16 key_type)
 {
@@ -537,7 +565,17 @@ device_config_key_create(u16 key_id, u16 key_type, void *buf, u16 length)
 __exit:
     return result;
 }
-
+/*
+    设置钥匙（如果钥匙id不存在则创建新的钥匙。
+    struct key *new_key, 钥匙数据
+    u32 op_time， 操作时间
+    length：编码长度。
+    返回：
+        -ECONFIG_ERROR， 创建失败。
+        -ECONFIG_FULL, 钥匙库已满。
+        -ECONFIG_EXIST, 钥匙已存在。
+        >=0, 创建成功的钥匙编号。
+*/
 s32
 device_config_key_set(u16 key_id, struct key *new_key, u32 op_time)
 {
