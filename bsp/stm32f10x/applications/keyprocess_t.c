@@ -11,9 +11,7 @@
 
 void keyprocess_thread_entry(void *arg)
 {
-	//rt_device_t dev;
-	//½âËø½çÃæ	
-	admin_create();
+	admin_account_init();
   key_input_processing_init();
 	while(1)
 	{
