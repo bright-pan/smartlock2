@@ -218,15 +218,17 @@ void netprotocol_thread_entry(void *arg)
       }
       else
       {
-				/*ClearBufTime++;
+				ClearBufTime++;
 				
-				if(ClearBufTime > 3000)
+				if(ClearBufTime > 200)
 				{
+					ClearBufTime = 0;
           //清空时间
           rt_device_read(hw_dev,0,recv_data,TCP_BUF_SIZE);
 					SavePos = 0;
 					MsgEndPos = 0;
-				}*/
+					//rt_kprintf("Clear net buf\n");
+				}
       }
 
       //发送数据

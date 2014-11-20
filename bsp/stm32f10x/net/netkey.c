@@ -83,6 +83,7 @@ rt_err_t net_key_add_process(net_recvmsg_p mail)
 	net_string_copy_uint16(&KeyID,remote->col);
 	keydat->head.key_type = remote->type+1;//1//1.指纹 2.RFID 3.密码
 	keydat->head.operation_type = remote->accredit+1;
+	//keydat->head.is_updated = 0;
 	net_string_copy_uint32((rt_uint32_t *)&keydat->head.updated_time,remote->createt);
 	net_string_copy_uint32((rt_uint32_t *)&keydat->head.start_time,remote->start_t);
 	net_string_copy_uint32((rt_uint32_t *)&keydat->head.end_time,remote->stop_t);
@@ -139,6 +140,10 @@ rt_err_t net_key_add_process(net_recvmsg_p mail)
 	
 	KeyOpResult = device_config_key_set(KeyID,keydat,keydat->head.updated_time);
 
+	//设置更新标志位
+	device_config_key_operate(KeyID,keydat,0);
+	keydat->head.is_updated = 0;
+	device_config_key_operate(KeyID,keydat,1);
 	
 	RT_DEBUG_LOG(SHOW_NETKEY_INFO,("OpenDoorTime.start_h   = %d\n",OpenDoorTime.start_h));
 	RT_DEBUG_LOG(SHOW_NETKEY_INFO,("OpenDoorTime.start_m   = %d\n",OpenDoorTime.start_m));
@@ -160,6 +165,7 @@ rt_err_t net_key_add_process(net_recvmsg_p mail)
     RT_DEBUG_LOG(SHOW_NETKEY_INFO,("Remote add keys to fail!!!\n"));
 		return RT_ERROR;
 	}
+	
   RT_DEBUG_LOG(SHOW_NETKEY_INFO,("Remote add keys to success!!!\n"));
 	return RT_EOK;
 }

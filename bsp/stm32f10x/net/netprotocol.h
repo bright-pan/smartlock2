@@ -1127,8 +1127,11 @@ rt_bool_t net_mail_crc16_check(net_recvmsg_p Mail);
 //获得窗口中邮件的私有变量地址
 rt_uint32_t net_get_wnd_user(net_recvmsg_p msg);
 
-//清除处理窗口
+//清除窗口中某一条命令
 void clear_wnd_cmd_all(rt_uint8_t cmd);
+
+//清除窗口中所以邮件数据
+void clear_wnd_mail_data_all(void);
 
 //设置网络参数
 void net_config_parameter_set(rt_uint8_t type,rt_uint8_t *data);

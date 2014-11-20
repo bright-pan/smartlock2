@@ -202,6 +202,7 @@ static void key_upload_process(rt_uint16_t UpdatePos)
 	if(result == RT_EOK)
 	{
 		//数据上传成功
+		rt_dprintf(USEING_GPRS_DEBUG,("Account :%d bind Key:%d\n",KeyData->head.account,UpdatePos));
  		result = msg_mail_keybind(UpdatePos,KeyData->head.account,KeyData->head.updated_time);
 		if(result == RT_EOK)
 		{
