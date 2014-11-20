@@ -88,4 +88,8 @@ rt_uint8_t menu_event_process(rt_uint8_t mode,rt_uint32_t type);
 
 //输入确定键处理
 rt_err_t menu_input_sure_key(rt_uint32_t OutTime);
+
+//管理员相关处理初始化
+rt_err_t admin_account_init(void);
+
 #endif

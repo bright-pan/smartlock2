@@ -608,7 +608,7 @@ rt_err_t add_new_phone_check(rt_uint8_t phone[])
 	len = rt_strlen((const char *)phone);
 	if(len < PHONE_STAND_LEN)
 	{
-		return RT_ERROR;
+		return RT_EEMPTY;
 	}	
 
 	result = user_phone_add_check(phone);

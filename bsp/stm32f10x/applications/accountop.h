@@ -78,7 +78,7 @@ rt_uint32_t menu_get_cur_date(void);
 rt_err_t user_modify_fprint(rt_uint16_t KeyPos,rt_uint32_t outtime);
 
 //创建超级用户
-void admin_create(void);
+void admin_create(rt_err_t (*PhoneShowUI)(rt_uint8_t *phone));
 
 //设置当前操作的账户
 rt_err_t account_set_use(rt_int32_t id);

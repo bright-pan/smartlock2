@@ -48,6 +48,14 @@ static const rt_uint8_t Menu2Second[MENU2_SECOND_NUM][8*2] =
 	{"2.参数设置"},
 };
 
+//管理员初始化界面信息
+static const rt_uint8_t AdminInitUIText[][8*2] =
+{
+	"设置管理员手机",
+	"手机号错误",
+	"管理员账户创建",
+	"成功",
+};
 //管理员密码检测
 rt_err_t admin_password_check(rt_uint8_t *password)
 {	
@@ -320,6 +328,125 @@ void menu_7_processing(void)
 {
 	menu2_second_ui(1);
 }
+
+
+/** 
+@brief  管理员手机输入UI
+@param  none
+@retval None
+*/
+rt_err_t admin_phone_input_UI(rt_uint8_t *Phone)
+{
+	rt_uint8_t *buf = RT_NULL;
+	rt_uint8_t GlintStatus;
+	
+ADMIN_CRATE_UI:
+  gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+
+  gui_display_string(SHOW_X_CENTERED(AdminInitUIText[0]),SHOW_Y_LINE(1),AdminInitUIText[0],GUI_WIHIT);
+  gui_display_update();
+  buf = rt_calloc(1,MENU_PHONE_MAX_LEN);
+	while(1)
+	{
+		rt_err_t   result;
+		rt_uint8_t KeyValue;
+    result = gui_key_input(&KeyValue);
+	  if(RT_EOK == result)
+	  {
+	    //有按键
+	    if(KeyValue >= '0' && KeyValue <= '9')
+	    {
+	      result = string_add_char(buf,KeyValue,MENU_PHONE_MAX_LEN);
+	      if(result == RT_EOK)
+	      {
+	        gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(2),SHOW_X_ROW8(15),SHOW_Y_LINE(3));
+	        gui_display_string(SHOW_X_CENTERED(buf),SHOW_Y_LINE(2),buf,GUI_WIHIT);
+	      }
+	      else
+	      {
+	        //输入数量超过8个
+	      }
+	    }
+	    else if(KeyValue == MENU_SURE_VALUE)
+	    {
+	      //检测输入的手机是否合法
+	      result = add_new_phone_check(buf);
+	      if(result != RT_EOK)
+	      {
+	        //不合法
+	        menu_operation_result_handle(1);
+	        gui_display_string(SHOW_X_CENTERED(AdminInitUIText[1]),SHOW_Y_LINE(3),AdminInitUIText[1],GUI_WIHIT);
+	        gui_display_update();
+	        rt_thread_delay(RT_TICK_PER_SECOND);
+	        gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(3),SHOW_X_ROW8(15),SHOW_Y_LINE(4));
+	      }
+	      else
+	      {
+	        //合法
+	        rt_memcpy(Phone,buf,MENU_PHONE_MAX_LEN);
+	        break;
+	      }
+	      //新密码输入完成 进入验证。
+	    }
+	    else if(KeyValue == MENU_DEL_VALUE)
+	    {
+	      result = string_del_char(buf,MENU_PHONE_MAX_LEN);
+	      if(result == RT_EOK)
+	      {
+	        gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(2),SHOW_X_ROW8(15),SHOW_Y_LINE(3));
+	        gui_display_string(SHOW_X_CENTERED(buf),SHOW_Y_LINE(2),buf,GUI_WIHIT);
+	      }
+	      /*else
+	      {
+	        gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),AdminInitUIText[2],GUI_WIHIT);
+	        gui_display_update();
+	        rt_free(buf);
+	        return ;
+	      }*/
+	    }
+	  }
+	  else
+	  {
+	    //操作超时
+	    if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+	    {
+	    	rt_free(buf);
+	    	goto ADMIN_CRATE_UI;
+	      //return RT_ETIMEOUT;
+	    }
+	    //闪烁提示
+	    GlintStatus++;
+	    menu_inputchar_glint(SHOW_X_ROW8(rt_strlen((const char*)buf))+SHOW_X_CENTERED(buf),SHOW_Y_LINE(2),GlintStatus%2);
+	  }
+	  //更新显示
+	  
+	  gui_display_update();
+	  rt_thread_delay(1);
+
+	}
+	gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+  gui_display_string(SHOW_X_CENTERED(AdminInitUIText[2]),SHOW_Y_LINE(1),AdminInitUIText[2],GUI_WIHIT);  
+  gui_display_string(SHOW_X_CENTERED(AdminInitUIText[3]),SHOW_Y_LINE(2),AdminInitUIText[3],GUI_WIHIT);
+  gui_display_update();
+	menu_input_sure_key(200);
+	gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+	gui_display_update();
+
+	return RT_EOK;
+}
+
+/** 
+@brief  创建新的管理账户
+@param  none
+@retval None
+*/
+rt_err_t admin_account_init(void)
+{
+	admin_create(admin_phone_input_UI);
+
+	return RT_EOK;
+}
+
 
 
 

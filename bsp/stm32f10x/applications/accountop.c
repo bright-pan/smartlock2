@@ -519,7 +519,7 @@ rt_err_t admin_modify_fprint(rt_uint32_t outtime)
   
 	device_config_account_operate(0,ah,0);
 
-	for(i = 0;i<ACCOUNT_HAVE_KEY_NUMBERS;i++)
+	for(i = 0;i<ACCOUNT_KEY_NUMBERS;i++)
 	{
 		if(ah->key[i] != KEY_ID_INVALID)
 		{
@@ -567,7 +567,7 @@ rt_err_t admin_modify_fprint(rt_uint32_t outtime)
 			}
 		}
 	}
-	if(i == ACCOUNT_HAVE_KEY_NUMBERS)
+	if(i == ACCOUNT_KEY_NUMBERS)
 	{
 		//没有指纹
 		rt_int32_t result;
@@ -695,10 +695,11 @@ rt_uint32_t account_cur_pos_get(void)
 
 
 //创建超级用户
-void admin_create(void)
+void admin_create(rt_err_t (*PhoneShowUI)(rt_uint8_t *phone))
 {
 	rt_int32_t result;
 	rt_uint8_t rf433data[] = {0xff,0xff,0xff,0xff};
+	rt_uint8_t *DatBuf = RT_NULL;
 	//rt_int32_t keypos;
 
 	result = device_config_account_next_valid(0,1);
@@ -709,6 +710,21 @@ void admin_create(void)
 	}
 	else
 	{
+		DatBuf = rt_calloc(1,12);
+		if(PhoneShowUI != RT_NULL)
+		{
+			if(PhoneShowUI(DatBuf) != RT_EOK)
+			{
+				//手机设置失败
+				unlink("/config");
+				rt_free(DatBuf);
+				return ;
+			}
+		}
+		else
+		{
+			rt_memcpy(DatBuf,"12345678901",12);
+		}
     result = device_config_account_create(ACCOUNT_ID_INVALID,"Admin",rt_strlen("Admin"));
 	  if(result == 0)
 	  {
@@ -758,7 +774,7 @@ void admin_create(void)
 			}
 
 			//创建管理员手机
-			result = device_config_phone_create(0,"12345678901",rt_strlen("12345678901"));
+			result = device_config_phone_create(0,DatBuf,11);
 			if(result == 0)
 			{	
 				struct phone_head *ph;
@@ -795,6 +811,7 @@ void admin_create(void)
 	  	rt_kprintf("Admin Create Fail\n");
 			RT_ASSERT(RT_NULL == RT_NULL);
 	  }
+	  rt_free(DatBuf);
 	}
 }
 
