@@ -98,9 +98,9 @@ void lock_operation(s32 status, u16 pluse);
 void PVD_IRQCallbackFun(void)
 {
 	/* save current system time */
-	system_time_save();
+	//system_time_save();
 
-	rt_kprintf("save current system time\n");
+	rt_kprintf("vcc =2.9v save current system time\n");
 }
 
 /**
