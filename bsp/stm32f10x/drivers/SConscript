@@ -34,6 +34,7 @@ sync_key.c
 sync_phone.c
 sync_event.c
 PVDProcess.c
+battery.c
 """)
 
 # add Ethernet drvers.
