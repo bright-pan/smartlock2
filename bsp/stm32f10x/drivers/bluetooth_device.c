@@ -669,8 +669,6 @@ static rt_err_t bluetooth_passivity_disconnect(bluetooth_module_p bluetooth)
 
 	buf = rt_calloc(1,16);
 	RT_ASSERT(buf != RT_NULL);
-	
-	bluetooth_cmd_switch(bluetooth,RT_TRUE);
 
 	bluetooth_module_read(buf,12);
 
@@ -697,10 +695,11 @@ static rt_err_t bluetooth_passivity_disconnect(bluetooth_module_p bluetooth)
 	//进入休眠
 	if(bt_at_cmd_analysis(bluetooth->uart_dev,"AT+SLEEP","OK+SLEEP",RT_NULL,50) != RT_EOK)
 	{
+		rt_kprintf("Blooth Sleep Fail!!!\n");
 		return RT_ERROR;
 	}
-	rt_thread_delay(300);
-	
+	//rt_thread_delay(300);
+	bluetooth_cmd_switch(bluetooth,RT_TRUE);
 	return RT_EOK;
 }
 
@@ -822,6 +821,13 @@ void bluetooth_thread_entry(void *arg)
 	          case BT_MAIL_TYPE_SLEEP:
 	          {
 	          	rt_kprintf("Bluetooth C  Sleep Preventer\n");
+	          	//进入休眠
+							if(bt_at_cmd_analysis(bluetooth->uart_dev,"AT+SLEEP","OK+SLEEP",RT_NULL,50) != RT_EOK)
+							{
+								rt_kprintf("Blooth sleep fail !!!\n");
+								bluetooth_initiate(bluetooth);
+							}
+							rt_thread_delay(300);
 	            rt_mb_send(mail.tx_end,RT_NULL);
 	            break;
 	          }
@@ -939,12 +945,13 @@ void bluetooth_thread_entry(void *arg)
 	        	rt_kprintf("Bluetooth Server Disconnected \n");
 						if(bluetooth_passivity_disconnect(bluetooth) != RT_EOK)
 						{
+							rt_kprintf("Blooth Disconnect Fail!!!\n");
 							//break;
 						}
 						rt_kprintf("bluetooth->work_status = %d\n",bluetooth->work_status);
 
 						//线程进入休眠
-						rt_thread_entry_sleep(rt_thread_self());
+						//rt_thread_entry_sleep(rt_thread_self());
 	        }
 	        else
 	        {
