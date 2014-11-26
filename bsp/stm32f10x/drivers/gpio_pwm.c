@@ -712,6 +712,7 @@ void TIM3_IRQHandler(void)
         {
             TIM_CCxCmd(speak_user_data.timx, speak_user_data.tim_oc_channel, TIM_CCx_Disable);
             TIM_Cmd(speak_user_data.timx, DISABLE);
+            GPIO_ResetBits(speak_user_data.gpiox,speak_user_data.gpio_pinx);
         }
     }
     /* leave interrupt */

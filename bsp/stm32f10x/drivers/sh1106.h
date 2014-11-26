@@ -15,6 +15,8 @@
 #ifndef _SH1106_H_
 #define _SH1106_H_
 #include "stm32f10x.h"
+#include <rthw.h>
+#include <rtthread.h>
 
 void
 lcd_display_string(u8 , u8 , u8 *, u8, u8);
@@ -39,5 +41,8 @@ lcd_display_bmp(u8, u8, u8, u8 *, u8);
 
 void
 lcd_pixer(u8, u8, u8);
+
+void 
+lcd_on_off(rt_bool_t cmd);
 
 #endif

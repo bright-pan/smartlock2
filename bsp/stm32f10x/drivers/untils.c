@@ -264,8 +264,6 @@ rt_uint16_t get_average_value(rt_uint16_t dat[],rt_uint8_t num)
 
 
 
-
-
 #ifdef RT_USING_FINSH
 #include <finsh.h>
 int

@@ -13,10 +13,6 @@
  *
  * Copyright (C) 2013 Yuettak Co.,Ltd
  ********************************************************************/
-
-#include <rthw.h>
-#include <rtthread.h>
-
 #include "oled.h"
 #include "sh1106.h"
 #include "font.h"
@@ -536,6 +532,39 @@ sh1106_clear_pixel(struct oled_device *oled, u8 x, u8 y)
     pixel_clear(x, y, user->cache);
 }
 
+static rt_err_t 
+sh1106_sleep_configure(struct oled_device *oled)
+{
+	GPIO_InitTypeDef  GPIO_InitStructure;
+	struct private_user_data *user = (struct private_user_data *)oled->parent.user_data;
+
+	rt_memset(user->cache, 0x00, sizeof(user->cache));
+
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA|RCC_APB2Periph_GPIOB|RCC_APB2Periph_GPIOD, ENABLE);  //使能PC,D,G端口时钟
+	GPIO_StructInit(&GPIO_InitStructure);
+	//cs
+	GPIO_InitStructure.GPIO_Pin = SH1106_CS_PIN;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(SH1106_CS_PORT, &GPIO_InitStructure);
+	GPIO_SetBits(SH1106_CS_PORT,SH1106_CS_PIN);
+
+	//rst
+	GPIO_InitStructure.GPIO_Pin = SH1106_RST_PIN;
+	GPIO_Init(SH1106_RST_PORT, &GPIO_InitStructure);
+	GPIO_SetBits(SH1106_RST_PORT,SH1106_RST_PIN);
+
+	//si
+	GPIO_InitStructure.GPIO_Pin = SH1106_SI_PIN;
+	GPIO_Init(SH1106_SI_PORT, &GPIO_InitStructure);
+	GPIO_SetBits(SH1106_SI_PORT,SH1106_SI_PIN);
+
+	//scl
+	GPIO_InitStructure.GPIO_Pin = SH1106_SCL_PIN;
+	GPIO_Init(SH1106_SCL_PORT, &GPIO_InitStructure);
+	GPIO_SetBits(SH1106_SCL_PORT,SH1106_SCL_PIN);
+}
+
 /*
  * gpio pin ops configure
  */
@@ -657,11 +686,13 @@ sh1106_control(struct oled_device *oled, rt_uint8_t cmd, void *arg)
     case SH1106_CMD_ON:
         {
             sh1106_write(0xAF,SH1106_CMD);     //Set Display On
+            sh1106_configure(oled);     //Set Display On
             break;
         }
     case SH1106_CMD_OFF:
         {
             sh1106_write(0xAE,SH1106_CMD);     //Set Display On
+            sh1106_sleep_configure(oled);
             break;
         }
     case SH1106_CMD_CLEAR:
@@ -922,6 +953,25 @@ lcd_pixer(u8 x, u8 y, u8 flag)
         rt_device_control(dev, SH1106_CMD_CLEAR_PIXER, &lpm);
 }
 
+void 
+lcd_on_off(rt_bool_t cmd)
+{
+	rt_device_t dev;
+	dev = device_enable(DEVICE_NAME_OLED_SH1106);
+	RT_ASSERT(dev);
+	
+	if(cmd == RT_FALSE)
+	{
+		//关闭
+		rt_device_control(dev,SH1106_CMD_OFF,0);
+	}
+	else
+	{
+		//打开
+		//rt_device_control(dev,SH1106_CMD_INIT,0);
+		rt_device_control(dev,SH1106_CMD_ON,0);
+	}
+}
 #ifdef RT_USING_FINSH
 #include <finsh.h>
 

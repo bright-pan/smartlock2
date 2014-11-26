@@ -170,10 +170,24 @@ static rt_err_t stm32_control(struct rt_serial_device *serial, int cmd, void *ar
 			GPIO_InitStructure.GPIO_Pin = uart->uart_tx_pin;
 			GPIO_Init(uart->uart_tx_gpio, &GPIO_InitStructure);
 			break;
-        case RT_DEVICE_CTRL_CLR_RB:
-            serial->int_rx->rb.read_index = 0;
-            serial->int_rx->rb.write_index = 0;
-            break;
+    case RT_DEVICE_CTRL_CLR_RB:
+	    serial->int_rx->rb.read_index = 0;
+	    serial->int_rx->rb.write_index = 0;
+	    break;
+	  case RT_DEVICE_SET_USART_RX_PIN:
+	  {
+			/* configure USART RX pin is usart RX */
+	  }
+	  case RT_DEVICE_INTERRUPT_RX_PIN:
+	  {
+			/* configure USART RX Pin is interrupt pin */
+			//GPIO_EXTILineConfig();
+	  }
+	  default:
+	  {
+	  	rt_kprintf("Usart Device Cmd Error!!!\n");
+			break;
+	  }
     }
 
     return RT_EOK;

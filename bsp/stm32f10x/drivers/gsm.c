@@ -13,6 +13,7 @@
 
 #include "gsm.h"
 #include "local.h"
+#include "usart.h"
 
 #define DEVICE_NAME_GSM_USART "uart3"
 #define TEST_GSM_MODE_PUT_HEX
@@ -24,6 +25,7 @@ rt_mutex_t mutex_gsm_mail_sequence;
 TCP_DOMAIN_TYPEDEF tcp_domain;
 
 const char *at_command_map[80];
+
 /* 
     at command help information 
 */
@@ -190,6 +192,33 @@ void gsm_power(FunctionalState state)
     0: close
     1: open
 */
+/** 
+@brief Manage GSM usart pin
+@param cmd: 
+@retval none
+*/
+void gsm_uart_manage(rt_bool_t cmd)
+{
+
+#ifdef USEING_GSM_UART_MANAGE
+	rt_device_t dev = device_enable(DEVICE_NAME_GSM_USART);
+
+	if(dev == RT_NULL)
+	{
+		rt_kprintf("%s device %s is RT_NULL",__FUNCTION__,DEVICE_NAME_GSM_USART);
+		return ;
+	}
+	if(cmd == RT_TRUE)
+	{
+		rt_device_control(dev,RT_DEVICE_CTRL_SET_TX_GPIO,RT_NULL);
+	}
+	else if(cmd == RT_FALSE)
+	{
+    rt_device_control(dev,RT_DEVICE_CTRL_CLR_TX_GPIO,RT_NULL);
+	}
+#endif
+}
+
 GsmStatus gsm_setup(FunctionalState state)
 {
 	rt_int8_t dat = 0;
@@ -1557,6 +1586,7 @@ gsm_thread_entry(void *parameters)
 	device_enable(DEVICE_NAME_GSM_RING);
 
 	at_command_map_init();
+  gsm_uart_manage(RT_FALSE);
 
 	while (1) {
 
@@ -1574,6 +1604,7 @@ gsm_thread_entry(void *parameters)
 						{
                             if (gpio_pin_input(DEVICE_NAME_GSM_STATUS, 0)) {
                                 gpio_pin_output(DEVICE_NAME_POWER_GSM, 0,1);
+                                gsm_uart_manage(RT_FALSE);
                                 if (gsm_setup(DISABLE) == GSM_SETUP_DISABLE_SUCCESS)
                                     at_result = AT_RESPONSE_OK;
                             }
@@ -1583,6 +1614,7 @@ gsm_thread_entry(void *parameters)
 						{
                             if (!gpio_pin_input(DEVICE_NAME_GSM_STATUS, 0)) {
                                 gpio_pin_output(DEVICE_NAME_POWER_GSM, 1,1);
+                                gsm_uart_manage(RT_TRUE);
                                 if (gsm_setup(ENABLE) == GSM_SETUP_ENABLE_SUCCESS && gsm_init_process() == GSM_EOK)
                                     at_result = AT_RESPONSE_OK;
                                                             

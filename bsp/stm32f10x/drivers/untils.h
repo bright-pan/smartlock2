@@ -24,6 +24,7 @@
 #include <dfs_elm.h>
 #include <dfs_fs.h>
 #include "dfs_posix.h"
+#include "PowerManage.h"
 
 #define bits_mask(x) (1<<(x))
 
@@ -68,4 +69,5 @@ memmem(const void *haystack,
 void sysinit(void);
 
 rt_uint16_t get_average_value(rt_uint16_t dat[],rt_uint8_t num);
+
 #endif

@@ -271,6 +271,9 @@ void netprotocol_thread_entry(void *arg)
     		//清除所有登陆报文
 				clear_wnd_cmd_all(NET_MSGTYPE_LANDED);
 				rt_thread_delay(1);
+
+				//线程进入休眠
+				rt_thread_entry_sleep(rt_thread_self());
 				continue;
     	}
 			else
@@ -283,6 +286,9 @@ void netprotocol_thread_entry(void *arg)
     			net_event_process(0,NET_ENVET_RELINK);
 				}
 				rt_thread_delay(1);
+
+				//线程进入工作
+				rt_thread_entry_work(rt_thread_self());
 			}
     }
   }

@@ -24,7 +24,7 @@
 #include "buzzer.h"
 #endif
 
-#define UI_SLEEP_TIME               30
+#define UI_SLEEP_TIME               10
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //key api
 static rt_mq_t key_mq;								//按键
@@ -37,7 +37,7 @@ typedef struct {
 }KB_MAIL_TYPEDEF;
 
 /* GUI 模块进入休眠的倒计时计数器 */
-static volatile rt_uint8_t GUISleepTime = UI_SLEEP_TIME-UI_SLEEP_TIME+10;
+static volatile rt_uint8_t GUISleepTime = UI_SLEEP_TIME;
 
 /** 
 @brief  设置GUI模块进入休眠的等待时间
