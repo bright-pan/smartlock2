@@ -112,18 +112,62 @@ static void stm32_gpio_all_close(void)
   GPIO_InitTypeDef GPIO_InitStructure;
 
   GPIO_StructInit(&GPIO_InitStructure);
-  GPIO_Init(GPIOA,&GPIO_InitStructure);
-  GPIO_Init(GPIOB,&GPIO_InitStructure);
-  GPIO_Init(GPIOC,&GPIO_InitStructure);
-  GPIO_Init(GPIOD,&GPIO_InitStructure);
-  GPIO_Init(GPIOE,&GPIO_InitStructure);
-  GPIO_Init(GPIOF,&GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
+  //GPIO_Init(GPIOA,&GPIO_InitStructure);
+  //GPIO_Init(GPIOB,&GPIO_InitStructure);
+  //GPIO_Init(GPIOC,&GPIO_InitStructure);
+  //GPIO_Init(GPIOD,&GPIO_InitStructure);
+  //GPIO_Init(GPIOE,&GPIO_InitStructure);
+  //GPIO_Init(GPIOF,&GPIO_InitStructure);
   
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA| RCC_APB2Periph_GPIOB| RCC_APB2Periph_GPIOC | 
   											 RCC_APB2Periph_GPIOD | RCC_APB2Periph_GPIOE | RCC_APB2Periph_GPIOF, DISABLE);
   RCC_AHBPeriphClockCmd(RCC_AHBPeriph_FSMC,DISABLE);
 }
 
+/** 
+@brief  休眠之前引脚处理
+@param  none 
+@retval none
+*/
+static void stm32_sleep_gpio_config(void)
+{
+  GPIO_InitTypeDef GPIO_InitStructure;
+
+  GPIO_StructInit(&GPIO_InitStructure);
+  // 设置空闲管脚
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
+  
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0|GPIO_Pin_1|GPIO_Pin_2|GPIO_Pin_5|GPIO_Pin_12|GPIO_Pin_13;
+ 	GPIO_Init(GPIOC,&GPIO_InitStructure);
+
+ 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0|GPIO_Pin_3|GPIO_Pin_4|GPIO_Pin_5;
+ 	GPIO_Init(GPIOD,&GPIO_InitStructure);
+ 	
+ 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2|GPIO_Pin_3|GPIO_Pin_4|GPIO_Pin_5|GPIO_Pin_6;
+ 	GPIO_Init(GPIOE,&GPIO_InitStructure);
+
+ 	/*//关闭蓝牙模块
+ 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8|GPIO_Pin_9|GPIO_Pin_10|GPIO_Pin_11|GPIO_Pin_12|GPIO_Pin_13;
+ 	GPIO_Init(GPIOA,&GPIO_InitStructure);
+
+ 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8|GPIO_Pin_9;
+ 	GPIO_Init(GPIOC,&GPIO_InitStructure);
+
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7;
+ 	GPIO_Init(GPIOE,&GPIO_InitStructure);
+
+ 	//关闭rf433
+ 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1|GPIO_Pin_2;
+ 	GPIO_Init(GPIOD,&GPIO_InitStructure);
+
+ 	//关闭led
+ 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
+ 	GPIO_Init(GPIOA,&GPIO_InitStructure);
+ */
+ 	
+ 	//stm32_gpio_all_close();
+}
 
 /**
   * @brief  Configures system clock after wake-up from STOP: enable HSE, PLL
@@ -192,16 +236,21 @@ static void stm32_sleep_mode_entry(void)
 static void stm32_stop_mode_entry(void)
 {
 	// PWR的使能。
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR | RCC_APB1Periph_BKP | RCC_APB2Periph_AFIO, ENABLE);
+  RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR | RCC_APB1Periph_BKP, ENABLE);
 
   //PWR_WakeUpPinCmd(ENABLE);
-  
+  stm32_sleep_gpio_config();
   // 进入睡眠。
   PWR_EnterSTOPMode( PWR_Regulator_LowPower, PWR_STOPEntry_WFI);  
-
+	
 	// 配置系统停止后时钟
   SYSCLKConfig_STOP();
-  rt_thread_idle_sethook(RT_NULL);
+
+  // 清除唤醒标志
+	PWR_ClearFlag(PWR_FLAG_WU);
+
+	// 清除待机模式
+	PWR_ClearFlag(PWR_FLAG_SB);
 }
 
 static void rt_filesytem_unmount(void)
@@ -218,15 +267,17 @@ void rt_thread_idle_process(void)
 {
 	// 卸载文件系统
 	//rt_filesytem_unmount();
-
-	// CPU休眠
-	stm32_sleep_mode_entry();
 	
 	if((SysSleep.IsSleep == 0)&&(SysSleep.WorkFlag == 0))
 	{
 		// 进入停机模式
 		SysSleep.IsSleep = 1;
 		stm32_stop_mode_entry();
+	}
+	else
+	{
+    // CPU休眠
+    stm32_sleep_mode_entry();
 	}
 }
 
@@ -276,7 +327,15 @@ void rt_thread_status_manage(rt_thread_t thread,rt_uint8_t status)
 	{
 	  status ? (flag &= ~(0x01<<4)):(flag |= (0x01<<4));
 	}
-
+	else if(rt_strcmp(thread->name,"BT_M") == 0)
+	{
+	  status ? (flag &= ~(0x01<<5)):(flag |= (0x01<<5));
+	}
+	else if(rt_strcmp(thread->name,"NPDU") == 0)
+	{
+	  status ? (flag &= ~(0x01<<6)):(flag |= (0x01<<6));
+	}
+	
 	if(flag != SysSleep.WorkFlag)
 	{
 	  SysSleep.WorkFlag = flag;
@@ -313,27 +372,31 @@ void rt_thread_entry_sleep(rt_thread_t thread)
 #ifdef RT_USING_FINSH
 #include <finsh.h>
 
-void idle_set(rt_uint8_t cmd)
+void sleepManage(rt_uint8_t cmd)
 {
-	if(cmd == 0)
-	{
-		rt_thread_idle_sethook(rt_thread_idle_process);
-	}
-	else
-	{
-		rt_thread_idle_sethook(RT_NULL);
-	}
 	switch(cmd)
 	{
 		case 0:
 		{
+			rt_kprintf("idle_set:\n");
+			rt_kprintf("cmd:0 --help");
+			rt_kprintf("cmd:1 --set sleep work mode\n");
+			rt_kprintf("cmd:2 --cancel sleep work mode");
 			break;
 		}
-		case :
+		case 1:
+		{
+			rt_thread_idle_sethook(rt_thread_idle_process);
+			break;
+		}
+		case 2:
+		{
+      rt_thread_idle_sethook(RT_NULL);
+		}
 	}
 }
 
-FINSH_FUNCTION_EXPORT(idle_set,"(cmd)idle set");
+FINSH_FUNCTION_EXPORT(sleepManage,"(cmd) sleep mode manage cmd");
 
 #include "usart.h"
 void uart_manage(const char *name,rt_bool_t cmd)
