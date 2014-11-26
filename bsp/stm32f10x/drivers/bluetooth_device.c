@@ -800,8 +800,11 @@ void bluetooth_thread_entry(void *arg)
 	      mb_result = rt_mq_recv(BloothRequest_mq,&mail,sizeof(bluetooth_tx_mq),1);
 	      if(mb_result == RT_EOK)
 	      {
+	      	// 线程进入工作模式
+	      	//rt_thread_entry_work(rt_thread_self());
+	      	
 	        bluetooth->sleep_cnt = 0;
-	        //主动连接
+	        // 主动连接
 	        switch(mail.type)
 	        {
 	          case BT_MAIL_TYPE_CONN:
@@ -846,7 +849,16 @@ void bluetooth_thread_entry(void *arg)
 					rt_device_read(bluetooth->led_dev,0,&gpio_status,1);
 					if(gpio_status == BT_NOW_CONNECT)
 					{
+						// 蓝牙被动连接处理
 						bluetooth_passivity_connect(bluetooth);
+
+						//线程进入工作模式
+						rt_thread_entry_work(rt_thread_self());
+					}
+					else
+					{
+						//线程进入休眠
+						rt_thread_entry_sleep(rt_thread_self());
 					}
 	      }
 	    }
@@ -930,6 +942,9 @@ void bluetooth_thread_entry(void *arg)
 							//break;
 						}
 						rt_kprintf("bluetooth->work_status = %d\n",bluetooth->work_status);
+
+						//线程进入休眠
+						rt_thread_entry_sleep(rt_thread_self());
 	        }
 	        else
 	        {

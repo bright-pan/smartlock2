@@ -123,6 +123,9 @@ void system_freeze_manage(void)
 			//发送开锁信号
 			motor_status_open_send();
 			rt_kprintf("System In Unfreeze\n");
+
+			// 线程进入休眠
+			rt_thread_entry_sleep(rt_thread_self());
 		}
 	}
 }
@@ -300,6 +303,8 @@ void motor_status_manage(void)
     if(result == RT_EOK)
     {
       MotorManage.LockTime  = 1; 
+      // 线程进入工作
+			rt_thread_entry_work(rt_thread_self());
     }
 	}
 	else
@@ -310,6 +315,8 @@ void motor_status_manage(void)
 			//上锁
 			MotorManage.LockTime  = 0;
       lock_operation(LOCK_OPERATION_CLOSE,MOTOR_WORK_CUT);
+      // 线程进入休眠
+			rt_thread_entry_sleep(rt_thread_self());
 		}
 	}
 
@@ -356,6 +363,9 @@ local_thread_entry(void *parameter)
     
 	//fprint_module_init();
 	motor_status_sem_init();
+	
+	// 开始工作
+	rt_thread_entry_work(rt_thread_self());
 	while (1)
 	{
 		// receive mail
@@ -363,6 +373,8 @@ local_thread_entry(void *parameter)
 		result = rt_mq_recv(local_mq, &local_mail_buf, sizeof(local_mail_buf), 100);
 		if (result == RT_EOK)
 		{
+			// 开始工作
+			rt_thread_entry_work(rt_thread_self());
 			// process mail
             
      	rt_dprintf(LOCAL_DEBUG_MAIL,("receive local mail < time: %d alarm_type: %s >\n",\
@@ -509,6 +521,8 @@ local_thread_entry(void *parameter)
             break;
         };
 			}
+			// 线程进入休眠
+			rt_thread_entry_sleep(rt_thread_self());
 		}
 		else
 		{
@@ -527,25 +541,25 @@ lock_operation(s32 status, u16 pluse)
 {
     if (status == LOCK_OPERATION_CLOSE)
     {
-			#ifdef USEING_BUZZER_FUN
-      buzzer_send_mail(BZ_TYPE_LOCK);
-			#endif
 			if(motor_status_get() == LOCK_OPERATION_OPEN)
     	{
         motor_rotate(pluse);
     		motor_status_set(LOCK_OPERATION_CLOSE);
+    		#ifdef USEING_BUZZER_FUN
+	      buzzer_send_mail(BZ_TYPE_LOCK);
+				#endif
     	}
     }
     else
     {
-			#ifdef USEING_BUZZER_FUN
-			buzzer_send_mail(BZ_TYPE_UNLOCK);
-			#endif
 			if(motor_status_get() == LOCK_OPERATION_CLOSE)
     	{
         motor_rotate(-pluse);
         motor_status_set(LOCK_OPERATION_OPEN); 
         motor_status_open_send();
+				#ifdef USEING_BUZZER_FUN
+				buzzer_send_mail(BZ_TYPE_UNLOCK);
+				#endif
     	}
     }
        

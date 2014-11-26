@@ -27,31 +27,78 @@
 #define UI_SLEEP_TIME               30
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //key api
-static rt_mq_t key_mq;
+static rt_mq_t key_mq;								//按键
+
+/* 底层发送出来的按键接口 */
 typedef struct {
 	uint16_t type;
 	KB_MODE_TYPEDEF mode;
 	uint8_t c;
 }KB_MAIL_TYPEDEF;
 
-static volatile rt_uint8_t GUISleepTime = UI_SLEEP_TIME;
+/* GUI 模块进入休眠的倒计时计数器 */
+static volatile rt_uint8_t GUISleepTime = UI_SLEEP_TIME-UI_SLEEP_TIME+10;
 
+/** 
+@brief  设置GUI模块进入休眠的等待时间
+@param  value 秒没有按键按下进入休眠
+@retval none
+*/
 void gui_sleep_time_set(rt_uint8_t value)
 {
 	GUISleepTime = value;
 }
 
+
+/** 
+@brief  获取GUI模块进入休眠时间的等待时间
+@param  none
+@retval none
+*/
 rt_uint8_t gui_sleep_time_get(void)
 {
 	return GUISleepTime;
 }
 
-//打开lcd显示
+
+/** 
+@brief  打开lcd的显示
+@param  none
+@retval none
+*/
 void gui_open_lcd_show(void)
 {
   send_key_value_mail(KB_MAIL_TYPE_INPUT, KB_MODE_NORMAL_AUTH, MENU_DEL_VALUE);
 }
 
+
+/** 
+@brief  关闭lcd的显示
+@param  none
+@retval none
+*/
+void gui_close_lcd_show(void)
+{
+	// 关闭lcd模块
+	lcd_on_off(RT_FALSE);
+
+	// 关闭副板电源 
+	gpio_pin_output(DEVICE_NAME_POWER_FRONT,0,0);
+	rt_thread_delay(10);
+	
+  // UI进入睡眠状态
+  rt_thread_entry_sleep(rt_thread_self());
+}
+
+
+/** 
+@brief  发送一个按键值给菜单模块接口
+@param  type 邮件类型
+@param  mode 
+@param  c    按键值 
+@retval RT_EOK 有效按键 
+				RT_ERROR 无效按键
+*/
 rt_err_t send_key_value_mail(uint16_t type, KB_MODE_TYPEDEF mode, uint8_t c)
 {
 	rt_err_t result = -RT_EFULL;
@@ -84,6 +131,13 @@ rt_err_t send_key_value_mail(uint16_t type, KB_MODE_TYPEDEF mode, uint8_t c)
     return result;
 }
 
+
+/** 
+@brief  按键输入接口
+@param  KeyValue 按键值 
+@retval RT_EOK 有效按键 
+				RT_ERROR 无效按键
+*/
 rt_err_t gui_key_input(rt_uint8_t *KeyValue)
 {
 	rt_err_t            result;
@@ -101,17 +155,26 @@ rt_err_t gui_key_input(rt_uint8_t *KeyValue)
 	if(result == RT_EOK)
 	{
     rt_dprintf(MENU_DEBUG_KEY,("key recv value %c\n",mail.c));
-		//按键声音
+		// 按键声音
 		#ifdef USEING_BUZZER_FUN
     buzzer_send_mail(BZ_TYPE_KEY);
     #endif
+    
+    if(SleepCnt >= GUISleepTime)
+    {
+    	// ui线程进入工作状态
+			rt_thread_entry_work(rt_thread_self());
+			
+    	// 休眠后点亮屏幕
+    	gpio_pin_output(DEVICE_NAME_POWER_FRONT,1,0);
+			lcd_on_off(RT_TRUE);
+    }
     SleepCnt = 0;
-
     switch(mail.c)
     {
 			case KEY_ENTRY_SYS_MANAGE:
 			{
-				//触发进入系统管理界面
+				// 触发进入系统管理界面
 				
 				break;
 			}
@@ -125,10 +188,10 @@ rt_err_t gui_key_input(rt_uint8_t *KeyValue)
 					
 					break;
 				}
-				//触发接电话功能
+				// 触发接电话功能
 				send_local_mail(ALARM_TYPE_GSM_RING_REQUEST,0,RT_NULL);
 
-				//发送电话开门UI事件
+				// 发送电话开门UI事件
 				menu_event_process(0,MENU_EVT_PH_UNLOCK);
 				result = RT_ERROR;
 				break;
@@ -144,33 +207,76 @@ rt_err_t gui_key_input(rt_uint8_t *KeyValue)
 		SleepCnt++;
 		if(SleepCnt > GUISleepTime)
 		{
-			//屏幕休眠
+			SleepCnt = GUISleepTime;
+			// 屏幕休眠
 			gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);	
+
+			// 更新显存
 			gui_display_update();
-			//操作超时
+			
+			// 操作超时
 	    menu_event_process(0,MENU_EVT_OP_OUTTIME);
+
+			// 关闭液晶模块
+	    gui_close_lcd_show();
 		}
 	}
 	
 	*KeyValue = mail.c;
 	return result;
 }
-////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/** 
+@brief  显示字符串包括中文数字和字母
+@param  x 左上角坐标x
+@param  y 左上角坐标y
+@param  string 显示内容
+@param	color 显示颜色
+@retval none 
+*/
 void gui_display_string(rt_uint8_t x,rt_uint8_t y,const rt_uint8_t *string,rt_uint8_t color)
 {	
   //lcd_display_chinese(x,y,string,rt_strlen(string),color);
   gui_china16s(x,y,(rt_uint8_t *)string,color);
 }
+
+
+/** 
+@brief  清除一个矩形区域的显示内容为背景颜色
+@param  x1 左上角坐标x
+@param  y1 左上角坐标y
+@param  x2 右上角坐标x
+@param  y2 右上角坐标y
+@retval none 
+*/
 void gui_clear(rt_uint8_t x1,rt_uint8_t y1,rt_uint8_t x2,rt_uint8_t y2)
 {
 	lcd_clear(x1,y1,x2-x1,y2-y1);
 }
+
+
+/** 
+@brief  更新显示缓冲区到屏幕上
+@param  none
+@retval none 
+*/
 void gui_display_update(void)
 {
 	lcd_display(0,0,LCD_X_MAX,LCD_Y_MAX);
 }
 
+
+/** 
+@brief  显示一条线
+@param  x1 左上角坐标x
+@param  y1 左上角坐标y
+@param  x2 右上角坐标x
+@param  y2 右上角坐标y
+@param	color 颜色
+@retval none 
+*/
 void gui_line(rt_uint8_t x1,rt_uint8_t y1,rt_uint8_t x2,rt_uint8_t y2,rt_uint8_t color)  
 {  
 	rt_uint8_t t;  
@@ -241,6 +347,17 @@ void gui_line(rt_uint8_t x1,rt_uint8_t y1,rt_uint8_t x2,rt_uint8_t y2,rt_uint8_t
   }  
 }
 
+
+/** 
+@brief  画一个矩形
+@param  x0 左上角坐标x
+@param  y0 左上角坐标y
+@param  x1 右上角坐标x
+@param  y1 右上角坐标y
+@param	color 颜色
+@param  fill 填充
+@retval none 
+*/
 void gui_box(rt_uint8_t x0, rt_uint8_t y0, rt_uint8_t x1, rt_uint8_t y1,rt_uint8_t color,rt_uint8_t fill)
 {
 	rt_uint8_t i,j = 0;

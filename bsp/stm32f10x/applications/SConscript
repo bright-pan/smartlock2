@@ -24,6 +24,7 @@ FprintHandle.c
 dataSYNS.c
 eeprom_process.c
 debug_manage.c
+PowerManage.c
 """)
 
 CPPPATH = [cwd, str(Dir('#'))]

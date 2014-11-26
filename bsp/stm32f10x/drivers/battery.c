@@ -158,10 +158,19 @@ void battery_thread_entry(void *arg)
 	while(1)
 	{
 		Battery_Data bat;
+		
 		rt_thread_delay(100*60);
-		battery_get_data(&bat);
+
+		// 线程进入工作
+		rt_thread_entry_work(rt_thread_self());
+		//battery_get_data(&bat);
 		//battery_info_save_file(&bat);
+		
+		// 电压过低处理
 		battery_too_low();
+
+		// 线程进入休眠
+		rt_thread_entry_sleep(rt_thread_self());
 	}
 }
 

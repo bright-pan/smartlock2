@@ -99,8 +99,8 @@ void buzzer_work(BuzzerType mode)
 				buzzer_control(500,450,100);
 				buzzer_control(600,450,100);
 			}*/
-			buzzer_control(450,200,600);
-			
+			//buzzer_control(450,200,600);
+			buzzer_control(7000,5000,100);
 			break;
 		}
 		case BZ_TYPE_KEY_ERROR:
@@ -142,15 +142,28 @@ void buzzer_thread_entry(void *arg)
     BZ_mq = rt_mq_create("buzzer",sizeof(BuzzerType),10,RT_IPC_FLAG_FIFO);
     RT_ASSERT(BZ_mq != RT_NULL);
 	}
+	
+	// 
 	buzzer_send_mail(BZ_TYPE_INIT);
+	
+	// 线程进入休眠
+	rt_thread_entry_sleep(rt_thread_self());
 	while(1)
 	{
 		rt_err_t 		result;
 		BuzzerType 	BZ_data;
+		
 		result = rt_mq_recv(BZ_mq,&BZ_data,sizeof(BuzzerType),10);
 		if(result == RT_EOK)
 		{
+			// 线程进入工作
+			rt_thread_entry_work(rt_thread_self());
+
+			// 蜂鸣器工作 
 			buzzer_work(BZ_data);
+			
+			// 线程进入休眠
+			rt_thread_entry_sleep(rt_thread_self());
 		}
 		else
 		{

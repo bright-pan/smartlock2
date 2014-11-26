@@ -853,9 +853,15 @@ void gprs_mail_manage_entry(void* arg)
 			mq_result =rt_mq_recv(gprs_mq,&mail,sizeof(GPRS_MAIL_TYPEDEF),100);
 			if(mq_result == RT_EOK)
 			{	
+				rt_thread_entry_work(rt_thread_self());
 				rt_dprintf(USEING_GPRS_DEBUG,("Save alarm and open door mail\n"));
 				gprs_local_mail_save(&mail,UPDATE_FLAG_VALUE);
 				gprs_mail_delete(&mail);//释放资源
+			}
+			else
+			{
+				//等待超时
+				//rt_thread_entry_sleep(rt_thread_self());
 			}
 			login_flag = 0;
 			#if 0
@@ -868,12 +874,12 @@ void gprs_mail_manage_entry(void* arg)
 	      }
 			}
 			#endif
-			
+
+			rt_thread_entry_sleep(rt_thread_self());
 			continue;
 		}
 		else
 		{
-			
 			if(login_flag == 0)
 			{
 				login_flag = 1;
@@ -905,12 +911,21 @@ void gprs_mail_manage_entry(void* arg)
 		mq_result = rt_mq_recv(gprs_mq,&mail,sizeof(GPRS_MAIL_TYPEDEF),100);
 		if(mq_result == RT_EOK)
 		{
+			// 开始工作
+			rt_thread_entry_work(rt_thread_self());
+			
 			rt_dprintf(USEING_GPRS_DEBUG,("receive gprs mail < time: %d alarm_type: %s >\n",\
 					   		mail.time, alarm_help_map[mail.alarm_type]));
 			gprs_local_mail_save(&mail,UNUPDATA_FLAG_VALUE);
 			gprs_mail_process(&mail);
 			gprs_mail_delete(&mail);
 		}
+		else
+		{
+			//等待超时
+		}
+		//可以进入休眠模式
+		rt_thread_entry_sleep(rt_thread_self());
 	}
 }
 
