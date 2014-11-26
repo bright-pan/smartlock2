@@ -26,6 +26,7 @@
 //#define RT_USING_RZM
 /* Using Hook */
 #define RT_USING_HOOK
+#define IDLE_THREAD_STACK_SIZE 512
 
 /* Using Software Timer */
 #define RT_USING_TIMER_SOFT
@@ -193,5 +194,6 @@
 
 #define USEING_BUZZER_FUN
 #define USEING_RAM_DEBUG 
+#define USEING_GSM_UART_MANAGE
 
 #endif

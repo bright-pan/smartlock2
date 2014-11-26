@@ -15,6 +15,8 @@
 #include "gpio_adc.h"
 #include "untils.h"
 #include "buzzer.h"
+#include "alarm.h"
+
 
 #define BATTERY_DEBUG_THREAD            31
 
@@ -87,7 +89,13 @@ void battery_get_data(Battery_Data* data)
 		}
 		else if(data->voltage < BATTERY_LOW_ENERGE)
 		{
+			//电量0%
 			temp = BATTERY_LOW_ENERGE;
+		}
+		else if(data->voltage > BATTERY_FULL_ENERGE)
+		{
+			//电量100%
+			temp = BATTERY_FULL_ENERGE;
 		}
 		else
 		{
@@ -203,13 +211,16 @@ int battery_too_low(void)
 	Battery_Data bat;
 	
   battery_get_data(&bat);
-	if(bat.voltage <= 0.76)
+	if(bat.DumpEnergy <= 10)
 	{
+		send_local_mail(ALARM_TYPE_BATTERY_WORKING_20M,0,RT_NULL);
 		while(1)
 		{
 			rt_kprintf("Battery too low\n");
 			buzzer_work(BZ_TYPE_INIT);
-			sysreset();
+			//sysreset();
+			rt_thread_delay(RT_TICK_PER_SECOND*60*5);
+			while(1);
 		}
 	}
 

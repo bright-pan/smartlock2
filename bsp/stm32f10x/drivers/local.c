@@ -515,6 +515,11 @@ local_thread_entry(void *parameter)
 					sysinit();
 					break;
        	}
+       	case ALARM_TYPE_BATTERY_WORKING_20M:
+       	{
+       		send_sms_mail(ALARM_TYPE_BATTERY_REMAIN_20P,0, RT_NULL, 0, PHONE_AUTH_SMS);
+					break;
+       	}
 				default :
         {
             rt_dprintf(LOCAL_DEBUG_THREAD,("this alarm is not process...\n"));
