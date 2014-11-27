@@ -1678,20 +1678,29 @@ gsm_thread_entry(void *parameters)
     GSM_MAIL_CMD_DATA *cmd_data, at command data
     u8 flag, 1:sync, 0:async
 */
-AT_RESPONSE_TYPEDEF
+int
 send_cmd_mail(AT_COMMAND_INDEX_TYPEDEF command_index, uint16_t delay, GSM_MAIL_CMD_DATA *cmd_data, u8 flag)
 {
 	GSM_MAIL_TYPEDEF gsm_mail_buf;
-	AT_RESPONSE_TYPEDEF send_result = AT_RESPONSE_ERROR;
+	int send_result = -AT_RESPONSE_ERROR;
 	rt_err_t result;
 
     rt_memset(&gsm_mail_buf, 0, sizeof(gsm_mail_buf));
+	if (flag) {
+		gsm_mail_buf.result_sem = rt_sem_create("s_cmd", 0, RT_IPC_FLAG_FIFO);
+		if (gsm_mail_buf.result_sem == RT_NULL) {
+            goto __free_process;
+        }
+	}
+	else
+		gsm_mail_buf.result_sem = RT_NULL;
+
 	gsm_mail_buf.send_mode = GSM_MODE_CMD;
 	gsm_mail_buf.result = &send_result;
     if (flag)
-        gsm_mail_buf.result_sem = rt_sem_create("s_cmd", 0, RT_IPC_FLAG_FIFO);
+        gsm_mail_buf.result = &send_result;
     else
-        gsm_mail_buf.result_sem = RT_NULL;
+        gsm_mail_buf.result = RT_NULL;
 	gsm_mail_buf.flag = 1;
 	gsm_mail_buf.mail_data.cmd.index = command_index;
 	gsm_mail_buf.mail_data.cmd.delay = delay;
@@ -1706,17 +1715,18 @@ send_cmd_mail(AT_COMMAND_INDEX_TYPEDEF command_index, uint16_t delay, GSM_MAIL_C
 		}
 		else
 		{
+            send_result = AT_RESPONSE_OK;
             if (gsm_mail_buf.result_sem != RT_NULL)
                 rt_sem_take(gsm_mail_buf.result_sem, RT_WAITING_FOREVER);
 		}
-        if (gsm_mail_buf.result_sem != RT_NULL)
-            rt_sem_delete(gsm_mail_buf.result_sem);
 	}
 	else
 	{
 		rt_kprintf("sms_mq is RT_NULL!!!\n");
 	}
-
+__free_process:
+    if (gsm_mail_buf.result_sem != RT_NULL)
+        rt_sem_delete(gsm_mail_buf.result_sem);
 	return send_result;
 }
 /* 
@@ -1725,13 +1735,12 @@ send_cmd_mail(AT_COMMAND_INDEX_TYPEDEF command_index, uint16_t delay, GSM_MAIL_C
     uint16_t length, sms length
     u8 flag, 1:sync, 0:async
 */
-GSM_ERROR_TYPEDEF
+int
 send_gsm_sms_mail(uint8_t *buf, uint16_t length, uint8_t flag)
 {
 	GSM_MAIL_TYPEDEF gsm_mail_buf;
-    GSM_ERROR_TYPEDEF error = GSM_EERROR;
 	rt_err_t result;
-    AT_RESPONSE_TYPEDEF *send_result = RT_NULL;
+    int send_result = -AT_RESPONSE_ERROR;
     uint8_t *buf_bk = RT_NULL;
 
     rt_memset(&gsm_mail_buf, 0, sizeof(gsm_mail_buf));
@@ -1748,11 +1757,6 @@ send_gsm_sms_mail(uint8_t *buf, uint16_t length, uint8_t flag)
         else
             goto __free_process;
         
-        send_result = rt_malloc(sizeof(*send_result));
-        if (send_result == RT_NULL)
-            goto __free_process;
-        *send_result = AT_RESPONSE_ERROR;
-
 		gsm_mail_buf.result_sem = rt_sem_create("s_sms", 0, RT_IPC_FLAG_FIFO);
 		if (gsm_mail_buf.result_sem == RT_NULL) {
             goto __free_process;
@@ -1762,7 +1766,10 @@ send_gsm_sms_mail(uint8_t *buf, uint16_t length, uint8_t flag)
 		gsm_mail_buf.result_sem = RT_NULL;
 
 	gsm_mail_buf.send_mode = GSM_MODE_CMD;
-	gsm_mail_buf.result = send_result;
+    if (flag)
+        gsm_mail_buf.result = &send_result;
+    else
+        gsm_mail_buf.result = RT_NULL;
 	gsm_mail_buf.flag = flag;
 	gsm_mail_buf.mail_data.cmd.index = AT_CMGS;
 	gsm_mail_buf.mail_data.cmd.delay = 50;
@@ -1779,9 +1786,9 @@ send_gsm_sms_mail(uint8_t *buf, uint16_t length, uint8_t flag)
 		}		
         else
 		{
+            send_result = AT_RESPONSE_OK;
             if (gsm_mail_buf.result_sem != RT_NULL)
                 rt_sem_take(gsm_mail_buf.result_sem, RT_WAITING_FOREVER);
-            error = GSM_EOK;
 		}
 	}
 	else
@@ -1791,11 +1798,9 @@ send_gsm_sms_mail(uint8_t *buf, uint16_t length, uint8_t flag)
 __free_process:
     if (buf_bk != RT_NULL)
         rt_free(buf_bk);
-	if (send_result != RT_NULL)
-        rt_free(send_result);
     if (gsm_mail_buf.result_sem != RT_NULL)
         rt_sem_delete(gsm_mail_buf.result_sem);
-    return error;
+    return send_result;
 }
 
 /*
@@ -1805,21 +1810,16 @@ __free_process:
     uint16_t length, buffer length
     u8 flag, 1:sync, 0:async
 */
-GSM_ERROR_TYPEDEF
+int
 send_gsm_ctrl_mail(u8 ctrl_cmd, uint8_t *buf, uint16_t length, uint8_t flag)
 {
 	GSM_MAIL_TYPEDEF gsm_mail_buf;
-    GSM_ERROR_TYPEDEF error = GSM_EERROR;
 	rt_err_t result;
-    AT_RESPONSE_TYPEDEF *send_result = RT_NULL;
+    int send_result = -AT_RESPONSE_ERROR;
     uint8_t *buf_bk = RT_NULL;
     rt_memset(&gsm_mail_buf, 0, sizeof(gsm_mail_buf));
 
 	if (flag) {
-        send_result = rt_malloc(sizeof(*send_result));
-        if (send_result == RT_NULL)
-            goto __free_process;
-        *send_result = AT_RESPONSE_ERROR;
 		gsm_mail_buf.result_sem = rt_sem_create("s_ctrl", 0, RT_IPC_FLAG_FIFO);
 		if (gsm_mail_buf.result_sem == RT_NULL) {
             goto __free_process;
@@ -1829,7 +1829,10 @@ send_gsm_ctrl_mail(u8 ctrl_cmd, uint8_t *buf, uint16_t length, uint8_t flag)
 		gsm_mail_buf.result_sem = RT_NULL;
 
 	gsm_mail_buf.send_mode = GSM_MODE_CONTROL;
-	gsm_mail_buf.result = send_result;
+    if (flag)
+        gsm_mail_buf.result = &send_result;
+    else
+        gsm_mail_buf.result = RT_NULL;
 	gsm_mail_buf.flag = flag;
 	gsm_mail_buf.mail_data.control.cmd = ctrl_cmd;
 
@@ -1843,9 +1846,9 @@ send_gsm_ctrl_mail(u8 ctrl_cmd, uint8_t *buf, uint16_t length, uint8_t flag)
 		}        
         else
 		{
+            send_result = AT_RESPONSE_OK;
             if (gsm_mail_buf.result_sem != RT_NULL)
                 rt_sem_take(gsm_mail_buf.result_sem, RT_WAITING_FOREVER);
-            error = GSM_EOK;
 		}
 	}
 	else
@@ -1857,11 +1860,9 @@ send_gsm_ctrl_mail(u8 ctrl_cmd, uint8_t *buf, uint16_t length, uint8_t flag)
 __free_process:
     if (buf_bk != RT_NULL)
         rt_free(buf_bk);
-	if (send_result != RT_NULL)
-        rt_free(send_result);
     if (gsm_mail_buf.result_sem != RT_NULL)
         rt_sem_delete(gsm_mail_buf.result_sem);
-    return error;
+    return send_result;
 }
 /*
     send gsm gprs mail
@@ -1869,14 +1870,13 @@ __free_process:
     uint16_t length, buffer length
     u8 flag, 1:sync, 0:async
 */
-GSM_ERROR_TYPEDEF
+int
 send_gsm_gprs_mail(uint8_t *buf, uint16_t length, uint8_t flag)
 {
 	GSM_MAIL_TYPEDEF gsm_mail_buf;
-    GSM_ERROR_TYPEDEF error = GSM_EERROR;
 	rt_err_t result;
     uint8_t *buf_bk = RT_NULL;
-    AT_RESPONSE_TYPEDEF *send_result = RT_NULL;
+    int send_result = -AT_RESPONSE_ERROR;
     
     rt_memset(&gsm_mail_buf, 0, sizeof(gsm_mail_buf));
 
@@ -1891,11 +1891,6 @@ send_gsm_gprs_mail(uint8_t *buf, uint16_t length, uint8_t flag)
         else
             goto __free_process;
         
-        send_result = rt_malloc(sizeof(*send_result));
-        if (send_result == RT_NULL)
-            goto __free_process;
-        *send_result = AT_RESPONSE_ERROR;
-        
         gsm_mail_buf.result_sem = rt_sem_create("s_gprs", 0, RT_IPC_FLAG_FIFO);
 		if (gsm_mail_buf.result_sem == RT_NULL) {
             goto __free_process;
@@ -1905,7 +1900,10 @@ send_gsm_gprs_mail(uint8_t *buf, uint16_t length, uint8_t flag)
 		gsm_mail_buf.result_sem = RT_NULL;
 
 	gsm_mail_buf.send_mode = GSM_MODE_GPRS;
-	gsm_mail_buf.result = send_result;
+    if (flag)
+        gsm_mail_buf.result = &send_result;
+    else
+        gsm_mail_buf.result = RT_NULL;
 	gsm_mail_buf.flag = flag;
 
 	gsm_mail_buf.mail_data.gprs.request = buf_bk;
@@ -1918,12 +1916,12 @@ send_gsm_gprs_mail(uint8_t *buf, uint16_t length, uint8_t flag)
 		{
 			rt_kprintf("mq_gsm is full!!!\n");
             goto __free_process;
-		}        
+		}
         else
 		{
+            send_result = AT_RESPONSE_OK;
             if (gsm_mail_buf.result_sem != RT_NULL)
                 rt_sem_take(gsm_mail_buf.result_sem, RT_WAITING_FOREVER);
-            error = GSM_EOK;
 		}
 	}
 	else
@@ -1935,11 +1933,9 @@ send_gsm_gprs_mail(uint8_t *buf, uint16_t length, uint8_t flag)
 __free_process:
     if (buf_bk != RT_NULL)
         rt_free(buf_bk);
-	if (send_result != RT_NULL)
-        rt_free(send_result);
     if (gsm_mail_buf.result_sem != RT_NULL)
         rt_sem_delete(gsm_mail_buf.result_sem);
-    return error;
+    return send_result;
 }
 /* gsm mutex manange */
 void gsm_muntex_control(rt_uint8_t cmd,char *username)

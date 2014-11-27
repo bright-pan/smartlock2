@@ -31,6 +31,7 @@ typedef struct {
 
 	time_t time;
 	ALARM_TYPEDEF alarm_type;
+    int(*callback)(void *args);
     u8 *buf;
     u16 length;
     u16 auth;

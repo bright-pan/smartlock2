@@ -293,7 +293,7 @@ typedef struct{
 
 	GSM_MODE_TYPEDEF send_mode;
 	GSM_MAIL_DATA mail_data;
-	AT_RESPONSE_TYPEDEF *result;
+	int *result;
 	rt_sem_t result_sem;
 	uint8_t flag;
 
@@ -340,11 +340,11 @@ gsm_phone_call_process(int type, uint8_t flag);
 AT_RESPONSE_TYPEDEF
 gsm_ring_process(uint8_t flag);
 
-GSM_ERROR_TYPEDEF
+int
 send_gsm_sms_mail(uint8_t *buf, uint16_t length, uint8_t flag);
 
-GSM_ERROR_TYPEDEF
+int
 send_gsm_ctrl_mail(u8 ctrl_cmd, uint8_t *buf, uint16_t length, uint8_t flag);
-AT_RESPONSE_TYPEDEF
+int
 send_cmd_mail(AT_COMMAND_INDEX_TYPEDEF command_index, uint16_t delay, GSM_MAIL_CMD_DATA *cmd_data, u8 flag);
 #endif

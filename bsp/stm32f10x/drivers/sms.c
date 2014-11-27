@@ -647,7 +647,7 @@ hex_to_string(uint8_t *string, uint8_t *hex, uint8_t hex_length)
     uint16_t *content, sms content address
     uint8_t length, sms content length
 */
-static int8_t
+static int
 sms_pdu_ucs_send(char *dest_address, char *smsc_address, uint16_t *content, uint8_t length)
 {
 	SMS_SEND_PDU_FRAME send_pdu_frame;
@@ -656,13 +656,13 @@ sms_pdu_ucs_send(char *dest_address, char *smsc_address, uint16_t *content, uint
 	uint8_t *send_pdu_string;
 	//  char *at_temp, *process_buf;
 	uint16_t sms_pdu_length;
-	int8_t send_result = 0;//AT_RESPONSE_ERROR;
+	int send_result = 0;//AT_RESPONSE_ERROR;
 
 	if (length > 70)
 	{
 		length = 70;
 	}
-    send_gsm_ctrl_mail(GSM_CTRL_OPEN,RT_NULL,0,1);
+    send_result = send_gsm_ctrl_mail(GSM_CTRL_OPEN,RT_NULL,0,1);
 	//send_pdu_frame = (SMS_SEND_PDU_FRAME *)rt_malloc(sizeof(SMS_SEND_PDU_FRAME));
 	memset(&send_pdu_frame, 0, sizeof(SMS_SEND_PDU_FRAME));
 
@@ -686,49 +686,9 @@ sms_pdu_ucs_send(char *dest_address, char *smsc_address, uint16_t *content, uint
 	hex_to_string(send_pdu_string + 2, (uint8_t *)&send_pdu_frame, sms_pdu_length);
 	*(uint16_t *)send_pdu_string = (uint16_t)(send_pdu_frame.TPDU.TP_UDL + sizeof(send_pdu_frame.TPDU) - sizeof(send_pdu_frame.TPDU.TP_UD));
 	//send_ctx_mail(COMM_TYPE_SMS, 0, 0, send_pdu_string, (sms_pdu_length << 1) + 2);
-    send_gsm_sms_mail(send_pdu_string, (sms_pdu_length << 1) + 2, 1);
-    //send_gsm_ctrl_mail(GSM_CTRL_CLOSE,RT_NULL,0,1);
-	/*
-	gsm_mail_buf.send_mode = GSM_MODE_CMD;
-	gsm_mail_buf.result = &send_result;
-	gsm_mail_buf.result_sem = rt_sem_create("s_ret", 0, RT_IPC_FLAG_FIFO);
-	gsm_mail_buf.mail_data.cmd.index = AT_CMGS;
-	gsm_mail_buf.mail_data.cmd.delay = 50;
-	gsm_mail_buf.mail_data.cmd.cmd_data.cmgs.length = send_pdu_frame.TPDU.TP_UDL + sizeof(send_pdu_frame.TPDU) - sizeof(send_pdu_frame.TPDU.TP_UD);
-	gsm_mail_buf.mail_data.cmd.cmd_data.cmgs.buf = send_pdu_string;
-
-	if (mq_gsm != NULL)
-	{
-		result = rt_mq_send(mq_gsm, &gsm_mail_buf, sizeof(GSM_MAIL_TYPEDEF));
-		if (result == -RT_EFULL)
-		{
-			rt_kprintf("mq_gsm is full!!!\n");
-			send_result = AT_RESPONSE_ERROR;
-		}
-		else
-		{
-			rt_sem_take(gsm_mail_buf.result_sem, RT_WAITING_FOREVER);
-		}
-		rt_sem_delete(gsm_mail_buf.result_sem);
-	}
-	else
-	{
-		rt_kprintf("mq_gsm is RT_NULL!!!\n");
-		send_result = AT_RESPONSE_ERROR;
-	}
-
-	if (send_result == AT_RESPONSE_OK)
-	{
-		send_result = 1;
-	}
-	else
-	{
-		send_result = 0;
-	}
-	*/
+    send_result = send_gsm_sms_mail(send_pdu_string, (sms_pdu_length << 1) + 2, 1);
 	rt_free(send_pdu_string);
 	send_pdu_string = RT_NULL;
-	//rt_free(gsm_mail_buf);
 	return send_result;
 }
 
@@ -741,6 +701,7 @@ struct phone_sms_callback_params {
     void *arg1;
     void *arg2;
     void *arg3;
+    int(*callback)(void *args);
 };
 /*
     send sms use phone_head information
@@ -750,7 +711,7 @@ struct phone_sms_callback_params {
 */
 int phone_sms_callback(struct phone_head *ph, int phone_id, void *args)
 {
-    s32 result = -1;
+    int result = -1;
     struct phone_sms_callback_params *params = args;
     uint16_t *sms_ucs = params->arg1;
     uint16_t sms_ucs_length = *(u16 *)params->arg2;
@@ -766,8 +727,9 @@ int phone_sms_callback(struct phone_head *ph, int phone_id, void *args)
 		}
     
     if (ph->account != PHONE_ID_INVALID && ph->auth & auth) {
-        sms_pdu_ucs_send(phcode, smsc, sms_ucs, sms_ucs_length);
-        result = ph->account;
+        result = sms_pdu_ucs_send(phcode, smsc, sms_ucs, sms_ucs_length);
+        if (params->callback != RT_NULL)
+            params->callback(&result);
     }
     return result;
 }
@@ -828,6 +790,8 @@ sms_thread_entry(void *parameter)
             params.arg1 = sms_ucs;
             params.arg2 = &sms_ucs_length;
             params.arg3 = &sms_mail_buf.auth;
+            params.callback = sms_mail_buf.callback;
+            
             device_config_phone_index(phone_sms_callback, &params);
 			rt_free(sms_ucs);
 			sms_ucs = RT_NULL;
