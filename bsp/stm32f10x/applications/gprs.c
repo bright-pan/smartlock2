@@ -654,13 +654,14 @@ void gprs_local_mail_save(GPRS_MAIL_TYPEDEF *mail,rt_uint8_t UpdateFlag)
 	data = rt_calloc(1,sizeof(*data));
 	RT_ASSERT(data != RT_NULL);
 
+  RT_ASSERT(mail->user != RT_NULL);
+  user = mail->user;
+
 	switch(mail->alarm_type)
 	{
 		case ALARM_TYPE_KEY_ERROR:
 		{	
 			//±¨¾¯¼ÇÂ¼
-			RT_ASSERT(mail->user != RT_NULL);
-			user = mail->user;
 
 			switch(user->keyerr.type)
 			{
@@ -698,7 +699,7 @@ void gprs_local_mail_save(GPRS_MAIL_TYPEDEF *mail,rt_uint8_t UpdateFlag)
 			data->unlock.time = mail->time;
 			data->unlock.type = keydat->head.key_type;
 			device_config_event_create(EVENT_ID_INVALID,EVENT_TYPE_UNLOCK,UpdateFlag,data);	
-
+			rt_kprintf("save data user%d\n",keydat->head.account);
 			rt_free(keydat);
 			break;
 		}
@@ -740,6 +741,7 @@ int gprs_local_mail_resend(struct event *data,int evt_id, void *user)
 				{
 					data->head.is_updated = 0;
 					device_config_event_operate(evt_id,data,1);
+					rt_kprintf("open door user %d\n",data->data.unlock.account_id);
 				}
 			}
 			
