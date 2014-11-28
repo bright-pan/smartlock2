@@ -39,7 +39,7 @@ typedef struct {
 }SMS_MAIL_TYPEDEF;
 
 void
-send_sms_mail(ALARM_TYPEDEF alarm_type, time_t time, u8 *buf, u16 length, u16 auth);
+send_sms_mail(ALARM_TYPEDEF alarm_type, time_t time, u8 *buf, u16 length, u16 auth, int(*callback)(void *args));
 void
 sms_thread_entry(void *parameter);
 
