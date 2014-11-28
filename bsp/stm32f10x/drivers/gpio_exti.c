@@ -254,7 +254,7 @@ void switch1_exti_timeout(void *parameters)
     {
         rt_kprintf("it is switch1 detect!\n");
         send_local_mail(ALARM_TYPE_SYSTEM_RESET,0,RT_NULL);
-        gpio_backup();
+        //gpio_backup();
         /*
         gpio_pin_output(DEVICE_NAME_POWER_FLASH,0,0);
         gpio_pin_output(DEVICE_NAME_POWER_MOTOR,0,0);
@@ -262,8 +262,8 @@ void switch1_exti_timeout(void *parameters)
         gpio_pin_output(DEVICE_NAME_POWER_FRONT,0,0);
         gpio_pin_output(DEVICE_NAME_POWER_GSM,0,0);
         */
-        gpio_config();
-        gpio_restore();
+        //gpio_config();
+        //gpio_restore();
         //PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFI);
     }
 	gpio->ops->control(gpio, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0); 
