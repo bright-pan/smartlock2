@@ -812,7 +812,7 @@ sms_thread_entry(void *parameter)
     u16 auth, sms alarm auth
 */
 void
-send_sms_mail(ALARM_TYPEDEF alarm_type, time_t time, u8 *buf, u16 length, u16 auth)
+send_sms_mail(ALARM_TYPEDEF alarm_type, time_t time, u8 *buf, u16 length, u16 auth, int(*callback)(void *args))
 {
 	SMS_MAIL_TYPEDEF mail;
 	extern rt_device_t rtc_device;
@@ -826,6 +826,14 @@ send_sms_mail(ALARM_TYPEDEF alarm_type, time_t time, u8 *buf, u16 length, u16 au
     mail.buf = buf;
     mail.length = length;
     mail.auth = auth;
+    if (callback != RT_NULL)
+    {
+        mail.callback = callback;
+    }
+    else
+    {
+        mail.callback = RT_NULL;
+    }
 	if (sms_mq != NULL) {
 		result = rt_mq_send(sms_mq, &mail, sizeof(SMS_MAIL_TYPEDEF));
 		if (result == -RT_EFULL)
