@@ -4,17 +4,20 @@
 #include <time.h>
 #include "alarm.h"
 
+/* 定义钥匙错误数据 */
 typedef struct
 {
 	rt_uint8_t type;
 }GPRS_KeyErrDef,*GPRS_KeyErrDef_p;
 
+/* 定义钥匙正确数据 */
 typedef struct
 {
 	rt_uint16_t  pos;
 	rt_uint8_t   type;
 }GPRS_KeyRightDef,*GPRS_KeyRightDef_p;
 
+/* 定义账户添加数据 */
 typedef struct 
 {
 	rt_uint16_t pos;
@@ -22,6 +25,7 @@ typedef struct
 	rt_uint32_t date;
 }GPRS_AccountAddDef,*GPRS_AccountAddDef_p;
 
+/* 定义钥匙添加数据 */
 typedef struct 
 {
 	rt_uint16_t pos;
@@ -30,17 +34,25 @@ typedef struct
 	rt_uint32_t date;
 }GPRS_PhoneAddDef,*GPRS_PhoneAddDef_p;
 
-typedef union
-{
-	GPRS_KeyErrDef        keyerr;
-	GPRS_KeyRightDef      keyright;
-	GPRS_AccountAddDef    AccountAdd;
-	GPRS_PhoneAddDef      PhoneAdd;
-}GPRSUserDef,*GPRSUserDef_p;
-
+/* 定义映射域上传 */
 typedef struct
 {
+	rt_uint32_t MapType;
+}GPRS_DataMapDef,*GPRS_DataMapDef_p;
 
+/* gprs 应用层用户私有数据集合，给gprs线程使用 */
+typedef union
+{
+	GPRS_KeyErrDef        keyerr;				//钥匙错误
+	GPRS_KeyRightDef      keyright;     //钥匙开锁正确
+	GPRS_AccountAddDef    AccountAdd;   //钥匙添加
+	GPRS_PhoneAddDef      PhoneAdd;     //手机添加
+	GPRS_DataMapDef       MapUpload;    //映射域上传
+}GPRSUserDef,*GPRSUserDef_p;
+
+/* gprs 应用层数据出入接口，提供给应用层使用 */
+typedef struct
+{
   time_t time;
   ALARM_TYPEDEF alarm_type;
   void* user;

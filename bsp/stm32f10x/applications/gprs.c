@@ -27,7 +27,6 @@
 
 #define USEING_GPRS_DEBUG           0  //使用调试信息
 
-
 #define UPDATE_KEY_CNT    					10 //钥匙同步周期
 #define UPDATE_FLAG_VALUE 					1  //需要更新标志
 #define UNUPDATA_FLAG_VALUE         0  //不需要更新标志
@@ -39,10 +38,25 @@
 #define DATA_SYNC_RECDAT            (0X01<<4)//同步记录数据
 #define DATA_SYNC_ALLDAT            0xff     //同步所以数据
 
+/**************************************************************************************************
+*变量声明
+**************************************************************************************************/
 static rt_mq_t gprs_mq = RT_NULL;      //gprs 数据邮件
 
 static rt_event_t gprs_evt = RT_NULL;  //gprs线程事件
 
+
+
+/**************************************************************************************************	
+*函数声明
+**************************************************************************************************/
+static void update_smartlock_database(rt_uint32_t ModeFlag);
+
+
+
+/**************************************************************************************************	
+*功能函数
+**************************************************************************************************/
 //手机上传处理
 static void phone_upload_process(rt_uint16_t pos)
 {
@@ -580,6 +594,21 @@ static void gprs_phone_add_mail_process(GPRS_MAIL_TYPEDEF *mail)
 
 
 /** 
+@brief  GPRS thread upload data map
+@param  mail :gprs thread mail
+@retval void
+*/
+static void gprs_data_map_upload_process(GPRS_MAIL_TYPEDEF *mail)
+{
+	GPRSUserDef_p  user = RT_NULL;
+	RT_ASSERT(mail != RT_NULL);
+	RT_ASSERT(mail->user != RT_NULL);
+
+	user = mail->user;
+	update_smartlock_database(user->MapUpload.MapType);
+}
+
+/** 
 @brief  gprs thread mail process
 @param  mail :gprs thread mail
 @retval void
@@ -590,6 +619,7 @@ static void gprs_mail_process(GPRS_MAIL_TYPEDEF *mail)
 	{
 		case ALARM_TYPE_KEY_ADD:
 		{
+			// 钥匙添加
 			rt_uint16_t *keypos;
 			
 			RT_ASSERT(mail != RT_NULL);
@@ -599,32 +629,44 @@ static void gprs_mail_process(GPRS_MAIL_TYPEDEF *mail)
 		}
 		case ALARM_TYPE_KEY_RIGHT:
 		{
-			//钥匙正确邮件
+			// 钥匙正确邮件
 			gprs_key_right_mail_process(mail);
 			break;
 		}
 		case ALARM_TYPE_KEY_ERROR:
 		{
+			// 钥匙错误
 			gprs_key_error_mail_process(mail);
 			break;
 		}
 		case ALARM_TYPE_GPRS_SYS_TIME_UPDATE:
 		{
+			// 时间校准
 			msg_mail_adjust_time();
 			break;
 		}
 		case ALARM_TYPE_GPRS_ADD_ACCOUNT:
 		{
+			// 添加账户
 			gprs_account_add_mail_process(mail);
 			break;
 		}
 		case ALARM_TYPE_GPRS_ADD_PHONE:
 		{
+		 // 添加电话
 			gprs_phone_add_mail_process(mail);
+			break;
+		}
+		case ALARM_TYPE_GPRS_DATAMAP_UPLOAD:
+		{
+			// 上传映射域
+			gprs_data_map_upload_process(mail);
 			break;
 		}
 		default:
 		{
+			// 收到错误的GPRS邮件
+			rt_kprintf("GPRS Thread Recv Error Mail Type!!!\n");
 			break;
 		}
 	}
@@ -918,13 +960,18 @@ void gprs_mail_manage_entry(void* arg)
 			
 			rt_dprintf(USEING_GPRS_DEBUG,("receive gprs mail < time: %d alarm_type: %s >\n",\
 					   		mail.time, alarm_help_map[mail.alarm_type]));
+			// 保存没有更新过的邮件
 			gprs_local_mail_save(&mail,UNUPDATA_FLAG_VALUE);
+
+			// 处理邮件
 			gprs_mail_process(&mail);
+
+			// 删除应用层传个gprs的资源
 			gprs_mail_delete(&mail);
 		}
 		else
 		{
-			//等待超时
+			// 等待超时
 		}
 		//可以进入休眠模式
 		rt_thread_entry_sleep(rt_thread_self());

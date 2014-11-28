@@ -100,5 +100,23 @@ void gprs_phone_del_mail(rt_uint16_t pos)
 	msg_mail_keydelete(pos,net_get_date());
 }
 
+/** 
+@brief  key upload process
+@param  flag :模式 
+				@arg 0:映射域上传
+				@arg 1:账户上传
+				@arg 2:钥匙上传
+				@arg 3:手机上传
+				@arg 4:记录上传
+@retval none
+*/
+void gprs_datamap_upload_mail(rt_uint8_t flag)
+{
+	GPRSUserDef_p         user = RT_NULL;
 
+	user = rt_calloc(1,sizeof(*user));
+	RT_ASSERT(user != RT_NULL);
+	user->MapUpload.MapType = 0x01<<flag;
+	send_gprs_mail(ALARM_TYPE_GPRS_DATAMAP_UPLOAD,net_get_date(),user);
+}
 

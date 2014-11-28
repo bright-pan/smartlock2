@@ -847,7 +847,8 @@ static void update_account_new_data(rt_uint16_t pos)
 	data = rt_calloc(1,sizeof(*data));
 	RT_ASSERT(data != RT_NULL);
 
-	net_upload_map(0);
+	//net_upload_map(0);
+	gprs_datamap_upload_mail(0);
 	//ÉÏ´«ÕË»§
 	gprs_account_add_mail(pos);
 	device_config_account_operate(pos,data,0);
