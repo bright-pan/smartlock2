@@ -341,6 +341,14 @@ rt_err_t admin_phone_input_UI(rt_uint8_t *Phone)
 	rt_uint8_t GlintStatus;
 	
 ADMIN_CRATE_UI:
+	if(menu_event_process(1,MENU_EVT_LCD_CLOSE) == 0)
+	{
+		rt_uint8_t KeyValue;
+		
+		gui_key_input(&KeyValue);
+		
+		goto ADMIN_CRATE_UI;
+	}
   gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
 
   gui_display_string(SHOW_X_CENTERED(AdminInitUIText[0]),SHOW_Y_LINE(1),AdminInitUIText[0],GUI_WIHIT);
@@ -408,7 +416,7 @@ ADMIN_CRATE_UI:
 	  else
 	  {
 	    //²Ù×÷³¬Ê±
-	    if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+	    if(menu_event_process(2,MENU_EVT_OP_OUTTIME) == 0)
 	    {
 	    	rt_free(buf);
 	    	goto ADMIN_CRATE_UI;
