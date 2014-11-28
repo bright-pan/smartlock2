@@ -39,7 +39,9 @@
 #define MENU_EVT_FREEZE						(0X01<<1)//
 #define MENU_EVT_FP_UNLOCK        (0X01<<2)//指纹解锁成功
 #define MENU_EVT_FP_ERROR         (0X01<<3)//指纹失败
-#define MENU_EVT_PH_UNLOCK       (0X01<<4)//打电话开门提示
+#define MENU_EVT_PH_UNLOCK        (0X01<<4)//打电话开门提示
+#define MENU_EVT_SMS_SUCCEED      (0X01<<5)//短信发送成功
+#define MENU_EVT_SMS_ERROR1       (0X01<<6)//短信发送错误
 
 typedef struct 
 {

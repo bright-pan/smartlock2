@@ -9,6 +9,7 @@
 #define SHOW_PW_HIDE_CH						'*'
 #define PASSWORD_DATA_POS					6								//密码数据的开始位置
 
+/* 解锁界面用文字 */
 static const rt_uint8_t UNLOCK_UI_TEXT[][LCD_LINE_MAX_LEN] =
 {
 	{"请输入密码"},
@@ -18,24 +19,33 @@ static const rt_uint8_t UNLOCK_UI_TEXT[][LCD_LINE_MAX_LEN] =
 	{"按返回键退出"}
 };
 
+/* 老的解锁状态菜单列表 */
 static const rt_uint8_t SystemEnterMenuText[][LCD_LINE_MAX_LEN] = 
 {
 	{"开>>>>锁"},
 	{"系统管理"},
 };
 
-//指纹解锁UI
+/* 指纹解锁UI */
 static const rt_uint8_t FpUnlockUIText[][LCD_LINE_MAX_LEN] = 
 {
 	{"指纹解锁成功!"},
 	{"指纹错误"},
 };
 
+/* 打电话通知主人用的文字 */
 static const rt_uint8_t PhUnlockUIText[][LCD_LINE_MAX_LEN] = 
 {
- {"已通知主人"},
+ {"正在通知主人"},
 };
 
+
+static const rt_uint8_t SMSResultUIText[][LCD_LINE_MAX_LEN] =
+{
+	{"发送失败"},
+	{"请查询余额"},
+	{"发送成功"},
+};
 #define SYSTEM_ENTER_MENU_NUM						2	//菜单的最大个数
 static void system_enter_menu_ui(rt_uint8_t InPOS)
 {
@@ -228,7 +238,14 @@ rt_err_t unlock_process_ui(void)
 	      {
 					return RT_EOK;
 	      }
+	      //电话通知主人
 	      EvtProcessResult = phone_unlock_result_show();
+	      if(EvtProcessResult == RT_TRUE)
+	      {
+					return RT_EOK;
+	      }
+	      //短信发送结果
+	      EvtProcessResult = phone_sms_result_show();
 	      if(EvtProcessResult == RT_TRUE)
 	      {
 					return RT_EOK;
@@ -301,4 +318,36 @@ rt_bool_t phone_unlock_result_show(void)
 	return RT_FALSE;
 }
 
+
+//短信发送结果ui
+//返回 RT_TRUE:表示需要显示
+//返回 RT_TRUE:表示不需要显示
+rt_bool_t phone_sms_result_show(void)
+{
+	if(menu_event_process(2,MENU_EVT_SMS_ERROR1) == 0)
+	{
+		//显示短信发送失败
+		gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+		gui_display_string(SHOW_X_CENTERED(SMSResultUIText[0]),SHOW_Y_LINE(2),SMSResultUIText[0],GUI_WIHIT);
+		gui_display_update();
+		menu_input_sure_key(RT_TICK_PER_SECOND*5);
+		gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+
+		return RT_TRUE;
+	}
+
+	if(menu_event_process(2,MENU_EVT_SMS_SUCCEED) == 0)
+	{
+		//显示短信发送成功
+		gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+		gui_display_string(SHOW_X_CENTERED(SMSResultUIText[2]),SHOW_Y_LINE(2),SMSResultUIText[2],GUI_WIHIT);
+		gui_display_update();
+		menu_input_sure_key(RT_TICK_PER_SECOND*5);
+		gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+
+		return RT_TRUE;
+	}
+
+	return RT_FALSE;
+}
 

@@ -28,6 +28,7 @@
 #include "rf433.h"
 #include "PVDProcess.h"
 #include "eeprom_process.h"
+#include "menu.h"
 
 #ifdef   USEING_RAM_DEBUG
 #include "untils.h" //主要使用里面的 rt_dprintf
@@ -355,8 +356,20 @@ void gsm_ring_request_exit(void)
     gsm_ring_request = 1;
 }
 
-void
-local_thread_entry(void *parameter)
+
+/** 
+@brief  开门短信结果回调函数
+@param  mail :gprs thread mail
+@retval none
+*/
+int opendoor_sms_callback(void *arg)
+{
+	menu_event_process(0,MENU_EVT_SMS_ERROR1);
+
+	return 0;
+}
+
+void local_thread_entry(void *parameter)
 {
 	rt_err_t result;
 	LOCAL_MAIL_TYPEDEF local_mail_buf;
@@ -751,6 +764,5 @@ void int_to_uint(rt_uint8_t data)
 	rt_kprintf("int:%d hex:%x\nuint:%d hex:%x\n",sdata,sdata,data,data);
 }
 FINSH_FUNCTION_EXPORT(int_to_uint,"int to uint show");
-
 
 #endif

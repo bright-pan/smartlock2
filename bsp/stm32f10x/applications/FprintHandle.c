@@ -173,6 +173,10 @@ rt_err_t fprint_input_error_trigger(void *user)
 		menu_operation_result_handle(3);
 	}
 
+	// 处理指纹错误结果
+	menu_operation_result_handle(1);
+
+	// 发送指纹处理事件给UI
 	menu_event_process(0,MENU_EVT_FP_ERROR);
 	
   send_local_mail(ALARM_TYPE_KEY_ERROR,0,&data);	
