@@ -132,7 +132,7 @@ rt_err_t fprint_input_ok_trigger(void *user)
 
 		if(key_permission_check(KeyData.key.ID) != RT_EOK)
 		{
-			//计数累加
+			// 计数累加
 			if(key_error_alarm_manage(KEY_ERRNUM_MODE_ADDUP,&KeyData.key.sms) == RT_TRUE)
 			{
 				menu_operation_result_handle(3);
@@ -174,7 +174,7 @@ rt_err_t fprint_input_error_trigger(void *user)
 	
   data.key.ID = KEY_TYPE_INVALID;
 	data.key.Type = KEY_TYPE_FPRINT;
-	//计数累加
+	// 计数累加
 	if(key_error_alarm_manage(KEY_ERRNUM_MODE_ADDUP,&data.key.sms) == RT_TRUE)
 	{
 		menu_operation_result_handle(3);
