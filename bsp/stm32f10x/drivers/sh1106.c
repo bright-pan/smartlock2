@@ -628,6 +628,14 @@ sh1106_configure(struct oled_device *oled)
 	sh1106_write(0x22,SH1106_CMD);
 	sh1106_write(0xDB,SH1106_CMD);     //VCOM deselect level mode
 	sh1106_write(0x18,SH1106_CMD);
+
+	sh1106_write(0x81,SH1106_CMD); //对比度设置
+	sh1106_write(0xEF,SH1106_CMD); // 1~255;默认0X7F (亮度设置,越大越亮)
+	sh1106_write(0xD9,SH1106_CMD); //设置预充电周期
+	sh1106_write(0xf1,SH1106_CMD); //[3:0],PHASE 1;[7:4],PHASE 2;
+	sh1106_write(0xDB,SH1106_CMD); //设置VCOMH 电压倍率
+	sh1106_write(0x30,SH1106_CMD); //[6:4] 000,0.65*vcc;001,0.77*vcc;011,0.83*vcc;
+	
 	sh1106_write(0xA4,SH1106_CMD);     //Set Entire Display On/Off
 	sh1106_write(0xA6,SH1106_CMD);     //Set Normal Display
 	sh1106_write(0xAF,SH1106_CMD);     //Set Display On
