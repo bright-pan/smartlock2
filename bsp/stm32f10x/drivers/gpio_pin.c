@@ -1197,7 +1197,7 @@ INIT_DEVICE_EXPORT(rt_hw_power_gsm_register);
 INIT_DEVICE_EXPORT(rt_hw_gsm_power_register);
 INIT_DEVICE_EXPORT(rt_hw_gsm_reset_register);
 INIT_DEVICE_EXPORT(rt_hw_gsm_status_register);
-INIT_DEVICE_EXPORT(rt_hw_gsm_dtr_register);
+//INIT_DEVICE_EXPORT(rt_hw_gsm_dtr_register);
 INIT_DEVICE_EXPORT(rt_hw_gsm_led_register);
 
 INIT_DEVICE_EXPORT(rt_hw_kb_in1_register);
