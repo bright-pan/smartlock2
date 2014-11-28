@@ -291,6 +291,8 @@ void rt_thread_idle_process(void)
 int rt_thread_idle_set(void)
 {
 	rt_thread_idle_sethook(rt_thread_idle_process);
+
+	return 0;
 }
 INIT_APP_EXPORT(rt_thread_idle_set);
 
