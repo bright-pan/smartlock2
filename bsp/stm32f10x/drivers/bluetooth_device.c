@@ -370,6 +370,8 @@ static rt_err_t bluetooth_module_reset(bluetooth_module_p module)
   gpio_status = 1;
   rt_device_write(module->rst_dev,0,&gpio_status,1);
   bt_at_cmd_analysis(module->uart_dev,RT_NULL,"SYS START",RT_NULL,50);
+
+  //bt_at_cmd_analysis(module->uart_dev,"AT+PWRM[1000]","OK+SET",RT_NULL,50);
   
 	return bt_at_cmd_analysis(module->uart_dev,"AT+","OK+",RT_NULL,50);
 }
@@ -395,30 +397,65 @@ static rt_err_t bluetooth_initiate(bluetooth_module_p module)
       rt_thread_delay(10);
     }while(gpio_status == BT_NOW_CONNECT);
 	}
-	//设置LED
+	// 设置广播时间间隔
+	if(bt_at_cmd_analysis(module->uart_dev,"AT+ADVI[1000]","OK+SET:1000",RT_NULL,50) != RT_EOK)
+	{
+    goto BT_INIT_EXIT;
+	}
+
+	// 设置发射功耗
+	if(bt_at_cmd_analysis(module->uart_dev,"AT+POWE[C]","OK+SET",RT_NULL,50) != RT_EOK)
+	{
+    goto BT_INIT_EXIT;
+	}
+	
+	// 设置LED
 	if(bt_at_cmd_analysis(module->uart_dev,"AT+LED[N]","OK+SET:N",RT_NULL,50) != RT_EOK)
 	{
     goto BT_INIT_EXIT;
 	}
-	//配置从机
+	
+	// 配置从机
 	if(bt_at_cmd_analysis(module->uart_dev,"AT+ROLE[P]","OK+SET:P",RT_NULL,50) != RT_EOK)
 	{
     goto BT_INIT_EXIT;
 	}
 	rt_thread_delay(RT_TICK_PER_SECOND/4);
-	//启动信息
+	
+	// 启动信息
 	if(bt_at_cmd_analysis(module->uart_dev,RT_NULL,"SYS START",RT_NULL,50) != RT_EOK)
 	{
     goto BT_INIT_EXIT;
 	}
-	//获得MAC
+	
+	// 获得MAC
 	bluetooth_mac_manage(module,RT_FALSE);
-	//配置通知
+	
+	// 配置通知
 	if(bt_at_cmd_analysis(module->uart_dev,"AT+NOTI[Y]","OK+SET:Y",RT_NULL,50) != RT_EOK)
 	{
     goto BT_INIT_EXIT;
 	}
-	//进入休眠
+
+	// 设置自动休眠时间
+	if(bt_at_cmd_analysis(module->uart_dev,"AT+PWRM[600000]","OK+SET:600000",RT_NULL,50) != RT_EOK)
+	{
+    goto BT_INIT_EXIT;
+	}
+
+	// 设置模块的GPIO为输入
+	if(bt_at_cmd_analysis(module->uart_dev,"AT+PDAT[0000]","OK+SET:0000",RT_NULL,50) != RT_EOK)
+	{
+    goto BT_INIT_EXIT;
+	}
+	
+	// 设置模块的GPIO为输入
+	if(bt_at_cmd_analysis(module->uart_dev,"AT+PDIR[0000]","OK+SET:0000",RT_NULL,50) != RT_EOK)
+	{
+    goto BT_INIT_EXIT;
+	}
+	
+	// 进入休眠
 	if(bt_at_cmd_analysis(module->uart_dev,"AT+SLEEP","OK+SLEEP",RT_NULL,50) != RT_EOK)
 	{
     goto BT_INIT_EXIT;
