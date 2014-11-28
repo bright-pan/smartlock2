@@ -24,6 +24,8 @@
 
 #define RT_DEVICE_CTRL_CLR_TX_GPIO 0x15
 #define RT_DEVICE_CTRL_SET_TX_GPIO 0x16
+#define RT_DEVICE_SET_USART_RX_PIN 0x17
+#define RT_DEVICE_INTERRUPT_RX_PIN 0x18
 
 /* STM32 uart driver */
 struct stm32_uart
