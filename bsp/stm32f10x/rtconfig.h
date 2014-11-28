@@ -192,8 +192,9 @@
 // <bool name="RT_USING_BSP_CMSIS" description="Using CMSIS in BSP" default="true" />
 // #define RT_USING_BSP_CMSIS
 
-#define USEING_BUZZER_FUN
-#define USEING_RAM_DEBUG 
-#define USEING_GSM_UART_MANAGE
+#define USEING_BUZZER_FUN				//使用蜂鸣器功能
+#define USEING_RAM_DEBUG      	//使用动态调试信息打印功能
+#define USEING_GSM_UART_MANAGE 	//使用gsm串口硬件管理
+#define USEING_LOW_POWER				//使用低功耗处理
 
 #endif

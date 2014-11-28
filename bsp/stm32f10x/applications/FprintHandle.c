@@ -113,6 +113,7 @@ rt_err_t fprint_input_ok_trigger(void *user)
 	FPINTF_USER  key;
 
 	key = *(FPINTF_USER*)user;
+
 	//注册模式
 	if(fp_event_process(1,FP_EVNT_REGISTER_MODE) == RT_EOK)
 	{
@@ -123,6 +124,9 @@ rt_err_t fprint_input_ok_trigger(void *user)
 		//正常指纹采集模式
 		union alarm_data KeyData;
 
+		// 打开lcd
+		gui_open_lcd_show();
+		
 		KeyData.key.ID = key.KeyPos;
 	  KeyData.key.Type = KEY_TYPE_FPRINT;
 
@@ -165,6 +169,9 @@ rt_err_t fprint_input_error_trigger(void *user)
 	{
 		return RT_ERROR;
 	}
+	// 打开lcd
+	gui_open_lcd_show();
+	
   data.key.ID = KEY_TYPE_INVALID;
 	data.key.Type = KEY_TYPE_FPRINT;
 	//计数累加

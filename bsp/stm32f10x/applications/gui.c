@@ -68,7 +68,12 @@ rt_uint8_t gui_sleep_time_get(void)
 */
 void gui_open_lcd_show(void)
 {
-  send_key_value_mail(KB_MAIL_TYPE_INPUT, KB_MODE_NORMAL_AUTH, MENU_DEL_VALUE);
+	// 如果LCD关闭
+	if(menu_event_process(1,MENU_EVT_LCD_CLOSE) == 0)
+	{
+		// 发送一个删除键唤醒lcd
+    send_key_value_mail(KB_MAIL_TYPE_INPUT, KB_MODE_NORMAL_AUTH, MENU_DEL_VALUE);
+	}
 }
 
 
@@ -168,6 +173,7 @@ rt_err_t gui_key_input(rt_uint8_t *KeyValue)
     	// 休眠后点亮屏幕
     	gpio_pin_output(DEVICE_NAME_POWER_FRONT,1,0);
 			lcd_on_off(RT_TRUE);
+			menu_event_process(2,MENU_EVT_LCD_CLOSE);
     }
     SleepCnt = 0;
     switch(mail.c)
@@ -216,6 +222,9 @@ rt_err_t gui_key_input(rt_uint8_t *KeyValue)
 			
 			// 操作超时
 	    menu_event_process(0,MENU_EVT_OP_OUTTIME);
+
+	    // LCD处于关闭状态
+      menu_event_process(0,MENU_EVT_LCD_CLOSE);
 
 			// 关闭液晶模块
 	    gui_close_lcd_show();

@@ -496,7 +496,7 @@ rt_uint8_t menu_event_process(rt_uint8_t mode,rt_uint32_t type)
 	rt_uint8_t  return_data = 1;
 	
 	//net_evt_mutex_op(RT_TRUE);
-
+	
 	if(MenuManage.event == RT_NULL)
 	{
     MenuManage.event  = rt_event_create("menu",RT_IPC_FLAG_FIFO);

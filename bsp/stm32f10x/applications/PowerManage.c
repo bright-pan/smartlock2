@@ -272,7 +272,7 @@ void rt_thread_idle_process(void)
 	{
 		// 进入停机模式
 		SysSleep.IsSleep = 1;
-		stm32_stop_mode_entry();
+		//stm32_stop_mode_entry();
 	}
 	else
 	{

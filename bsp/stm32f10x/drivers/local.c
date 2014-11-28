@@ -358,14 +358,27 @@ void gsm_ring_request_exit(void)
 
 
 /** 
-@brief  开门短信结果回调函数
+@brief  短信发送完成回调函数
 @param  mail :gprs thread mail
 @retval none
 */
-int opendoor_sms_callback(void *arg)
+int sms_send_finish_callback(void *arg)
 {
-	menu_event_process(0,MENU_EVT_SMS_ERROR1);
+	AT_RESPONSE_TYPEDEF result;
 
+	gui_open_lcd_show();
+	result = *(AT_RESPONSE_TYPEDEF*)arg;
+	if(result != AT_RESPONSE_OK)
+	{
+		//发送失败
+    menu_event_process(0,MENU_EVT_SMS_ERROR1);
+	}
+	else
+	{
+    //发送成功
+		menu_event_process(0,MENU_EVT_SMS_SUCCEED);
+	}
+	
 	return 0;
 }
 
@@ -396,34 +409,43 @@ void local_thread_entry(void *parameter)
 			{
 				case ALARM_TYPE_GSM_RING:
 				{
+					//打电话开门处理
 	        s32 temp;
 	        struct phone_head ph;
+	        
 	        rt_memset(&ph, 0, sizeof(ph));
 	        rt_memcpy(ph.address, "86", 2);
 	        rt_memcpy(ph.address+2, local_mail_buf.data.ring.phone_call, rt_strlen((const char *)local_mail_buf.data.ring.phone_call));
 					temp = device_config_phone_verify(local_mail_buf.data.ring.phone_call, 11);
 	        if (temp >= 0)
 	        {
-	            if (device_config_phone_operate(temp, &ph, 0) >= 0) {
-	                if (ph.account != PHONE_ID_INVALID && ph.auth & PHONE_AUTH_CALL) {
-	                    //电机解锁。
-	                    lock_operation(LOCK_OPERATION_OPEN, MOTOR_WORK_CUT);
-	                    send_sms_mail(ALARM_TYPE_SMS_REP_IN_PHONE_CALL, 0, (u8 *)ph.address, 11, PHONE_AUTH_CALL);
-	                }
+            if (device_config_phone_operate(temp, &ph, 0) >= 0) 
+            {
+	            if (ph.account != PHONE_ID_INVALID && ph.auth & PHONE_AUTH_CALL) 
+	            {
+	                // 电机解锁。
+	                lock_operation(LOCK_OPERATION_OPEN, MOTOR_WORK_CUT);
+
+	                // 发送短信开门成功
+	                send_sms_mail(ALARM_TYPE_SMS_REP_IN_PHONE_CALL, 0, (u8 *)ph.address, 11, PHONE_AUTH_CALL,RT_NULL);
 	            }
+            }
 	        }
 	        else
 	        {
 						rt_dprintf(LOCAL_DEBUG_THREAD,("This is phone error %s\n",local_mail_buf.data.ring.phone_call));
 	        }
-                    send_gsm_ctrl_mail(GSM_CTRL_PHONE_CALL_HANG_UP,RT_NULL,0,1);
-                    gsm_ring_request_exit();
+	        send_gsm_ctrl_mail(GSM_CTRL_PHONE_CALL_HANG_UP,RT_NULL,0,1);
+	        gsm_ring_request_exit();
 					break;
 				}
 				case ALARM_TYPE_GSM_RING_REQUEST:
 				{
-                    if (gsm_ring_request_enter >= 0)
-                        send_sms_mail(ALARM_TYPE_SMS_REQ_IN_PHONE_CALL, 0, RT_NULL, 0, PHONE_AUTH_CALL);
+					//电话开门请求处理
+	        if (gsm_ring_request_enter >= 0)
+	        {
+	          send_sms_mail(ALARM_TYPE_SMS_REQ_IN_PHONE_CALL, 0, RT_NULL, 0, PHONE_AUTH_CALL,sms_send_finish_callback);
+	        }
 					break;
 				}
 				case ALARM_TYPE_FPRINT_KEY_ADD:
@@ -460,17 +482,17 @@ void local_thread_entry(void *parameter)
 						{
 							case KEY_TYPE_FPRINT:
 							{
-								send_sms_mail(ALARM_TYPE_SMS_FPRINT_ERROR,0, RT_NULL, 0, PHONE_AUTH_SMS);
+								send_sms_mail(ALARM_TYPE_SMS_FPRINT_ERROR,0, RT_NULL, 0, PHONE_AUTH_SMS,sms_send_finish_callback);
 								break;
 							}
 							case KEY_TYPE_KBOARD:
 							{
-								send_sms_mail(ALARM_TYPE_SMS_KEY_ERROR,0, RT_NULL, 0, PHONE_AUTH_SMS);
+								send_sms_mail(ALARM_TYPE_SMS_KEY_ERROR,0, RT_NULL, 0, PHONE_AUTH_SMS,sms_send_finish_callback);
 								break;
 							}
 							case KEY_TYPE_RF433:
 							{
-								send_sms_mail(ALARM_TYPE_SMS_RF433_ERROR,0, RT_NULL, 0, PHONE_AUTH_SMS);
+								send_sms_mail(ALARM_TYPE_SMS_RF433_ERROR,0, RT_NULL, 0, PHONE_AUTH_SMS,sms_send_finish_callback);
 								break;
 							}
 							default:
@@ -530,7 +552,7 @@ void local_thread_entry(void *parameter)
        	}
        	case ALARM_TYPE_BATTERY_WORKING_20M:
        	{
-       		send_sms_mail(ALARM_TYPE_BATTERY_REMAIN_20P,0, RT_NULL, 0, PHONE_AUTH_SMS);
+       		send_sms_mail(ALARM_TYPE_BATTERY_REMAIN_20P,0, RT_NULL, 0, PHONE_AUTH_SMS,sms_send_finish_callback);
 					break;
        	}
 				default :

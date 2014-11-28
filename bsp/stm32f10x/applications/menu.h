@@ -42,6 +42,7 @@
 #define MENU_EVT_PH_UNLOCK        (0X01<<4)//打电话开门提示
 #define MENU_EVT_SMS_SUCCEED      (0X01<<5)//短信发送成功
 #define MENU_EVT_SMS_ERROR1       (0X01<<6)//短信发送错误
+#define MENU_EVT_LCD_CLOSE        (0X01<<7)//LCD关闭状态
 
 typedef struct 
 {

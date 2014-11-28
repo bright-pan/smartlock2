@@ -186,7 +186,7 @@ rf433_thread_entry(void *parameter)
             if (flag) {
                 if (rf433_check_stop() > (2*RF433_SMS_LIMITE - RF433_TIMEOUT))
                     // rf433 work time > -600
-                    send_sms_mail(ALARM_TYPE_SMS_RF433_ERROR, 0, RT_NULL, 0, PHONE_AUTH_SMS);
+                    send_sms_mail(ALARM_TYPE_SMS_RF433_ERROR, 0, RT_NULL, 0, PHONE_AUTH_SMS,RT_NULL);
                 flag = 0; //clear rf433 work flag
             }
         }
