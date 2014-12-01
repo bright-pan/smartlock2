@@ -983,7 +983,7 @@ int fprint_key_init_callback(struct key *k, int key_id, void *arg1, void *arg2)
 		rt_memset(req_data, 0, sizeof(*req_data));
 		rt_memset(rep_data, 0, sizeof(*rep_data));
         req_data->req_store_char.buf_id = 1;
-		reverse(req_data->req_store_char.template_id, (uint8_t *)&key_id, sizeof(key_id));
+		reverse(req_data->req_store_char.template_id, (uint8_t *)&key_id, 2);
 		error = fprint_frame_process(FPRINT_FRAME_CMD_STORE_CHAR, req_data, rep_data);
 
 		//if (error != FPRINT_EOK)
