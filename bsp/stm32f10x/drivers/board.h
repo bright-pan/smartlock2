@@ -17,6 +17,8 @@
 #define __BOARD_H__
 
 #include "stm32f10x.h"
+#include "gpio_pin.h"
+
 /* board configuration */
 
 /* whether use board external SRAM memory */

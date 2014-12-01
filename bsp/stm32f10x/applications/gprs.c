@@ -687,6 +687,20 @@ void gprs_mail_delete(GPRS_MAIL_TYPEDEF *mail)
 	}
 }
 
+/* 
+#define	KEY_TYPE_INVALID 0    
+#define	KEY_TYPE_FPRINT 1      1
+#define	KEY_TYPE_RFID   2      4
+#define	KEY_TYPE_KBOARD 3      2
+#define KEY_TYPE_RF433  4      4
+*/
+static const rt_uint8_t KeyTypeMap[] = 
+{
+	1,
+	4,
+	2,
+	4,
+};
 //保存没有上传的记录
 void gprs_local_mail_save(GPRS_MAIL_TYPEDEF *mail,rt_uint8_t UpdateFlag)
 {
@@ -778,7 +792,7 @@ int gprs_local_mail_resend(struct event *data,int evt_id, void *user)
 		{
 			if(data->head.is_updated == 1)
 			{
-        result = msg_mail_opendoor(data->data.unlock.type,data->data.unlock.account_id,data->data.unlock.key_id,data->data.unlock.time);
+        result = msg_mail_opendoor(KeyTypeMap[data->data.unlock.type-1],data->data.unlock.account_id,data->data.unlock.key_id,data->data.unlock.time);
 				if(result == RT_EOK)
 				{
 					data->head.is_updated = 0;

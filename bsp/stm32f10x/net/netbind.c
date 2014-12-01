@@ -25,7 +25,7 @@ rt_err_t net_bind_key_process(net_recvmsg_p mail)
 	net_string_copy_uint32(&OpTime,remote->date);
   RT_DEBUG_LOG(SHOW_NETPHONE_INFO,("Bind Key Data Info:>>>>>>\n"));
   RT_DEBUG_LOG(SHOW_NETPHONE_INFO,("AccountID  %04x\n",AccountID));
-  RT_DEBUG_LOG(SHOW_NETPHONE_INFO,("KeyID			 %04x\n",KeyID));
+  RT_DEBUG_LOG(SHOW_NETPHONE_INFO,("KeyID      %04x\n",KeyID));
   RT_DEBUG_LOG(SHOW_NETPHONE_INFO,("OpTime     %04x\n",OpTime));
 
 	//根据解析得到的数据进行钥匙绑定操作

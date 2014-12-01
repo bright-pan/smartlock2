@@ -38,13 +38,35 @@ void gprs_key_right_mail(rt_uint16_t pos)
 	send_gprs_mail(ALARM_TYPE_KEY_RIGHT,net_get_date(),user);
 }
 
+static const rt_uint8_t KeyErrorType[][2] = 
+{
+	{KEY_TYPE_FPRINT,7},
+	{KEY_TYPE_KBOARD,8},
+	{KEY_TYPE_RF433,2},
+};
 //Ô¿³×´íÎó
 void gprs_key_error_mail(rt_uint8_t type)
 {
+	rt_uint8_t i;
 	GPRSUserDef_p  user = RT_NULL;
-
+	
 	user = rt_calloc(1,sizeof(*user));
+  rt_kprintf("error type %d\n",type);
 
+	/*
+	for(i=0;i<3;i++)
+	{
+		if(KeyErrorType[i][0] == type)
+		{
+			type = KeyErrorType[i][1];
+			break;
+		}
+		else
+		{
+      type = 2;
+		}
+	}
+	rt_kprintf("error type %d\n",type);*/
 	user->keyerr.type = type;
 	
 	send_gprs_mail(ALARM_TYPE_KEY_ERROR,net_get_date(),user);

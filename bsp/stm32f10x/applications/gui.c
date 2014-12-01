@@ -88,7 +88,9 @@ void gui_close_lcd_show(void)
 	lcd_on_off(RT_FALSE);
 
 	// 关闭副板电源 
+#ifdef NOT_CLOSE_FT_POWR
 	gpio_pin_output(DEVICE_NAME_POWER_FRONT,0,0);
+#endif
 	rt_thread_delay(10);
 	
   // UI进入睡眠状态
@@ -155,6 +157,12 @@ rt_err_t gui_key_input(rt_uint8_t *KeyValue)
 	{
 		key_mq = rt_mq_create("kboard", sizeof(KB_MAIL_TYPEDEF),
 						 5, RT_IPC_FLAG_FIFO);
+	}
+	// 清除休眠倒计时
+	if(menu_event_process(2,MENU_EVT_CLR_LCD_SLEEP) == 0)
+	{
+		rt_kprintf("clear lcd sleep\n");
+		SleepCnt = 0;
 	}
 	result = rt_mq_recv(key_mq, &mail, sizeof(mail),RT_TICK_PER_SECOND);
 	if(result == RT_EOK)
