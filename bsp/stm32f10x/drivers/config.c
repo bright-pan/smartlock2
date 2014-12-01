@@ -579,58 +579,71 @@ __exit:
 s32
 device_config_key_set(u16 key_id, struct key *new_key, u32 op_time)
 {
-    s32 result;
-    s32 i;
-	struct key k;
-    s32 len;
+  s32 result;
+  s32 i;
+struct key k;
+  s32 len;
 
-	result = -ECONFIG_ERROR;
-    
-    rt_memset(&k, 0, sizeof(k));
-    i = key_id;
-    if (device_config_get_key_valid(i) > 0) {
-            len = device_config_key_operate(i, &k, 0);
-            if (len >= 0) {
-                    if (op_time > k.head.updated_time) {
-                        len = device_config_key_verify(new_key->head.key_type, (u8 *)&new_key->data, device_config_get_key_code_size(new_key->head.key_type));
-                        if (len < 0 || len == i) {
-                            k.head.is_updated = 1;
-                            k.head.key_type = new_key->head.key_type;
-                            k.head.operation_type = new_key->head.operation_type;
-                            k.head.start_time = new_key->head.start_time;
-                            k.head.end_time = new_key->head.end_time;
-                            k.head.updated_time = op_time;
-                            k.data = new_key->data;
-                            len = device_config_key_operate(i, &k, 1);
-                            if (len >= 0)
-                                result = i;
-                        } else {
-                            result = -ECONFIG_EXIST;
-                        }
-                    }
-            }
+result = -ECONFIG_ERROR;
+  
+  rt_memset(&k, 0, sizeof(k));
+  i = key_id;
+  if (device_config_get_key_valid(i) > 0) {
+          len = device_config_key_operate(i, &k, 0);
+          if (len >= 0) {
+                  if (op_time > k.head.updated_time) {
+                      len = device_config_key_verify(new_key->head.key_type, (u8 *)&new_key->data, device_config_get_key_code_size(new_key->head.key_type));
+                      if (len < 0 || len == i) {
+                          k.head.is_updated = 1;
+                          k.head.key_type = new_key->head.key_type;
+                          k.head.operation_type = new_key->head.operation_type;
+                          k.head.start_time = new_key->head.start_time;
+                          k.head.end_time = new_key->head.end_time;
+                          k.head.updated_time = op_time;
+                          k.data = new_key->data;
+                          len = device_config_key_operate(i, &k, 1);
+                          if (len >= 0) {
+                              if (k.head.key_type == KEY_TYPE_FPRINT) {
+                                  if (fp_store_template(i, (uint8_t *)&k.data,0) >= 0)
+                                      result = i;
+                              } else {
+                                  result = i;
+                              }
+                          }
+                      } else {
+                          result = -ECONFIG_EXIST;
+                      }
+                  }
+          }
 
-    } else {
-        len = device_config_key_create(i, new_key->head.key_type, &new_key->data, device_config_get_key_code_size(new_key->head.key_type));
-        if (len >= 0) {
-            len = device_config_key_operate(i, &k, 0);
-            if (len >= 0) {
-                k.head.is_updated = 1;
-                k.head.key_type = new_key->head.key_type;
-                k.head.operation_type = new_key->head.operation_type;
-                k.head.start_time = new_key->head.start_time;
-                k.head.end_time = new_key->head.end_time;
-                k.head.updated_time = op_time;
-                len = device_config_key_operate(i, &k, 1);
-                if (len >= 0)
-                    result = i;
-            }
-        } else {
-            result = len;
-        }
-    }
-    return result;
+  } else {
+      len = device_config_key_create(i, new_key->head.key_type, &new_key->data, device_config_get_key_code_size(new_key->head.key_type));
+      if (len >= 0) {
+          len = device_config_key_operate(i, &k, 0);
+          if (len >= 0) {
+              k.head.is_updated = 1;
+              k.head.key_type = new_key->head.key_type;
+              k.head.operation_type = new_key->head.operation_type;
+              k.head.start_time = new_key->head.start_time;
+              k.head.end_time = new_key->head.end_time;
+              k.head.updated_time = op_time;
+              len = device_config_key_operate(i, &k, 1);
+              if (len >= 0) {
+                  if (k.head.key_type == KEY_TYPE_FPRINT) {
+                      if (fp_store_template(i, (uint8_t *)&k.data,0) >= 0)
+                          result = i;
+                  } else {
+                      result = i;
+                  }
+              }
+          }
+      } else {
+          result = len;
+      }
+  }
+  return result;
 }
+
 
 /*
     钥匙删除， 先删除钥匙与账户直接的关系映射，然后再使钥匙无效。
@@ -644,36 +657,46 @@ device_config_key_set(u16 key_id, struct key *new_key, u32 op_time)
 s32
 device_config_key_delete(u16 key_id, u32 op_time, u8 flag)
 {
-    s32 result = -ECONFIG_ERROR;
-    struct key k;
-    if (key_id >= KEY_NUMBERS)
-        return result;
-    if (flag) {
-        if (device_config_get_key_valid(key_id) > 0 && 
-            device_config_key_operate(key_id, &k, 0) >= 0) {
-            if (op_time > k.head.updated_time)
-            {
-                result = device_config_account_remove_key(key_id);
-                if (result >= 0) {
-                    device_config_set_key_valid(key_id, 0);
-                    if (device_config_file_operate(&device_config, 1) >= 0) {
-                        if (k.head.key_type == KEY_TYPE_FPRINT)
-                            fp_delete(key_id, 1);
-                        result = key_id;
-                    }
-                }
-            }
-        }
-    } else {
-        result = device_config_account_remove_key(key_id);
-        if (result >= 0) {
-            device_config_set_key_valid(key_id, 0);
-            if (device_config_file_operate(&device_config, 1) >= 0)
-                result = key_id;
-        }
-    }
-    return result;
+  s32 result = -ECONFIG_ERROR;
+  struct key k;
+  if (key_id >= KEY_NUMBERS)
+      return result;
+  if (flag) {
+      if (device_config_get_key_valid(key_id) > 0 && 
+          device_config_key_operate(key_id, &k, 0) >= 0) {
+          if (op_time > k.head.updated_time)
+          {
+              result = device_config_account_remove_key(key_id);
+              if (result >= 0) {
+                  device_config_set_key_valid(key_id, 0);
+                  if (device_config_file_operate(&device_config, 1) >= 0) {
+                      if (k.head.key_type == KEY_TYPE_FPRINT) {
+                          if (fp_delete(key_id, 1) >= 0)
+                              result = key_id;
+                      } else {
+                          result = key_id;
+                      }
+                  }
+              }
+          }
+      }
+  } else {
+      result = device_config_account_remove_key(key_id);
+      if (result >= 0) {
+          device_config_set_key_valid(key_id, 0);
+          if (device_config_file_operate(&device_config, 1) >= 0) {
+              if (k.head.key_type == KEY_TYPE_FPRINT) {
+                  if (fp_delete(key_id, 1) >= 0)
+                      result = key_id;
+              } else {
+                  result = key_id;
+              }
+          }
+      }
+  }
+  return result;
 }
+
 
 /*
     计算有效钥匙的数量。
