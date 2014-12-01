@@ -60,8 +60,9 @@ static const rt_uint8_t FrintAddText[][LCD_LINE_MAX_LEN] =
 {
 	{"用户编号:"},
 	{"指纹数量:"},
-	{"按确定键开始"},
+	{"按#开始录入"},
 	{"正在采集..."},
+	{"按#继续录入"},
 };
 
 //手机号码新增文本
@@ -530,8 +531,16 @@ void menu_15_processing(void)
     gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(1),FrintAddText[1],GUI_WIHIT);
     rt_sprintf((char *)buf,"%02d",FPrintNum);
     gui_display_string(SHOW_X_ROW8(13),SHOW_Y_LINE(1),buf,GUI_WIHIT);
+
+    if(FPrintNum == 0)
+    {
+      gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(2),FrintAddText[2],GUI_WIHIT);
+    }
+    else
+    {
+      gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(2),FrintAddText[4],GUI_WIHIT);
+    }
     
-    gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(2),FrintAddText[2],GUI_WIHIT);
     gui_display_update();
     fp_event_process(0,FP_EVNT_REGISTER_MODE);
 		while(1)

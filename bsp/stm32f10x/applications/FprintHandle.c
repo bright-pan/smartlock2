@@ -114,6 +114,9 @@ rt_err_t fprint_input_ok_trigger(void *user)
 
 	key = *(FPINTF_USER*)user;
 
+	// 清除休眠倒计时
+  menu_event_process(0,MENU_EVT_CLR_LCD_SLEEP);
+
 	//注册模式
 	if(fp_event_process(1,FP_EVNT_REGISTER_MODE) == RT_EOK)
 	{
@@ -126,7 +129,8 @@ rt_err_t fprint_input_ok_trigger(void *user)
 
 		// 打开lcd
 		gui_open_lcd_show();
-		
+
+		//rt_kprintf("KeyData.key.ID = %d\n",key.KeyPos);
 		KeyData.key.ID = key.KeyPos;
 	  KeyData.key.Type = KEY_TYPE_FPRINT;
 
@@ -163,7 +167,10 @@ rt_err_t fprint_input_error_trigger(void *user)
 {	
   union alarm_data data;		
 	rt_err_t 			   result;
-	
+
+		// 清除休眠倒计时
+  menu_event_process(0,MENU_EVT_CLR_LCD_SLEEP);
+
 	result = fp_event_process(1,FP_EVNT_REGISTER_MODE);
 	if(result == RT_EOK)
 	{
