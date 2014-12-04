@@ -126,6 +126,38 @@ static void stm32_gpio_all_close(void)
 }
 
 /** 
+@brief  进入低功耗时时钟控制
+@param  none 
+@retval none
+*/
+static void stm32_sleep_rcc_manage(FunctionalState NewState)
+{
+ 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO|
+ 												 RCC_APB2Periph_GPIOA|
+ 												 RCC_APB2Periph_GPIOB|
+ 												 RCC_APB2Periph_GPIOC|
+ 												 RCC_APB2Periph_GPIOD|
+ 												 RCC_APB2Periph_GPIOE|
+ 												 RCC_APB2Periph_GPIOF|
+ 												 RCC_APB2Periph_USART1|
+ 												 RCC_APB2Periph_SPI1, NewState);
+
+ 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_BKP|
+ 												 RCC_APB1Periph_SPI2|
+ 												 RCC_APB1Periph_USART2|
+ 												 RCC_APB1Periph_USART3|
+ 												 RCC_APB1Periph_UART4|
+ 												 RCC_APB1Periph_PWR|
+ 												 RCC_APB1Periph_TIM3|
+ 												 RCC_APB1Periph_TIM4|
+ 												 RCC_APB1Periph_TIM5,NewState);		
+  GPIO_PinRemapConfig(GPIO_Remap_SWJ_Disable, (NewState == ENABLE)?DISABLE:ENABLE);
+  GPIO_PinRemapConfig(GPIO_Remap_SWJ_JTAGDisable, (NewState == ENABLE)?DISABLE:ENABLE);
+  GPIO_PinRemapConfig(GPIO_Remap_SWJ_Disable, NewState);
+  
+}
+
+/** 
 @brief  休眠之前引脚处理
 @param  none 
 @retval none
@@ -147,8 +179,19 @@ static void stm32_sleep_gpio_config(void)
  	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2|GPIO_Pin_3|GPIO_Pin_4|GPIO_Pin_5|GPIO_Pin_6;
  	GPIO_Init(GPIOE,&GPIO_InitStructure);
 
- 	/*//关闭蓝牙模块
- 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8|GPIO_Pin_9|GPIO_Pin_10|GPIO_Pin_11|GPIO_Pin_12|GPIO_Pin_13;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;
+  GPIO_Init(GPIOD,&GPIO_InitStructure);
+  //GPIO_SetBits(GPIOD);
+
+ 	//关闭蓝牙模块
+ 	/*GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_11|GPIO_Pin_12|GPIO_Pin_8;
+ 	GPIO_Init(GPIOA,&GPIO_InitStructure);
+
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8;
+ 	GPIO_Init(GPIOC,&GPIO_InitStructure);*/
+/* 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8|GPIO_Pin_9|GPIO_Pin_10|GPIO_Pin_11|GPIO_Pin_12|GPIO_Pin_13;
  	GPIO_Init(GPIOA,&GPIO_InitStructure);
 
  	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8|GPIO_Pin_9;
@@ -165,7 +208,7 @@ static void stm32_sleep_gpio_config(void)
  	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
  	GPIO_Init(GPIOA,&GPIO_InitStructure);
  */
- 	
+
  	//stm32_gpio_all_close();
 }
 
@@ -240,8 +283,15 @@ static void stm32_stop_mode_entry(void)
 
   //PWR_WakeUpPinCmd(ENABLE);
   stm32_sleep_gpio_config();
+
+	// 关闭stm32时钟 
+  //stm32_sleep_rcc_manage(DISABLE);
+
   // 进入睡眠。
   PWR_EnterSTOPMode( PWR_Regulator_LowPower, PWR_STOPEntry_WFI);  
+
+	// 打开stm32时钟
+	//stm32_sleep_rcc_manage(ENABLE);
 	
 	// 配置系统停止后时钟
   SYSCLKConfig_STOP();
@@ -251,6 +301,8 @@ static void stm32_stop_mode_entry(void)
 
 	// 清除待机模式
 	PWR_ClearFlag(PWR_FLAG_SB);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA| RCC_APB2Periph_GPIOB| RCC_APB2Periph_GPIOC | 
+  											 RCC_APB2Periph_GPIOD | RCC_APB2Periph_GPIOE | RCC_APB2Periph_GPIOF, ENABLE);
 }
 
 static void rt_filesytem_unmount(void)
@@ -272,12 +324,16 @@ void rt_thread_idle_process(void)
 	{
 		// 进入停机模式
 		SysSleep.IsSleep = 1;
-		//stm32_stop_mode_entry();
+#ifdef USEING_SYS_STOP_MODE
+		stm32_stop_mode_entry();
+#endif
 	}
 	else
 	{
     // CPU休眠
+#ifdef USEING_SYS_SLEPP_MODE
     stm32_sleep_mode_entry();
+#endif
 	}
 }
 
