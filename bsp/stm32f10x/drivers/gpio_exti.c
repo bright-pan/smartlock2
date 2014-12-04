@@ -346,7 +346,7 @@ struct gpio_exti_user_data btled_user_data =
 	DEVICE_NAME_BT_LED,
 	GPIOC,
 	GPIO_Pin_9,
-	GPIO_Mode_IPU,
+	GPIO_Mode_IN_FLOATING,
 	GPIO_Speed_50MHz,
 	RCC_APB2Periph_GPIOC |RCC_APB2Periph_AFIO,
 	GPIO_PortSourceGPIOC,
