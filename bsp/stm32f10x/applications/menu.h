@@ -16,6 +16,8 @@
 #define rt_dprintf    RT_DEBUG_LOG
 #endif
 
+#define SHOW_PW_HIDE_CH          '*'
+
 
 #define MENU_DEBUG_THREAD        23//菜单线程调试信息
 #define MENU_DEBUG_KEY           24//按键调试信息打印
@@ -28,12 +30,15 @@
 #define USEING_SYSTEM_SHOW_STYLE1        
 
 #define LCD_LINE_MAX_LEN					17							//留出一个结束符的位置
+#define PAGE_MAX_SHOW_NUM					4               //菜单每一页最大显示行数
 
-#define KEY_MAX_MENU_NUM					50
+
+#define KEY_MAX_MENU_NUM					60
 #define MENU_PASSWORD_MAX_LEN			8
 #define MENU_PHONE_MAX_LEN				12
 
 #define CONFIG_PASSWORD_LEN				6	//配置文件标准密码长度
+#define CONFIG_PHONE_LET          12//配置文件手机号标准长度
 
 #define MENU_EVT_OP_OUTTIME				(0X01<<0)//菜单操作超时事件
 #define MENU_EVT_FREEZE						(0X01<<1)//
@@ -95,5 +100,7 @@ rt_err_t menu_input_sure_key(rt_uint32_t OutTime);
 
 //管理员相关处理初始化
 rt_err_t admin_account_init(void);
+
+void menu_clear_line(rt_uint8_t line);
 
 #endif

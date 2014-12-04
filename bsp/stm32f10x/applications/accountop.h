@@ -41,52 +41,58 @@ rt_err_t user_cur_add_phone(rt_uint8_t *phone);
 
 rt_uint32_t account_cur_pos_get(void);
 
-//钥匙匹配
+// 钥匙匹配
 rt_err_t key_password_verify(rt_uint8_t *password);
 
-//用户有效ID检测
+// 用户有效ID检测
 rt_int32_t account_valid_check(rt_int32_t pos);
 
-//管理员密码修改
+// 管理员密码修改
 rt_err_t admin_modify_password(rt_uint8_t *key);
 
-//管理员密码匹配
+// 管理员密码匹配
 rt_err_t admin_password_verify(rt_uint8_t *password);
 
-//管理员指纹修改
+// 管理员指纹修改
 rt_err_t admin_modify_fprint(rt_uint32_t outtime);
 
-//管理员手机修改
+// 管理员手机修改
 rt_err_t admin_modify_phone(rt_uint8_t *phone);
 
-//检查这把钥匙是否为当前用户下的
+// 检查这把钥匙是否为当前用户下的
 rt_err_t key_check_password_cur_pos(rt_uint8_t *key);
 
-//根据密码找到密码ID
+// 根据密码找到密码ID
 rt_int32_t key_pos_get_password(rt_uint8_t *password);
 
-//修改密码
+// 修改密码
 rt_err_t key_password_modify(rt_int16_t KeyID,rt_uint8_t *password);
 
-//删除密码
+// 删除密码
 rt_err_t key_password_delete(rt_int32_t KeyID);
 
-//获得时间
+// 根据字符串密码删除密码
+rt_err_t key_password_str_delete(rt_uint8_t *password);
+
+// 获得时间
 rt_uint32_t menu_get_cur_date(void);
 
-//修改指纹
+// 修改指纹
 rt_err_t user_modify_fprint(rt_uint16_t KeyPos,rt_uint32_t outtime);
 
-//创建超级用户
+// 创建超级用户
 void admin_create(rt_err_t (*PhoneShowUI)(rt_uint8_t *phone));
 
-//设置当前操作的账户
+// 设置当前操作的账户
 rt_err_t account_set_use(rt_int32_t id);
 
-//删除当前用户
+// 删除当前用户
 rt_err_t account_cur_delete(void);
 
-//钥匙权限检测
+// 钥匙权限检测
 rt_err_t key_permission_check(rt_uint16_t KeyID);
+
+// 手机号删除字符参数的
+rt_err_t user_phone_string_delete(rt_uint8_t *phone);
 #endif
 

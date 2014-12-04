@@ -210,7 +210,7 @@ static rt_err_t bt_uart_read_ack(rt_device_t uart
 			rt_thread_delay(1);
 		}
 	}
-	rt_dprintf(BT_DEBUG_THREAD,("UART>>>%s",uart_buffer));
+	rt_dprintf(BT_DEBUG_THREAD,("UART<<<%s",uart_buffer));
 	if((outtime_t-start_t) >= outtime)
 	{
 		rt_dprintf(BT_DEBUG_THREAD,("\nUART BUF :%s\n",uart_buffer));
@@ -276,17 +276,17 @@ static rt_err_t bt_at_cmd_analysis(rt_device_t uart
 	{
 		if(at_cmd != RT_NULL)
 	  {
+	  	rt_dprintf(BT_DEBUG_THREAD,("Send Cmd >> %s Right ACK is\"%s\"\n",at_cmd,rcv_ack));
 	    rt_device_write(uart,0,(const void *)at_cmd,rt_strlen((const void *)at_cmd));
 	    result = bt_uart_read_ack(uart,rcv_ack,rcv_buf,outtime);
-	    rt_dprintf(BT_DEBUG_THREAD,("Send: %s ok_recv: %s",at_cmd,rcv_ack));
 	  }
 	  else
 	  {
 	    result = bt_uart_read_ack(uart,rcv_ack,rcv_buf,outtime);    
-	    rt_dprintf(BT_DEBUG_THREAD,("recv: %s",rcv_buf));
+	    //rt_dprintf(BT_DEBUG_THREAD,("recv: %s",rcv_buf));
 	  }
 
-	  rt_dprintf(BT_DEBUG_THREAD,("result %x\n",result));
+	  rt_dprintf(BT_DEBUG_THREAD,("@Send result %x\n\n",result));
 	  if(result == RT_EOK)
 		{
 				break;
@@ -397,14 +397,37 @@ static rt_err_t bluetooth_initiate(bluetooth_module_p module)
       rt_thread_delay(10);
     }while(gpio_status == BT_NOW_CONNECT);
 	}
-	// 设置广播时间间隔
-	if(bt_at_cmd_analysis(module->uart_dev,"AT+ADVI[1000]","OK+SET:1000",RT_NULL,50) != RT_EOK)
+	
+	// 关闭自动休眠时间
+	if(bt_at_cmd_analysis(module->uart_dev,"AT+VERS","OK+",RT_NULL,50) != RT_EOK)
+	{
+    //goto BT_INIT_EXIT;
+	}
+	
+	// 关闭自动休眠时间
+	if(bt_at_cmd_analysis(module->uart_dev,"AT+PWRM[0]","OK+SET:0",RT_NULL,50) != RT_EOK)
+	{
+    goto BT_INIT_EXIT;
+	}
+	// 查询自动休眠时间
+	if(bt_at_cmd_analysis(module->uart_dev,"AT+PWRM?","OK+",RT_NULL,50) != RT_EOK)
 	{
     goto BT_INIT_EXIT;
 	}
 
+  if(bt_at_cmd_analysis(module->uart_dev,"AT+POWE?","OK+GET",RT_NULL,50) != RT_EOK)
+	{
+	  //goto BT_INIT_EXIT;
+	}
+
 	// 设置发射功耗
 	if(bt_at_cmd_analysis(module->uart_dev,"AT+POWE[C]","OK+SET",RT_NULL,50) != RT_EOK)
+	{
+    //goto BT_INIT_EXIT;
+	}
+
+	// 设置广播时间间隔
+	if(bt_at_cmd_analysis(module->uart_dev,"AT+ADVI[3000]","OK+SET:3000",RT_NULL,50) != RT_EOK)
 	{
     goto BT_INIT_EXIT;
 	}
@@ -438,23 +461,28 @@ static rt_err_t bluetooth_initiate(bluetooth_module_p module)
 	}
 
 	// 设置自动休眠时间
-	if(bt_at_cmd_analysis(module->uart_dev,"AT+PWRM[600000]","OK+SET:600000",RT_NULL,50) != RT_EOK)
+	if(bt_at_cmd_analysis(module->uart_dev,"AT+PWRM[600000]","OK+SET:",RT_NULL,50) != RT_EOK)
+	{
+    goto BT_INIT_EXIT;
+	}
+	
+	// 设置模块的GPIO为输入
+	if(bt_at_cmd_analysis(module->uart_dev,"AT+PDIR[07ff]","OK+SET:",RT_NULL,50) != RT_EOK)
 	{
     goto BT_INIT_EXIT;
 	}
 
-	// 设置模块的GPIO为输入
+	// 设置模块的GPIO
 	if(bt_at_cmd_analysis(module->uart_dev,"AT+PDAT[0000]","OK+SET:0000",RT_NULL,50) != RT_EOK)
 	{
     goto BT_INIT_EXIT;
 	}
 	
-	// 设置模块的GPIO为输入
-	if(bt_at_cmd_analysis(module->uart_dev,"AT+PDIR[0000]","OK+SET:0000",RT_NULL,50) != RT_EOK)
+	// 设置模块不使用硬件流
+	if(bt_at_cmd_analysis(module->uart_dev,"AT+FLOW[N]","OK+SET",RT_NULL,50) != RT_EOK)
 	{
     goto BT_INIT_EXIT;
 	}
-	
 	// 进入休眠
 	if(bt_at_cmd_analysis(module->uart_dev,"AT+SLEEP","OK+SLEEP",RT_NULL,50) != RT_EOK)
 	{
@@ -892,6 +920,12 @@ void bluetooth_thread_entry(void *arg)
 					rt_device_read(bluetooth->led_dev,0,&gpio_status,1);
 					if(gpio_status == BT_NOW_CONNECT)
 					{
+						// 设置自动休眠时间
+						/*if(bt_at_cmd_analysis(bluetooth->uart_dev,"AT+PWRM[0]","OK+SET:0",RT_NULL,50) != RT_EOK)
+						{
+							
+							while(1);
+						}*/
 						// 蓝牙被动连接处理
 						bluetooth_passivity_connect(bluetooth);
 
@@ -986,7 +1020,7 @@ void bluetooth_thread_entry(void *arg)
 							//break;
 						}
 						rt_kprintf("bluetooth->work_status = %d\n",bluetooth->work_status);
-
+						//uart_manage(bluetooth->uart_dev,RT_FALSE);
 						//线程进入休眠
 						//rt_thread_entry_sleep(rt_thread_self());
 	        }

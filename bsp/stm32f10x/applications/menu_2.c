@@ -15,12 +15,11 @@
  ********************************************************************/
 #include "menu_2.h"
 #include "KeyModifyUI.h"
-//#define USEING_MODIF_UI           
+#define USEING_MODIF_UI           
 
 #define MENU2_DEBUG_ARG						1
 #define FPRIN_OP_OUTIME           5
 
-#define PAGE_MAX_SHOW_NUM					4
 #define PHONE_STAND_LEN						11
 #define ADMIN_DATA_POS						0
 
@@ -1099,6 +1098,7 @@ static void user_list_processing(void)
       }
       else if(KeyValue == MENU_DEL_VALUE)
       {
+      	return ;
         //取消
       }
 
@@ -1521,7 +1521,12 @@ static rt_err_t menu_input_password_one(rt_uint8_t *buf,rt_uint8_t *ShowBuf)
   }
 }
 
-static menu_password_modify_uiinit(rt_uint8_t *buf,rt_uint8_t page)
+/** 
+@brief  修改密码的
+@param  mail :gprs thread mail
+@retval void
+*/
+static void menu_password_modify_uiinit(rt_uint8_t *buf,rt_uint8_t page)
 {
 	rt_uint8_t CurUserPos;
 	

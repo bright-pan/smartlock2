@@ -3,6 +3,7 @@
 #include"menu_2.h"
 #include"menu_3.h"
 #include"unlock_ui.h"
+#include "UserManageUI.h"
 #ifdef USEING_BUZZER_FUN 	
 #include "buzzer.h"
 #endif
@@ -65,7 +66,7 @@ const KbdTabStruct	KeyTab[KEY_MAX_MENU_NUM] =
 	{20,20,20,20,6,menu_20_processing},//显示本机信息
 	{21,21,21,33,7,menu_21_processing},//显示本机信息
 
-	{22,22,22,23,5,menu_22_processing},//用户搜索界面
+	{22,22,22,37,5,menu_22_processing},//用户搜索界面
 
 	//五级
 	{23,24,27,28,26,menu_23_processing},//修改密码
@@ -86,6 +87,27 @@ const KbdTabStruct	KeyTab[KEY_MAX_MENU_NUM] =
 
 	{35,35,35,33,33,menu_35_processing},//自动休眠时间设置
   {36,36,36,34,34,menu_36_processing},//自动上锁时间设置
+
+	/* 用户管理  */
+  {37,38,39,40,22,password_manage_ui},//用户密码管理ui
+  {38,39,37,44,22,fprint_manage_ui},//用户指纹管理ui
+  {39,37,38,48,22,phone_manage_ui},//用户手机管理ui
+
+  {40,41,41,42,37,password_add_ui},//密码添加
+  {41,40,40,43,37,password_del_ui},//密码删除
+  {42,42,42,42,40,password_add_process},	//密码添加处理
+  {43,43,43,43,41,password_del_process},  //密码删除处理
+
+  {44,45,45,46,38,fprint_add_ui},//指纹添加
+  {45,44,44,47,38,fprint_del_ui},//指纹删除
+  {46,47,47,47,44,fprint_add_process},	//指纹添加处理
+  {47,46,46,47,45,fprint_del_process},  //指纹删除处理
+
+	{48,49,49,50,39,phone_add_ui},//电话添加
+	{49,48,48,51,39,phone_del_ui},//电话删除
+	{50,50,50,50,48,phone_add_process},//电话添加处理
+	{51,51,51,51,49,phone_del_process},//电话删除处理
+  
 	//三级目录
 };
 
@@ -619,5 +641,17 @@ rt_err_t menu_input_sure_key(rt_uint32_t OutTime)
 	return result;
 }
 
-
+/** 
+@brief  清除屏幕上的一行
+@param  line 菜单行
+				@arg 0 第一行
+				@arg 1 第二行
+				@arg 2 第三行
+				@arg 3 第四行
+@retval void
+*/
+void menu_clear_line(rt_uint8_t line)
+{
+	gui_clear(SHOW_X_ROW8(0),SHOW_Y_LINE(line),SHOW_X_ROW8(15),SHOW_Y_LINE(line+1));
+}
 

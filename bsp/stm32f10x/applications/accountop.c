@@ -7,6 +7,8 @@
 
 #define USEING_DEBUG_ACCOP		0
 
+#define CONFIG_PHONE_LET      12//手机号码长度
+
 
 s32
 device_config_account_remove_key(u16 key_id);
@@ -187,6 +189,24 @@ rt_err_t key_password_delete(rt_int32_t KeyID)
 	return RT_EOK;
 }
 
+//根据密码删除钥匙
+rt_err_t key_password_str_delete(rt_uint8_t *password)
+{
+	rt_int32_t KeyID;
+
+	KeyID = device_config_key_verify(KEY_TYPE_KBOARD,password,rt_strlen(password));
+	if(KeyID < 0)
+	{
+		return RT_ERROR;
+	}
+	KeyID = device_config_key_delete(KeyID,menu_get_cur_date(),0);
+	if(KeyID < 0)
+	{
+		return RT_ERROR;
+	}
+	return RT_EOK;
+}
+
 //修改管理员密码
 rt_err_t admin_modify_password(rt_uint8_t *key)
 {
@@ -251,6 +271,12 @@ rt_err_t user_phone_add_check(rt_uint8_t *phone)
 	rt_uint8_t len;
 
 	len = rt_strlen((const char *)phone);
+
+	if(len < 12)
+	{
+		return RT_EEMPTY;
+	}
+	
 	RT_ASSERT(phone != RT_NULL);
 	pos = device_config_phone_verify(phone,len);
 	RT_DEBUG_LOG(USEING_DEBUG_ACCOP,("%s This Phone pos %d len %d\n",phone,pos,len));
@@ -982,7 +1008,38 @@ rt_err_t key_permission_check(rt_uint16_t KeyID)
 }
 
 
+/** 
+@brief  删除用户中的手机号码
+@param  phone 手机号码
+@retval none
+*/
+rt_err_t user_phone_string_delete(rt_uint8_t *phone)
+{
+	rt_err_t result;
+	rt_int16_t PhID;
 
+	RT_ASSERT(phone != RT_NULL);
+	if(rt_strlen((const char *)phone) < CONFIG_PHONE_LET)
+	{
+		return RT_ERROR;
+	}
+	PhID = device_config_phone_verify(phone,rt_strlen((const char *)phone));
+	if(PhID < 0)
+	{
+		return RT_ERROR;
+	}
+  PhID = device_config_phone_delete(PhID,0,0);
+	if(result < 0)
+	{
+		result = RT_ERROR;
+	}
+	else
+	{
+		result = RT_EOK;
+	}
+	
+	return result;
+}
 
 
 

@@ -6,7 +6,7 @@
 #define PAGE_MAX_SHOW_NUM					4
 
 #define LCD_LINE_MAX_LEN					17							//留出一个结束符的位置
-#define SHOW_PW_HIDE_CH						'*'
+//#define SHOW_PW_HIDE_CH						'*'
 #define PASSWORD_DATA_POS					6								//密码数据的开始位置
 
 /* 解锁界面用文字 */
