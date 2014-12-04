@@ -196,5 +196,7 @@
 #define USEING_RAM_DEBUG      	//使用动态调试信息打印功能
 #define USEING_GSM_UART_MANAGE 	//使用gsm串口硬件管理
 #define USEING_LOW_POWER				//使用低功耗处理
-//#define NOT_CLOSE_FT_POWR       //指纹头不关闭电源
+#define NOT_CLOSE_FT_POWR       //指纹头不关闭电源
+#define USEING_SYS_STOP_MODE  //使用停机模式
+#define USEING_SYS_SLEPP_MODE //使用睡眠模式
 #endif
