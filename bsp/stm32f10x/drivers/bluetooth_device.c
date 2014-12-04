@@ -11,6 +11,7 @@
 #define rt_dprintf    RT_DEBUG_LOG
 #endif
 
+#define USEING_UART_TX_MANAGE 
 #define BT_DEBUG_THREAD       18//蓝牙线程调试信息
 #define BT_DEBUG_RCVDAT       19
 #define BT_DEBUG_SENDDAT      20
@@ -27,6 +28,7 @@
 #define BT_USEING_WK_NAME			"BT_WK"
 #define BT_USEING_LED_NAME		"BT_LED"
 #define BT_USEING_RST_NAME		"BT_RST"
+#define BT_USEING_PWR_NAME    "pwr_bt"
 
 // 蓝牙驱动严重错误调试信息打印
 #define BT_SYSTEM_ERROR_INFO	"The bluetooth module systematic errors function:%s line:%d"
@@ -66,6 +68,7 @@ bluetooth_user,*bluetooth_user_p;
 typedef struct 
 {
 	rt_device_t uart_dev;			//串口
+	rt_device_t power_dev;    //电源脚
 	rt_device_t	wk_dev;     	//唤醒脚
 	rt_device_t led_dev;    	//连接状态led脚
 	rt_device_t rst_dev;    	//复位脚
@@ -306,6 +309,7 @@ static rt_err_t bt_module_create(bluetooth_module_p *module)
 	device_init_processor(&(*module)->led_dev,BT_USEING_LED_NAME);
 	device_init_processor(&(*module)->wk_dev,BT_USEING_WK_NAME);
 	device_init_processor(&(*module)->rst_dev,BT_USEING_RST_NAME);
+	device_init_processor(&(*module)->power_dev,BT_USEING_PWR_NAME);
 	(*module)->work_status = BT_MODULE_CMD_MODE;
 	(*module)->sleep_cnt = 0;
 	
@@ -318,6 +322,7 @@ static void bt_module_detele(bluetooth_module_p module)
 	device_close_processor(module->led_dev);
 	device_close_processor(module->wk_dev);
 	device_close_processor(module->rst_dev);
+	device_close_processor(module->power_dev);
 	rt_free(module);
 }
 
@@ -920,12 +925,12 @@ void bluetooth_thread_entry(void *arg)
 					rt_device_read(bluetooth->led_dev,0,&gpio_status,1);
 					if(gpio_status == BT_NOW_CONNECT)
 					{
-						// 设置自动休眠时间
-						/*if(bt_at_cmd_analysis(bluetooth->uart_dev,"AT+PWRM[0]","OK+SET:0",RT_NULL,50) != RT_EOK)
-						{
-							
-							while(1);
-						}*/
+#ifdef USEING_UART_TX_MANAGE
+						// 恢复串口的TX脚
+						uart_manage(bluetooth->uart_dev,RT_TRUE);
+#endif
+
+						
 						// 蓝牙被动连接处理
 						bluetooth_passivity_connect(bluetooth);
 
@@ -972,6 +977,14 @@ void bluetooth_thread_entry(void *arg)
 	            }
 	            case BT_MAIL_TYPE_RESET:
 		          {
+		          	gpio_status = 0;
+		          	rt_device_write(bluetooth->power_dev,0,&gpio_status,1);
+
+                rt_thread_delay(10);
+
+		          	gpio_status = 1;
+		          	rt_device_write(bluetooth->power_dev,0,&gpio_status,1);
+		          	
 		          	bluetooth_initiate(bluetooth);
 	  						rt_thread_delay(100);
 	  						rt_mb_send(mail.tx_end,RT_NULL);
@@ -1020,7 +1033,12 @@ void bluetooth_thread_entry(void *arg)
 							//break;
 						}
 						rt_kprintf("bluetooth->work_status = %d\n",bluetooth->work_status);
-						//uart_manage(bluetooth->uart_dev,RT_FALSE);
+						
+#ifdef USEING_UART_TX_MANAGE
+						// 设置串口的TX脚
+						uart_manage(bluetooth->uart_dev,RT_FALSE);
+#endif
+
 						//线程进入休眠
 						//rt_thread_entry_sleep(rt_thread_self());
 	        }
