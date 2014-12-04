@@ -166,7 +166,7 @@ static rt_err_t stm32_control(struct rt_serial_device *serial, int cmd, void *ar
 		case RT_DEVICE_CTRL_CLR_TX_GPIO:
 			GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 			/* Configure USART tx PIN */
-			GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+			GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
 			GPIO_InitStructure.GPIO_Pin = uart->uart_tx_pin;
 			GPIO_Init(uart->uart_tx_gpio, &GPIO_InitStructure);
 			break;
