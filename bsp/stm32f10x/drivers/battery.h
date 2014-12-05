@@ -19,7 +19,11 @@
 #include <rthw.h>
 #include <stm32f10x.h>
 
-
+typedef enum
+{
+	BAT_MAILTYPE_SAMPLE0,			//电池电量
+	BAT_MAILTYPE_LowEnergy,		//电量过低检测
+}BatTypeDef;
 
 typedef	struct 
 {
@@ -28,6 +32,17 @@ typedef	struct
 	float       voltage;    //检测到的电压值
 }Battery_Data;
 
+typedef struct 
+{
+	BatTypeDef Type;	//邮件类型
+	void (*result)(void *arg);//邮件执行结果
+}BatteryMailDef,*BatteryMailDef_p;
+
 void battery_get_data(Battery_Data* data);
+
+// 给电池管理线程发送邮件
+rt_err_t battery_send_mail(BatteryMailDef_p mail);
+
+void battery_low_energy_check(void);
 
 #endif

@@ -17,6 +17,7 @@
 #include "buzzer.h"
 #include "alarm.h"
 
+/***************************************************************************************************/
 
 #define BATTERY_DEBUG_THREAD            31
 
@@ -27,6 +28,11 @@
 
 #define BAT_DEVICE_NAME                 DEVICE_NAME_BAT
 
+
+/**************************************************************************************************/
+static rt_mq_t BatMail = RT_NULL;
+
+/**************************************************************************************************/
 void bat_enable(void)
 {
   rt_device_t device = RT_NULL;
@@ -77,6 +83,7 @@ void battery_get_data(Battery_Data* data)
 		}
 		data->adc_value = get_average_value(adc_temp,100);
 
+		rt_device_close(adc_dev);
 		bat_disable();
 
 		//计算电压
@@ -165,20 +172,40 @@ void battery_thread_entry(void *arg)
 {
 	while(1)
 	{
-		Battery_Data bat;
-		
-		rt_thread_delay(100*60);
+		rt_err_t result;
+		BatteryMailDef mail;
 
-		// 线程进入工作
-		rt_thread_entry_work(rt_thread_self());
-		//battery_get_data(&bat);
-		//battery_info_save_file(&bat);
-		
-		// 电压过低处理
-		battery_too_low();
-
-		// 线程进入休眠
-		rt_thread_entry_sleep(rt_thread_self());
+		result = rt_mq_recv(BatMail,&mail,sizeof(mail),RT_TICK_PER_SECOND*60);
+		if(result == RT_EOK)
+		{
+			// 线程进入工作
+			rt_thread_entry_work(rt_thread_self());
+			switch(mail.Type)
+			{
+				case BAT_MAILTYPE_SAMPLE0:
+				{
+					// 采样一次
+					break;
+				}
+				case BAT_MAILTYPE_LowEnergy:
+				{
+					// 电量过低处理
+					battery_too_low();
+					break;
+				}
+				default:
+				{
+					rt_kprintf("%s mail Type Error!!!\n",BatMail->parent.parent.name);
+					break;
+				}
+			}
+			// 线程进入休眠
+			rt_thread_entry_sleep(rt_thread_self());
+		}
+		else
+		{
+			//battery_low_energy_check();
+		}
 	}
 }
 
@@ -186,6 +213,8 @@ int battery_thread_init(void)
 {
 	rt_thread_t id;
 
+	BatMail = rt_mq_create("battery",sizeof(BatteryMailDef),2,RT_IPC_FLAG_FIFO);
+	RT_ASSERT(BatMail != RT_NULL);
 	
 	id = rt_thread_create("bat",
                          battery_thread_entry, RT_NULL,
@@ -211,6 +240,7 @@ int battery_too_low(void)
 	Battery_Data bat;
 	
   battery_get_data(&bat);
+  rt_kprintf("DumpEnergy = %d%\n",bat.DumpEnergy);
 	if(bat.DumpEnergy <= 10)
 	{
 		send_local_mail(ALARM_TYPE_BATTERY_WORKING_20M,0,RT_NULL);
@@ -228,8 +258,39 @@ int battery_too_low(void)
 }
 INIT_DEVICE_EXPORT(battery_too_low);
 
+/** 
+@brief  给电池管理线程发送邮件
+@param  mail  邮件 
+@retval none
+*/
+rt_err_t battery_send_mail(BatteryMailDef_p mail)
+{	
+	rt_err_t result;
+	
+	if(BatMail == RT_NULL)
+	{
+		//创建邮件
+		BatMail = rt_mq_create("battery",sizeof(*mail),2,RT_IPC_FLAG_FIFO);
+		RT_ASSERT(BatMail != RT_NULL);
+	}
+	result = rt_mq_send(BatMail,(void *)mail,sizeof(mail));
+	if(result != RT_EOK)
+	{
+		rt_kprintf("%s mail send fail!!!\n",BatMail->parent.parent.name);
+	}
+
+	return result;
+}
 
 
+void battery_low_energy_check(void)
+{
+	BatteryMailDef SendMail;
+
+	SendMail.Type = BAT_MAILTYPE_LowEnergy;
+	SendMail.result = RT_NULL;
+	battery_send_mail(&SendMail);
+}
 
 
 
