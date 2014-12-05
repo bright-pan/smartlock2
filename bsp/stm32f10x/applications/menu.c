@@ -27,6 +27,93 @@ fun1 cur_run_processing = RT_NULL;
 
 //void(*current_operation_index)(void);
 
+#if (USEING_MENU_MODE == 0)
+
+//菜单列表
+const KbdTabStruct	KeyTab[KEY_MAX_MENU_NUM] = 
+{
+	//顶层
+	{0,0,0,1,0,menu_0_processing},//登陆界面
+
+	//二级
+	{1,2,3,4,3,menu_1_processing},//用户管理
+	{2,3,1,6,3,menu_2_processing},//系统设置 
+  {3,1,2,0,3,menu_3_processing},//用户管理
+
+	//三级
+	{4,5,5,8,1,menu_4_processing},//用户新增
+	{5,4,4,22,1,menu_5_processing},//用户修改
+	
+	{6,7,7,20,2,menu_6_processing},//系统信息
+	{7,6,6,33,2,menu_7_processing},//系统参数
+
+	//四级
+	{8,9,13,14,11,menu_8_processing},//新增密码 >>同时创建账号
+	{9,10,8,15,11,menu_9_processing},//新增指纹
+	{10,11,9,16,11,menu_10_processing},//新增手机
+	{11,12,10,17,11,menu_11_processing},//保存退出
+	{12,13,11,18,11,menu_12_processing},//查看信息
+	{13,8,12,19,13,menu_13_processing},//退出
+
+	//五级
+	{14,14,14,14,8,menu_14_processing},//录入密码
+	{15,15,15,15,9,menu_15_processing},//录入指纹
+	{16,16,16,16,10,menu_16_processing},//录入电话
+	{17,17,17,4,4,menu_17_processing},//保存退出
+	{18,18,18,18,12,menu_18_processing},//查看信息
+	{19,19,19,4,13,menu_19_processing},//退出
+
+	//四级
+	{20,20,20,20,6,menu_20_processing},//显示本机信息
+	{21,21,21,33,7,menu_21_processing},//显示本机信息
+
+	{22,22,22,23,5,menu_22_processing},//用户搜索界面
+
+	//五级
+	{23,24,27,28,26,menu_23_processing},//修改密码
+	{24,25,23,29,26,menu_24_processing},//修改指纹
+	{25,26,24,30,26,menu_25_processing},//修改电话
+	{26,27,25,32,26,menu_26_processing},//保存退出
+	{27,23,26,31,27,menu_27_processing},//退出
+	
+	{28,23,24,25,23,menu_28_processing},//修改密码处理
+	{29,23,24,25,24,menu_29_processing},//修改指纹处理
+	{30,23,24,25,25,menu_30_processing},//修改电话处理
+	{31,31,31,5,26,menu_31_processing},//删除用户处理
+  {32,32,32,5,5,menu_32_processing},//保存退出
+
+	//三级菜单
+	{33,34,34,35,7,menu_33_processing},  //自动休眠
+	{34,33,33,36,7,menu_34_processing},//自动上锁
+
+	{35,35,35,33,33,menu_35_processing},//自动休眠时间设置
+  {36,36,36,34,34,menu_36_processing},//自动上锁时间设置
+
+	/* 用户管理  */
+  /*{37,38,39,40,22,password_manage_ui},//用户密码管理ui
+  {38,39,37,44,22,fprint_manage_ui},//用户指纹管理ui
+  {39,37,38,48,22,phone_manage_ui},//用户手机管理ui
+
+  {40,41,41,42,37,password_add_ui},//密码添加
+  {41,40,40,43,37,password_del_ui},//密码删除
+  {42,42,42,42,40,password_add_process},	//密码添加处理
+  {43,43,43,43,41,password_del_process},  //密码删除处理
+
+  {44,45,45,46,38,fprint_add_ui},//指纹添加
+  {45,44,44,47,38,fprint_del_ui},//指纹删除
+  {46,47,47,47,44,fprint_add_process},	//指纹添加处理
+  {47,46,46,47,45,fprint_del_process},  //指纹删除处理
+
+	{48,49,49,50,39,phone_add_ui},//电话添加
+	{49,48,48,51,39,phone_del_ui},//电话删除
+	{50,50,50,50,48,phone_add_process},//电话添加处理
+	{51,51,51,51,49,phone_del_process},//电话删除处理*/
+  
+	//三级目录
+};
+#endif
+
+#if (USEING_MENU_MODE == 1)
 
 //菜单列表
 const KbdTabStruct	KeyTab[KEY_MAX_MENU_NUM] = 
@@ -110,6 +197,7 @@ const KbdTabStruct	KeyTab[KEY_MAX_MENU_NUM] =
   
 	//三级目录
 };
+#endif
 
 //系统进入菜单
 #define SYSTEM_ENTER_MENU_NUM				10

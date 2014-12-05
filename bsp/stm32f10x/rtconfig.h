@@ -199,4 +199,5 @@
 #define NOT_CLOSE_FT_POWR       //指纹头不关闭电源
 #define USEING_SYS_STOP_MODE  //使用停机模式
 #define USEING_SYS_SLEPP_MODE //使用睡眠模式
+#define USEING_MENU_MODE       0
 #endif
