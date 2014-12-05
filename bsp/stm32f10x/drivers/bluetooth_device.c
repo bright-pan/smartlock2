@@ -1030,14 +1030,19 @@ void bluetooth_thread_entry(void *arg)
 						if(bluetooth_passivity_disconnect(bluetooth) != RT_EOK)
 						{
 							rt_kprintf("Blooth Disconnect Fail!!!\n");
+							bluetooth_initiate(bluetooth);
 							//break;
+						}
+						else
+						{
+							//休眠成功
+#ifdef USEING_UART_TX_MANAGE
+							// 设置串口的TX脚
+							uart_manage(bluetooth->uart_dev,RT_FALSE);
+#endif
 						}
 						rt_kprintf("bluetooth->work_status = %d\n",bluetooth->work_status);
 						
-#ifdef USEING_UART_TX_MANAGE
-						// 设置串口的TX脚
-						uart_manage(bluetooth->uart_dev,RT_FALSE);
-#endif
 
 						//线程进入休眠
 						//rt_thread_entry_sleep(rt_thread_self());
