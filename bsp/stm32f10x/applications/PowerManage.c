@@ -1,5 +1,6 @@
 #include "PowerManage.h"
 #include "untils.h"
+#include "gpio_pin.h"
 
 
 /* test thread low power useing */
@@ -113,16 +114,13 @@ static void stm32_gpio_all_close(void)
 
   GPIO_StructInit(&GPIO_InitStructure);
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
-  //GPIO_Init(GPIOA,&GPIO_InitStructure);
+  GPIO_Init(GPIOA,&GPIO_InitStructure);
   //GPIO_Init(GPIOB,&GPIO_InitStructure);
   //GPIO_Init(GPIOC,&GPIO_InitStructure);
   //GPIO_Init(GPIOD,&GPIO_InitStructure);
   //GPIO_Init(GPIOE,&GPIO_InitStructure);
-  //GPIO_Init(GPIOF,&GPIO_InitStructure);
+  GPIO_Init(GPIOF,&GPIO_InitStructure);
   
-  RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA| RCC_APB2Periph_GPIOB| RCC_APB2Periph_GPIOC | 
-  											 RCC_APB2Periph_GPIOD | RCC_APB2Periph_GPIOE | RCC_APB2Periph_GPIOF, DISABLE);
-  RCC_AHBPeriphClockCmd(RCC_AHBPeriph_FSMC,DISABLE);
 }
 
 /** 
@@ -153,9 +151,55 @@ static void stm32_sleep_rcc_manage(FunctionalState NewState)
  												 RCC_APB1Periph_TIM5,NewState);		
   GPIO_PinRemapConfig(GPIO_Remap_SWJ_Disable, (NewState == ENABLE)?DISABLE:ENABLE);
   GPIO_PinRemapConfig(GPIO_Remap_SWJ_JTAGDisable, (NewState == ENABLE)?DISABLE:ENABLE);
-  GPIO_PinRemapConfig(GPIO_Remap_SWJ_Disable, NewState);
+  SPI_Cmd(SPI1,NewState);
+  SPI_Cmd(SPI2,NewState);
   
+  USART_Cmd(USART1,NewState);
+  USART_Cmd(USART2,NewState);
+  USART_Cmd(USART3,NewState);
+  USART_Cmd(UART4,NewState);
 }
+
+
+/** 
+@brief  备份和还原gpio寄存器
+@param  cmd  
+				@arg RT_TRUE 备份
+@retval none
+*/
+static void gpio_backup_restore(rt_bool_t cmd)
+{
+	static GPIO_TypeDef *gpio;
+
+	if(cmd == RT_TRUE)
+	{
+    gpio = rt_calloc(6,sizeof(GPIO_TypeDef));
+		RT_ASSERT(gpio != RT_NULL);
+		
+		gpio[0] = *GPIOA;
+		gpio[1] = *GPIOB;
+		gpio[2] = *GPIOC;
+		gpio[3] = *GPIOD;
+		gpio[4] = *GPIOE;
+		gpio[5] = *GPIOF;
+	}
+	else
+	{
+		*GPIOA = gpio[0];
+		*GPIOB = gpio[1];
+		*GPIOC = gpio[2];
+		*GPIOD = gpio[3];
+		*GPIOE = gpio[4];
+		*GPIOF = gpio[5];
+		
+		rt_free(gpio);
+		gpio = RT_NULL;
+	}
+	
+
+	
+}
+
 
 /** 
 @brief  休眠之前引脚处理
@@ -179,38 +223,117 @@ static void stm32_sleep_gpio_config(void)
  	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2|GPIO_Pin_3|GPIO_Pin_4|GPIO_Pin_5|GPIO_Pin_6;
  	GPIO_Init(GPIOE,&GPIO_InitStructure);
 
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;
-  GPIO_Init(GPIOD,&GPIO_InitStructure);
-  //GPIO_SetBits(GPIOD);
+	// 关闭flash
+	gpio_pin_output(DEVICE_NAME_POWER_FLASH,0,0);
 
- 	//关闭蓝牙模块
- 	/*GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_11|GPIO_Pin_12|GPIO_Pin_8;
- 	GPIO_Init(GPIOA,&GPIO_InitStructure);
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4|GPIO_Pin_5|GPIO_Pin_6|GPIO_Pin_7;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
+	GPIO_Init(GPIOA,&GPIO_InitStructure);
 
-  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8;
- 	GPIO_Init(GPIOC,&GPIO_InitStructure);*/
-/* 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8|GPIO_Pin_9|GPIO_Pin_10|GPIO_Pin_11|GPIO_Pin_12|GPIO_Pin_13;
- 	GPIO_Init(GPIOA,&GPIO_InitStructure);
+	// 关闭电机
+	gpio_pin_output(DEVICE_NAME_POWER_MOTOR,0,0);
 
- 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8|GPIO_Pin_9;
- 	GPIO_Init(GPIOC,&GPIO_InitStructure);
+	// 关闭rf433
+	//gpio_pin_output(DEVICE_NAME_RF_ENABLE, 0,0);
 
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7;
- 	GPIO_Init(GPIOE,&GPIO_InitStructure);
+	// 关闭指纹
+	gpio_pin_output(DEVICE_NAME_POWER_FRONT,0,0);
+
+	// 关闭gsm
+	gpio_pin_output(DEVICE_NAME_POWER_GSM,0,0);
+
 
  	//关闭rf433
  	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1|GPIO_Pin_2;
  	GPIO_Init(GPIOD,&GPIO_InitStructure);
 
- 	//关闭led
- 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
- 	GPIO_Init(GPIOA,&GPIO_InitStructure);
- */
+ 	//关闭A端口
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_All;
+ 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
+  GPIO_Init(GPIOA,&GPIO_InitStructure);
 
+	// 设置RTC 事件
+	/* Wait till RTC Second event occurs */
+	//RTC_ClearFlag(RTC_FLAG_SEC);
+	//while(RTC_GetFlagStatus(RTC_FLAG_SEC) == RESET);
+	
+	/* Alarm in 3 second */
+	//RTC_SetAlarm(RTC_GetCounter()+ 3);
+	/* Wait until last write operation on RTC registers has finished */
+	//RTC_WaitForLastTask();
  	//stm32_gpio_all_close();
 }
+
+
+/**
+  * @brief  This function handles RTC Alarm interrupt request.
+  * @param  None
+  * @retval None
+  */
+void RTC_Alarm_Config(void)
+{
+  EXTI_InitTypeDef EXTI_InitStructure;
+  NVIC_InitTypeDef NVIC_InitStructure;
+
+	PWR_BackupAccessCmd(ENABLE);
+  /* Configure EXTI Line17(RTC Alarm) to generate an interrupt on rising edge */
+  EXTI_ClearITPendingBit(EXTI_Line17);
+  EXTI_InitStructure.EXTI_Line = EXTI_Line17;
+  EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
+  EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;
+  EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+  EXTI_Init(&EXTI_InitStructure);
+
+  NVIC_InitStructure.NVIC_IRQChannel = RTCAlarm_IRQn;
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+  NVIC_Init(&NVIC_InitStructure);
+
+  /* Enable the RTC Alarm interrupt */
+  RTC_ITConfig(RTC_IT_ALR, ENABLE);
+  /* Wait until last write operation on RTC registers has finished */
+  RTC_WaitForLastTask();
+}
+//INIT_DEVICE_EXPORT(RTC_Alarm_Config);
+
+
+/**
+  * @brief  This function handles RTC Alarm interrupt request.
+  * @param  None
+  * @retval None
+  */
+void RTCAlarm_IRQHandler(void)
+{
+  if(RTC_GetITStatus(RTC_IT_ALR) != RESET)
+  {
+    /* Clear EXTI line17 pending bit */
+    EXTI_ClearITPendingBit(EXTI_Line17);
+
+    /* Check if the Wake-Up flag is set */
+    if(PWR_GetFlagStatus(PWR_FLAG_WU) != RESET)
+    {
+      /* Clear Wake Up flag */
+      PWR_ClearFlag(PWR_FLAG_WU);
+    }
+
+    /* Wait until last write operation on RTC registers has finished */
+    RTC_WaitForLastTask();   
+    /* Clear RTC Alarm interrupt pending bit */
+    RTC_ClearITPendingBit(RTC_IT_ALR);
+    /* Wait until last write operation on RTC registers has finished */
+    RTC_WaitForLastTask();
+    battery_low_energy_check();
+  }
+}
+
+
+/** 
+@brief  唤醒之后引脚处理
+@param  none 
+@retval none
+*/
+
 
 /**
   * @brief  Configures system clock after wake-up from STOP: enable HSE, PLL
@@ -277,13 +400,19 @@ static void stm32_sleep_mode_entry(void)
 @retval none
 */
 static void stm32_stop_mode_entry(void)
-{
+{	
+	// 调度上锁
+	rt_enter_critical();
+	
 	// PWR的使能。
   RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR | RCC_APB1Periph_BKP, ENABLE);
 
+  // 备份gpio
+  gpio_backup_restore(RT_TRUE);
+
   //PWR_WakeUpPinCmd(ENABLE);
   stm32_sleep_gpio_config();
-
+	
 	// 关闭stm32时钟 
   //stm32_sleep_rcc_manage(DISABLE);
 
@@ -292,6 +421,9 @@ static void stm32_stop_mode_entry(void)
 
 	// 打开stm32时钟
 	//stm32_sleep_rcc_manage(ENABLE);
+
+	// 还原gpio
+	gpio_backup_restore(RT_FALSE);
 	
 	// 配置系统停止后时钟
   SYSCLKConfig_STOP();
@@ -301,13 +433,9 @@ static void stm32_stop_mode_entry(void)
 
 	// 清除待机模式
 	PWR_ClearFlag(PWR_FLAG_SB);
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA| RCC_APB2Periph_GPIOB| RCC_APB2Periph_GPIOC | 
-  											 RCC_APB2Periph_GPIOD | RCC_APB2Periph_GPIOE | RCC_APB2Periph_GPIOF, ENABLE);
-}
 
-static void rt_filesytem_unmount(void)
-{
-	dfs_unmount("/");
+	// 调度解锁
+	rt_exit_critical();
 }
 
 /** 
@@ -317,9 +445,6 @@ static void rt_filesytem_unmount(void)
 */
 void rt_thread_idle_process(void)
 {
-	// 卸载文件系统
-	//rt_filesytem_unmount();
-	
 	if((SysSleep.IsSleep == 0)&&(SysSleep.WorkFlag == 0))
 	{
 		// 进入停机模式
