@@ -25,7 +25,7 @@
 #include <dfs_fs.h>
 #include "dfs_posix.h"
 #include "PowerManage.h"
-
+#include "board.h"
 #define bits_mask(x) (1<<(x))
 
 //映射字节数据定义
