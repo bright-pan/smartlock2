@@ -102,6 +102,7 @@ const char *alarm_help_map[] = {
   "ALARM_TYPE_FPRINT_INFORM",
   "ALARM_TYPE_SYSTEM_RESET",
   "ALARM_TYPE_GPRS_DATAMAP_UPLOAD",
+  "ALARM_TYPE_IRQ",
 };
 
 void alarm_thread_entry(void *parameter)
