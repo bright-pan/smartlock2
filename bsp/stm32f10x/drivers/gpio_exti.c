@@ -18,7 +18,7 @@
 #include "gui.h"
 #include "rf433.h"
 #include "gsm.h"
-
+#include "local.h"
 extern rt_device_t rtc_device;
 
 #define KB_DEBUG 0
@@ -265,6 +265,13 @@ void switch1_exti_timeout(void *parameters)
         //gpio_config();
         //gpio_restore();
         //PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFI);
+    }
+    else
+    {
+#ifdef USEING_SYS_STOP_MODE
+			// 唤醒系统
+			send_local_mail(ALARM_TYPE_IRQ,0,RT_NULL);
+#endif
     }
 	gpio->ops->control(gpio, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0); 
 	rt_timer_stop(gpio_user_data->timer);
@@ -547,10 +554,18 @@ void break_exti_timeout(void *parameters)
     struct gpio_exti_user_data *gpio_user_data = gpio->parent.user_data;
 
 	gpio->ops->control(gpio, RT_DEVICE_CTRL_MASK_EXTI, (void *)0); 
-    if (gpio->ops->intput(gpio) == BREAK_STATUS)
-    {
-        rt_kprintf("it is BREAK detect!\n");
-    }
+	if (gpio->ops->intput(gpio) == BREAK_STATUS)
+	{
+	    rt_kprintf("it is BREAK detect!\n");
+	    send_local_mail(ALARM_TYPE_LOCK_SHELL,0,RT_NULL);
+	}
+	else
+	{
+#ifdef USEING_SYS_STOP_MODE
+		// 唤醒系统
+		send_local_mail(ALARM_TYPE_IRQ,0,RT_NULL);
+#endif
+	}
 	gpio->ops->control(gpio, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0); 
 	rt_timer_stop(gpio_user_data->timer);
 
@@ -611,12 +626,19 @@ void mag_exti_timeout(void *parameters)
     struct gpio_exti_user_data *gpio_user_data = gpio->parent.user_data;
 
 	gpio->ops->control(gpio, RT_DEVICE_CTRL_MASK_EXTI, (void *)0); 
-    if (gpio->ops->intput(gpio) == MAG_STATUS)
-    {
-        rt_kprintf("it is MAG detect!\n");
-        //点亮屏幕
-        gui_open_lcd_show();
-    }
+	if (gpio->ops->intput(gpio) == MAG_STATUS)
+	{
+	    rt_kprintf("it is MAG detect!\n");
+	    //点亮屏幕
+	    gui_open_lcd_show();
+	}
+	else
+	{
+#ifdef USEING_SYS_STOP_MODE
+		// 唤醒系统
+		send_local_mail(ALARM_TYPE_IRQ,0,RT_NULL);
+#endif
+	}
 	gpio->ops->control(gpio, RT_DEVICE_CTRL_UNMASK_EXTI, (void *)0); 
 	rt_timer_stop(gpio_user_data->timer);
 }
