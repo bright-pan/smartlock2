@@ -927,7 +927,7 @@ void bluetooth_thread_entry(void *arg)
 					{
 #ifdef USEING_UART_TX_MANAGE
 						// 恢复串口的TX脚
-						uart_manage(bluetooth->uart_dev,RT_TRUE);
+						uart_manage(bluetooth->uart_dev->parent.name,RT_TRUE);
 #endif
 
 						
@@ -1038,7 +1038,7 @@ void bluetooth_thread_entry(void *arg)
 							//休眠成功
 #ifdef USEING_UART_TX_MANAGE
 							// 设置串口的TX脚
-							uart_manage(bluetooth->uart_dev,RT_FALSE);
+							uart_manage(bluetooth->uart_dev->parent.name,RT_FALSE);
 #endif
 						}
 						rt_kprintf("bluetooth->work_status = %d\n",bluetooth->work_status);
