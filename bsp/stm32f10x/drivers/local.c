@@ -81,7 +81,7 @@ static MotorDevDef MotorManage =
 {
 	RT_NULL,
 	LOCK_OPERATION_OPEN,
-	LOCK_GATE_TIMER_BASE-3,
+	LOCK_GATE_TIMER_BASE-1,
 };
 static rt_event_t   local_evt = RT_NULL;
 
@@ -555,6 +555,16 @@ void local_thread_entry(void *parameter)
        		send_sms_mail(ALARM_TYPE_BATTERY_REMAIN_20P,0, RT_NULL, 0, PHONE_AUTH_SMS,sms_send_finish_callback);
 					break;
        	}
+       	case ALARM_TYPE_LOCK_SHELL:
+       	{
+       		send_sms_mail(ALARM_TYPE_LOCK_SHELL,local_mail_buf.time, RT_NULL, 0, PHONE_AUTH_SMS,sms_send_finish_callback);
+					break;
+       	}
+       	case ALARM_TYPE_IRQ:
+       	{
+       		//  ’µΩ÷–∂œ
+					break;
+       	}
 				default :
         {
             rt_dprintf(LOCAL_DEBUG_THREAD,("this alarm is not process...\n"));
@@ -688,7 +698,7 @@ send_local_mail(ALARM_TYPEDEF alarm_type, time_t time, union alarm_data *data)
 	} else {
         mail.time = sys_cur_date();
 	}
-    mail.data = *data;
+  mail.data = *data;
 	if (local_mq != NULL) {
 		result = rt_mq_send(local_mq, &mail, sizeof(LOCAL_MAIL_TYPEDEF));
 		if (result == -RT_EFULL) {
