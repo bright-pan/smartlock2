@@ -1594,6 +1594,9 @@ gsm_thread_entry(void *parameters)
 
 		if (result == RT_EOK)
 		{
+#ifdef USEING_SYS_STOP_MODE
+			rt_thread_entry_work(rt_thread_self());
+#endif
 			rt_device_read(device_gsm_status, 0, &data, 1);
 			send_mode = gsm_mail_buf.send_mode;
 			if (send_mode == GSM_MODE_CONTROL)
@@ -1691,7 +1694,14 @@ gsm_thread_entry(void *parameters)
 		}
 		else// time out
 		{
-            gpio_pin_output(DEVICE_NAME_POWER_GSM, 0,1);
+      gpio_pin_output(DEVICE_NAME_POWER_GSM, 0,1);
+
+#ifdef USEING_SYS_STOP_MODE
+			// ¹Ø±Õgsm´®¿Ú
+      gsm_uart_manage(RT_FALSE);
+
+			rt_thread_entry_sleep(rt_thread_self());
+#endif
             /*
             process_buf[0] = 0;// asyn comm
             recv_cnts = rt_device_read(device_gsm_usart, 0, process_buf + 1, sizeof(process_buf) - 1);
