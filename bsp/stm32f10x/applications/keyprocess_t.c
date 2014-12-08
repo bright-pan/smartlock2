@@ -13,7 +13,7 @@ void keyprocess_thread_entry(void *arg)
 {
 	admin_account_init();
   key_input_processing_init();
-
+	  
   // ui线程进入工作状态
 	rt_thread_entry_work(rt_thread_self());
 	while(1)

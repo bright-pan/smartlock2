@@ -24,7 +24,7 @@
 #include "buzzer.h"
 #endif
 
-#define UI_SLEEP_TIME               10
+#define UI_SLEEP_TIME               5
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //key api
 static rt_mq_t key_mq;								//°´¼ü

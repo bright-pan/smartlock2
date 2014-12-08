@@ -118,7 +118,10 @@ void menu_0_processing(void)
             current_operation_index = KeyTab[KeyFuncIndex].CurrentOperate;
             current_operation_index();
             send_local_mail(ALARM_TYPE_SYSTEM_UNFREEZE,0,RT_NULL);
-
+            
+						//登陆后屏幕休眠时间变长
+						gui_sleep_time_set(25);
+						
 						//清除钥匙错误计数
             key_error_alarm_manage(KEY_ERRNUM_MODE_CLAER,RT_NULL);
             return ;
@@ -329,6 +332,15 @@ void menu_7_processing(void)
 	menu2_second_ui(1);
 }
 
+static rt_err_t admin_one_phone_check(rt_uint8_t *phone)
+{
+	if(rt_strlen((const char *)phone) < 11)
+	{
+		return RT_ERROR;
+	}
+
+	return RT_EOK;
+}
 
 /** 
 @brief  管理员手机输入UI
@@ -339,14 +351,19 @@ rt_err_t admin_phone_input_UI(rt_uint8_t *Phone)
 {
 	rt_uint8_t *buf = RT_NULL;
 	rt_uint8_t GlintStatus;
-	
+
 ADMIN_CRATE_UI:
 	if(menu_event_process(1,MENU_EVT_LCD_CLOSE) == 0)
 	{
 		rt_uint8_t KeyValue;
-		
-		gui_key_input(&KeyValue);
-		
+		rt_err_t   result;
+		do
+		{
+			//等待按键唤醒
+			result = gui_key_input(&KeyValue);
+		}
+		while(result != RT_EOK);
+
 		goto ADMIN_CRATE_UI;
 	}
   gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
@@ -378,7 +395,7 @@ ADMIN_CRATE_UI:
 	    else if(KeyValue == MENU_SURE_VALUE)
 	    {
 	      //检测输入的手机是否合法
-	      result = add_new_phone_check(buf);
+	      result = admin_one_phone_check(buf);
 	      if(result != RT_EOK)
 	      {
 	        //不合法
