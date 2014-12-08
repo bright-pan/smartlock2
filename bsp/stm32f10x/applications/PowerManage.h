@@ -11,5 +11,6 @@ void rt_thread_entry_sleep(rt_thread_t thread);
 //系统恢复正常工作
 void rt_thread_entry_work(rt_thread_t thread);
 
+void uart_manage(const char *name,rt_bool_t cmd);
 #endif
 

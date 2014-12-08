@@ -3,6 +3,10 @@
 #include "gpio_pin.h"
 
 
+/***************************************************************************************************/
+#define POWER_MANAGE_DEBUG  31   //电源管理调试开关
+
+/***************************************************************************************************/
 /* test thread low power useing */
 
 typedef struct 
@@ -114,12 +118,12 @@ static void stm32_gpio_all_close(void)
 
   GPIO_StructInit(&GPIO_InitStructure);
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
-  GPIO_Init(GPIOA,&GPIO_InitStructure);
+  //GPIO_Init(GPIOA,&GPIO_InitStructure);
   //GPIO_Init(GPIOB,&GPIO_InitStructure);
   //GPIO_Init(GPIOC,&GPIO_InitStructure);
   //GPIO_Init(GPIOD,&GPIO_InitStructure);
   //GPIO_Init(GPIOE,&GPIO_InitStructure);
-  GPIO_Init(GPIOF,&GPIO_InitStructure);
+  //GPIO_Init(GPIOF,&GPIO_InitStructure);
   
 }
 
@@ -162,29 +166,45 @@ static void stm32_sleep_rcc_manage(FunctionalState NewState)
 
 
 /** 
-@brief  备份和还原gpio寄存器
+@brief  备份和还原STM32寄存器
 @param  cmd  
 				@arg RT_TRUE 备份
 @retval none
 */
-static void gpio_backup_restore(rt_bool_t cmd)
+static void stm32_backup_restore(rt_bool_t cmd)
 {
 	static GPIO_TypeDef *gpio;
-
+	//static EXTI_TypeDef *exti;
+	//static AFIO_TypeDef *afio;
+	
 	if(cmd == RT_TRUE)
 	{
     gpio = rt_calloc(6,sizeof(GPIO_TypeDef));
 		RT_ASSERT(gpio != RT_NULL);
+
+		/*exti = rt_calloc(1,sizeof(EXTI_TypeDef));
+		RT_ASSERT(exti != RT_NULL);
+
+		afio = rt_calloc(1,sizeof(AFIO_TypeDef));
+		RT_ASSERT(afio != RT_NULL);*/
 		
+		// 备份GPIO寄存器
 		gpio[0] = *GPIOA;
 		gpio[1] = *GPIOB;
 		gpio[2] = *GPIOC;
 		gpio[3] = *GPIOD;
 		gpio[4] = *GPIOE;
 		gpio[5] = *GPIOF;
+
+		// 备份中断寄存器
+		//*exti = *EXTI;
+
+		// 备份AFIO
+		//*afio =	*AFIO;
 	}
 	else
 	{
+		// 还原GPIO寄存器
 		*GPIOA = gpio[0];
 		*GPIOB = gpio[1];
 		*GPIOC = gpio[2];
@@ -192,76 +212,68 @@ static void gpio_backup_restore(rt_bool_t cmd)
 		*GPIOE = gpio[4];
 		*GPIOF = gpio[5];
 		
+		// 还原中断寄存器
+		//*EXTI = *exti;
+		
+		// 还原AFIO
+		//*AFIO = *afio;
+		
+		
 		rt_free(gpio);
 		gpio = RT_NULL;
+		
+		/*rt_free(exti);
+		exti = RT_NULL;
+
+		rt_free(afio);
+		afio = RT_NULL;*/
+
 	}
 	
 
 	
 }
 
-
-/** 
-@brief  休眠之前引脚处理
-@param  none 
-@retval none
-*/
-static void stm32_sleep_gpio_config(void)
+void min_power_config()
 {
-  GPIO_InitTypeDef GPIO_InitStructure;
+	GPIO_InitTypeDef GPIO_InitStructure;
 
-  GPIO_StructInit(&GPIO_InitStructure);
-  // 设置空闲管脚
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
-  
-  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0|GPIO_Pin_1|GPIO_Pin_2|GPIO_Pin_5|GPIO_Pin_12|GPIO_Pin_13;
- 	GPIO_Init(GPIOC,&GPIO_InitStructure);
+	/* HCLK = SYSCLK */
+	RCC_HCLKConfig(RCC_SYSCLK_Div1); 
+	RCC_PCLK2Config(RCC_HCLK_Div2);       
+	RCC_PCLK1Config(RCC_HCLK_Div4);
 
- 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0|GPIO_Pin_3|GPIO_Pin_4|GPIO_Pin_5;
- 	GPIO_Init(GPIOD,&GPIO_InitStructure);
- 	
- 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2|GPIO_Pin_3|GPIO_Pin_4|GPIO_Pin_5|GPIO_Pin_6;
- 	GPIO_Init(GPIOE,&GPIO_InitStructure);
+	/* Select HSI as system clock source */
 
-	// 关闭flash
-	gpio_pin_output(DEVICE_NAME_POWER_FLASH,0,0);
+	RCC_SYSCLKConfig(RCC_SYSCLKSource_HSI);
 
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4|GPIO_Pin_5|GPIO_Pin_6|GPIO_Pin_7;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
+	while(RCC_GetSYSCLKSource() != 0x00)
+	{
+	}
+	FLASH_PrefetchBufferCmd(FLASH_PrefetchBuffer_Enable);
+	FLASH_SetLatency(FLASH_Latency_0);
+	  RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
+	GPIO_PinRemapConfig(GPIO_Remap_SWJ_JTAGDisable, ENABLE);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, DISABLE);
+	RCC_SYSCLKConfig(RCC_SYSCLKSource_HSI);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOC | RCC_APB2Periph_GPIOD | RCC_APB2Periph_GPIOE, ENABLE);
+	GPIO_InitStructure.GPIO_Pin=GPIO_Pin_All;
+	GPIO_InitStructure.GPIO_Speed=GPIO_Speed_2MHz;
+	GPIO_InitStructure.GPIO_Mode=GPIO_Mode_AIN;
+	GPIO_Init(GPIOC,&GPIO_InitStructure);
+	GPIO_Init(GPIOD,&GPIO_InitStructure);
+	GPIO_Init(GPIOE,&GPIO_InitStructure);
 	GPIO_Init(GPIOA,&GPIO_InitStructure);
+	GPIO_Init(GPIOB,&GPIO_InitStructure);
+	//RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOC | RCC_APB2Periph_GPIOD | RCC_APB2Periph_GPIOE, DISABLE);
 
-	// 关闭电机
-	gpio_pin_output(DEVICE_NAME_POWER_MOTOR,0,0);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOD, ENABLE);
+	GPIO_InitStructure.GPIO_Pin=GPIO_Pin_1;
+	GPIO_InitStructure.GPIO_Speed=GPIO_Speed_2MHz;
+	GPIO_InitStructure.GPIO_Mode=GPIO_Mode_Out_PP;
+	GPIO_Init(GPIOD,&GPIO_InitStructure);
+	GPIO_SetBits(GPIOD, GPIO_Pin_1);
 
-	// 关闭rf433
-	//gpio_pin_output(DEVICE_NAME_RF_ENABLE, 0,0);
-
-	// 关闭指纹
-	gpio_pin_output(DEVICE_NAME_POWER_FRONT,0,0);
-
-	// 关闭gsm
-	gpio_pin_output(DEVICE_NAME_POWER_GSM,0,0);
-
-
- 	//关闭rf433
- 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1|GPIO_Pin_2;
- 	GPIO_Init(GPIOD,&GPIO_InitStructure);
-
- 	//关闭A端口
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_All;
- 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
-  GPIO_Init(GPIOA,&GPIO_InitStructure);
-
-	// 设置RTC 事件
-	/* Wait till RTC Second event occurs */
-	//RTC_ClearFlag(RTC_FLAG_SEC);
-	//while(RTC_GetFlagStatus(RTC_FLAG_SEC) == RESET);
-	
-	/* Alarm in 3 second */
-	//RTC_SetAlarm(RTC_GetCounter()+ 3);
-	/* Wait until last write operation on RTC registers has finished */
-	//RTC_WaitForLastTask();
- 	//stm32_gpio_all_close();
 }
 
 
@@ -270,12 +282,12 @@ static void stm32_sleep_gpio_config(void)
   * @param  None
   * @retval None
   */
-void RTC_Alarm_Config(void)
+int RTC_Alarm_Config(void)
 {
   EXTI_InitTypeDef EXTI_InitStructure;
   NVIC_InitTypeDef NVIC_InitStructure;
-
-	PWR_BackupAccessCmd(ENABLE);
+	u32 count=0x200000;
+	
   /* Configure EXTI Line17(RTC Alarm) to generate an interrupt on rising edge */
   EXTI_ClearITPendingBit(EXTI_Line17);
   EXTI_InitStructure.EXTI_Line = EXTI_Line17;
@@ -290,12 +302,44 @@ void RTC_Alarm_Config(void)
   NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
   NVIC_Init(&NVIC_InitStructure);
 
+  /* RTC clock source configuration ------------------------------------------*/
+  /* Allow access to BKP Domain */
+  PWR_BackupAccessCmd(ENABLE);
+
+  /* Reset Backup Domain */
+  BKP_DeInit();
+  
+  /* Enable the LSE OSC */
+  RCC_LSEConfig(RCC_LSE_ON);
+  /* Wait till LSE is ready */
+  while(RCC_GetFlagStatus(RCC_FLAG_LSERDY) == RESET && count)
+  {
+  	count--;
+  }
+
+  /* Select the RTC Clock Source */
+  RCC_RTCCLKConfig(RCC_RTCCLKSource_LSE);
+
+  /* Enable the RTC Clock */
+  RCC_RTCCLKCmd(ENABLE);
+
+  /* RTC configuration -------------------------------------------------------*/
+  /* Wait for RTC APB registers synchronisation */
+  RTC_WaitForSynchro();
+
+  /* Set the RTC time base to 1s */
+  RTC_SetPrescaler(32767);  
+  /* Wait until last write operation on RTC registers has finished */
+  RTC_WaitForLastTask();
+
   /* Enable the RTC Alarm interrupt */
   RTC_ITConfig(RTC_IT_ALR, ENABLE);
   /* Wait until last write operation on RTC registers has finished */
   RTC_WaitForLastTask();
+
+  return 0;
 }
-//INIT_DEVICE_EXPORT(RTC_Alarm_Config);
+INIT_APP_EXPORT(RTC_Alarm_Config);
 
 
 /**
@@ -325,6 +369,84 @@ void RTCAlarm_IRQHandler(void)
     RTC_WaitForLastTask();
     battery_low_energy_check();
   }
+}
+
+
+/** 
+@brief  设置RTC报警事件的时间
+@param  none 
+@retval none
+*/
+void RTC_Alarm_Wakeup_Time(rt_uint32_t sec)
+{
+	/* Wait till RTC Second event occurs */
+	RTC_ClearFlag(RTC_FLAG_SEC);
+	while(RTC_GetFlagStatus(RTC_FLAG_SEC) == RESET);
+	
+	/* Alarm in 3 second */
+	RTC_SetAlarm(RTC_GetCounter()+ sec);
+	/* Wait until last write operation on RTC registers has finished */
+	RTC_WaitForLastTask();
+}
+
+/** 
+@brief  休眠之前引脚处理
+@param  none 
+@retval none
+*/
+static void stm32_sleep_gpio_config(void)
+{
+  GPIO_InitTypeDef GPIO_InitStructure;
+
+  GPIO_StructInit(&GPIO_InitStructure);
+  // 设置空闲管脚
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
+  
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0|GPIO_Pin_1|GPIO_Pin_2|GPIO_Pin_5|GPIO_Pin_12|GPIO_Pin_13;
+ 	GPIO_Init(GPIOC,&GPIO_InitStructure);
+
+ 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0|GPIO_Pin_3|GPIO_Pin_4|GPIO_Pin_5;
+ 	GPIO_Init(GPIOD,&GPIO_InitStructure);
+ 	
+ 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2|GPIO_Pin_3|GPIO_Pin_4|GPIO_Pin_5|GPIO_Pin_6;
+ 	GPIO_Init(GPIOE,&GPIO_InitStructure);
+
+	// 关闭flash
+	gpio_pin_output(DEVICE_NAME_POWER_FLASH,0,0);
+	
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4|GPIO_Pin_5|GPIO_Pin_6|GPIO_Pin_7;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
+	GPIO_Init(GPIOA,&GPIO_InitStructure);
+
+	// 关闭电机
+	gpio_pin_output(DEVICE_NAME_POWER_MOTOR,0,0);
+
+	// 关闭rf433
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOD, ENABLE);
+	GPIO_InitStructure.GPIO_Pin=GPIO_Pin_1;
+	GPIO_InitStructure.GPIO_Speed=GPIO_Speed_2MHz;
+	GPIO_InitStructure.GPIO_Mode=GPIO_Mode_Out_PP;
+	GPIO_Init(GPIOD,&GPIO_InitStructure);
+	GPIO_SetBits(GPIOD, GPIO_Pin_1);
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;
+	GPIO_Init(GPIOD,&GPIO_InitStructure);
+
+	// 关闭指纹
+	gpio_pin_output(DEVICE_NAME_POWER_FRONT,0,0);
+
+	// 关闭gsm
+	gpio_pin_output(DEVICE_NAME_POWER_GSM,0,0);
+
+ 	// 关闭A端口
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_All;
+ 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
+  GPIO_Init(GPIOA,&GPIO_InitStructure);
+	
+	// 设置RTC 唤醒时间
+  RTC_Alarm_Wakeup_Time(RTC_ALARM_WAKEUP_TIME);
+
+ 	//stm32_gpio_all_close();
 }
 
 
@@ -390,7 +512,9 @@ void SYSCLKConfig_STOP(void)
 */
 static void stm32_sleep_mode_entry(void)
 { 
+	//rt_dprintf(POWER_MANAGE_DEBUG,("STM32 Entry Sleep\n"));
   __WFI();
+  //rt_dprintf(POWER_MANAGE_DEBUG,("STM32  Exit Sleep\n"));
 }
 
 
@@ -408,7 +532,7 @@ static void stm32_stop_mode_entry(void)
   RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR | RCC_APB1Periph_BKP, ENABLE);
 
   // 备份gpio
-  gpio_backup_restore(RT_TRUE);
+  stm32_backup_restore(RT_TRUE);
 
   //PWR_WakeUpPinCmd(ENABLE);
   stm32_sleep_gpio_config();
@@ -423,7 +547,7 @@ static void stm32_stop_mode_entry(void)
 	//stm32_sleep_rcc_manage(ENABLE);
 
 	// 还原gpio
-	gpio_backup_restore(RT_FALSE);
+	stm32_backup_restore(RT_FALSE);
 	
 	// 配置系统停止后时钟
   SYSCLKConfig_STOP();
@@ -478,7 +602,21 @@ int rt_thread_idle_set(void)
 INIT_APP_EXPORT(rt_thread_idle_set);
 
 
-
+/** 
+@brief 需要进行休眠与工作的线程名字
+*/
+static const char ThreadName[][RT_NAME_MAX] =
+{
+	"bat",
+	"local",
+	"gprs",
+	"buzzer",
+	"key",
+	"BT_M",
+	"NPDU",
+	"sms",
+	"gsm",
+};
 /** 
 @brief  thread status manage
 @param  thread object
@@ -487,43 +625,44 @@ INIT_APP_EXPORT(rt_thread_idle_set);
 */
 void rt_thread_status_manage(rt_thread_t thread,rt_uint8_t status)
 {
+	/* flag 的每一个位代表一个线程 */
 	rt_uint32_t flag;
+	rt_uint8_t  i;
 
+	// 读取之前的线程工作状态
 	flag = SysSleep.WorkFlag;
-	if(rt_strcmp(thread->name,"bat") == 0)
+
+  // 将进入工作的线程位置1 进入休眠的线程位置0
+	for(i=0;i<sizeof(ThreadName)/RT_NAME_MAX;i++)
 	{
-	  status ? (flag &= ~(0x01<<0)):(flag |= (0x01<<0));
+    if(rt_strcmp(thread->name,ThreadName[i]) == 0)
+    {
+      status ? (flag &= ~(0x01<<i)):(flag |= (0x01<<i));
+    }
 	}
-	else if(rt_strcmp(thread->name,"local") == 0)
-	{
-	  status ? (flag &= ~(0x01<<1)):(flag |= (0x01<<1));
-	}
-	else if(rt_strcmp(thread->name,"gprs") == 0)
-	{
-	  status ? (flag &= ~(0x01<<2)):(flag |= (0x01<<2));
-	}
-	else if(rt_strcmp(thread->name,"buzzer") == 0)
-	{
-	  status ? (flag &= ~(0x01<<3)):(flag |= (0x01<<3));
-	}
-	else if(rt_strcmp(thread->name,"key") == 0)
-	{
-	  status ? (flag &= ~(0x01<<4)):(flag |= (0x01<<4));
-	}
-	else if(rt_strcmp(thread->name,"BT_M") == 0)
-	{
-	  status ? (flag &= ~(0x01<<5)):(flag |= (0x01<<5));
-	}
-	else if(rt_strcmp(thread->name,"NPDU") == 0)
-	{
-	  status ? (flag &= ~(0x01<<6)):(flag |= (0x01<<6));
-	}
-	
+	// 如果线程工作状态位有变化显示
 	if(flag != SysSleep.WorkFlag)
 	{
 	  SysSleep.WorkFlag = flag;
 	  SysSleep.IsSleep = 0;
-	  rt_kprintf("thread status %x\n",SysSleep.WorkFlag);
+
+	  // 调试信息
+	  if(SysSleep.WorkFlag != 0)
+	  {
+      rt_dprintf(POWER_MANAGE_DEBUG,("Status:%x Thread In Work\n",SysSleep.WorkFlag));
+      for(i=0;i<sizeof(ThreadName)/RT_NAME_MAX;i++)
+      {
+        if(flag & 0x01<<i)
+        {
+          rt_dprintf(POWER_MANAGE_DEBUG,("\"%s\" ",ThreadName[i]));
+        }
+      }
+      rt_dprintf(POWER_MANAGE_DEBUG,("\n"));
+	  }
+	  else
+	  {
+			rt_dprintf(POWER_MANAGE_DEBUG,("STM32 System Entry Stop Mode\n"));
+	  }
 	}
 }
 
@@ -604,4 +743,14 @@ void uart_manage(const char *name,rt_bool_t cmd)
 }
 FINSH_FUNCTION_EXPORT(uart_manage,"(uart,cmd)usart manage");
 
+void gpio_ain(rt_uint8_t bit)
+{
+  GPIO_InitTypeDef GPIO_InitStructure;
+
+  GPIO_StructInit(&GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
+  GPIO_InitStructure.GPIO_Pin = (0x01 << bit);
+  GPIO_Init(GPIOB,&GPIO_InitStructure);	
+}
+FINSH_FUNCTION_EXPORT(gpio_ain,"(bit)set gpio ain mode");
 #endif
