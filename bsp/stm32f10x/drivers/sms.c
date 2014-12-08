@@ -15,6 +15,7 @@
 #include "appconfig.h"
 #include "gsm.h"
 #include "config.h"
+#include "untils.h"
 
 #define SMS_DEBUG 1
 
@@ -757,6 +758,9 @@ sms_thread_entry(void *parameter)
 												SMS_RECV_MAIL_OUTTIME);
 		if (result == RT_EOK)
 		{
+#ifdef USEING_SYS_STOP_MODE
+			rt_thread_entry_work(rt_thread_self());
+#endif
 			RT_DEBUG_LOG(SMS_DEBUG,("\nreceive sms mail < time: %d alarm_type: %s, %d >\n", 
                             sms_mail_buf.time, 
                             alarm_help_map[sms_mail_buf.alarm_type], 
@@ -795,10 +799,13 @@ sms_thread_entry(void *parameter)
             device_config_phone_index(phone_sms_callback, &params);
 			rt_free(sms_ucs);
 			sms_ucs = RT_NULL;
+#ifdef USEING_SYS_STOP_MODE
+			rt_thread_entry_sleep(rt_thread_self());
+#endif
 		}
 		else // receive timeout
 		{
-
+			
 		}
 	}
 }
