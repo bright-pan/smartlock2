@@ -544,7 +544,7 @@ sh1106_sleep_configure(struct oled_device *oled)
 	GPIO_StructInit(&GPIO_InitStructure);
 	//cs
 	GPIO_InitStructure.GPIO_Pin = SH1106_CS_PIN;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(SH1106_CS_PORT, &GPIO_InitStructure);
 	GPIO_SetBits(SH1106_CS_PORT,SH1106_CS_PIN);
