@@ -1,8 +1,28 @@
 #include "buzzer.h"
 #include "untils.h"
+#include "menu.h"
 #define BUZZER_DEBUG_THREAD     26
 
-
+static buzzer_power_ctr(rt_bool_t Status)
+{
+	if(Status == RT_TRUE)
+	{
+		//开
+		if(menu_event_process(1,MENU_EVT_LCD_CLOSE) == 0)
+		{
+	    gpio_pin_output(DEVICE_NAME_POWER_FRONT,1,0);
+		}
+	}
+	else
+	{
+		//关
+		if(menu_event_process(1,MENU_EVT_LCD_CLOSE) == 0)
+		{
+			// 如果液晶是关闭的则关闭蜂鸣器电源
+	    gpio_pin_output(DEVICE_NAME_POWER_FRONT,0,0);
+		}
+	}
+}
 
 void buzzer_control(rt_uint16_t Ferq,rt_uint16_t pwm,rt_size_t num)
 {
@@ -75,6 +95,7 @@ void buzzer_work(BuzzerType mode)
 				buzzer_control(800,600,300);
 				//rt_thread_delay(15);
 			}
+			rt_thread_delay(100);
 			break;
 		}
 		case BZ_TYPE_UNLOCK:
@@ -159,6 +180,9 @@ void buzzer_thread_entry(void *arg)
 			// 线程进入工作
 			rt_thread_entry_work(rt_thread_self());
 
+			// 开蜂鸣器
+			buzzer_power_ctr(RT_TRUE);
+			
 			// 蜂鸣器工作 
 			buzzer_work(BZ_data);
 			
@@ -167,7 +191,9 @@ void buzzer_thread_entry(void *arg)
 		}
 		else
 		{
-      rt_thread_delay(1);
+      rt_thread_delay(30);
+      // 关蜂鸣器
+      buzzer_power_ctr(RT_FALSE);
 		}
 	}
 }
