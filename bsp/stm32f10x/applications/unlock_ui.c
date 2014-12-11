@@ -40,11 +40,18 @@ static const rt_uint8_t PhUnlockUIText[][LCD_LINE_MAX_LEN] =
 };
 
 
+/* 短信发送结果 */
 static const rt_uint8_t SMSResultUIText[][LCD_LINE_MAX_LEN] =
 {
 	{"发送失败"},
 	{"请查询余额"},
 	{"发送成功"},
+};
+
+/* 电池电量过低显示 */
+static const rt_uint8_t BatteryAlarmText[][LCD_LINE_MAX_LEN] =
+{
+  {"电量过低"},
 };
 #define SYSTEM_ENTER_MENU_NUM						2	//菜单的最大个数
 static void system_enter_menu_ui(rt_uint8_t InPOS)
@@ -223,29 +230,35 @@ rt_err_t unlock_process_ui(void)
 	    {
 	    	rt_bool_t EvtProcessResult;
 	    	
-	    	//操作超时
+	    	// 操作超时
 	    	if(menu_event_process(2,MENU_EVT_OP_OUTTIME) == 0)
 	    	{
 					return RT_ETIMEOUT;
 	    	}
-	      //闪烁提示
+	      // 闪烁提示
 	      GlintStatus++;
 	      menu_inputchar_glint(SHOW_X_ROW8(PASSWORD_DATA_POS+rt_strlen((const char *)ShowBuf)),SHOW_Y_LINE(2),GlintStatus%2);
 	      gui_display_update();
-	      //指纹处理结果显示
+	      // 指纹处理结果显示
 	      EvtProcessResult = fprint_unlock_result_show();
 				if(EvtProcessResult == RT_TRUE)
 	      {
 					return RT_EOK;
 	      }
-	      //电话通知主人
+	      // 电话通知主人
 	      EvtProcessResult = phone_unlock_result_show();
 	      if(EvtProcessResult == RT_TRUE)
 	      {
 					return RT_EOK;
 	      }
-	      //短信发送结果
+	      // 短信发送结果
 	      EvtProcessResult = phone_sms_result_show();
+	      if(EvtProcessResult == RT_TRUE)
+	      {
+					return RT_EOK;
+	      }
+	      // 电量过低提示
+	      EvtProcessResult = battery_low_alarm_show();
 	      if(EvtProcessResult == RT_TRUE)
 	      {
 					return RT_EOK;
@@ -350,4 +363,38 @@ rt_bool_t phone_sms_result_show(void)
 
 	return RT_FALSE;
 }
+
+
+//电池电量过低
+//返回 RT_TRUE:表示需要显示
+//返回 RT_TRUE:表示不需要显示
+rt_bool_t battery_low_alarm_show(void)
+{
+	/*if(menu_event_process(2,MENU_EVT_SMS_ERROR1) == 0)
+	{
+		//显示短信发送失败
+		gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+		gui_display_string(SHOW_X_CENTERED(BatteryAlarmText[0]),SHOW_Y_LINE(2),BatteryAlarmText[0],GUI_WIHIT);
+		gui_display_update();
+		menu_input_sure_key(RT_TICK_PER_SECOND*5);
+		gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+
+		return RT_TRUE;
+	}*/
+
+	if(menu_event_process(2,MENU_EVT_BAT_LOW) == 0)
+	{
+		//显示短信发送成功
+		gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+		gui_display_string(SHOW_X_CENTERED(BatteryAlarmText[0]),SHOW_Y_LINE(2),BatteryAlarmText[0],GUI_WIHIT);
+		gui_display_update();
+		menu_input_sure_key(RT_TICK_PER_SECOND*5);
+		gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
+    gui_display_update();
+		return RT_TRUE;
+	}
+
+	return RT_FALSE;
+}
+
 

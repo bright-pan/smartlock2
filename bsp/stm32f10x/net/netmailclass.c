@@ -2201,7 +2201,11 @@ void Net_Param_Init(void)
 {
 	rt_uint8_t *data;
 	rt_uint8_t i;
-	
+
+	if(system_power_Insufficient() == RT_TRUE)
+	{
+		return ;
+	}
 	rt_kprintf("Net param set:\n");
 	data = rt_calloc(1,9);
 	RT_ASSERT(data != RT_NULL);

@@ -124,11 +124,17 @@ rf433_thread_entry(void *parameter)
 {
 	rt_err_t result;
 	RF433_MAIL_TYPEDEF rf433_mail_buf;
-    u8 sum, i, flag = 0;
-    s32 temp;
-    TIM2_NVIC_Configuration();
-    TIM2_Configuration();
+	u8 sum, i, flag = 0;
+	s32 temp;
 
+	// µçÁ¿²»×ã
+	if(system_power_Insufficient() == RT_TRUE)
+	{
+	  return ;
+	}
+	
+	TIM2_NVIC_Configuration();
+	TIM2_Configuration();
 	while (1)
 	{
 		// receive mail
@@ -136,6 +142,9 @@ rf433_thread_entry(void *parameter)
 		result = rt_mq_recv(rf433_mq, &rf433_mail_buf, sizeof(rf433_mail_buf), 1000);
 		if (result == RT_EOK)
         {
+#ifdef USEING_SYS_STOP_MODE
+			rt_thread_entry_work(rt_thread_self());
+#endif
 			switch (rf433_mail_buf.cmd)
 			{
 				case RF433_START:
@@ -188,6 +197,9 @@ rf433_thread_entry(void *parameter)
                     // rf433 work time > -600
                     send_sms_mail(ALARM_TYPE_SMS_RF433_ERROR, 0, RT_NULL, 0, PHONE_AUTH_SMS,RT_NULL);
                 flag = 0; //clear rf433 work flag
+#ifdef USEING_SYS_STOP_MODE
+			rt_thread_entry_sleep(rt_thread_self());
+#endif
             }
         }
     }

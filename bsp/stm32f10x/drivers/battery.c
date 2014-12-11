@@ -16,10 +16,12 @@
 #include "untils.h"
 #include "buzzer.h"
 #include "alarm.h"
+#include "menu.h"
+#include "local.h"
 
 /***************************************************************************************************/
 
-#define BATTERY_DEBUG_THREAD            31
+#define BATTERY_DEBUG_THREAD            32
 
 #define BATTERY_FULL_ENERGE             1.3  //ÂúµçÊ±²âÁ¿µÃµ½µÄµçÑ¹
 #define BATTERY_LOW_ENERGE              0.8  //µçÁ¿¹ýµÍµÃµ½µÄµçÑ¹
@@ -40,7 +42,7 @@ void bat_enable(void)
   if (device != RT_NULL)
   {
     rt_device_control(device, RT_DEVICE_CTRL_ENABLE_CONVERT, (void *)0);
-    rt_kprintf("bat is starting convert!\n");
+    rt_dprintf(BATTERY_DEBUG_THREAD,("bat is starting convert!\n"));
   }
   else
   {
@@ -55,7 +57,7 @@ void bat_disable(void)
   if (device != RT_NULL)
   {
     rt_device_control(device, RT_DEVICE_CTRL_DISABLE_CONVERT, (void *)0);
-    rt_kprintf("bat is stoped convert!\n");
+    rt_dprintf(BATTERY_DEBUG_THREAD,("bat is stoped convert!\n"));
   }
   else
   {
@@ -163,6 +165,109 @@ void battery_info_save_file(Battery_Data *bat)
 	close(fd);
 }
 
+
+/** 
+@brief  µç³ØµçÁ¿µÍÓÚ20%
+@param  arg 
+@retval 0 :ok 1:error
+*/
+static void battery_low_20p_process(void)
+{
+	Battery_Data bat;
+	
+  battery_get_data(&bat);
+  //rt_kprintf("DumpEnergy = %d%\n",bat.DumpEnergy);
+	if(bat.DumpEnergy <= 20)
+	{
+		// Ö»Ê£ÏÂ20å%
+		if(local_event_process(1,LOCAL_EVT_SYSTEM_BAT20P) == 1)
+		{
+			send_local_mail(ALARM_TYPE_BATTERY_WORKING_20M,0,RT_NULL);
+			// ÉèÖÃµçÑ¹¹ýµÍ
+			local_event_process(0,LOCAL_EVT_SYSTEM_BAT20P);
+		}
+	}
+	else if(bat.DumpEnergy >= 50)
+	{
+		// ³äµç50%
+		if(local_event_process(1,LOCAL_EVT_SYSTEM_BAT20P) == 0)
+		{
+			// Çå³ýµçÑ¹¹ýµÍ
+			local_event_process(2,LOCAL_EVT_SYSTEM_BAT20P);
+		}
+		if(local_event_process(1,LOCAL_EVT_SYSTEM_BATLOW) == 0)
+		{
+			sysreset();
+		}
+	}
+}
+
+/** 
+@brief  ¼ì²âµç³ØµçÁ¿20%
+@param  mail  ÓÊ¼þ 
+@retval none
+*/
+void battery_energy_check_20p(void)
+{
+	BatteryMailDef SendMail;
+
+	SendMail.Type = BAT_MAILTYPE_20P;
+	SendMail.result = RT_NULL;
+	battery_send_mail(&SendMail);
+}
+
+/** 
+@brief  ¼ì²âµç³ØµçÑ¹¹ýµÍ
+@param  mail  ÓÊ¼þ 
+@retval none
+*/
+void battery_energy_too_low(void)
+{
+	BatteryMailDef SendMail;
+
+	SendMail.Type = BAT_MAILTYPE_LowEnergy;
+	SendMail.result = RT_NULL;
+	battery_send_mail(&SendMail);
+}
+
+
+/** 
+@brief  µç³ØµçÑ¹¹ýµÍ
+@param  bat µç³Ø 
+@retval 0 :ok 1:error
+*/
+int battery_too_low(void)
+{
+	Battery_Data bat;
+	
+  battery_get_data(&bat);
+  
+	if(bat.DumpEnergy <= 5)
+	{
+		if(local_event_process(1,LOCAL_EVT_SYSTEM_BATLOW) == 1)
+		{
+			rt_kprintf("DumpEnergy = %d%\n",bat.DumpEnergy);
+      local_event_process(0,LOCAL_EVT_SYSTEM_BATLOW);
+      rt_kprintf("Battery too low\n");
+      //buzzer_work(BZ_TYPE_INIT);
+      gui_open_lcd_show();
+      menu_event_process(0,MENU_EVT_BAT_LOW);
+		}
+	}
+	else
+	{
+		if(local_event_process(1,LOCAL_EVT_SYSTEM_BATLOW) == 0)
+		{
+      local_event_process(2,LOCAL_EVT_SYSTEM_BATLOW);
+      sysreset();
+		}
+	}
+
+	return ;
+}
+INIT_APP_EXPORT(battery_too_low);
+
+
 /** 
 @brief  µç³Ø´¦ÀíÏß³Ì
 @param  arg 
@@ -170,12 +275,15 @@ void battery_info_save_file(Battery_Data *bat)
 */
 void battery_thread_entry(void *arg)
 {
+	rt_thread_delay(RT_TICK_PER_SECOND*3);
+	// ¿ª»ú¾Í¼ì²âµç³ØµçÁ¿
+	battery_energy_too_low();
 	while(1)
 	{
 		rt_err_t result;
 		BatteryMailDef mail;
 
-		result = rt_mq_recv(BatMail,&mail,sizeof(mail),RT_TICK_PER_SECOND*60);
+		result = rt_mq_recv(BatMail,&mail,sizeof(mail),RT_TICK_PER_SECOND*2);
 		if(result == RT_EOK)
 		{
 			// Ïß³Ì½øÈë¹¤×÷
@@ -185,6 +293,11 @@ void battery_thread_entry(void *arg)
 				case BAT_MAILTYPE_SAMPLE0:
 				{
 					// ²ÉÑùÒ»´Î
+					break;
+				}
+				case BAT_MAILTYPE_20P:
+				{
+					battery_low_20p_process();
 					break;
 				}
 				case BAT_MAILTYPE_LowEnergy:
@@ -204,7 +317,7 @@ void battery_thread_entry(void *arg)
 		}
 		else
 		{
-			//battery_low_energy_check();
+			battery_energy_too_low();
 		}
 	}
 }
@@ -230,33 +343,7 @@ int battery_thread_init(void)
 	return 0;
 }
 INIT_APP_EXPORT(battery_thread_init);
-/** 
-@brief  µç³ØµçÑ¹¹ýµÍ
-@param  bat µç³Ø 
-@retval 0 :ok 1:error
-*/
-int battery_too_low(void)
-{
-	Battery_Data bat;
-	
-  battery_get_data(&bat);
-  rt_kprintf("DumpEnergy = %d%\n",bat.DumpEnergy);
-	if(bat.DumpEnergy <= 10)
-	{
-		send_local_mail(ALARM_TYPE_BATTERY_WORKING_20M,0,RT_NULL);
-		while(1)
-		{
-			rt_kprintf("Battery too low\n");
-			buzzer_work(BZ_TYPE_INIT);
-			//sysreset();
-			rt_thread_delay(RT_TICK_PER_SECOND*60*5);
-			while(1);
-		}
-	}
 
-	return ;
-}
-INIT_DEVICE_EXPORT(battery_too_low);
 
 /** 
 @brief  ¸øµç³Ø¹ÜÀíÏß³Ì·¢ËÍÓÊ¼þ
@@ -280,16 +367,6 @@ rt_err_t battery_send_mail(BatteryMailDef_p mail)
 	}
 
 	return result;
-}
-
-
-void battery_low_energy_check(void)
-{
-	BatteryMailDef SendMail;
-
-	SendMail.Type = BAT_MAILTYPE_LowEnergy;
-	SendMail.result = RT_NULL;
-	battery_send_mail(&SendMail);
 }
 
 

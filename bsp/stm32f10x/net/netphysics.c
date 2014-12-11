@@ -112,7 +112,12 @@ void netprotocol_thread_entry(void *arg)
   rt_size_t bytes_received;
   volatile rt_uint32_t ClearBufTime = 0;
   rt_device_t hw_dev = RT_NULL;
-   
+
+  // µçÁ¿²»×ã
+	if(system_power_Insufficient() == RT_TRUE)
+	{
+	  return ;
+	}
   while(1)
   {
   	if(hw_dev == RT_NULL)

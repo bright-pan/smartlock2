@@ -26,6 +26,6 @@ void system_manage_processing(void);
 rt_bool_t fprint_unlock_result_show(void);
 rt_bool_t phone_unlock_result_show(void);
 rt_bool_t phone_sms_result_show(void);
-
+rt_bool_t battery_low_alarm_show(void);
 #endif
 

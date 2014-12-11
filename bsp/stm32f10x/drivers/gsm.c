@@ -1581,6 +1581,11 @@ gsm_thread_entry(void *parameters)
 //	uint8_t process_buf[512];
 	uint8_t data;
 
+	// µçÁ¿²»×ã
+	if(system_power_Insufficient() == RT_TRUE)
+	{
+	  return ;
+	}
 	device_gsm_usart = device_enable(DEVICE_NAME_GSM_USART);
 	device_gsm_status = device_enable(DEVICE_NAME_GSM_STATUS);
 	device_enable(DEVICE_NAME_GSM_RING);

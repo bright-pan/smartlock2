@@ -2,7 +2,7 @@
 //#include "sysconfig.h"
 #include "rtdevice.h"
 #include "netprotocol.h"
-
+#include "local.h"
 #ifdef   USEING_RAM_DEBUG
 #include "untils.h" //主要使用里面的 rt_dprintf
 #endif
@@ -849,6 +849,10 @@ void bluetooth_thread_entry(void *arg)
 	bluetooth_module_p bluetooth;
 	rt_dprintf(BT_DEBUG_THREAD,("bluetooth thread statrt\n"));
 
+	if(system_power_Insufficient() == RT_TRUE)
+	{
+		return ;
+	}
 	// 创建蓝牙模块对象主要是分配内存资源和获取硬件资源
 	bt_module_create(&bluetooth);
 
@@ -864,6 +868,12 @@ void bluetooth_thread_entry(void *arg)
 	    bluetooth_tx_mq 	mail;					//命令请求邮件
 	    rt_uint8_t 				gpio_status;
 
+			if(system_power_Insufficient() == RT_TRUE)
+			{
+				rt_thread_delay(100);
+				rt_thread_entry_sleep(rt_thread_self());
+				continue;
+			}
 	    if(bluetooth->work_status == BT_MODULE_CMD_MODE)
 	    {
 	      mb_result = rt_mq_recv(BloothRequest_mq,&mail,sizeof(bluetooth_tx_mq),1);

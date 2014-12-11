@@ -22,6 +22,7 @@
 typedef enum
 {
 	BAT_MAILTYPE_SAMPLE0,			//电池电量
+	BAT_MAILTYPE_20P,         //电量只剩20%
 	BAT_MAILTYPE_LowEnergy,		//电量过低检测
 }BatTypeDef;
 
@@ -43,6 +44,6 @@ void battery_get_data(Battery_Data* data);
 // 给电池管理线程发送邮件
 rt_err_t battery_send_mail(BatteryMailDef_p mail);
 
-void battery_low_energy_check(void);
+void battery_energy_check_20p(void);
 
 #endif

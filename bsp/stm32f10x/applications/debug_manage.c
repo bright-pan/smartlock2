@@ -85,6 +85,7 @@ static const char SysPintfText[][SYS_PRINTF_TEXT_MAXLEN] =
 	"NET_SEND_DES_DATA",
 	"NET_MSG_PACK_RECV",
 	"POWER_MANAGE_DEBUG",
+	"BATTERY_DEBUG_THREAD",
 };
 
 

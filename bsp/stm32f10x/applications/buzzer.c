@@ -168,13 +168,13 @@ void buzzer_thread_entry(void *arg)
 	buzzer_send_mail(BZ_TYPE_INIT);
 	
 	// 线程进入休眠
-	rt_thread_entry_sleep(rt_thread_self());
+	//rt_thread_entry_sleep(rt_thread_self());
 	while(1)
 	{
 		rt_err_t 		result;
 		BuzzerType 	BZ_data;
 		
-		result = rt_mq_recv(BZ_mq,&BZ_data,sizeof(BuzzerType),10);
+		result = rt_mq_recv(BZ_mq,&BZ_data,sizeof(BuzzerType),RT_TICK_PER_SECOND);
 		if(result == RT_EOK)
 		{
 			// 线程进入工作
@@ -185,15 +185,14 @@ void buzzer_thread_entry(void *arg)
 			
 			// 蜂鸣器工作 
 			buzzer_work(BZ_data);
-			
-			// 线程进入休眠
-			rt_thread_entry_sleep(rt_thread_self());
 		}
 		else
 		{
-      rt_thread_delay(30);
       // 关蜂鸣器
       buzzer_power_ctr(RT_FALSE);
+      
+      // 线程进入休眠
+			rt_thread_entry_sleep(rt_thread_self());
 		}
 	}
 }

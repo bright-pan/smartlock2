@@ -1153,9 +1153,14 @@ fprint_thread_entry(void *parameters)
 	//fprint_device = device_enable(DEVICE_NAME_FPRINT)
     uint8_t buf[512];
 
-    error = FPRINT_EERROR;
-    
-    fprint_init(buf, &req_data, &rep_data);
+	// µçÁ¿²»×ã
+	if(system_power_Insufficient() == RT_TRUE)
+	{
+	  return ;
+	}
+	error = FPRINT_EERROR;
+
+	fprint_init(buf, &req_data, &rep_data);
 	while (1)
 	{
 		result = rt_mq_recv(fprint_mq, &fprint_mail, sizeof(fprint_mail), 500);

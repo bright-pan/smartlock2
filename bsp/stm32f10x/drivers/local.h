@@ -35,7 +35,10 @@ typedef enum
 	KEY_ERRNUM_MODE_CLAER,
 }KeyErrCntManageMode;
 
-#define LOCAL_EVT_SYSTEM_FREEZE               (0X01<<0)
+#define LOCAL_EVT_SYSTEM_FREEZE               (0X01<<0)   //系统冻结
+#define LOCAL_EVT_SYSTEM_BAT20P               (0X01<<1)   //电量20%
+#define LOCAL_EVT_SYSTEM_BATLOW               (0x01<<2) 	//电量太低
+
 struct lock_data {
     s32 key_id;
     s32 operation;
@@ -78,4 +81,6 @@ void system_autolock_time_set(rt_uint16_t value);
 
 rt_uint16_t system_autolock_time_get(void);
 
+// 判断是否电源电压过低
+rt_bool_t system_power_Insufficient(void);
 #endif

@@ -386,7 +386,12 @@ void local_thread_entry(void *parameter)
 {
 	rt_err_t result;
 	LOCAL_MAIL_TYPEDEF local_mail_buf;
-    
+
+  // 电量不足
+	if(system_power_Insufficient() == RT_TRUE)
+	{
+	  return ;
+	}
 	//fprint_module_init();
 	motor_status_sem_init();
 	
@@ -394,6 +399,12 @@ void local_thread_entry(void *parameter)
 	rt_thread_entry_work(rt_thread_self());
 	while (1)
 	{
+		if(system_power_Insufficient() == RT_TRUE)
+		{
+			rt_thread_delay(100);
+			rt_thread_entry_sleep(rt_thread_self());
+			continue;
+		}
 		// receive mail
 		rt_memset(&local_mail_buf, 0, sizeof(local_mail_buf));
 		result = rt_mq_recv(local_mq, &local_mail_buf, sizeof(local_mail_buf), 100);
@@ -527,8 +538,14 @@ void local_thread_entry(void *parameter)
 					data.lock.operation = LOCK_HAVE_AUTH_CHECK;
 					send_local_mail(ALARM_TYPE_LOCK_PROCESS,0,&data);
 					gprs_key_right_mail(local_mail_buf.data.key.ID);
-					
+
+					// 开启自动上锁
 					motor_locktime_set(1);
+
+					if(menu_event_process(1,MENU_EVT_LCD_CLOSE) == 1)
+					{
+						//gui_sleep_time_set(1);
+					}
 					break;
         }
         case ALARM_TYPE_SYSTEM_FREEZE:
@@ -747,6 +764,26 @@ rt_uint16_t system_autolock_time_get(void)
 	return AutoLockTime;
 }
 
+
+/** 
+@brief  系统电量不足
+@param  none
+@retval RT_TRUE 系统电量不足
+				RT_FALSE 系统电量正常
+*/
+rt_bool_t system_power_Insufficient(void)
+{
+#ifdef USEING_BATTERY_MAAAGE
+	if(local_event_process(1,LOCAL_EVT_SYSTEM_BATLOW) == 0)
+	{
+		return RT_TRUE;
+	}
+	
+	return RT_FALSE;
+#else
+	return RT_TRUE;
+#endif
+}
 
 
 

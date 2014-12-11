@@ -11,13 +11,13 @@
 
 typedef struct 
 {
-	rt_uint32_t WorkFlag;
-	rt_uint8_t  IsSleep;
+	rt_uint32_t WorkFlag;			// 工作标志每一个位代表一个线程
+	rt_uint8_t  IsSleep;			// 是否需要进行休眠判断
 }SystemSleepDef,*SystemSleepDef_p;
 static SystemSleepDef SysSleep = 
 {
  0,
- 1,
+ 1, //没有一个线程开始工作时不判断休眠
 };
 
 /*
@@ -367,7 +367,7 @@ void RTCAlarm_IRQHandler(void)
     RTC_ClearITPendingBit(RTC_IT_ALR);
     /* Wait until last write operation on RTC registers has finished */
     RTC_WaitForLastTask();
-    battery_low_energy_check();
+    battery_energy_check_20p();
   }
 }
 
@@ -616,6 +616,8 @@ static const char ThreadName[][RT_NAME_MAX] =
 	"NPDU",
 	"sms",
 	"gsm",
+	"rf433",
+	"init",
 };
 /** 
 @brief  thread status manage

@@ -745,7 +745,14 @@ sms_thread_entry(void *parameter)
 	const uint16_t *temp_ucs;
 	uint16_t temp_ucs_length;
 	SMS_MAIL_TYPEDEF sms_mail_buf;
-    struct phone_sms_callback_params params;
+  struct phone_sms_callback_params params;
+
+  // µçÁ¿²»×ã
+	if(system_power_Insufficient() == RT_TRUE)
+	{
+	  return ;
+	}
+	
 	// initial sms data
 	sms_data_init();
 

@@ -201,5 +201,5 @@
 #define USEING_SYS_SLEPP_MODE 		//使用睡眠模式
 #define USEING_MENU_MODE       0 	// 0 只能添加的模式
 #define RTC_ALARM_WAKEUP_TIME  60	// ns自动唤醒
-
+#define USEING_BATTERY_MAAAGE			//使用电池管理
 #endif

@@ -110,9 +110,21 @@ void alarm_thread_entry(void *parameter)
 	rt_err_t result;
 	ALARM_MAIL_TYPEDEF alarm_mail_buf;
 
-    system_init();
+  if(system_power_Insufficient() == RT_TRUE)
+	{
+	  return ;
+	}
+
+  system_init();
+
 	while (1)
 	{
+		if(system_power_Insufficient() == RT_TRUE)
+		{
+			rt_thread_delay(100);
+			rt_thread_entry_sleep(rt_thread_self());
+			continue;
+		}
 		rt_memset(&alarm_mail_buf, 0, sizeof(alarm_mail_buf));
 		result = rt_mq_recv(alarm_mq, &alarm_mail_buf, sizeof(alarm_mail_buf), 100);
 
