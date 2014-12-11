@@ -149,7 +149,7 @@ rt_err_t gui_key_input(rt_uint8_t *KeyValue)
 {
 	rt_err_t            result;
 	KB_MAIL_TYPEDEF     mail;
-	static rt_uint8_t   SleepCnt = 0;//休眠计数
+	static rt_uint8_t   SleepCnt = UI_SLEEP_TIME;//休眠计数
 	
 	rt_memset(&mail, 0, sizeof(mail));
 
@@ -162,7 +162,9 @@ rt_err_t gui_key_input(rt_uint8_t *KeyValue)
 	if(menu_event_process(2,MENU_EVT_CLR_LCD_SLEEP) == 0)
 	{
 		rt_kprintf("clear lcd sleep\n");
+		// 清除屏幕关闭计时器重新设置屏幕关闭时间
 		SleepCnt = 0;
+		gui_sleep_time_set(UI_SLEEP_TIME);
 	}
 	result = rt_mq_recv(key_mq, &mail, sizeof(mail),RT_TICK_PER_SECOND);
 	if(result == RT_EOK)
@@ -182,6 +184,9 @@ rt_err_t gui_key_input(rt_uint8_t *KeyValue)
     	gpio_pin_output(DEVICE_NAME_POWER_FRONT,1,0);
 			lcd_on_off(RT_TRUE);
 			menu_event_process(2,MENU_EVT_LCD_CLOSE);
+
+			// 重置屏幕休眠时间
+			gui_sleep_time_set(UI_SLEEP_TIME);
     }
     SleepCnt = 0;
     switch(mail.c)
@@ -219,7 +224,7 @@ rt_err_t gui_key_input(rt_uint8_t *KeyValue)
 	else
 	{
 		SleepCnt++;
-		if(SleepCnt > GUISleepTime)
+		if(SleepCnt >= GUISleepTime) //一定要和开启的时候判断范围一样否则会有1s中屏幕不亮也可以操作的bug
 		{
 			SleepCnt = GUISleepTime;
 			// 屏幕休眠

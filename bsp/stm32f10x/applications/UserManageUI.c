@@ -451,7 +451,7 @@ static rt_err_t gui_input_string(rt_uint8_t *ShowBuf,
 		else
 		{
 			//²Ù×÷³¬Ê±
-			if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+			if(menu_event_process(2,MENU_EVT_OP_OUTTIME) == 0)
 			{
 			    return RT_ETIMEOUT;
 			}

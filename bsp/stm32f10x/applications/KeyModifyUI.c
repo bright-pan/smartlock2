@@ -66,7 +66,7 @@ static rt_uint8_t fprint_modify_fun_choose_ui(void)
 		else
 		{
 			//操作超时
-    	if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+    	if(menu_event_process(2,MENU_EVT_OP_OUTTIME) == 0)
     	{
 				return 0xff;
     	}
@@ -161,7 +161,7 @@ static void fprint_new_create_ui(void)
       else
       {
     		//操作超时
-	    	if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+	    	if(menu_event_process(2,MENU_EVT_OP_OUTTIME) == 0)
 	    	{
 					return ;
 	    	}

@@ -450,6 +450,9 @@ void system_menu_choose(rt_uint8_t menu)
 
 void key_input_processing_init(void)
 {
+	// 初始化屏幕是熄灭的
+	menu_event_process(0,MENU_EVT_LCD_CLOSE);
+	gui_close_lcd_show();
 	if(MenuManage.event == RT_NULL)
 	{
 		MenuManage.event = rt_event_create("menu",RT_IPC_FLAG_FIFO);
@@ -543,6 +546,33 @@ void string_hide_string(const rt_uint8_t src[],rt_uint8_t str[],rt_uint8_t ch,rt
 	}
 	//rt_kprintf("hide  :%s\n",str);   
 }
+
+#ifdef 0
+//字符串转换为隐藏字符穿 最后一个不隐藏
+void string_hide_string1(const rt_uint8_t src[],rt_uint8_t str[],rt_uint8_t ch,rt_uint8_t size)
+{
+  rt_uint8_t i;
+  
+	RT_ASSERT(size > 1);
+
+  rt_memset(str,0,size);
+
+  rt_dprintf(MENU_DEBUG_KEY,("input :%s\n",src));  
+
+	for(i=0;i<rt_strlen((const char*)src);i++)
+	{
+		if(src[i] != 0 && i < rt_strlen((const char*)src)-1)
+		{
+			str[i] = ch;
+		}
+		else
+		{
+      str[i] = src[i];
+		}
+	}
+	//rt_kprintf("hide  :%s\n",str);   
+}
+#endif
 
 void menu_inputchar_glint(rt_uint8_t x,rt_uint8_t y,rt_uint8_t status)
 {
@@ -710,7 +740,7 @@ rt_err_t menu_input_sure_key(rt_uint32_t OutTime)
 		else
 		{
 			//操作超时
-    	if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+    	if(menu_event_process(2,MENU_EVT_OP_OUTTIME) == 0)
     	{
     		result = RT_ERROR;
 				break ;

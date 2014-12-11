@@ -365,7 +365,7 @@ void menu_14_processing(void)
       else
       {
       	//操作超时
-	    	if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+	    	if(menu_event_process(2,MENU_EVT_OP_OUTTIME) == 0)
 	    	{
 					return ;
 	    	}
@@ -490,7 +490,7 @@ void menu_14_processing(void)
       else
       {
       	//操作超时
-	    	if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+	    	if(menu_event_process(2,MENU_EVT_OP_OUTTIME) == 0)
 	    	{
 					return ;
 	    	}
@@ -595,7 +595,7 @@ void menu_15_processing(void)
 			else
 			{
         //操作超时
-        if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+        if(menu_event_process(2,MENU_EVT_OP_OUTTIME) == 0)
         {
         	fp_event_process(2,FP_EVNT_REGISTER_MODE);
           return ;
@@ -718,7 +718,7 @@ void menu_16_processing(void)
       else
       {
       	//操作超时
-	    	if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+	    	if(menu_event_process(2,MENU_EVT_OP_OUTTIME) == 0)
 	    	{
 					return ;
 	    	}
@@ -829,7 +829,7 @@ void menu_16_processing(void)
       else
       {
       	//操作超时
-	    	if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+	    	if(menu_event_process(2,MENU_EVT_OP_OUTTIME) == 0)
 	    	{
 					return ;
 	    	}
@@ -1107,7 +1107,7 @@ static void user_list_processing(void)
     else
     {
 			//操作超时
-    	if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+    	if(menu_event_process(2,MENU_EVT_OP_OUTTIME) == 0)
     	{
 				return ;
     	}
@@ -1232,7 +1232,7 @@ void menu_22_processing(void)
 	  else
 	  {
 	  	//操作超时
-    	if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+    	if(menu_event_process(2,MENU_EVT_OP_OUTTIME) == 0)
     	{
 				return ;
     	}
@@ -1425,7 +1425,7 @@ static rt_err_t menu_intput_password_two(rt_uint8_t *buf,rt_uint8_t *ShowBuf,rt_
 		else
 		{
 			//操作超时
-    	if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+    	if(menu_event_process(2,MENU_EVT_OP_OUTTIME) == 0)
     	{
 				return RT_ETIMEOUT;
     	}
@@ -1508,7 +1508,7 @@ static rt_err_t menu_input_password_one(rt_uint8_t *buf,rt_uint8_t *ShowBuf)
     else
     {
 			//操作超时
-			if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+			if(menu_event_process(2,MENU_EVT_OP_OUTTIME) == 0)
 			{
 					return RT_ETIMEOUT;
 			}
@@ -1635,7 +1635,7 @@ static rt_err_t menu_input_string_ui1(rt_uint8_t *buf,rt_uint8_t InputLength)
 	    else
 	    {
 	    	//操作超时
-	    	if(menu_event_process(2.,MENU_EVT_OP_OUTTIME) == 0)
+	    	if(menu_event_process(2,MENU_EVT_OP_OUTTIME) == 0)
 	    	{
 					break ;
 	    	}

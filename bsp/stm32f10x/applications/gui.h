@@ -45,6 +45,8 @@ void gui_open_lcd_show(void);
 
 rt_err_t send_key_value_mail(uint16_t type, KB_MODE_TYPEDEF mode, uint8_t c);
 
+void gui_close_lcd_show(void);
+
 //¼üÅÌÊäÈë½Ó¿Ú
 rt_err_t gui_key_input(rt_uint8_t *KeyValue);
 

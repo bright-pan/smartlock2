@@ -53,8 +53,8 @@ static const rt_uint8_t AdminInitUIText[][8*2] =
 {
 	"设置管理员手机",
 	"手机号错误",
-	"管理员账户创建",
-	"成功",
+	"管理员账户",
+	"正在创建..."
 };
 //管理员密码检测
 rt_err_t admin_password_check(rt_uint8_t *password)
@@ -72,6 +72,7 @@ void menu_0_processing(void)
 	rt_uint8_t ShowBuf[8];
 	rt_uint8_t GlintStatus = 0;
 
+	gui_sleep_time_set(5);
 	while(1)
 	{
     gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
