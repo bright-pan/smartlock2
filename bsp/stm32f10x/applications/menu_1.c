@@ -454,7 +454,10 @@ ADMIN_CRATE_UI:
   gui_display_string(SHOW_X_CENTERED(AdminInitUIText[2]),SHOW_Y_LINE(1),AdminInitUIText[2],GUI_WIHIT);  
   gui_display_string(SHOW_X_CENTERED(AdminInitUIText[3]),SHOW_Y_LINE(2),AdminInitUIText[3],GUI_WIHIT);
   gui_display_update();
-	menu_input_sure_key(200);
+	if(menu_input_sure_key(200) == RT_ETIMEOUT)
+	{
+    menu_event_process(2,MENU_EVT_OP_OUTTIME);
+	}
 	gui_clear(0,0,LCD_X_MAX,LCD_Y_MAX);
 	gui_display_update();
 

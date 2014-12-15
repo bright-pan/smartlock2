@@ -1868,7 +1868,11 @@ MENU2_INPUT_PASSWORD_ONE:
 					{
 						gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(3),PasswordModifyText[12],GUI_WIHIT);
 						gui_display_update();
-						menu_input_sure_key(0);
+						result = menu_input_sure_key(0);
+						if(result = RT_ETIMEOUT)
+						{
+						menu_event_process(2,MENU_EVT_OP_OUTTIME);
+						}
 						goto MENU_INPUT_PASSWORD_OLD;
 					}
 					else
@@ -1879,6 +1883,10 @@ MENU2_INPUT_PASSWORD_ONE:
 				}
 				else
 				{
+					if(result == RT_ETIMEOUT)
+					{
+						menu_event_process(2,MENU_EVT_OP_OUTTIME);
+					}
 					continue;
 				}
       }
@@ -1905,6 +1913,10 @@ MENU2_INPUT_PASSWORD_ONE:
       	{
           gui_display_update();
           goto MENU_INPUT_PASSWORD_OLD;
+      	}
+      	else if(result == RT_ETIMEOUT)
+      	{
+          menu_event_process(2,MENU_EVT_OP_OUTTIME);
       	}
       	goto MENU2_INPUT_PASSWORD_ONE;
       }

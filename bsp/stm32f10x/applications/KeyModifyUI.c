@@ -206,9 +206,14 @@ static void fprint_modify_ui(void)
     result = rt_mq_recv(FpRight_mq,&FpKeyDat,sizeof(FPINTF_USER),RT_WAITING_NO);
     
 		result = menu_input_sure_key(0);
-		if(result == RT_ERROR)
-		{			
+		if(result != RT_EOK)
+		{	
+			// 操作超时
       rt_free(ShowBuf);
+      if(result == RT_ETIMEOUT)
+      {
+        menu_event_process(2,MENU_EVT_OP_OUTTIME);
+      }
 			return ;
 		}
 		gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(2),FprintModifyText[5],GUI_WIHIT);
@@ -224,11 +229,16 @@ static void fprint_modify_ui(void)
 		gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(1),FprintModifyText[10],GUI_WIHIT);
 		gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(2),FprintModifyText[9],GUI_WIHIT);
 		gui_display_update();
-		result = menu_input_sure_key(0);
 		
+		result = menu_input_sure_key(0);
 		if(result == RT_ERROR)
 		{	
+			// 操作超时
 			rt_free(ShowBuf);
+      if(result == RT_ETIMEOUT)
+	    {
+	      menu_event_process(2,MENU_EVT_OP_OUTTIME);
+	    }
 			return ;
 		}
 		gui_display_string(SHOW_X_ROW16(0),SHOW_Y_LINE(2),FprintModifyText[5],GUI_WIHIT);

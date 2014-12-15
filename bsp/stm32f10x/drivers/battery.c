@@ -78,7 +78,8 @@ void battery_get_data(Battery_Data* data)
 
 		rt_device_open(adc_dev,0);
 		bat_enable();
-
+		
+		rt_device_control(adc_dev, RT_DEVICE_CTRL_GET_CONVERT_VALUE, (void *)&adc_temp[0]);
 		for(i = 0;i<100;i++)
 		{
 			rt_device_control(adc_dev, RT_DEVICE_CTRL_GET_CONVERT_VALUE, (void *)&adc_temp[i]);

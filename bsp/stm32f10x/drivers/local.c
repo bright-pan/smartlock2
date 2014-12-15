@@ -544,7 +544,7 @@ void local_thread_entry(void *parameter)
 
 					if(menu_event_process(1,MENU_EVT_LCD_CLOSE) == 1)
 					{
-						//gui_sleep_time_set(1);
+						gui_sleep_time_set(1);
 					}
 					break;
         }

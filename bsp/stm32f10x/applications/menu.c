@@ -740,9 +740,9 @@ rt_err_t menu_input_sure_key(rt_uint32_t OutTime)
 		else
 		{
 			//²Ù×÷³¬Ê±
-    	if(menu_event_process(2,MENU_EVT_OP_OUTTIME) == 0)
+    	if(menu_event_process(1,MENU_EVT_OP_OUTTIME) == 0)
     	{
-    		result = RT_ERROR;
+    		result = RT_ETIMEOUT;
 				break ;
     	}
 		}
