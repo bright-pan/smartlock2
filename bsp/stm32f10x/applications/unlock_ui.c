@@ -2,6 +2,7 @@
 #include "menu.h"
 #include "local.h"
 #include "gprsmailclass.h"
+#include "battery.h"
 
 #define PAGE_MAX_SHOW_NUM					4
 
@@ -109,11 +110,23 @@ static rt_err_t unlock_password_verify(rt_uint8_t *password,rt_int32_t *ps_id)
 	return RT_EOK;
 }
 
+void show_battery_dump_energy(void)
+{
+	rt_uint8_t ShowBuf[8];
+  Battery_Data bat;
+
+	//显示电量
+	battery_get_data(&bat);
+	rt_sprintf(ShowBuf,"%02d*",bat.DumpEnergy);
+	gui_put_small_string(0,0,ShowBuf,GUI_WIHIT);
+	gui_display_update();
+}
 rt_err_t unlock_process_ui(void)
 {
 	rt_uint8_t buf[8];
 	rt_uint8_t ShowBuf[8];
 	rt_uint8_t GlintStatus = 0;
+  
 
 	while(1)
 	{
@@ -122,8 +135,10 @@ rt_err_t unlock_process_ui(void)
 	  gui_display_string(SHOW_X_CENTERED(UNLOCK_UI_TEXT[0]),SHOW_Y_LINE(0),UNLOCK_UI_TEXT[0],GUI_WIHIT);
 
 	  gui_display_string(SHOW_X_ROW8(0),SHOW_Y_LINE(2),UNLOCK_UI_TEXT[1],GUI_WIHIT);
+    gui_display_update(); 
 
-	  gui_display_update(); 
+		show_battery_dump_energy();
+		
 	  rt_memset(buf,0,8);
 	  rt_memset(ShowBuf,0,8);
 	  while(1)
@@ -238,6 +253,10 @@ rt_err_t unlock_process_ui(void)
 	      // 闪烁提示
 	      GlintStatus++;
 	      menu_inputchar_glint(SHOW_X_ROW8(PASSWORD_DATA_POS+rt_strlen((const char *)ShowBuf)),SHOW_Y_LINE(2),GlintStatus%2);
+
+				//显示电量
+		    show_battery_dump_energy();
+
 	      gui_display_update();
 	      // 指纹处理结果显示
 	      EvtProcessResult = fprint_unlock_result_show();

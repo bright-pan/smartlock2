@@ -67,5 +67,7 @@ void gui_box(rt_uint8_t x0, rt_uint8_t y0, rt_uint8_t x1, rt_uint8_t y1,rt_uint8
 
 void gui_china16s(rt_uint8_t x, rt_uint8_t y, rt_uint8_t *s, rt_uint8_t fColor);
 
+// ÏÔÊ¾Ğ¡µÄ×Ö·û´®
+void gui_put_small_string(rt_uint8_t x, rt_uint8_t y,rt_uint8_t *s, rt_uint8_t color);
 #endif
 

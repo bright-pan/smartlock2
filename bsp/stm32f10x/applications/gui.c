@@ -430,6 +430,36 @@ void gui_put_char(rt_uint8_t x, rt_uint8_t y,rt_uint8_t c, rt_uint8_t color)
 	}
 }
 
+void gui_put_small_char(rt_uint8_t x, rt_uint8_t y,rt_uint8_t c, rt_uint8_t color)
+{  
+	rt_uint8_t  s_x ,s_y, temp ;	  
+	c -= 32;
+
+	for(s_y=0 ; s_y < 8 ; s_y++)
+	{
+		if(s_y+y<LCD_Y_MAX)
+		{
+		   temp = font8x4[c*8+s_y] ;		   
+		   //temp <<= 4;
+		   for( s_x=0 ; s_x<4 ; s_x++ )
+		   {
+				if(x+s_x<LCD_X_MAX)
+				{
+					if(temp&0x80)
+					{
+						lcd_pixer(x+s_x,y+s_y,!color); 
+					}
+					else
+					{
+					 	lcd_pixer(x+s_x,y+s_y,color); 
+					}
+					temp<<=1;
+				}
+		   }
+		}
+	}
+}
+
 void gui_put_chars(rt_uint8_t x, rt_uint8_t y,rt_uint8_t *s, rt_uint8_t color)
 {  
 	for(;*s!='\0';s++)
@@ -438,6 +468,16 @@ void gui_put_chars(rt_uint8_t x, rt_uint8_t y,rt_uint8_t *s, rt_uint8_t color)
 		x=x+8;
 	}
 }
+
+void gui_put_small_string(rt_uint8_t x, rt_uint8_t y,rt_uint8_t *s, rt_uint8_t color)
+{  
+	for(;*s!='\0';s++)
+	{
+	  gui_put_small_char(x, y,*s, color);
+	  x=x+4;
+	}
+}
+
 
 
 void gui_china16(rt_uint8_t x, rt_uint8_t  y, rt_uint8_t c[], rt_uint8_t fColor)
@@ -494,7 +534,6 @@ void gui_china16s(rt_uint8_t x, rt_uint8_t y, rt_uint8_t *s, rt_uint8_t fColor)
 		}
 	}	
 }
-
 
 
 

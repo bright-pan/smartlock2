@@ -563,6 +563,8 @@ sh1106_sleep_configure(struct oled_device *oled)
 	GPIO_InitStructure.GPIO_Pin = SH1106_SCL_PIN;
 	GPIO_Init(SH1106_SCL_PORT, &GPIO_InitStructure);
 	GPIO_SetBits(SH1106_SCL_PORT,SH1106_SCL_PIN);
+  
+  return RT_EOK;
 }
 
 /*
